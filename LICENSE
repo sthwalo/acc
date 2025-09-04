@@ -172,14 +172,13 @@
 
    APPENDIX: How to apply the Apache License to your work.
 
-      To apply the Apache License to your work, attach the following
-      boilerplate notice, with the fields enclosed by brackets "[]"
-      replaced with your own identifying information. (Don't include
-      the brackets!)  The text should be enclosed in comments for the
-      particular file format. And don't forget to place a copy of the
-      license text in a file named LICENSE in your repository.
+      IMPORTANT: This Apache License 2.0 applies ONLY to the source code
+      for development, modification, and personal use. Commercial use of
+      the APPLICATION requires a separate commercial license.
+      
+      See COMMERCIAL_LICENSE.md for commercial terms and subscription options.
 
-      Copyright [yyyy] [name of copyright owner]
+      Copyright 2024 Immaculate Nyoni
 
       Licensed under the Apache License, Version 2.0 (the "License");
       you may not use this file except in compliance with the License.

@@ -81,10 +81,33 @@ Detailed documentation is available in the `docs` directory:
 
 ## License
 
-This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+**FIN Financial Management System uses a dual licensing model:**
 
-Copyright 2025 Sthwalo Nyoni
+### 🆓 **Personal Use - Apache License 2.0**
+- ✅ **FREE** for personal finance management
+- ✅ **FREE** for educational use and research  
+- ✅ **FREE** for open source development
+- ✅ View source code and contribute improvements
 
+### 💼 **Commercial Use - Commercial License Required**
+- 💰 **PAID** for business financial management
+- 💰 **PAID** for revenue-generating activities
+- 💰 **PAID** for hosting services to others
+- 💰 **PAID** for integration into commercial products
+
+**📋 See [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md) for pricing and terms.**
+
+---
+
+### **License Details:**
+
+**Source Code License:** Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+
+**Application Use License:** Commercial license required for business use.
+
+**Copyright:** 2025 Sthwalo Nyoni
+
+```
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -96,6 +119,9 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+```
+
+**⚠️ Important:** The Apache 2.0 license covers source code access and modification rights only. Commercial use of the application requires a separate commercial license.
 
 ## Contributing
 

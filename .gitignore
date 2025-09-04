@@ -5,6 +5,21 @@
 build
 
 # ========================================
+# LICENSING AND COMMERCIAL FILES
+# ========================================
+
+# Commercial license files (never commit)
+commercial.license
+*.license
+license.key
+activation.key
+
+# Usage logs and tracking
+personal_use.log
+usage.log
+license_verification.log
+
+# ========================================
 # SENSITIVE DATA - NEVER COMMIT TO PUBLIC REPO
 # ========================================
 

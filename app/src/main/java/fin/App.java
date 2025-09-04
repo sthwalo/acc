@@ -31,6 +31,7 @@ import fin.service.CsvExportService;
 import fin.service.DataManagementService;
 import fin.service.PdfExportService;
 import fin.service.ReportService;
+import fin.license.LicenseManager;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -1147,6 +1148,11 @@ public class App {
     }
     
     public static void main(String[] args) {
+        // License compliance check
+        if (!LicenseManager.checkLicenseCompliance()) {
+            System.exit(1);
+        }
+        
         // Check if API mode is requested
         if (args.length > 0 && "api".equals(args[0])) {
             // Start API server mode
