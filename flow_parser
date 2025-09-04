@@ -1,0 +1,131 @@
+I'll analyze the codebase to give you a comprehensive overview of the data flow. Let me gather all the relevant information: Let me check the bank statement processing components: Let me break down the data flow and components based on the codebase:
+
+1. **Entry Point and Flow Control**:
+- App.java - Main application entry point
+  - Handles user interaction and menu navigation
+  - Coordinates between different services
+  - Main flow: Company Setup → Fiscal Period → Bank Statement Import → Data Processing → Reporting
+
+2. **Core Models**:
+- `Company` - Company information and settings
+- `FiscalPeriod` - Accounting periods
+- `BankTransaction` - Individual banking transactions
+- `Account` - Chart of accounts
+- `AccountType/AccountCategory` - Account classifications
+- `TransactionMappingRule` - Rules for transaction categorization
+
+3. **Data Import Flow**:
+a. **PDF Bank Statement Processing**:
+```
+Bank Statement PDF
+↓
+PdfTextExtractionService
+↓
+BankStatementProcessingService
+  ├── TransactionParsers (in order of specificity)
+  │   ├── ServiceFeeParser
+  │   ├── CreditTransactionParser
+  │   └── MultiTransactionParser
+  ↓
+BankTransaction entities
+↓
+Database Storage
+```
+
+b. **CSV Import Flow**:
+```
+CSV File
+↓
+CsvImportService
+↓
+DataManagementService
+↓
+Database Storage
+```
+
+4. **Key Services and Their Roles**:
+
+a. **Bank Statement Processing**:
+- `BankStatementProcessingService` (new version)
+  - Orchestrates PDF processing using parser framework
+  - Uses specialized parsers for different transaction types
+  - Converts parsed data to `BankTransaction` entities
+
+- `BankStatementService` (legacy version)
+  - Handles different file formats (PDF, CSV, Excel)
+  - Manual parsing of transaction data
+  - Legacy transaction extraction logic
+
+b. **Transaction Management**:
+- `DataManagementService`
+  - Manages transaction data
+  - Handles data corrections and updates
+  - Maintains transaction history
+
+c. **Validation and Verification**:
+- `TransactionVerificationService`
+  - Validates imported transactions
+  - Verifies transaction categorization
+  - Ensures data integrity
+
+d. **Export and Reporting**:
+- `CsvExportService` - Exports data to CSV format
+- `PdfExportService` - Generates PDF reports
+- `ReportService` - Creates financial reports
+  - Cashbook
+  - General Ledger
+  - Trial Balance
+  - Income Statement
+  - Balance Sheet
+  - Cash Flow Statement
+
+5. **Parser Framework** (for Transaction Processing):
+```
+Transaction Input
+↓
+TransactionParsingContext (provides context like dates, account info)
+↓
+Parser Chain
+├── ServiceFeeParser (handles fee transactions)
+├── CreditTransactionParser (handles credits/deposits)
+└── MultiTransactionParser (handles complex transactions with fees)
+↓
+ParsedTransaction
+↓
+BankTransaction Entity
+```
+
+6. **Database Integration**:
+- SQLite database (fin_database.db)
+- Services use JDBC for data persistence
+- Transaction history and audit trails maintained
+
+7. **Project Structure**:
+```
+fin/
+├── model/           # Data models and entities
+├── service/         # Business logic and services
+│   ├── parser/      # Transaction parsing framework
+│   └── ...         # Other services
+└── App.java        # Main application
+```
+
+This architecture allows for:
+- Modular processing of different transaction types
+- Clean separation between parsing and business logic
+- Extensible parser framework for new transaction types
+- Multiple input formats (PDF, CSV, Excel)
+- Comprehensive reporting capabilities
+- Transaction verification and correction
+- Audit trail maintenance
+
+The system follows a clean separation of concerns, with distinct layers for:
+1. Data input/extraction
+2. Parsing and transformation
+3. Business logic processing
+4. Data persistence
+5. Reporting and export
+
+Add unit tests for the new components?
+Add more repository methods for specific queries?
+Enhance the validation rules further?
