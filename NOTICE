@@ -1,0 +1,44 @@
+FIN Financial Management System
+Copyright 2025 Sthwalo Nyoni
+
+This product includes software developed at
+GitHub (https://github.com/sthwalo/acc)
+
+This software contains the following third-party components:
+
+1. Apache PDFBox
+   Copyright 2014 The Apache Software Foundation
+   Licensed under the Apache License, Version 2.0
+
+2. SQLite JDBC Driver
+   Copyright Taro L. Saito
+   Licensed under the Apache License, Version 2.0
+
+3. Spark Java
+   Copyright 2011-2015 Per Wendel
+   Licensed under the Apache License, Version 2.0
+
+4. Gson
+   Copyright 2008 Google Inc.
+   Licensed under the Apache License, Version 2.0
+
+5. SLF4J
+   Copyright 2004-2017 QOS.ch
+   Licensed under the MIT License
+
+6. Guava
+   Copyright The Guava Authors
+   Licensed under the Apache License, Version 2.0
+
+7. JUnit Jupiter
+   Copyright 2015-2023 the original author or authors
+   Licensed under the Eclipse Public License v2.0
+
+8. Mockito
+   Copyright 2007 Mockito contributors
+   Licensed under the MIT License
+
+For complete license texts, see the respective license files or visit:
+- Apache License 2.0: http://www.apache.org/licenses/LICENSE-2.0
+- MIT License: https://opensource.org/licenses/MIT
+- Eclipse Public License v2.0: https://www.eclipse.org/legal/epl-2.0/
