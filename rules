@@ -1,0 +1,82 @@
+### **Final Corrected Chart of Accounts**
+**Company Type:** Security & VIP Protection
+**Primary Bank:** Standard Bank #203163753
+**Primary Client:** Corobrik (Revenue Source)
+
+#### **Assets (1000-1999)**
+*   **1010** **Petty Cash** - Physical cash on hand for minor expenses.
+*   **1020** **Bank Account - Standard Bank #203163753** - Primary operating account. All transactions flow through here.
+*   **1100** **Loans to Directors / Shareholders** - Money the company has lent to its directors. *(Increases with a Credit to the bank account; Decreases with a Debit)*.
+
+#### **Liabilities (2000-2999)**
+*   **2100** **Loans from Directors / Shareholders** - Money directors have lent to the company. *(Increases with a Credit to the bank account; Decreases with a Debit)*.
+*   **2200** **Pension Fund Payable** - Outstanding liability for pension contributions owed to the fund.
+
+#### **Equity (3000-3999)**
+*   **3000** **Owner's Capital Contribution** - Original and subsequent capital invested by the owners into the business.
+*   **3100** **Retained Earnings** - Cumulative net profit or loss from previous years.
+*   **3200** **Current Year Profit / (Loss)** - The net result of the current financial year. This account is closed into Retained Earnings at year-end.
+*   **3300** **Director's Drawings** - Personal withdrawals made by directors from the company, separate from their formal salary.
+
+#### **Revenue (4000-4999)**
+*   **4000** **Security Services Revenue** - Income earned from providing security, guarding, and VIP protection services.
+    *   **Automation Rule:** **ALL** deposits (Credits) from **"COROBRIK"**. **<< REMOVED "JORDAN MOYANE" >>**
+
+#### **Cost of Sales / Direct Costs (5000-5999)**
+*(These costs are directly tied to fulfilling security contracts and generating revenue)*
+*   **5010** **Salaries - Security Officers** - Gross salaries and wages for all security personnel, guards, and response team officers.
+    *   **Automation Rule:** **ALL** payments (Debits) with **"XG SALARIES"** in the description. **<< INCLUDES "JORDAN MOYANE" SALARY PAYMENTS >>**
+*   **5020** **Salaries - Operations Management** - Salaries for site managers, supervisors, and operations controllers (e.g., Dan Nkuna, Mawande Mjobo).
+*   **5030** **Labour Broker Fees** - Fees paid to external companies for providing labour.
+    *   **Automation Rule:** **ALL** payments (Debits) to **"NEO ENTLE LABOUR HUMAN RESOUR"**.
+*   **5040** **Equipment Rental & Communication** - Cost of renting communication equipment and purchasing airtime.
+    *   **Automation Rule:** **ALL** payments (Debits) to **"TWO WAY TECHNOLOGIES"**.
+*   **5050** **K9 Unit Expenses** - All costs related to the security dog unit.
+    *   **Automation Rule:** **ALL** payments (Debits) to **"RENT A DOG"**.
+*   **5060** **Site & Client Specific Expenses** - Direct costs incurred for a specific client or site (e.g., fuel for patrol vehicles, client-specific supplies).
+    *   **Automation Rule:** Payments to **"MBHONI MIYAMBO TRANSPORT"**. **<< REMOVED "ELLISPARK STADIUM" >>**
+*   **5070** **Uniforms & Protective Gear** - Cost of purchasing and maintaining security uniforms, boots, and protective equipment.
+
+#### **Operating Expenses (6000-6999)**
+*(These are the costs of running the company itself, not directly tied to a single security contract)*
+*   **6010** **Salaries - Administration & Directors** - Salaries for office staff, accountants, and the directors' remuneration for their managerial roles.
+    *   **Automation Rule:** Regular salary payments (Debits) to **"JEFFREY MAPHOSA"**.
+*   **6020** **Accounting & Bank Fees** - All bank charges, transaction fees, and account management fees.
+    *   **Automation Rule:** **ALL** transactions (Debits) with **"FEE"** in the description.
+*   **6030** **Insurance Expenses** - Premiums for business insurance, public liability insurance, vehicle insurance, etc.
+    *   **Automation Rule:** **ALL** transactions (Debits) with **"INSURANCE PREMIUM"** in the description (Miway, Liberty, Outsurance, etc.).
+*   **6040** **Office Rent** - Fixed lease payments for the company's office or operational premises.
+    *   **Automation Rule:** **ALL** payments (Debits) to **"ELLISPARK STADIUM XINGHIZANA"**. **<< MOVED FROM COST OF SALES >>**
+*   **6050** **Telephone & Internet** - Costs for the office landline, internet data, and admin mobile phones.
+    *   **Automation Rule:** **ALL** payments (Debits) for **"TELEPHONE ACCOUNT"**.
+*   **6060** **Pension Fund Contributions** - Employer's contributions to the pension fund on behalf of employees.
+    *   **Automation Rule:** **ALL** payments (Debits) with **"PENSION FUND CONTRIBUTION"** in the description.
+*   **6070** **Office Expenses** - Costs for stationery, printing, and other general office supplies.
+*   **6080** **Motor Vehicle Expenses (Admin)** - Fuel, maintenance, and licensing for administration vehicles.
+*   **6099** **Other Expenses** - A catch-all for legitimate business expenses that do not fit into any other category. *(Use sparingly and review manually)*.
+
+---
+
+### **Summary of Corrected Automation Rules for Data Import**
+
+| **If Transaction Description Contains...** | **Then Map to Account Code:** | **Account Name:** |
+| :--- | :--- | :--- |
+| **CREDIT:** "COROBRIK" | 4000 | Security Services Revenue |
+| **DEBIT:** "XG SALARIES" (incl. Jordan Moyane) | 5010 | Salaries - Security Officers |
+| **DEBIT:** "NEO ENTLE LABOUR" | 5030 | Labour Broker Fees |
+| **DEBIT:** "TWO WAY TECHNOLOGIES" | 5040 | Equipment Rental & Communication |
+| **DEBIT:** "RENT A DOG" | 5050 | K9 Unit Expenses |
+| **DEBIT:** "ELLISPARK STADIUM" | 6040 | Office Rent |
+| **DEBIT:** "FEE" | 6020 | Accounting & Bank Fees |
+| **DEBIT:** "INSURANCE PREMIUM" | 6030 | Insurance Expenses |
+| **DEBIT:** "TELEPHONE ACCOUNT" | 6050 | Telephone & Internet |
+| **DEBIT:** "PENSION FUND CONTRIBUTION" | 6060 | Pension Fund Contributions |
+| **DEBIT:** "JEFFREY MAPHOSA" (Salary) | 6010 | Salaries - Admin & Directors |
+| **CREDIT:** "JEFFREY MAPHOSA" (Repayment) | 1100 | Loans to Directors |
+
+This final version incorporates all your corrections:
+1.  **Revenue** is solely from Corobrik.
+2.  **Jordan Moyane** is correctly classified as a salary cost (Debit), not revenue (Credit).
+3.  **Ellispark Stadium** is correctly classified as an operating expense (Office Rent), not a direct cost.
+
+This Chart of Accounts now accurately reflects your business operations for precise financial reporting.
