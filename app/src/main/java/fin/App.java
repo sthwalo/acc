@@ -1142,68 +1142,99 @@ public class App {
     }
     
     public static void main(String[] args) {
-        App app = new App();
-        
-        if (args.length > 0) {
-            System.out.println(app.getGreeting(args[0]));
-        } else {
-            System.out.println(app.getGreeting(null));
-            
-            Scanner scanner = new Scanner(System.in);
-            boolean exit = false;
+        // Check if API mode is requested
+        if (args.length > 0 && "api".equals(args[0])) {
+            // Start API server mode
+            System.out.println("🚀 Starting FIN API Server...");
+            System.out.println("📊 Financial Management REST API");
+            System.out.println("🌐 CORS enabled for frontend at http://localhost:3000");
+            System.out.println("===============================================");
             
             try {
-                while (!exit) {
-                    app.showMenu();
-                    
-                    // Only check for input availability when running through Gradle
-                    // When running directly with java -jar, we want to wait for user input
-                    
-                    int choice = scanner.nextInt();
-                    scanner.nextLine(); // consume newline
-                    
-                    switch (choice) {
-                        case 1:
-                            app.handleCompanySetup(scanner);
-                            break;
-                        case 2:
-                            app.handleFiscalPeriodManagement(scanner);
-                            break;
-                        case 3:
-                            app.handleBankStatementImport(scanner);
-                            break;
-                        case 4:
-                            app.handleCsvImport(scanner);
-                            break;
-                        case 5:
-                            app.handleViewImportedData(scanner);
-                            break;
-                        case 6:
-                            app.handleReportGeneration(scanner);
-                            break;
-                        case 7:
-                            app.handleDataManagement(scanner);
-                            break;
-                        case 8:
-                            app.handleTransactionVerification(scanner);
-                            break;
-                        case 9:
-                            System.out.println("Current time: " + LocalDate.now());
-                            break;
-                        case 10:
-                            exit = true;
-                            System.out.println("Exiting FIN application. Goodbye!");
-                            break;
-                        default:
-                            System.out.println("Invalid choice. Please try again.");
-                    }
-                }
+                fin.api.ApiServer apiServer = new fin.api.ApiServer();
+                apiServer.start();
+                
+                // Keep the server running
+                System.out.println("💡 Press Ctrl+C to stop the server");
+                Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                    System.out.println("\n🛑 Shutting down API server...");
+                    apiServer.stop();
+                    System.out.println("✅ Server stopped successfully");
+                }));
+                
+                // Keep main thread alive
+                Thread.currentThread().join();
+                
             } catch (Exception e) {
-                System.out.println("Error: " + e.getMessage());
+                System.err.println("❌ Failed to start API server: " + e.getMessage());
                 e.printStackTrace();
-            } finally {
-                scanner.close();
+                System.exit(1);
             }
-        }
+        } else {
+            // Start console application mode (existing functionality)
+            App app = new App();
+            
+            if (args.length > 0) {
+                System.out.println(app.getGreeting(args[0]));
+            } else {
+                System.out.println(app.getGreeting(null));
+                
+                Scanner scanner = new Scanner(System.in);
+                boolean exit = false;
+                
+                try {
+                    while (!exit) {
+                        app.showMenu();
+                        
+                        // Only check for input availability when running through Gradle
+                        // When running directly with java -jar, we want to wait for user input
+                        
+                        int choice = scanner.nextInt();
+                        scanner.nextLine(); // consume newline
+                        
+                        switch (choice) {
+                            case 1:
+                                app.handleCompanySetup(scanner);
+                                break;
+                            case 2:
+                                app.handleFiscalPeriodManagement(scanner);
+                                break;
+                            case 3:
+                                app.handleBankStatementImport(scanner);
+                                break;
+                            case 4:
+                                app.handleCsvImport(scanner);
+                                break;
+                            case 5:
+                                app.handleViewImportedData(scanner);
+                                break;
+                            case 6:
+                                app.handleReportGeneration(scanner);
+                                break;
+                            case 7:
+                                app.handleDataManagement(scanner);
+                                break;
+                            case 8:
+                                app.handleTransactionVerification(scanner);
+                                break;
+                            case 9:
+                                System.out.println("Current time: " + LocalDate.now());
+                                break;
+                            case 10:
+                                exit = true;
+                                System.out.println("Exiting FIN application. Goodbye!");
+                                break;
+                            default:
+                                System.out.println("Invalid choice. Please try again.");
+                        }
+                    } // End of while loop
+                } catch (Exception e) {
+                    System.out.println("Error: " + e.getMessage());
+                    e.printStackTrace();
+                } finally {
+                    scanner.close();
+                }
+            } // End of else block (inner else for args check)
+        } // End of else block for console mode
     }
 }

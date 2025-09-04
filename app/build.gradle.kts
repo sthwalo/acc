@@ -37,6 +37,11 @@ dependencies {
     implementation("org.bouncycastle:bcprov-jdk15on:1.70")
     implementation("org.bouncycastle:bcmail-jdk15on:1.70")
     implementation("com.itextpdf:itextpdf:5.5.13.3")
+    
+    // REST API dependencies
+    implementation("com.sparkjava:spark-core:2.9.4")
+    implementation("com.google.code.gson:gson:2.10.1")
+    implementation("org.slf4j:slf4j-simple:2.0.7")
 }
 
 // Apply a specific Java toolchain to ease working on different environments.
