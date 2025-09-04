@@ -3,3 +3,126 @@
 
 # Ignore Gradle build output directory
 build
+
+# ========================================
+# SENSITIVE DATA - NEVER COMMIT TO PUBLIC REPO
+# ========================================
+
+# Database files containing real financial data
+*.db
+*.sqlite
+*.sqlite3
+fin_database.db
+app/fin_database.db
+
+# Bank statements and financial documents (PDFs)
+bank/
+*.pdf
+
+# Cash transaction documents
+cash/
+
+# Processed financial data exports
+*.csv
+processed_statement_*.csv
+
+# Reports containing sensitive financial information
+reports/
+
+# ========================================
+# BUILD AND DEVELOPMENT FILES
+# ========================================
+
+# Compiled Java classes
+*.class
+*.jar
+!gradle/wrapper/gradle-wrapper.jar
+
+# Java build artifacts
+target/
+out/
+bin/
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# System files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+*.bak
+*.swp
+*.swo
+*~
+
+# ========================================
+# ENVIRONMENT AND CONFIGURATION
+# ========================================
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Configuration files with sensitive data
+config/local.properties
+config/production.properties
+application-local.yml
+application-production.yml
+
+# API keys and secrets
+secrets.properties
+keys.properties
+*.key
+*.pem
+*.p12
+*.keystore
+
+# ========================================
+# TESTING AND DEBUGGING
+# ========================================
+
+# Test outputs
+test-output/
+test-results/
+coverage/
+
+# Debug files
+debug.log
+*.debug
+
+# Performance profiling
+*.hprof
+*.prof
+
+# ========================================
+# DOCUMENTATION EXCLUSIONS
+# ========================================
+
+# Keep documentation but exclude sensitive examples
+# docs/ - Keep general documentation
+# !docs/examples/sensitive/
+
+# ========================================
+# SAMPLE DATA ONLY
+# ========================================
+
+# If you want to include sample/demo data, create separate folders:
+# sample-data/
+# demo-bank-statements/
+# test-fixtures/
