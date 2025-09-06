@@ -39,8 +39,10 @@ dependencies {
     // This dependency is used by the application.
     implementation(libs.guava)
     
-    // SQLite JDBC driver
-    implementation("org.xerial:sqlite-jdbc:3.36.0")
+    // Database drivers
+    implementation("org.postgresql:postgresql:42.7.3")  // PostgreSQL driver
+    implementation("com.zaxxer:HikariCP:5.0.1")         // Connection pooling
+    implementation("org.xerial:sqlite-jdbc:3.36.0")     // Keep SQLite for testing
     
     // PDF libraries
     implementation("org.apache.pdfbox:pdfbox:3.0.0")  // Latest stable version
@@ -67,6 +69,11 @@ java {
 application {
     // Define the main class for the application.
     mainClass = "fin.App"
+}
+
+// Configure the run task to pass system properties
+tasks.named<JavaExec>("run") {
+    systemProperties = System.getProperties().toMap() as Map<String, Any>
 }
 
 tasks.named<Test>("test") {

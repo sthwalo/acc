@@ -1,6 +1,7 @@
 package fin.service;
 
 import fin.model.*;
+import fin.config.DatabaseConfig;
 import java.sql.*;
 import java.math.BigDecimal;
 import java.time.*;
@@ -26,6 +27,13 @@ public class DataManagementService {
     }
 
     private void initializeDatabase() {
+        // Skip table creation for PostgreSQL since schema already exists
+        if (DatabaseConfig.isUsingPostgreSQL()) {
+            LOGGER.info("Using PostgreSQL - skipping table creation (schema already exists)");
+            return;
+        }
+        
+        // Create tables for SQLite only
         String sql = 
             "CREATE TABLE IF NOT EXISTS manual_invoices (" +
             "id INTEGER PRIMARY KEY AUTOINCREMENT, " +

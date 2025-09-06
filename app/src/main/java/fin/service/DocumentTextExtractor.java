@@ -21,10 +21,11 @@ import java.util.stream.Collectors;
  * - TextExtractor
  */
 public class DocumentTextExtractor {
-    private static final Pattern STATEMENT_DATE_PATTERN = Pattern.compile("Statement date:\\s*([\\d\\s]+[A-Za-z]+[\\d\\s]+)");
+    private static final Pattern STATEMENT_DATE_PATTERN = Pattern.compile("Statement from\\s+(.+)");
     private static final Pattern ACCOUNT_NUMBER_PATTERN = Pattern.compile("Account number:\\s*(\\d+[\\s\\d]*\\d+)");
     private String accountNumber;
     private String statementPeriod;
+    private boolean isStandardBankFormat = false;
 
     /**
      * Parses a document and extracts its content line by line.
@@ -35,10 +36,25 @@ public class DocumentTextExtractor {
      */
     public List<String> parseDocument(File file) throws IOException {
         try (PDDocument document = Loader.loadPDF(file)) {
+            // First pass: detect bank format
+            PDFTextStripper firstPassStripper = createStripper();
+            String firstPassText = firstPassStripper.getText(document);
+            detectBankFormat(firstPassText);
+            
+            // Second pass: extract with appropriate format
             PDFTextStripper stripper = createStripper();
+            
+            // Use layout preservation for Standard Bank tabular format
+            if (isStandardBankFormat) {
+                stripper.setLineSeparator("\n");
+                stripper.setWordSeparator(" ");
+                stripper.setArticleStart("");
+                stripper.setArticleEnd("");
+            }
+            
             String text = stripper.getText(document);
             List<String> lines = Arrays.stream(text.split("\\r?\\n"))
-                                     .map(String::trim)
+                                     .map(line -> isStandardBankFormat ? line : line.trim()) // Preserve spacing for Standard Bank
                                      .filter(line -> !line.isEmpty())
                                      .collect(Collectors.toList());
             
@@ -47,6 +63,29 @@ public class DocumentTextExtractor {
             
             return lines;
         }
+    }
+
+    /**
+     * Detects the bank format from the PDF text
+     */
+    private void detectBankFormat(String text) {
+        // Check for Standard Bank indicators
+        if (text.contains("STANDARD BANK") || 
+            text.contains("standardbank.co.za") ||
+            text.contains("BizDirect Contact Centre") ||
+            (text.contains("Service") && text.contains("Fee") && 
+             text.contains("Debits") && text.contains("Credits") && 
+             text.contains("Date") && text.contains("Balance"))) {
+            isStandardBankFormat = true;
+            System.out.println("📊 Detected Standard Bank tabular format");
+        }
+    }
+
+    /**
+     * Returns true if this document is in Standard Bank tabular format
+     */
+    public boolean isStandardBankFormat() {
+        return isStandardBankFormat;
     }
 
     private void extractMetadata(List<String> lines) {

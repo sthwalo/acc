@@ -2,6 +2,7 @@ package fin.service;
 
 import fin.model.BankTransaction;
 import fin.model.Company;
+import fin.model.FiscalPeriod;
 import fin.model.parser.ParsedTransaction;
 import fin.service.parser.*;
 import fin.repository.BankTransactionRepository;
@@ -12,6 +13,8 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * New service that orchestrates bank statement processing using the parser framework.
@@ -22,14 +25,18 @@ public class BankStatementProcessingService {
     private final DocumentTextExtractor textExtractor;
     private final BankTransactionRepository transactionRepository;
     private final BankTransactionValidator validator;
+    private final CompanyService companyService;
 
     public BankStatementProcessingService(String dbUrl) {
         this.textExtractor = new DocumentTextExtractor();
         this.transactionRepository = new BankTransactionRepository(dbUrl);
         this.validator = new BankTransactionValidator();
+        this.companyService = new CompanyService(dbUrl);
         this.parsers = new ArrayList<>();
         
         // Register parsers in order of specificity
+        // Standard Bank tabular parser first for its specific format
+        parsers.add(new StandardBankTabularParser());
         parsers.add(new ServiceFeeParser());
         parsers.add(new CreditTransactionParser());
         parsers.add(new MultiTransactionParser());
@@ -45,11 +52,9 @@ public class BankStatementProcessingService {
             
             // Update each transaction with metadata from the document
             String accountNumber = textExtractor.getAccountNumber();
-            String statementPeriod = textExtractor.getStatementPeriod();
             
             for (BankTransaction transaction : transactions) {
                 transaction.setAccountNumber(accountNumber);
-                // TODO: Parse and set statement period once FiscalPeriod support is added
             }
             
             // Validate and save each transaction
@@ -113,38 +118,124 @@ public class BankStatementProcessingService {
     }
 
     private TransactionParsingContext createParsingContext(String pdfPath) {
-        // TODO: Extract metadata from PDF for context
+        // Extract statement date from the PDF content
+        LocalDate statementDate = extractStatementDateFromPdf();
+        if (statementDate == null) {
+            // Fallback to a date in the correct fiscal year (2024)
+            statementDate = LocalDate.of(2024, 6, 30); // Mid fiscal year
+        }
+        
         return new TransactionParsingContext.Builder()
-            .statementDate(LocalDate.now())  // Temporary
+            .statementDate(statementDate)
             .sourceFile(pdfPath)
             .build();
+    }
+    
+    /**
+     * Extract statement date from the PDF content.
+     * Parses the statement period to get the appropriate year.
+     */
+    private LocalDate extractStatementDateFromPdf() {
+        String statementPeriod = textExtractor.getStatementPeriod();
+        if (statementPeriod == null || statementPeriod.isEmpty()) {
+            return null;
+        }
+        
+        try {
+            // Parse statement period like "16 January 2025 to 15 February 2025" or "01 Jan 2024 to 31 Jan 2024"
+            // We want to extract the year from the end date
+            Pattern datePattern = Pattern.compile("to\\s*(\\d{1,2}\\s+\\w+\\s+(\\d{4}))");
+            Matcher matcher = datePattern.matcher(statementPeriod);
+            if (matcher.find()) {
+                String yearStr = matcher.group(2);
+                int year = Integer.parseInt(yearStr);
+                
+                // Return mid-year date for that year
+                return LocalDate.of(year, 6, 30);
+            }
+            
+            // Alternative pattern: look for any 4-digit year
+            Pattern yearPattern = Pattern.compile("(\\d{4})");
+            Matcher yearMatcher = yearPattern.matcher(statementPeriod);
+            if (yearMatcher.find()) {
+                int year = Integer.parseInt(yearMatcher.group(1));
+                return LocalDate.of(year, 6, 30);
+            }
+            
+        } catch (Exception e) {
+            System.err.println("Failed to parse statement period: " + statementPeriod);
+        }
+        
+        return null;
     }
 
     private List<ParsedTransaction> parseTransactions(List<String> lines, TransactionParsingContext context) {
         List<ParsedTransaction> results = new ArrayList<>();
         
+        // Check if we have Standard Bank tabular format
+        boolean isStandardBank = textExtractor.isStandardBankFormat();
+        StandardBankTabularParser standardBankParser = null;
+        
+        if (isStandardBank) {
+            // Find the StandardBankTabularParser
+            for (TransactionParser parser : parsers) {
+                if (parser instanceof StandardBankTabularParser) {
+                    standardBankParser = (StandardBankTabularParser) parser;
+                    break;
+                }
+            }
+        }
+        
         for (String line : lines) {
-            // Skip empty lines and header/footer lines
-            if (line == null || line.trim().isEmpty() || !textExtractor.isTransaction(line)) {
+            // Skip empty lines
+            if (line == null || line.trim().isEmpty()) {
                 continue;
             }
             
-            // Find the first parser that can handle this line
-            for (TransactionParser parser : parsers) {
-                if (parser.canParse(line, context)) {
+            // For Standard Bank format, use special handling
+            if (standardBankParser != null) {
+                if (standardBankParser.canParse(line, context)) {
                     try {
-                        ParsedTransaction parsed = parser.parse(line, context);
+                        ParsedTransaction parsed = standardBankParser.parse(line, context);
                         if (parsed != null) {
                             results.add(parsed);
-                            break; // Stop after first successful parse
                         }
+                        // Continue processing even if null (description line)
+                        continue;
                     } catch (Exception e) {
-                        // Log parsing error but continue with other lines
-                        System.err.println("Failed to parse line: " + line + " - " + e.getMessage());
-                        break; // Skip this line and continue with next
+                        System.err.println("StandardBank parser failed for line: " + line + " - " + e.getMessage());
                     }
                 }
             }
+            
+            // Skip header/footer lines for non-Standard Bank processing
+            if (!isStandardBank && !textExtractor.isTransaction(line)) {
+                continue;
+            }
+            
+            // For other formats, use the original logic
+            if (!isStandardBank) {
+                for (TransactionParser parser : parsers) {
+                    if (!(parser instanceof StandardBankTabularParser) && parser.canParse(line, context)) {
+                        try {
+                            ParsedTransaction parsed = parser.parse(line, context);
+                            if (parsed != null) {
+                                results.add(parsed);
+                                break; // Stop after first successful parse
+                            }
+                        } catch (Exception e) {
+                            // Log parsing error but continue with other lines
+                            System.err.println("Failed to parse line: " + line + " - " + e.getMessage());
+                            break; // Skip this line and continue with next
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Reset StandardBank parser state if used
+        if (standardBankParser != null) {
+            standardBankParser.reset();
         }
         
         return results;
@@ -158,6 +249,12 @@ public class BankStatementProcessingService {
             transaction.setCompanyId(company.getId());
             transaction.setTransactionDate(parsed.getDate());
             transaction.setDetails(parsed.getDescription());
+            
+            // Determine fiscal period based on transaction date
+            FiscalPeriod fiscalPeriod = findFiscalPeriodForDate(company.getId(), parsed.getDate());
+            if (fiscalPeriod != null) {
+                transaction.setFiscalPeriodId(fiscalPeriod.getId());
+            }
             
             // Set amounts based on transaction type
             switch (parsed.getType()) {
@@ -176,5 +273,23 @@ public class BankStatementProcessingService {
         }
         
         return transactions;
+    }
+    
+    /**
+     * Find the fiscal period that contains the given transaction date
+     */
+    private FiscalPeriod findFiscalPeriodForDate(Long companyId, LocalDate transactionDate) {
+        List<FiscalPeriod> fiscalPeriods = companyService.getFiscalPeriodsByCompany(companyId);
+        
+        for (FiscalPeriod period : fiscalPeriods) {
+            if (!transactionDate.isBefore(period.getStartDate()) && 
+                !transactionDate.isAfter(period.getEndDate())) {
+                return period;
+            }
+        }
+        
+        // No matching fiscal period found
+        System.err.println("Warning: No fiscal period found for transaction date: " + transactionDate);
+        return null;
     }
 }

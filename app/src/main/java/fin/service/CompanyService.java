@@ -2,6 +2,7 @@ package fin.service;
 
 import fin.model.Company;
 import fin.model.FiscalPeriod;
+import fin.config.DatabaseConfig;
 
 import java.sql.*;
 import java.time.LocalDateTime;
@@ -17,6 +18,13 @@ public class CompanyService {
     }
     
     private void initializeDatabase() {
+        // Skip table creation if using PostgreSQL - tables are created via migration script
+        if (DatabaseConfig.isUsingPostgreSQL()) {
+            System.out.println("📊 Using PostgreSQL - schema already exists");
+            return;
+        }
+        
+        // SQLite table creation (for testing only)
         try (Connection conn = DriverManager.getConnection(dbUrl);
              Statement stmt = conn.createStatement()) {
             
@@ -55,6 +63,8 @@ public class CompanyService {
                     "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
                     "FOREIGN KEY (company_id) REFERENCES companies(id)" +
                     ")");
+            
+            System.out.println("📊 SQLite tables initialized");
             
         } catch (SQLException e) {
             System.err.println("Error initializing database: " + e.getMessage());

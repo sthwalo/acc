@@ -1,6 +1,7 @@
 package fin.service;
 
 import fin.model.*;
+import fin.config.DatabaseConfig;
 import java.sql.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -29,7 +30,13 @@ public class AccountService {
     }
     
     private void initializeDatabase() {
-        // Database initialization is handled by Flyway migrations
+        // Skip table creation if using PostgreSQL - tables are created via migration script
+        if (DatabaseConfig.isUsingPostgreSQL()) {
+            System.out.println("📊 Using PostgreSQL - account tables already exist");
+            return;
+        }
+        
+        // Database initialization is handled by Flyway migrations for SQLite
         // This method is kept for any additional initialization
     }
     

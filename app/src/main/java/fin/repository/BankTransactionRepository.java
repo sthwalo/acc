@@ -21,8 +21,8 @@ public class BankTransactionRepository implements BaseRepository<BankTransaction
     @Override
     public BankTransaction save(BankTransaction transaction) {
         String sql = transaction.getId() == null ? 
-            "INSERT INTO bank_transactions (company_id, fiscal_period_id, transaction_date, details, debit_amount, credit_amount, balance, is_service_fee, account_number, statement_period, source_file) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)" :
-            "UPDATE bank_transactions SET company_id = ?, fiscal_period_id = ?, transaction_date = ?, details = ?, debit_amount = ?, credit_amount = ?, balance = ?, is_service_fee = ?, account_number = ?, statement_period = ?, source_file = ? WHERE id = ?";
+            "INSERT INTO bank_transactions (company_id, fiscal_period_id, transaction_date, details, debit_amount, credit_amount, balance, service_fee, account_number, statement_period, source_file) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)" :
+            "UPDATE bank_transactions SET company_id = ?, fiscal_period_id = ?, transaction_date = ?, details = ?, debit_amount = ?, credit_amount = ?, balance = ?, service_fee = ?, account_number = ?, statement_period = ?, source_file = ? WHERE id = ?";
 
         try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
