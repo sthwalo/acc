@@ -2,6 +2,7 @@ package fin.service;
 
 import fin.model.BankTransaction;
 import fin.model.FiscalPeriod;
+import fin.config.DatabaseConfig;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -30,6 +31,13 @@ public class CsvImportService {
     }
     
     public void initializeDatabase() {
+        // Skip table creation if using PostgreSQL - tables are created via migration script
+        if (DatabaseConfig.isUsingPostgreSQL()) {
+            System.out.println("📊 Using PostgreSQL - bank_transactions table already exists");
+            return;
+        }
+        
+        // SQLite table creation (for testing only)
         try (Connection connection = DriverManager.getConnection(dbUrl)) {
             String createTableSQL = "CREATE TABLE IF NOT EXISTS bank_transactions (" +
                     "id INTEGER PRIMARY KEY AUTOINCREMENT, " +

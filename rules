@@ -80,3 +80,9 @@ This final version incorporates all your corrections:
 3.  **Ellispark Stadium** is correctly classified as an operating expense (Office Rent), not a direct cost.
 
 This Chart of Accounts now accurately reflects your business operations for precise financial reporting.
+
+Next Steps:
+
+Update transaction parsers to handle Standard Bank's tabular format
+Implement file upload for the web frontend
+Add more comprehensive transaction validation

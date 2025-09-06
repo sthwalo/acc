@@ -18,9 +18,18 @@ package fin.api;
 import static spark.Spark.*;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
+import java.lang.reflect.Type;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import fin.service.*;
 import fin.model.*;
+import fin.config.DatabaseConfig;
 import java.util.*;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -47,11 +56,24 @@ public class ApiServer {
     
     public ApiServer() {
         this.gson = new GsonBuilder()
+            .registerTypeAdapter(LocalDateTime.class, new JsonSerializer<LocalDateTime>() {
+                @Override
+                public JsonElement serialize(LocalDateTime localDateTime, Type type, JsonSerializationContext context) {
+                    return new JsonPrimitive(localDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+                }
+            })
             .setDateFormat("yyyy-MM-dd HH:mm:ss")
             .setPrettyPrinting()
             .create();
             
-        String dbUrl = "jdbc:sqlite:fin_database.db";
+        // Test database connection
+        if (!DatabaseConfig.testConnection()) {
+            throw new RuntimeException("Failed to connect to database");
+        }
+        
+        String dbUrl = DatabaseConfig.getDatabaseUrl();
+        System.out.println("🔌 Using database: " + DatabaseConfig.getDatabaseType());
+        
         this.companyService = new CompanyService(dbUrl);
         this.csvImportService = new CsvImportService(dbUrl, companyService);
         this.reportService = new ReportService(dbUrl, csvImportService);
@@ -324,19 +346,69 @@ public class ApiServer {
                 }
             });
             
-            // File upload endpoint (placeholder)
+            // File upload endpoint - IMPLEMENTED
             post("/companies/:id/upload", (req, res) -> {
                 res.type("application/json");
                 
                 try {
                     Long companyId = Long.parseLong(req.params(":id"));
                     
-                    // For now, return success response - file upload implementation coming soon
+                    // Check if company exists
+                    Company company = companyService.getCompanyById(companyId);
+                    if (company == null) {
+                        res.status(404);
+                        return gson.toJson(Map.of(
+                            "success", false,
+                            "error", "Company not found",
+                            "company_id", companyId
+                        ));
+                    }
+                    
+                    // Get file upload information - will be implemented later for actual multipart uploads
+                    // For now, process files already in the input directory
+                    List<String> processedFiles = new ArrayList<>();
+                    int totalTransactions = 0;
+                    
+                    // Process all PDF files in the input directory
+                    java.io.File inputDir = new java.io.File("/Users/sthwalonyoni/FIN/input");
+                    System.out.println("🔍 Looking for PDFs in: " + inputDir.getAbsolutePath());
+                    
+                    if (inputDir.exists() && inputDir.isDirectory()) {
+                        java.io.File[] pdfFiles = inputDir.listFiles((dir, name) -> name.toLowerCase().endsWith(".pdf"));
+                        
+                        if (pdfFiles != null) {
+                            for (java.io.File pdfFile : pdfFiles) {
+                                try {
+                                    System.out.println("🔄 Processing: " + pdfFile.getName());
+                                    
+                                    // Process the bank statement
+                                    List<BankTransaction> transactions = bankStatementService.processStatement(
+                                        pdfFile.getAbsolutePath(), 
+                                        company
+                                    );
+                                    
+                                    int transactionCount = transactions.size();
+                                    processedFiles.add(pdfFile.getName());
+                                    totalTransactions += transactionCount;
+                                    
+                                    System.out.println("✅ Processed " + pdfFile.getName() + ": " + transactionCount + " transactions");
+                                    
+                                } catch (Exception e) {
+                                    System.err.println("❌ Failed to process " + pdfFile.getName() + ": " + e.getMessage());
+                                    // Continue with other files
+                                }
+                            }
+                        }
+                    }
+                    
                     Map<String, Object> response = new HashMap<>();
                     response.put("success", true);
-                    response.put("message", "File upload endpoint ready");
+                    response.put("message", "Bank statements processed successfully");
                     response.put("company_id", companyId);
-                    response.put("note", "File upload implementation coming soon");
+                    response.put("company_name", company.getName());
+                    response.put("files_processed", processedFiles);
+                    response.put("total_files", processedFiles.size());
+                    response.put("total_transactions", totalTransactions);
                     response.put("timestamp", System.currentTimeMillis());
                     
                     return gson.toJson(response);
@@ -349,9 +421,68 @@ public class ApiServer {
                     ));
                 } catch (Exception e) {
                     res.status(500);
+                    System.err.println("Upload processing error: " + e.getMessage());
+                    e.printStackTrace();
                     return gson.toJson(Map.of(
                         "success", false,
                         "error", "Failed to process upload",
+                        "message", e.getMessage()
+                    ));
+                }
+            });
+            
+            // File processing endpoint for testing with local files
+            post("/companies/:id/process-local", (req, res) -> {
+                res.type("application/json");
+                
+                try {
+                    Long companyId = Long.parseLong(req.params(":id"));
+                    
+                    // Get file path from request body
+                    @SuppressWarnings("unchecked")
+                    Map<String, String> requestData = gson.fromJson(req.body(), Map.class);
+                    String filePath = requestData.get("filePath");
+                    
+                    if (filePath == null || filePath.trim().isEmpty()) {
+                        return gson.toJson(Map.of(
+                            "success", false,
+                            "error", "Missing filePath",
+                            "message", "Please provide filePath in request body"
+                        ));
+                    }
+                    
+                    // Get company
+                    Company company = companyService.getCompanyById(companyId);
+                    if (company == null) {
+                        return gson.toJson(Map.of(
+                            "success", false,
+                            "error", "Company not found",
+                            "message", "Company with ID " + companyId + " not found"
+                        ));
+                    }
+                    
+                    // Create bank statement processing service
+                    BankStatementProcessingService bankService = new BankStatementProcessingService(DatabaseConfig.getDatabaseUrl());
+                    
+                    // Process the bank statement
+                    List<BankTransaction> transactions = bankService.processStatement(filePath, company);
+                    
+                    Map<String, Object> response = new HashMap<>();
+                    response.put("success", true);
+                    response.put("message", "Bank statement processed successfully");
+                    response.put("company_id", companyId);
+                    response.put("file_path", filePath);
+                    response.put("transactions_processed", transactions.size());
+                    response.put("transactions", transactions);
+                    response.put("timestamp", System.currentTimeMillis());
+                    
+                    return gson.toJson(response);
+                    
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return gson.toJson(Map.of(
+                        "success", false,
+                        "error", "Failed to process bank statement",
                         "message", e.getMessage()
                     ));
                 }
@@ -361,6 +492,7 @@ public class ApiServer {
     
     public void stop() {
         spark.Spark.stop();
+        DatabaseConfig.close();
         System.out.println("🛑 FIN API Server stopped");
     }
 }

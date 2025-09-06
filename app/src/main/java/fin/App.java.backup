@@ -1147,7 +1147,6 @@ public class App {
         return null;
     }
     
-    
     public static void main(String[] args) {
         // License compliance check
         if (!LicenseManager.checkLicenseCompliance()) {
@@ -1166,7 +1165,8 @@ public class App {
                 fin.api.ApiServer apiServer = new fin.api.ApiServer();
                 apiServer.start();
                 
-                // Add shutdown hook for graceful shutdown
+                // Keep the server running
+                System.out.println("💡 Press Ctrl+C to stop the server");
                 Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                     System.out.println("\n🛑 Shutting down API server...");
                     apiServer.stop();
@@ -1182,31 +1182,87 @@ public class App {
                 System.exit(1);
             }
         } else {
-            // Console application mode
+            // Console application mode - but check for input availability first
             App app = new App();
             System.out.println(app.getGreeting(null));
             
-            // Check if console is available - if not, suggest API mode
-            if (System.console() == null) {
-                System.out.println("⚠️  Interactive console not available in this environment.");
-                System.out.println("🚀 Please use API mode instead:");
-                System.out.println("   ./gradlew run --args=\"api\"");
-                System.out.println("   or: java -jar app/build/libs/app.jar api");
+            // Check if we can use interactive mode
+            boolean canUseInteractive = true;
+            try {
+                // Test if System.in is properly available
+                if (System.console() == null) {
+                    canUseInteractive = false;
+                }
+            } catch (Exception e) {
+                canUseInteractive = false;
+            }
+            
+            if (!canUseInteractive) {
+                System.out.println("⚠️  Interactive mode not available in this environment.");
+                System.out.println("🚀 Starting in API mode instead...");
+                System.out.println("💡 You can:");
+                System.out.println("   • Use the test suite: ./interactive-test.sh");
+                System.out.println("   • Access API at: http://localhost:8080/api/v1/health");
+                System.out.println("   • View docs at: http://localhost:8080/api/v1/docs");
                 System.out.println();
-                System.out.println("💡 You can also use the test suite: ./interactive-test.sh");
+                
+                // Start API server automatically
+                String[] apiArgs = {"api"};
+                main(apiArgs);
                 return;
+            }
+            
+            // Interactive mode available - proceed normally
+            
+            // Check if System.in is available
+            try {
+                if (System.in.available() == 0 && System.console() == null) {
+                    System.out.println("⚠️  Warning: Console input may not be available.");
+                    System.out.println("💡 For better experience, try: ./gradlew run");
+                    System.out.println("   Or for API mode: ./gradlew run --args=\"api\"");
+                    System.out.println();
+                }
+            } catch (java.io.IOException e) {
+                // Ignore - just proceed with scanner
             }
             
             Scanner scanner = new Scanner(System.in);
             boolean exit = false;
-            
-            try {
-                while (!exit) {
-                    app.showMenu();
-                    
-                    try {
-                        String input = scanner.nextLine().trim();
-                        int choice = Integer.parseInt(input);
+                
+                try {
+                    while (!exit) {
+                        app.showMenu();
+                        
+                        // Check if scanner has input available
+                        String input = null;
+                        try {
+                            if (scanner.hasNextLine()) {
+                                input = scanner.nextLine().trim();
+                            } else {
+                                System.out.println("❌ No input available. Switching to API mode...");
+                                System.out.println("💡 Starting API server instead:");
+                                // Switch to API mode
+                                String[] apiArgs = {"api"};
+                                main(apiArgs);
+                                return;
+                            }
+                        } catch (Exception inputError) {
+                            System.out.println("❌ Input error: " + inputError.getMessage());
+                            System.out.println("💡 Switching to API mode...");
+                            // Switch to API mode
+                            String[] apiArgs = {"api"};
+                            main(apiArgs);
+                            return;
+                        }
+                        
+                        // Parse the input
+                        int choice;
+                        try {
+                            choice = Integer.parseInt(input);
+                        } catch (NumberFormatException e) {
+                            System.out.println("❌ Invalid input. Please enter a number between 1-10.");
+                            continue;
+                        }
                         
                         switch (choice) {
                             case 1:
@@ -1243,16 +1299,21 @@ public class App {
                             default:
                                 System.out.println("Invalid choice. Please try again.");
                         }
-                    } catch (NumberFormatException e) {
-                        System.out.println("❌ Invalid input. Please enter a number between 1-10.");
-                    } catch (Exception e) {
-                        System.out.println("❌ Input error: " + e.getMessage());
-                        System.out.println("💡 Try using API mode: ./gradlew run --args=\"api\"");
+                    } // End of while loop
+                } catch (Exception e) {
+                    if (e instanceof java.util.NoSuchElementException) {
+                        System.out.println("❌ Input error: Unable to read from console.");
+                        System.out.println("💡 Try running with: ./gradlew run");
+                        System.out.println("   Or for API mode: ./gradlew run --args=\"api\"");
+                    } else {
+                        System.out.println("❌ Application error: " + (e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName()));
                     }
+                    System.out.println("\n🔧 Debug info:");
+                    e.printStackTrace();
+                } finally {
+                    scanner.close();
                 }
-            } finally {
-                scanner.close();
-            }
-        }
-    }
+            } // End of interactive mode
+        } // End of console mode
+    } // End of main method
 }
