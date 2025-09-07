@@ -11,7 +11,7 @@ This guide shows you how to run your **Java backend (acc)** and **TypeScript fro
 #### Terminal 1: Java Backend (Port 8080)
 ```bash
 # Navigate to your backend
-cd /Users/sthwalonyoni/FIN
+cd /path/to/your/FIN
 
 # Option A: Run console application (current)
 java -jar app/build/libs/app.jar
@@ -312,7 +312,7 @@ export function ConnectionStatus() {
 #### 3.1 Backend Build & Start
 ```bash
 # Terminal 1: Backend
-cd /Users/sthwalonyoni/FIN
+cd /path/to/your/FIN
 
 # Build the project
 ./gradlew build
@@ -367,7 +367,7 @@ Once both systems are running:
 ### **Daily Development:**
 ```bash
 # Terminal 1: Start backend
-cd /Users/sthwalonyoni/FIN && java -jar app/build/libs/app.jar api
+cd /path/to/your/FIN && java -jar app/build/libs/app.jar api
 
 # Terminal 2: Start frontend  
 cd /path/to/drimacc && npm run dev
@@ -430,7 +430,7 @@ echo "🚀 Starting Full-Stack FIN System..."
 
 # Start backend in background
 echo "📊 Starting Java Backend..."
-cd /Users/sthwalonyoni/FIN
+cd /path/to/your/FIN
 java -jar app/build/libs/app.jar api &
 BACKEND_PID=$!
 
