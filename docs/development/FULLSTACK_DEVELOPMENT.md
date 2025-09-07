@@ -6,7 +6,7 @@
 
 ```bash
 # Navigate to your FIN backend directory
-cd /Users/sthwalonyoni/FIN
+cd /path/to/your/FIN
 
 # Start both backend and frontend
 ./start-fullstack.sh

@@ -24,6 +24,7 @@ license_verification.log
 # ========================================
 
 # Database files containing real financial data
+.env
 *.db
 *.sqlite
 *.sqlite3
@@ -32,10 +33,16 @@ app/fin_database.db
 
 # Bank statements and financial documents (PDFs)
 bank/
+input/
 *.pdf
+Commands
+
 
 # Cash transaction documents
 cash/
+#input/
+#exports/
+
 
 # Processed financial data exports
 *.csv
@@ -43,6 +50,8 @@ processed_statement_*.csv
 
 # Reports containing sensitive financial information
 reports/
+scripts/
+
 
 # ========================================
 # BUILD AND DEVELOPMENT FILES
@@ -129,9 +138,16 @@ debug.log
 # DOCUMENTATION EXCLUSIONS
 # ========================================
 
-# Keep documentation but exclude sensitive examples
-# docs/ - Keep general documentation
-# !docs/examples/sensitive/
+# Keep documentation but exclude files with sensitive information
+docs/technical/DATABASE_REFERENCE.md
+docs/development/ENHANCED_PARSER_COMPLETION_REPORT.md
+
+# Exclude any docs with real credentials or sensitive data
+docs/**/credentials.md
+docs/**/passwords.md
+docs/**/*_credentials_*.md
+docs/**/*_sensitive_*.md
+cmd.txt
 
 # ========================================
 # SAMPLE DATA ONLY

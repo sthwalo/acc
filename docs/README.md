@@ -1,15 +1,43 @@
-# FIN Application
+# FIN Documentation
 
-## Project Overview
+This directory contains comprehensive documentation for the FIN Financial Management System.
 
-FIN is a Java application built with Gradle that demonstrates interactive console application development. Originally created as a simple "Hello World" application, it has been enhanced to include an interactive menu system, command-line argument support, and additional features.
+## Documentation Structure
 
-## Key Features
+### 📋 Business Documentation ([business/](business/))
+Business strategy, licensing, and legal documents:
+- [Business Model Options](business/BUSINESS_MODEL_OPTIONS.md) - Revenue and licensing strategies
+- [Commercial License](business/COMMERCIAL_LICENSE.md) - Commercial licensing terms
+- [Licensing Guide](business/LICENSING.md) - License usage and compliance
+- [IP Protection Strategy](business/IP_PROTECTION_STRATEGY.md) - Intellectual property protection
 
-- Interactive console menu interface
-- Command-line argument support for personalized greetings
-- Current time display functionality
-- Unit tests for application functionality
+### 🔧 Development Documentation ([development/](development/))
+Development guides, progress reports, and setup instructions:
+- [Clean Application Guide](development/CLEAN_APPLICATION_GUIDE.md) - Application cleanup procedures
+- [Enhanced Parser Completion Report](development/ENHANCED_PARSER_COMPLETION_REPORT.md) - Parser development progress
+- [Frontend Component Placement](development/FRONTEND_COMPONENT_PLACEMENT.md) - UI component organization
+- [Fullstack Development Guide](development/FULLSTACK_DEVELOPMENT.md) - Full-stack development setup
+- [Quick Start Guide](development/QUICK_START.md) - Getting started quickly
+
+### ⚙️ Technical Documentation ([technical/](technical/))
+Technical reference and implementation details:
+- [Database Reference](technical/DATABASE_REFERENCE.md) - Database schema and operations
+
+### 🏗️ System Architecture ([system_architecture/](system_architecture/))
+Architectural design and system specifications:
+- [System Architecture](system_architecture/SYSTEM_ARCHITECTURE.md) - Overall system design
+- [Implementation Strategy](system_architecture/IMPLEMENTATION_STRATEGY.md) - Development approach
+- [Integration Points](system_architecture/INTEGRATION_POINTS.md) - System integration details
+- [Technical Specifications](system_architecture/TECHNICAL_SPECIFICATIONS.md) - Detailed technical specs
+
+
+## Getting Started
+
+For quick setup and usage instructions, see the [Quick Start Guide](development/QUICK_START.md).
+
+For detailed development information, see [DEVELOPMENT.md](DEVELOPMENT.md).
+
+For application usage instructions, see [USAGE.md](USAGE.md).
 
 ## Project Structure
 
@@ -20,7 +48,12 @@ FIN/
 │   │   ├── main/          # Application source code
 │   │   └── test/          # Test source code
 │   └── build.gradle.kts   # Module build configuration
-├── docs/                  # Documentation
+├── docs/                  # Documentation (organized by category)
+│   ├── business/          # Business and legal documents
+│   ├── development/       # Development guides and reports
+│   ├── technical/         # Technical reference documentation
+│   └── system_architecture/ # System design and architecture
+├── scripts/               # Shell scripts and utilities
 ├── gradle/                # Gradle wrapper files
 ├── gradlew                # Gradle wrapper script (Unix)
 ├── gradlew.bat            # Gradle wrapper script (Windows)
@@ -31,16 +64,10 @@ FIN/
 
 - **Language**: Java 17
 - **Build Tool**: Gradle 8.8
+- **Database**: PostgreSQL
 - **Testing Framework**: JUnit Jupiter
-- **Dependencies**: Google Guava
-
-## Getting Started
-
-See [USAGE.md](USAGE.md) for detailed instructions on running and using the application.
-
-## Development
-
-See [DEVELOPMENT.md](DEVELOPMENT.md) for information on building, testing, and extending the application.
+- **PDF Processing**: Apache PDFBox
+- **Export**: iText PDF, CSV
 
 ## Change History
 

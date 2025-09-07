@@ -12,6 +12,8 @@ public class ParsedTransaction {
     private final BigDecimal amount;
     private final LocalDate date;
     private final String reference;
+    private final BigDecimal balance;
+    private final boolean hasServiceFee;
 
     private ParsedTransaction(Builder builder) {
         this.type = builder.type;
@@ -19,6 +21,8 @@ public class ParsedTransaction {
         this.amount = builder.amount;
         this.date = builder.date;
         this.reference = builder.reference;
+        this.balance = builder.balance;
+        this.hasServiceFee = builder.hasServiceFee;
     }
 
     public TransactionType getType() {
@@ -41,12 +45,22 @@ public class ParsedTransaction {
         return reference;
     }
 
+    public BigDecimal getBalance() {
+        return balance;
+    }
+
+    public boolean hasServiceFee() {
+        return hasServiceFee;
+    }
+
     public static class Builder {
         private TransactionType type;
         private String description;
         private BigDecimal amount;
         private LocalDate date;
         private String reference;
+        private BigDecimal balance;
+        private boolean hasServiceFee;
 
         public Builder type(TransactionType type) {
             this.type = type;
@@ -70,6 +84,16 @@ public class ParsedTransaction {
 
         public Builder reference(String reference) {
             this.reference = reference;
+            return this;
+        }
+
+        public Builder balance(BigDecimal balance) {
+            this.balance = balance;
+            return this;
+        }
+
+        public Builder hasServiceFee(boolean hasServiceFee) {
+            this.hasServiceFee = hasServiceFee;
             return this;
         }
 

@@ -35,8 +35,9 @@ public class BankStatementProcessingService {
         this.parsers = new ArrayList<>();
         
         // Register parsers in order of specificity
-        // Standard Bank tabular parser first for its specific format
+        // Use the corrected Standard Bank tabular parser first
         parsers.add(new StandardBankTabularParser());
+        // parsers.add(new EnhancedStandardBankTabularParser()); // Temporarily disabled to test our fixes
         parsers.add(new ServiceFeeParser());
         parsers.add(new CreditTransactionParser());
         parsers.add(new MultiTransactionParser());
@@ -174,14 +175,17 @@ public class BankStatementProcessingService {
         
         // Check if we have Standard Bank tabular format
         boolean isStandardBank = textExtractor.isStandardBankFormat();
-        StandardBankTabularParser standardBankParser = null;
+        EnhancedStandardBankTabularParser enhancedParser = null;
+        StandardBankTabularParser fallbackParser = null;
         
         if (isStandardBank) {
-            // Find the StandardBankTabularParser
+            // Find the Enhanced StandardBankTabularParser first
             for (TransactionParser parser : parsers) {
-                if (parser instanceof StandardBankTabularParser) {
-                    standardBankParser = (StandardBankTabularParser) parser;
+                if (parser instanceof EnhancedStandardBankTabularParser) {
+                    enhancedParser = (EnhancedStandardBankTabularParser) parser;
                     break;
+                } else if (parser instanceof StandardBankTabularParser) {
+                    fallbackParser = (StandardBankTabularParser) parser;
                 }
             }
         }
@@ -192,11 +196,37 @@ public class BankStatementProcessingService {
                 continue;
             }
             
-            // For Standard Bank format, use special handling
-            if (standardBankParser != null) {
-                if (standardBankParser.canParse(line, context)) {
+            // For Standard Bank format, use enhanced parser first, then fallback
+            if (enhancedParser != null) {
+                if (enhancedParser.canParse(line, context)) {
                     try {
-                        ParsedTransaction parsed = standardBankParser.parse(line, context);
+                        ParsedTransaction parsed = enhancedParser.parse(line, context);
+                        if (parsed != null) {
+                            results.add(parsed);
+                        }
+                        // Continue processing even if null (description line)
+                        continue;
+                    } catch (Exception e) {
+                        System.err.println("Enhanced StandardBank parser failed for line: " + line + " - " + e.getMessage());
+                        // Try fallback parser
+                        if (fallbackParser != null && fallbackParser.canParse(line, context)) {
+                            try {
+                                ParsedTransaction parsed = fallbackParser.parse(line, context);
+                                if (parsed != null) {
+                                    results.add(parsed);
+                                }
+                                continue;
+                            } catch (Exception e2) {
+                                System.err.println("Fallback StandardBank parser also failed for line: " + line + " - " + e2.getMessage());
+                            }
+                        }
+                    }
+                }
+            } else if (fallbackParser != null) {
+                // If enhanced parser is not available, use fallback parser directly
+                if (fallbackParser.canParse(line, context)) {
+                    try {
+                        ParsedTransaction parsed = fallbackParser.parse(line, context);
                         if (parsed != null) {
                             results.add(parsed);
                         }
@@ -233,9 +263,26 @@ public class BankStatementProcessingService {
             }
         }
         
-        // Reset StandardBank parser state if used
-        if (standardBankParser != null) {
-            standardBankParser.reset();
+        // Finalize any pending transactions from StandardBank parsers before resetting
+        if (enhancedParser != null) {
+            try {
+                // Note: Enhanced parser doesn't have finalizeParsing() method yet
+                // This is handled by the fallback logic below
+            } catch (Exception e) {
+                System.err.println("Failed to finalize enhanced parser - " + e.getMessage());
+            }
+        }
+        
+        if (fallbackParser != null) {
+            try {
+                ParsedTransaction finalTransaction = fallbackParser.finalizeParsing();
+                if (finalTransaction != null) {
+                    results.add(finalTransaction);
+                }
+            } catch (Exception e) {
+                System.err.println("Failed to finalize pending transaction - " + e.getMessage());
+            }
+            fallbackParser.reset();
         }
         
         return results;
@@ -249,6 +296,14 @@ public class BankStatementProcessingService {
             transaction.setCompanyId(company.getId());
             transaction.setTransactionDate(parsed.getDate());
             transaction.setDetails(parsed.getDescription());
+            
+            // Set balance if available
+            if (parsed.getBalance() != null) {
+                transaction.setBalance(parsed.getBalance());
+            }
+            
+            // Set service fee flag
+            transaction.setServiceFee(parsed.hasServiceFee());
             
             // Determine fiscal period based on transaction date
             FiscalPeriod fiscalPeriod = findFiscalPeriodForDate(company.getId(), parsed.getDate());

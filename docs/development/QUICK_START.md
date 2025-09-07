@@ -4,7 +4,7 @@
 
 ### **Terminal 1: Start Java Backend**
 ```bash
-cd /Users/sthwalonyoni/FIN
+cd /path/to/your/FIN
 ./start-backend.sh
 ```
 
@@ -16,7 +16,7 @@ This will:
 
 ### **Terminal 2: Test API (while backend is running)**
 ```bash
-cd /Users/sthwalonyoni/FIN
+cd /path/to/your/FIN
 ./test-api.sh
 ```
 

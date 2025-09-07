@@ -68,7 +68,7 @@ mkdir -p src/components
 ### 4. Apply frontend licensing:
 ```bash
 # Run the frontend licensing script we created:
-cp /Users/sthwalonyoni/FIN/frontend-licensing-complete.sh ./
+cp /path/to/your/FIN/frontend-licensing-complete.sh ./
 ./frontend-licensing-complete.sh
 ```
 
@@ -101,13 +101,13 @@ export default App;
 
 ## 🚫 **What should NOT be in backend directory:**
 
-❌ `/Users/sthwalonyoni/FIN/` (Java backend):
+❌ `/path/to/your/FIN/` (Java backend):
 - ~~LicenseManager.tsx~~ ← Removed (correct!)
 - ~~Any .tsx or .jsx files~~
 - ~~Frontend components~~
 - ~~React hooks~~
 
-✅ `/Users/sthwalonyoni/FIN/` (Java backend) should only contain:
+✅ `/path/to/your/FIN/` (Java backend) should only contain:
 - `.java` files
 - `build.gradle.kts`
 - `gradlew`
