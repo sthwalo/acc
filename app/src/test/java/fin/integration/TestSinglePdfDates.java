@@ -1,3 +1,5 @@
+package fin.integration;
+
 import fin.service.DocumentTextExtractor;
 import java.io.File;
 import java.util.List;
@@ -21,6 +23,8 @@ public class TestSinglePdfDates {
                 for (int i = 0; i < Math.min(20, lines.size()); i++) {
                     System.out.println(i + ": " + lines.get(i));
                 }
+            } else {
+                System.out.println("❌ File not found!");
             }
         } catch (Exception e) {
             e.printStackTrace();

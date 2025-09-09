@@ -1,4 +1,4 @@
-package fin;
+package fin.utility;
 
 import fin.service.parser.StandardBankTabularParser;
 import fin.service.parser.TransactionParsingContext;
