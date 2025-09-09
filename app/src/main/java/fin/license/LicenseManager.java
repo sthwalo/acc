@@ -100,38 +100,38 @@ public class LicenseManager {
     }
     
     private static boolean confirmPersonalUse() {
-        try (Scanner scanner = new Scanner(System.in)) {
+        // Don't use try-with-resources here as it closes System.in
+        Scanner scanner = new Scanner(System.in);
+        System.out.println();
+        System.out.println("📋 LICENSE AGREEMENT CONFIRMATION:");
+        System.out.println();
+        System.out.println("Are you using FIN for PERSONAL USE ONLY?");
+        System.out.println("(Personal finance, education, or non-commercial development)");
+        System.out.println();
+        
+        // Check for auto-confirmation property (for development/testing)
+        String autoConfirm = System.getProperty("fin.license.autoconfirm", "false");
+        if ("true".equals(autoConfirm)) {
+            System.out.println("🤖 Auto-confirming personal use (development mode)");
+            System.out.println("✅ Personal use confirmed. Starting FIN...");
+            logPersonalUse();
+            return true;
+        }
+        
+        System.out.print("Type 'yes' to confirm personal use only, or 'no' to exit: ");
+        
+        String response = scanner.nextLine().trim().toLowerCase();
+        
+        if ("yes".equals(response)) {
+            System.out.println("✅ Personal use confirmed. Starting FIN...");
+            logPersonalUse();
+            return true;
+        } else {
             System.out.println();
-            System.out.println("📋 LICENSE AGREEMENT CONFIRMATION:");
-            System.out.println();
-            System.out.println("Are you using FIN for PERSONAL USE ONLY?");
-            System.out.println("(Personal finance, education, or non-commercial development)");
-            System.out.println();
-            
-            // Check for auto-confirmation property (for development/testing)
-            String autoConfirm = System.getProperty("fin.license.autoconfirm", "false");
-            if ("true".equals(autoConfirm)) {
-                System.out.println("🤖 Auto-confirming personal use (development mode)");
-                System.out.println("✅ Personal use confirmed. Starting FIN...");
-                logPersonalUse();
-                return true;
-            }
-            
-            System.out.print("Type 'yes' to confirm personal use only, or 'no' to exit: ");
-            
-            String response = scanner.nextLine().trim().toLowerCase();
-            
-            if ("yes".equals(response)) {
-                System.out.println("✅ Personal use confirmed. Starting FIN...");
-                logPersonalUse();
-                return true;
-            } else {
-                System.out.println();
-                System.out.println("🚫 Commercial use requires a commercial license.");
-                System.out.println("   Please visit: https://fin-licensing.com");
-                System.out.println("   Contact: licensing@fin-software.com");
-                return false;
-            }
+            System.out.println("🚫 Commercial use requires a commercial license.");
+            System.out.println("   Please visit: https://fin-licensing.com");
+            System.out.println("   Contact: licensing@fin-software.com");
+            return false;
         }
     }
     

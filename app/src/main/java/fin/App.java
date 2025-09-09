@@ -1209,6 +1209,7 @@ public class App {
             }
             */
             
+            // Create a single Scanner for the entire application session
             Scanner scanner = new Scanner(System.in);
             boolean exit = false;
             
@@ -1254,7 +1255,7 @@ public class App {
                                 break;
                             case 10:
                                 exit = true;
-                                System.out.println("Exiting FIN application. Goodbye!");
+                                System.out.println("Exiting Sthwalo application. Goodbye!");
                                 break;
                             default:
                                 System.out.println("Invalid choice. Please try again.");
@@ -1263,15 +1264,17 @@ public class App {
                         System.out.println("❌ Invalid input. Please enter a number between 1-10.");
                     } catch (java.util.NoSuchElementException e) {
                         System.out.println("❌ No input available. Exiting...");
-                        break;
+                        exit = true;  // Properly exit the loop instead of continuing infinitely
                     } catch (Exception e) {
                         System.out.println("❌ Input error: " + e.getMessage());
                         System.out.println("💡 Try using API mode: ./gradlew run --args=\"api\"");
                     }
                 }
-            } finally {
-                scanner.close();
+            } catch (Exception e) {
+                System.err.println("❌ Unexpected error: " + e.getMessage());
+                e.printStackTrace();
             }
+            // Don't close the scanner as it closes System.in
         }
     }
 }
