@@ -317,6 +317,7 @@ The FIN application represents the **current working implementation** of core co
 │  │  • User Input Handling                             │   │
 │  │  • Application Flow Control                        │   │
 │  │  • Session State Management                        │   │
+│  │  ⚠️  MONOLITHIC DESIGN - NEEDS REFACTORING          │   │
 │  └─────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────┘
                                │
@@ -801,3 +802,123 @@ FIN/
 - **Service Layer Pattern**: Business logic encapsulation
 
 This current implementation serves as a solid foundation for the broader integrated financial system architecture, demonstrating core capabilities while providing a clear path for enhancement and integration with the larger vision.
+
+## Planned Architecture Improvements
+
+### Modular Refactoring Initiative
+
+**Current Challenge**: The `App.java` file (~1,280 lines) represents a monolithic design that violates SOLID principles and hampers maintainability.
+
+**Proposed Solution**: Comprehensive refactoring into a layered, modular architecture following Clean Architecture principles.
+
+### Target Modular Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    PRESENTATION LAYER                       │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │              ConsoleApplication                     │   │
+│  │  • Application Bootstrap                            │   │
+│  │  • Dependency Injection Setup                      │   │
+│  │  • Main Method Only (~20 lines)                    │   │
+│  └─────────────────────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │                 UI Package                          │   │
+│  │  ┌─────────────┐ ┌──────────────┐ ┌──────────────┐ │   │
+│  │  │ ConsoleMenu │ │ InputHandler │ │ OutputFormat │ │   │
+│  │  │ • Display   │ │ • Validation │ │ • Pretty     │ │   │
+│  │  │ • Navigate  │ │ • Type Conv. │ │   Print      │ │   │
+│  │  └─────────────┘ └──────────────┘ └──────────────┘ │   │
+│  └─────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+                               │
+┌─────────────────────────────────────────────────────────────┐
+│                   CONTROLLER LAYER                          │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │            ApplicationController                    │   │
+│  │  • Main Application Flow                           │   │
+│  │  • Session State Management                        │   │
+│  │  • Controller Coordination                         │   │
+│  └─────────────────────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │              Domain Controllers                     │   │
+│  │  ┌─────────────┐ ┌──────────────┐ ┌──────────────┐ │   │
+│  │  │ Company     │ │ Import       │ │ Report       │ │   │
+│  │  │ Controller  │ │ Controller   │ │ Controller   │ │   │
+│  │  │ • Setup     │ │ • PDF & CSV  │ │ • Generation │ │   │
+│  │  │ • Periods   │ │ • Validation │ │ • Export     │ │   │
+│  │  └─────────────┘ └──────────────┘ └──────────────┘ │   │
+│  │  ┌─────────────┐ ┌──────────────┐                  │   │
+│  │  │ Data Mgmt   │ │ Verification │                  │   │
+│  │  │ Controller  │ │ Controller   │                  │   │
+│  │  │ • Entries   │ │ • Reconcile  │                  │   │
+│  │  │ • Correct   │ │ • Validate   │                  │   │
+│  │  └─────────────┘ └──────────────┘                  │   │
+│  └─────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+                               │
+┌─────────────────────────────────────────────────────────────┐
+│                   WORKFLOW LAYER                            │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │              Business Workflows                     │   │
+│  │  ┌─────────────┐ ┌──────────────┐ ┌──────────────┐ │   │
+│  │  │ Company     │ │ Import       │ │ Report Gen   │ │   │
+│  │  │ Setup       │ │ Workflow     │ │ Workflow     │ │   │
+│  │  │ Workflow    │ │ • Multi-step │ │ • Multi-     │ │   │
+│  │  │ • Guided    │ │   Process    │ │   Format     │ │   │
+│  │  │   Setup     │ │ • Validation │ │ • Batch      │ │   │
+│  │  └─────────────┘ └──────────────┘ └──────────────┘ │   │
+│  └─────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+                               │
+┌─────────────────────────────────────────────────────────────┐
+│                     SERVICE LAYER                           │
+│  │  [Existing Services - No Changes Required]              │
+│  │  • CompanyService • CsvImportService • ReportService    │
+│  │  • BankStatementProcessingService • DataManagementSvc  │
+│  │  • TransactionVerificationService                       │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Refactoring Benefits
+
+**SOLID Principles Compliance**:
+- ✅ **Single Responsibility**: Each class has one clear purpose
+- ✅ **Open/Closed**: Easy to add new features without modification
+- ✅ **Liskov Substitution**: Controllers can be swapped/mocked
+- ✅ **Interface Segregation**: Focused interfaces for each concern
+- ✅ **Dependency Inversion**: Controllers depend on abstractions
+
+**Clean Architecture Benefits**:
+- 🔄 **Separation of Concerns**: UI, business logic, and data are separate
+- 🧪 **Testability**: Each component can be unit tested independently
+- 🔧 **Maintainability**: Changes in one layer don't affect others
+- 🔄 **Flexibility**: Easy to replace console UI with web/API interface
+- ♻️ **Reusability**: Controllers can be used by different interfaces
+
+**Development Benefits**:
+- 👥 **Team Development**: Multiple developers can work on different controllers
+- 👀 **Code Review**: Smaller, focused classes are easier to review
+- 🐛 **Debugging**: Issues are isolated to specific components
+- ✨ **Feature Addition**: New features follow established patterns
+- 🔄 **Refactoring**: Easier to refactor individual components
+
+### Implementation Plan
+
+| Phase | Components | Duration | Status |
+|-------|------------|----------|---------|
+| **Phase 1** | UI Components (Menu, Input, Output) | 2-3 days | 📋 Planned |
+| **Phase 2** | Controller Layer (Application, Domain) | 3-4 days | 📋 Planned |
+| **Phase 3** | Workflow Layer (Business Processes) | 2-3 days | 📋 Planned |
+| **Phase 4** | State Management & Dependency Injection | 1-2 days | 📋 Planned |
+| **Phase 5** | Final Cleanup & Testing | 1 day | 📋 Planned |
+
+**Target Metrics**:
+- **Lines of Code**: Reduce main class from 1,280 to <100 lines
+- **Cyclomatic Complexity**: Reduce from 15-20 to 3-5 per method
+- **Test Coverage**: Achieve 80%+ coverage for all components
+- **Feature Addition Time**: Reduce from 2-3 hours to 30-60 minutes
+
+**Documentation**: Detailed refactoring plan available in `docs/system_architecture/MODULAR_REFACTORING_PLAN.md`
+
+---

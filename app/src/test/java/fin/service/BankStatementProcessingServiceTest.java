@@ -2,11 +2,9 @@ package fin.service;
 
 import fin.model.BankTransaction;
 import fin.model.Company;
-import fin.config.DatabaseConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.math.BigDecimal;
 import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -15,11 +13,14 @@ class BankStatementProcessingServiceTest {
     
     @BeforeEach
     void setUp() {
-        // Use PostgreSQL database via DatabaseConfig
-        if (!DatabaseConfig.testConnection()) {
-            throw new RuntimeException("Failed to connect to database");
+        // Use in-memory H2 database for testing instead of PostgreSQL
+        String testDbUrl = "jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE";
+        try {
+            service = new BankStatementProcessingService(testDbUrl);
+        } catch (Exception e) {
+            // If H2 is not available, skip this test
+            throw new RuntimeException("Test database not available - skipping test");
         }
-        service = new BankStatementProcessingService(DatabaseConfig.getDatabaseUrl());
     }
     
     @Test
