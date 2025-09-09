@@ -73,7 +73,7 @@ java {
 
 application {
     // Define the main class for the application.
-    mainClass = "fin.app.ComprehensiveExcelGenerator"
+    mainClass = "fin.App"
 }
 
 // Configure the run task to pass system properties

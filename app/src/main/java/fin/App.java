@@ -1196,6 +1196,8 @@ public class App {
             System.out.println(app.getGreeting(null));
             
             // Check if console is available - if not, suggest API mode
+            // Bypassing console check for manual testing
+            /*
             if (System.console() == null) {
                 System.out.println("⚠️  Interactive console not available in this environment.");
                 System.out.println("🚀 Please use API mode instead:");
@@ -1205,6 +1207,7 @@ public class App {
                 System.out.println("💡 You can also use the test suite: ./interactive-test.sh");
                 return;
             }
+            */
             
             Scanner scanner = new Scanner(System.in);
             boolean exit = false;
@@ -1215,6 +1218,10 @@ public class App {
                     
                     try {
                         String input = scanner.nextLine().trim();
+                        if (input.isEmpty()) {
+                            System.out.println("❌ Empty input. Please enter a number between 1-10.");
+                            continue;
+                        }
                         int choice = Integer.parseInt(input);
                         
                         switch (choice) {
@@ -1254,6 +1261,9 @@ public class App {
                         }
                     } catch (NumberFormatException e) {
                         System.out.println("❌ Invalid input. Please enter a number between 1-10.");
+                    } catch (java.util.NoSuchElementException e) {
+                        System.out.println("❌ No input available. Exiting...");
+                        break;
                     } catch (Exception e) {
                         System.out.println("❌ Input error: " + e.getMessage());
                         System.out.println("💡 Try using API mode: ./gradlew run --args=\"api\"");
