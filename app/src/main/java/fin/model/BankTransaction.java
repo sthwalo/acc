@@ -21,6 +21,10 @@ public class BankTransaction {
     private LocalDateTime createdAt;
     private String accountNumber;
     
+    // Account classification fields
+    private String accountCode;
+    private String accountName;
+    
     // Constructors, getters, and setters
     public BankTransaction() {
         this.createdAt = LocalDateTime.now();
@@ -71,6 +75,12 @@ public class BankTransaction {
     
     public String getReference() { return reference; }
     public void setReference(String reference) { this.reference = reference; }
+    
+    public String getAccountCode() { return accountCode; }
+    public void setAccountCode(String accountCode) { this.accountCode = accountCode; }
+    
+    public String getAccountName() { return accountName; }
+    public void setAccountName(String accountName) { this.accountName = accountName; }
     
     @Override
     public String toString() {
