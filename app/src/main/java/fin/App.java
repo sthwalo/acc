@@ -32,6 +32,7 @@ import fin.service.DataManagementService;
 import fin.service.PdfExportService;
 import fin.service.ReportService;
 import fin.license.LicenseManager;
+import fin.config.DatabaseConfig;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -53,7 +54,7 @@ public class App {
         return "Hello World! Welcome to the FIN application.";
     }
     
-    private static final String DB_URL = "jdbc:sqlite:fin_database.db";
+    // Use PostgreSQL database via DatabaseConfig
     private final CompanyService companyService;
     private final CsvImportService csvImportService;
     private final ReportService reportService;
@@ -65,13 +66,21 @@ public class App {
     private FiscalPeriod currentFiscalPeriod;
     
     public App() {
-        this.companyService = new CompanyService(DB_URL);
-        this.csvImportService = new CsvImportService(DB_URL, companyService);
-        this.reportService = new ReportService(DB_URL, csvImportService);
+        // Test database connection and get database URL
+        if (!DatabaseConfig.testConnection()) {
+            throw new RuntimeException("Failed to connect to database");
+        }
+        
+        String dbUrl = DatabaseConfig.getDatabaseUrl();
+        System.out.println("🔌 Console App connected to: " + DatabaseConfig.getDatabaseType());
+        
+        this.companyService = new CompanyService(dbUrl);
+        this.csvImportService = new CsvImportService(dbUrl, companyService);
+        this.reportService = new ReportService(dbUrl, csvImportService);
         this.pdfExportService = new PdfExportService();
-        this.dataManagementService = new DataManagementService(DB_URL, companyService, csvImportService.getAccountService());
-        this.bankStatementService = new BankStatementProcessingService(DB_URL);
-        this.verificationService = new TransactionVerificationService(DB_URL, companyService, csvImportService);
+        this.dataManagementService = new DataManagementService(dbUrl, companyService, csvImportService.getAccountService());
+        this.bankStatementService = new BankStatementProcessingService(dbUrl);
+        this.verificationService = new TransactionVerificationService(dbUrl, companyService, csvImportService);
     }
     
     public void showDataManagementMenu() {
