@@ -1,7 +1,7 @@
 /*
  * Test single PDF processor - processes one PDF to debug
  */
-package fin;
+package fin.integration;
 
 import fin.service.BankStatementProcessingService;
 import fin.service.CompanyService;

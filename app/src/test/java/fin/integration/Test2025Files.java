@@ -1,16 +1,26 @@
+package fin.integration;
+
 import fin.service.CompanyService;
 import fin.service.BankStatementProcessingService;
 import fin.model.Company;
+import fin.model.BankTransaction;
+import fin.config.DatabaseConfig;
 import java.io.File;
 import java.util.List;
 
 public class Test2025Files {
-    private static final String DB_URL = "jdbc:postgresql://localhost:5432/drimacc_db?user=sthwalonyoni&password=Mapaya400151";
     
     public static void main(String[] args) {
         try {
-            CompanyService companyService = new CompanyService(DB_URL);
-            BankStatementProcessingService processor = new BankStatementProcessingService(DB_URL);
+            // Use DatabaseConfig for consistent connection
+            if (!DatabaseConfig.testConnection()) {
+                System.out.println("❌ Failed to connect to database!");
+                return;
+            }
+            
+            String dbUrl = DatabaseConfig.getDatabaseUrl();
+            CompanyService companyService = new CompanyService(dbUrl);
+            BankStatementProcessingService processor = new BankStatementProcessingService(dbUrl);
             
             List<Company> companies = companyService.getAllCompanies();
             if (companies.isEmpty()) {
@@ -29,7 +39,7 @@ public class Test2025Files {
                 if (file.exists()) {
                     System.out.println("\n🔄 Processing: " + file.getName());
                     
-                    List transactions = processor.processStatement(file.getAbsolutePath(), company);
+                    List<BankTransaction> transactions = processor.processStatement(file.getAbsolutePath(), company);
                     System.out.println("✅ Extracted " + transactions.size() + " transactions");
                 } else {
                     System.out.println("❌ File not found: " + filePath);
