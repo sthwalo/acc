@@ -2,6 +2,7 @@ package fin.service;
 
 import fin.model.BankTransaction;
 import fin.model.Company;
+import fin.config.DatabaseConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -14,7 +15,11 @@ class BankStatementProcessingServiceTest {
     
     @BeforeEach
     void setUp() {
-        service = new BankStatementProcessingService("jdbc:sqlite:test.db");
+        // Use PostgreSQL database via DatabaseConfig
+        if (!DatabaseConfig.testConnection()) {
+            throw new RuntimeException("Failed to connect to database");
+        }
+        service = new BankStatementProcessingService(DatabaseConfig.getDatabaseUrl());
     }
     
     @Test

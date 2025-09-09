@@ -148,6 +148,7 @@ docs/**/passwords.md
 docs/**/*_credentials_*.md
 docs/**/*_sensitive_*.md
 cmd.txt
+rules.txt
 
 # ========================================
 # SAMPLE DATA ONLY

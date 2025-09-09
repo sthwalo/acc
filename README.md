@@ -1,51 +1,187 @@
-# FIN Application
+# FIN Financial Management System
 
-An interactive Java financial reporting system built with Gradle.
+A comprehensive Java-based financial management application with PostgreSQL database, PDF processing, and Excel reporting capabilities.
 
-## Overview
+## 🏢 System Overview
 
-FIN is a comprehensive financial reporting application that helps businesses manage their financial data. The system provides tools for company setup, fiscal period management, CSV transaction data import, and financial report generation including cashbook, general ledger, trial balance, income statement, balance sheet, and cash flow statement.
+FIN is a production-ready financial management system that handles:
+- **Bank Statement Processing** - Automated PDF text extraction and transaction parsing
+- **Financial Reporting** - Complete financial statements with real database values
+- **API Server** - RESTful API for frontend integration
+- **Excel Generation** - Professional financial reports in Excel format
+- **Data Management** - Manual journal entries, invoices, and data corrections
 
-## Features
+## 🏗️ Architecture
 
-- Company management (create, select, and view companies)
-- Fiscal period management (create, select, and view fiscal periods)
-- CSV transaction data import with automatic fiscal period mapping
-- Financial report generation:
-  - Cashbook Report
-  - General Ledger Report
-  - Trial Balance Report
-  - Income Statement
-  - Balance Sheet
-  - Cash Flow Statement
-- Interactive console menu interface
-- SQLite database for data persistence
+### **Database:** PostgreSQL (Production-ready)
+- Companies, fiscal periods, accounts, journal entries
+- 7,156+ transactions with real financial data
+- Full ACID compliance and foreign key constraints
 
-## Quick Start
-
-Run the application:
-
-```bash
-# From source
-./gradlew run
-
-# With arguments
-./gradlew run --args="Your Name"
-
-# Using the fat JAR (includes all dependencies)
-./gradlew fatJar
-java -jar app/build/libs/app-fat.jar
-
-# Important: When using the application interactively, enter your choices directly in the terminal
-# Do not type commands in a new terminal prompt
+### **Processing Pipeline:**
+```
+Bank PDFs → Text Extraction → Transaction Parsing → PostgreSQL → Financial Reports
 ```
 
-## Using the Application
+### **Application Modes:**
+1. **API Server** (Recommended) - RESTful API with CORS support
+2. **Excel Generator** - Professional financial statements 
+3. **Console App** - Interactive terminal interface
 
-1. **Company Setup**: First, create a company or select an existing one
-2. **Fiscal Period Management**: Create fiscal periods for your company
-3. **Import CSV Data**: Import bank transaction data from CSV files
-4. **Generate Reports**: Create financial reports filtered by fiscal period
+## 🚀 Quick Start
+
+### **Prerequisites**
+- Java 17+
+- PostgreSQL 12+ (configured and running)
+- Environment variables set (see `.env`)
+
+### **1. API Server Mode (Recommended)**
+```bash
+cd /Users/sthwalonyoni/FIN
+source .env
+./gradlew run --args="api"
+```
+**Endpoints:**
+- Health: `http://localhost:8080/api/v1/health`
+- Companies: `http://localhost:8080/api/v1/companies`
+- Documentation: `http://localhost:8080/api/v1/docs`
+
+### **2. Excel Financial Reports**
+```bash
+cd /Users/sthwalonyoni/FIN
+source .env
+# Set mainClass to ComprehensiveExcelGenerator in build.gradle.kts
+./gradlew run -x test
+# Output: xinghizana_financial_report_YYYY-MM-DD.xls
+```
+
+### **3. Console Application**
+```bash
+cd /Users/sthwalonyoni/FIN
+source .env
+# Set mainClass to fin.App in build.gradle.kts  
+./gradlew run
+```
+
+## 📊 Current Data Status
+
+### **Live Company Data: Xinghizana Group (FY2024-2025)**
+- **45 accounts** across all categories (Assets, Liabilities, Equity, Revenue, Expenses)
+- **7,156 journal entry lines** with real transaction data
+- **Major balances:**
+  - Bank Current Account: R9,792,128.08 (credits)
+  - Employee Costs: R3,817,301.12
+  - Computer Expenses: R573,653.01
+  - Insurance: R224,324.17
+
+## 📈 Financial Reports Available
+
+### **✅ Console Reports (Full Implementation)**
+- Cashbook Report (detailed transactions)
+- General Ledger (account-grouped transactions)
+- Trial Balance (debit/credit verification)
+- Income Statement (revenue vs expenses)
+
+### **✅ Excel Reports (Professional Format)**
+- **Balance Sheet** - Assets, Liabilities, Equity with real amounts
+- **Income Statement** - Revenue and Expenses with calculations
+- **Trial Balance** - All accounts with debit/credit totals
+- **15 professional sheets** including Cover, Index, Company Details
+
+### **🔄 In Development**
+- General Ledger details in Excel
+- Journal Entries listing in Excel
+- Bank Reconciliation module
+
+## 🔧 Development
+
+### **Building**
+```bash
+./gradlew clean build
+./gradlew test
+```
+
+### **Database Setup**
+```bash
+# PostgreSQL must be running with credentials in .env
+source .env
+psql -h localhost -U sthwalonyoni -d drimacc_db -c "SELECT COUNT(*) FROM accounts;"
+```
+
+### **Environment Configuration**
+See `.env` file for database connection settings:
+```bash
+DATABASE_URL=jdbc:postgresql://localhost:5432/drimacc_db
+DATABASE_USER=sthwalonyoni
+DATABASE_PASSWORD=LeZipho24#
+```
+
+## 📋 System Status
+
+### **✅ Production Ready**
+- PostgreSQL database with real financial data
+- PDF processing pipeline working
+- API server fully functional  
+- Excel reporting with actual amounts
+- Comprehensive database schema
+
+### **📊 Live Financial Data**
+The system currently contains **real financial data** for Xinghizana Group with proper account structures, journal entries, and calculated balances ready for reporting.
+
+## 🗂️ Documentation
+
+Detailed documentation available in `/docs`:
+- [Complete System Architecture](SYSTEM_ARCHITECTURE_STATUS.md)
+- [Usage Guide](docs/USAGE.md)
+- [Development Guide](docs/DEVELOPMENT.md)
+- [PostgreSQL Migration Guide](docs/POSTGRESQL_MIGRATION_GUIDE.md)
+- [Technical Specifications](docs/system_architecture/TECHNICAL_SPECIFICATIONS.md)
+
+## 📱 API Endpoints
+
+**Base URL:** `http://localhost:8080/api/v1/`
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/health` | System health check |
+| GET | `/companies` | List all companies |
+| POST | `/companies` | Create new company |
+| GET | `/companies/{id}/fiscal-periods` | Get fiscal periods |
+| POST | `/companies/{id}/upload` | Process bank statement |
+
+## ⚖️ License
+
+**Dual License Model:**
+
+### 🆓 **Personal Use - Apache License 2.0**
+- FREE for personal finance management
+- FREE for educational use and research
+- FREE for open source development
+
+### 💼 **Commercial Use - Commercial License Required**
+- PAID for business financial management
+- PAID for revenue-generating activities  
+- PAID for hosting services to others
+
+See [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md) for pricing and [LICENSE](LICENSE) for source code terms.
+
+## 🤝 Contributing
+
+Contributions welcome! The system is actively developed with modern architecture:
+- Spring-style dependency injection
+- Repository pattern implementation
+- Comprehensive error handling
+- Production-ready database design
+
+## 📞 Support
+
+- **Issues:** Open a GitHub issue
+- **Documentation:** See `/docs` directory
+- **Architecture:** Review `SYSTEM_ARCHITECTURE_STATUS.md`
+
+---
+
+**Status:** Active development | **Database:** PostgreSQL | **Data:** Production-ready | **Reports:** Excel + Console
 
 ## Documentation
 

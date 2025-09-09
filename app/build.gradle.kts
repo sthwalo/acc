@@ -53,6 +53,11 @@ dependencies {
     implementation("org.bouncycastle:bcmail-jdk15on:1.70")
     implementation("com.itextpdf:itextpdf:5.5.13.3")
     
+    // Excel processing libraries
+    implementation("org.apache.poi:poi:5.2.4")
+    implementation("org.apache.poi:poi-ooxml:5.2.4")
+    implementation("org.apache.poi:poi-scratchpad:5.2.4")
+    
     // REST API dependencies
     implementation("com.sparkjava:spark-core:2.9.4")
     implementation("com.google.code.gson:gson:2.10.1")
@@ -68,7 +73,7 @@ java {
 
 application {
     // Define the main class for the application.
-    mainClass = "fin.App"
+    mainClass = "fin.app.ComprehensiveExcelGenerator"
 }
 
 // Configure the run task to pass system properties
