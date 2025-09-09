@@ -33,6 +33,7 @@ dependencies {
     testImplementation(libs.junit.jupiter)
     testImplementation("org.mockito:mockito-core:5.5.0")
     testImplementation("org.mockito:mockito-junit-jupiter:5.5.0")
+    testImplementation("com.h2database:h2:2.2.224")  // H2 for testing
 
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
@@ -79,6 +80,8 @@ application {
 // Configure the run task to pass system properties
 tasks.named<JavaExec>("run") {
     systemProperties = System.getProperties().toMap() as Map<String, Any>
+    // Auto-confirm license for gradle run to avoid NoSuchElementException
+    systemProperty("fin.license.autoconfirm", "true")
 }
 
 tasks.named<Test>("test") {
