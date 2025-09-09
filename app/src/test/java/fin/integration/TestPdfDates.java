@@ -1,3 +1,5 @@
+package fin.integration;
+
 import fin.service.DocumentTextExtractor;
 import java.io.File;
 import java.util.List;
@@ -32,6 +34,8 @@ public class TestPdfDates {
                         }
                     }
                     System.out.println("=".repeat(50));
+                } else {
+                    System.out.println("❌ File not found: " + filePath);
                 }
             }
         } catch (Exception e) {
