@@ -4,9 +4,9 @@
 ```
 Host: localhost
 Port: 5432
-Database: drimacc_db
-User: sthwalonyoni
-Password: Mapaya400151
+Database: ....
+User: .....
+Password:....
 ```
 
 ## 🚀 Quick Connect Methods

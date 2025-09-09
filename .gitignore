@@ -151,6 +151,13 @@ cmd.txt
 rules.txt
 
 # ========================================
+# DEVELOPMENT TOOLS
+# ========================================
+
+# Development utilities and debugging tools
+dev-tools/
+
+# ========================================
 # SAMPLE DATA ONLY
 # ========================================
 
