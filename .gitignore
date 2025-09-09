@@ -154,8 +154,12 @@ rules.txt
 # DEVELOPMENT TOOLS
 # ========================================
 
-# Development utilities and debugging tools
-dev-tools/
+# Development utilities and debugging tools (Java files only)
+dev-tools/*.java
+dev-tools/*.class
+
+# Allow documentation in dev-tools
+!dev-tools/*.md
 
 # ========================================
 # SAMPLE DATA ONLY
