@@ -94,23 +94,42 @@ public class AccountClassificationService {
      * Create a single account category
      */
     private Long createCategory(Long companyId, String name, String description, int accountTypeId) throws SQLException {
-        String sql = "INSERT INTO account_categories (name, description, account_type_id, company_id) " +
-                    "VALUES (?, ?, ?, ?) RETURNING id";
+        // First check if category already exists
+        String selectSql = "SELECT id FROM account_categories WHERE company_id = ? AND name = ?";
         
         try (Connection conn = DriverManager.getConnection(dbUrl);
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+             PreparedStatement selectStmt = conn.prepareStatement(selectSql)) {
             
-            stmt.setString(1, name);
-            stmt.setString(2, description);
-            stmt.setInt(3, accountTypeId);
-            stmt.setLong(4, companyId);
+            selectStmt.setLong(1, companyId);
+            selectStmt.setString(2, name);
             
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                Long id = rs.getLong("id");
-                System.out.println("📋 Created category: " + name + " (ID: " + id + ")");
-                return id;
+            try (ResultSet rs = selectStmt.executeQuery()) {
+                if (rs.next()) {
+                    Long existingId = rs.getLong("id");
+                    System.out.println("📋 Category already exists: " + name + " (ID: " + existingId + ")");
+                    return existingId;
+                }
             }
+            
+            // Category doesn't exist, create it
+            String insertSql = "INSERT INTO account_categories (name, description, account_type_id, company_id) " +
+                        "VALUES (?, ?, ?, ?) RETURNING id";
+            
+            try (PreparedStatement insertStmt = conn.prepareStatement(insertSql)) {
+                insertStmt.setString(1, name);
+                insertStmt.setString(2, description);
+                insertStmt.setInt(3, accountTypeId);
+                insertStmt.setLong(4, companyId);
+                
+                try (ResultSet rs = insertStmt.executeQuery()) {
+                    if (rs.next()) {
+                        Long id = rs.getLong("id");
+                        System.out.println("📋 Created new category: " + name + " (ID: " + id + ")");
+                        return id;
+                    }
+                }
+            }
+            
             throw new SQLException("Failed to create category: " + name);
         }
     }
@@ -121,13 +140,38 @@ public class AccountClassificationService {
     private void createStandardAccounts(Long companyId, Map<String, Long> categoryIds) throws SQLException {
         List<AccountDefinition> accounts = getStandardAccountDefinitions(categoryIds);
         
+        // Check which accounts already exist
+        String checkSql = "SELECT account_code FROM accounts WHERE company_id = ?";
+        Set<String> existingAccounts = new HashSet<>();
+        
+        try (Connection conn = DriverManager.getConnection(dbUrl);
+             PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
+            
+            checkStmt.setLong(1, companyId);
+            try (ResultSet rs = checkStmt.executeQuery()) {
+                while (rs.next()) {
+                    existingAccounts.add(rs.getString("account_code"));
+                }
+            }
+        }
+        
+        // Filter out existing accounts
+        List<AccountDefinition> newAccounts = accounts.stream()
+            .filter(account -> !existingAccounts.contains(account.code))
+            .collect(java.util.stream.Collectors.toList());
+        
+        if (newAccounts.isEmpty()) {
+            System.out.println("✅ All standard accounts already exist (" + accounts.size() + " accounts)");
+            return;
+        }
+        
         String sql = "INSERT INTO accounts (account_code, account_name, description, category_id, company_id) " +
                     "VALUES (?, ?, ?, ?, ?)";
         
         try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
-            for (AccountDefinition account : accounts) {
+            for (AccountDefinition account : newAccounts) {
                 stmt.setString(1, account.code);
                 stmt.setString(2, account.name);
                 stmt.setString(3, account.description);
@@ -137,7 +181,8 @@ public class AccountClassificationService {
             }
             
             int[] results = stmt.executeBatch();
-            System.out.println("✅ Created " + results.length + " standard accounts");
+            System.out.println("✅ Created " + results.length + " new standard accounts");
+            System.out.println("ℹ️ Skipped " + existingAccounts.size() + " existing accounts");
         }
     }
     

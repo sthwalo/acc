@@ -52,6 +52,9 @@ public class TransactionMappingService {
             
             LOGGER.info("Found " + unclassifiedTransactions.size() + " unclassified transactions for company ID: " + companyId);
             
+            // Ensure transaction mapping rules table exists and is properly migrated
+            createTransactionMappingRulesTable();
+            
             // Load transaction mapping rules
             Map<String, RuleMapping> rules = loadTransactionMappingRules(companyId);
             LOGGER.info("Loaded " + rules.size() + " transaction mapping rules");
@@ -141,7 +144,12 @@ public class TransactionMappingService {
     private Map<String, RuleMapping> loadTransactionMappingRules(Long companyId) throws SQLException {
         Map<String, RuleMapping> rules = new HashMap<>();
         
-        String sql = "SELECT pattern_text, account_code, account_name FROM transaction_mapping_rules WHERE company_id = ?";
+        String sql = """
+            SELECT tmr.pattern_text, a.account_code, a.account_name 
+            FROM transaction_mapping_rules tmr 
+            JOIN accounts a ON tmr.account_id = a.id 
+            WHERE tmr.company_id = ? AND tmr.is_active = true
+            """;
         
         try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -359,10 +367,12 @@ public class TransactionMappingService {
                 // Check if we need to migrate from 'pattern' to 'pattern_text'
                 boolean hasPatternColumn = false;
                 boolean hasPatternTextColumn = false;
+                List<String> allColumns = new ArrayList<>();
                 
                 try (ResultSet rs = conn.getMetaData().getColumns(null, null, "transaction_mapping_rules", null)) {
                     while (rs.next()) {
                         String columnName = rs.getString("COLUMN_NAME");
+                        allColumns.add(columnName);
                         if ("pattern".equals(columnName)) {
                             hasPatternColumn = true;
                         } else if ("pattern_text".equals(columnName)) {
@@ -370,6 +380,9 @@ public class TransactionMappingService {
                         }
                     }
                 }
+                
+                LOGGER.info("Existing columns in transaction_mapping_rules: " + allColumns);
+                LOGGER.info("Has pattern column: " + hasPatternColumn + ", Has pattern_text column: " + hasPatternTextColumn);
                 
                 if (hasPatternColumn && !hasPatternTextColumn) {
                     // Need to migrate from pattern to pattern_text
@@ -385,13 +398,52 @@ public class TransactionMappingService {
                     stmt.executeUpdate("ALTER TABLE transaction_mapping_rules ALTER COLUMN pattern_text SET NOT NULL");
                     
                     // Create index on pattern_text
-                    stmt.executeUpdate("CREATE INDEX idx_mapping_rules_pattern_text ON transaction_mapping_rules(pattern_text)");
+                    stmt.executeUpdate("CREATE INDEX IF NOT EXISTS idx_mapping_rules_pattern_text ON transaction_mapping_rules(pattern_text)");
                     
                     // We keep the old column for backward compatibility, but all new code will use pattern_text
                     LOGGER.info("Migration to pattern_text completed successfully");
                 } else if (!hasPatternTextColumn) {
-                    // Something is wrong - the table exists but neither column exists
-                    throw new SQLException("transaction_mapping_rules table exists but missing required columns");
+                    // Table exists but doesn't have pattern_text - this could be an empty table or one with different schema
+                    // Let's try to add the missing column
+                    LOGGER.info("Table exists but missing pattern_text column. Adding it now...");
+                    
+                    try {
+                        stmt.executeUpdate("ALTER TABLE transaction_mapping_rules ADD COLUMN pattern_text TEXT");
+                        LOGGER.info("Added pattern_text column successfully");
+                    } catch (SQLException e) {
+                        LOGGER.warning("Could not add pattern_text column: " + e.getMessage());
+                        // If we can't add the column, the table might have a different structure
+                        // Let's check if this is a completely different table structure
+                        if (allColumns.isEmpty()) {
+                            LOGGER.info("Table appears to be empty or have no columns. Recreating...");
+                            stmt.executeUpdate("DROP TABLE transaction_mapping_rules");
+                            
+                            // Recreate the table with correct structure
+                            String sql = """
+                                CREATE TABLE transaction_mapping_rules (
+                                    id BIGSERIAL PRIMARY KEY,
+                                    company_id BIGINT NOT NULL,
+                                    pattern_text TEXT NOT NULL,
+                                    account_code VARCHAR(20) NOT NULL,
+                                    account_name VARCHAR(100) NOT NULL,
+                                    is_active BOOLEAN DEFAULT TRUE,
+                                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                    FOREIGN KEY (company_id) REFERENCES companies(id)
+                                )
+                                """;
+                            stmt.executeUpdate(sql);
+                            
+                            // Create indexes
+                            stmt.executeUpdate("CREATE INDEX idx_mapping_rules_company ON transaction_mapping_rules(company_id)");
+                            stmt.executeUpdate("CREATE INDEX idx_mapping_rules_pattern_text ON transaction_mapping_rules(pattern_text)");
+                            
+                            LOGGER.info("Recreated transaction_mapping_rules table with correct structure");
+                        } else {
+                            throw new SQLException("transaction_mapping_rules table exists with unexpected structure: " + allColumns);
+                        }
+                    }
+                } else {
+                    LOGGER.info("transaction_mapping_rules table already has correct structure");
                 }
             }
         }
@@ -419,20 +471,67 @@ public class TransactionMappingService {
      */
     private void createMappingRule(Long companyId, String pattern, String accountCode, 
                                  String accountName) throws SQLException {
+        
+        // First, get the account ID from the account code
+        Long accountId = getAccountIdByCode(companyId, accountCode);
+        if (accountId == null) {
+            throw new SQLException("Account with code " + accountCode + " not found for company " + companyId);
+        }
+        
+        // Check if rule already exists
+        String ruleName = "Auto-" + pattern.replaceAll("[^A-Za-z0-9]", "_");
+        String checkSql = "SELECT id FROM transaction_mapping_rules WHERE company_id = ? AND rule_name = ?";
+        
+        try (Connection conn = getConnection();
+             PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
+            
+            checkStmt.setLong(1, companyId);
+            checkStmt.setString(2, ruleName);
+            
+            try (ResultSet rs = checkStmt.executeQuery()) {
+                if (rs.next()) {
+                    // Rule already exists, skip
+                    return;
+                }
+            }
+        }
+        
         String sql = """
             INSERT INTO transaction_mapping_rules 
-            (company_id, pattern_text, account_code, account_name)
-            VALUES (?, ?, ?, ?)
+            (company_id, rule_name, description, match_type, match_value, pattern_text, account_id, is_active, priority)
+            VALUES (?, ?, ?, 'CONTAINS', ?, ?, ?, true, 0)
             """;
             
         try (Connection conn = getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setLong(1, companyId);
-            stmt.setString(2, pattern);
-            stmt.setString(3, accountCode);
-            stmt.setString(4, accountName);
+            stmt.setString(2, ruleName);
+            stmt.setString(3, "Auto-generated rule for " + pattern);
+            stmt.setString(4, pattern);
+            stmt.setString(5, pattern);
+            stmt.setLong(6, accountId);
             
             stmt.executeUpdate();
+        }
+    }
+    
+    /**
+     * Helper method to get account ID by account code
+     */
+    private Long getAccountIdByCode(Long companyId, String accountCode) throws SQLException {
+        String sql = "SELECT id FROM accounts WHERE company_id = ? AND account_code = ?";
+        
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, companyId);
+            stmt.setString(2, accountCode);
+            
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getLong("id");
+                }
+                return null;
+            }
         }
     }
     

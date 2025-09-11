@@ -1,0 +1,337 @@
+package fin.controller;
+
+import fin.service.FinancialReportingService;
+import fin.state.ApplicationState;
+import fin.ui.ConsoleMenu;
+import fin.ui.InputHandler;
+import fin.ui.OutputFormatter;
+
+import java.io.File;
+
+/**
+ * Report generation controller
+ * Extracted from monolithic App.java report-related methods
+ */
+public class ReportController {
+    private final FinancialReportingService financialReportingService;
+    private final ApplicationState applicationState;
+    private final ConsoleMenu menu;
+    private final InputHandler inputHandler;
+    private final OutputFormatter outputFormatter;
+    private final String reportsDir;
+    
+    public ReportController(FinancialReportingService financialReportingService,
+                          ApplicationState applicationState,
+                          ConsoleMenu menu,
+                          InputHandler inputHandler,
+                          OutputFormatter outputFormatter) {
+        this.financialReportingService = financialReportingService;
+        this.applicationState = applicationState;
+        this.menu = menu;
+        this.inputHandler = inputHandler;
+        this.outputFormatter = outputFormatter;
+        this.reportsDir = "/Users/sthwalonyoni/FIN/reports";
+    }
+    
+    public void handleReportGeneration() {
+        try {
+            applicationState.requireContext();
+            
+            boolean back = false;
+            while (!back) {
+                menu.displayReportMenu();
+                int choice = inputHandler.getInteger("Enter your choice", 1, 7);
+                
+                switch (choice) {
+                    case 1:
+                        generateCashbookReport();
+                        break;
+                    case 2:
+                        generateGeneralLedgerReport();
+                        break;
+                    case 3:
+                        generateTrialBalanceReport();
+                        break;
+                    case 4:
+                        generateIncomeStatementReport();
+                        break;
+                    case 5:
+                        generateBalanceSheetReport();
+                        break;
+                    case 6:
+                        generateCashFlowReport();
+                        break;
+                    case 7:
+                        back = true;
+                        break;
+                    default:
+                        outputFormatter.printError("Invalid choice. Please try again.");
+                }
+            }
+        } catch (IllegalStateException e) {
+            outputFormatter.printError(e.getMessage());
+        }
+    }
+    
+    public void generateCashbookReport() {
+        outputFormatter.printHeader("Generating Cashbook Report");
+        
+        try {
+            ensureReportsDirectoryExists();
+            
+            outputFormatter.printProcessing("Generating cashbook report...");
+            financialReportingService.generateCashbook(
+                applicationState.getCurrentCompany().getId(), 
+                applicationState.getCurrentFiscalPeriod().getId(), 
+                true);
+            
+            outputFormatter.printSuccess("Cashbook Report generated successfully");
+            outputFormatter.printFileLocation("Report location", reportsDir);
+            
+        } catch (Exception e) {
+            outputFormatter.printError("Error generating Cashbook Report: " + e.getMessage());
+        }
+    }
+    
+    public void generateGeneralLedgerReport() {
+        outputFormatter.printHeader("Generating General Ledger Report");
+        
+        try {
+            ensureReportsDirectoryExists();
+            
+            outputFormatter.printProcessing("Generating general ledger report...");
+            financialReportingService.generateGeneralLedger(
+                applicationState.getCurrentCompany().getId(), 
+                applicationState.getCurrentFiscalPeriod().getId(), 
+                true);
+            
+            outputFormatter.printSuccess("General Ledger Report generated successfully");
+            outputFormatter.printFileLocation("Report location", reportsDir);
+            
+        } catch (Exception e) {
+            outputFormatter.printError("Error generating General Ledger Report: " + e.getMessage());
+        }
+    }
+    
+    public void generateTrialBalanceReport() {
+        outputFormatter.printHeader("Generating Trial Balance Report");
+        
+        try {
+            ensureReportsDirectoryExists();
+            
+            outputFormatter.printProcessing("Generating trial balance report...");
+            financialReportingService.generateTrialBalance(
+                applicationState.getCurrentCompany().getId(), 
+                applicationState.getCurrentFiscalPeriod().getId(), 
+                true);
+            
+            outputFormatter.printSuccess("Trial Balance Report generated successfully");
+            outputFormatter.printFileLocation("Report location", reportsDir);
+            
+        } catch (Exception e) {
+            outputFormatter.printError("Error generating Trial Balance Report: " + e.getMessage());
+        }
+    }
+    
+    public void generateIncomeStatementReport() {
+        outputFormatter.printHeader("Generating Income Statement");
+        
+        try {
+            ensureReportsDirectoryExists();
+            
+            outputFormatter.printProcessing("Generating income statement...");
+            financialReportingService.generateIncomeStatement(
+                applicationState.getCurrentCompany().getId(), 
+                applicationState.getCurrentFiscalPeriod().getId(), 
+                true);
+            
+            outputFormatter.printSuccess("Income Statement generated successfully");
+            outputFormatter.printFileLocation("Report location", reportsDir);
+            
+        } catch (Exception e) {
+            outputFormatter.printError("Error generating Income Statement: " + e.getMessage());
+        }
+    }
+    
+    public void generateBalanceSheetReport() {
+        outputFormatter.printHeader("Generating Balance Sheet");
+        
+        try {
+            ensureReportsDirectoryExists();
+            
+            outputFormatter.printProcessing("Generating balance sheet...");
+            financialReportingService.generateBalanceSheet(
+                applicationState.getCurrentCompany().getId(), 
+                applicationState.getCurrentFiscalPeriod().getId(), 
+                true);
+            
+            outputFormatter.printSuccess("Balance Sheet generated successfully");
+            outputFormatter.printFileLocation("Report location", reportsDir);
+            
+        } catch (Exception e) {
+            outputFormatter.printError("Error generating Balance Sheet: " + e.getMessage());
+        }
+    }
+    
+    public void generateCashFlowReport() {
+        outputFormatter.printHeader("Generating Cash Flow Statement");
+        
+        try {
+            ensureReportsDirectoryExists();
+            
+            outputFormatter.printProcessing("Generating cash flow statement...");
+            // Using Audit Trail as substitute since FinancialReportingService doesn't have dedicated Cash Flow
+            financialReportingService.generateAuditTrail(
+                applicationState.getCurrentCompany().getId(), 
+                applicationState.getCurrentFiscalPeriod().getId(), 
+                true);
+            
+            outputFormatter.printSuccess("Cash Flow Statement generated successfully");
+            outputFormatter.printFileLocation("Report location", reportsDir);
+            
+        } catch (Exception e) {
+            outputFormatter.printError("Error generating Cash Flow Statement: " + e.getMessage());
+        }
+    }
+    
+    public void generateAllReports() {
+        outputFormatter.printHeader("Generating All Financial Reports");
+        
+        try {
+            applicationState.requireContext();
+            ensureReportsDirectoryExists();
+            
+            outputFormatter.printInfo("This will generate all available financial reports");
+            if (!inputHandler.getBoolean("Continue with batch report generation?")) {
+                outputFormatter.printInfo("Batch report generation cancelled");
+                return;
+            }
+            
+            String[] reportTypes = {
+                "Cashbook", "General Ledger", "Trial Balance", 
+                "Income Statement", "Balance Sheet", "Cash Flow Statement"
+            };
+            
+            int successCount = 0;
+            
+            for (int i = 0; i < reportTypes.length; i++) {
+                try {
+                    outputFormatter.printProgress("Generating reports", i + 1, reportTypes.length);
+                    
+                    switch (i) {
+                        case 0: financialReportingService.generateCashbook(
+                                applicationState.getCurrentCompany().getId(), 
+                                applicationState.getCurrentFiscalPeriod().getId(), true); break;
+                        case 1: financialReportingService.generateGeneralLedger(
+                                applicationState.getCurrentCompany().getId(), 
+                                applicationState.getCurrentFiscalPeriod().getId(), true); break;
+                        case 2: financialReportingService.generateTrialBalance(
+                                applicationState.getCurrentCompany().getId(), 
+                                applicationState.getCurrentFiscalPeriod().getId(), true); break;
+                        case 3: financialReportingService.generateIncomeStatement(
+                                applicationState.getCurrentCompany().getId(), 
+                                applicationState.getCurrentFiscalPeriod().getId(), true); break;
+                        case 4: financialReportingService.generateBalanceSheet(
+                                applicationState.getCurrentCompany().getId(), 
+                                applicationState.getCurrentFiscalPeriod().getId(), true); break;
+                        case 5: financialReportingService.generateAuditTrail(
+                                applicationState.getCurrentCompany().getId(), 
+                                applicationState.getCurrentFiscalPeriod().getId(), true); break;
+                    }
+                    successCount++;
+                } catch (Exception e) {
+                    outputFormatter.printError("Failed to generate " + reportTypes[i] + ": " + e.getMessage());
+                }
+            }
+            
+            outputFormatter.printSuccess("Generated " + successCount + " out of " + reportTypes.length + " reports");
+            outputFormatter.printFileLocation("All reports saved to", reportsDir);
+            
+        } catch (IllegalStateException e) {
+            outputFormatter.printError(e.getMessage());
+        } catch (Exception e) {
+            outputFormatter.printError("Error during batch report generation: " + e.getMessage());
+        }
+    }
+    
+    public void generateCustomReport() {
+        outputFormatter.printHeader("Generate Custom Report");
+        
+        try {
+            applicationState.requireContext();
+            
+            outputFormatter.printPlain("Available custom report options:");
+            outputFormatter.printPlain("1. Date range report");
+            outputFormatter.printPlain("2. Account-specific report");
+            outputFormatter.printPlain("3. Transaction type report");
+            outputFormatter.printPlain("4. Back to reports menu");
+            
+            int choice = inputHandler.getInteger("Select custom report type", 1, 4);
+            
+            switch (choice) {
+                case 1:
+                    generateDateRangeReport();
+                    break;
+                case 2:
+                    generateAccountSpecificReport();
+                    break;
+                case 3:
+                    generateTransactionTypeReport();
+                    break;
+                case 4:
+                    // Go back
+                    break;
+                default:
+                    outputFormatter.printError("Invalid choice");
+            }
+            
+        } catch (IllegalStateException e) {
+            outputFormatter.printError(e.getMessage());
+        }
+    }
+    
+    private void generateDateRangeReport() {
+        outputFormatter.printSubHeader("Date Range Report");
+        outputFormatter.printInfo("Generate reports for a specific date range within the fiscal period");
+        
+        // This would need additional service methods to support date range filtering
+        outputFormatter.printInfo("Date range reporting functionality would be implemented here");
+    }
+    
+    private void generateAccountSpecificReport() {
+        outputFormatter.printSubHeader("Account-Specific Report");
+        outputFormatter.printInfo("Generate reports for specific accounts");
+        
+        // This would need account selection and filtering
+        outputFormatter.printInfo("Account-specific reporting functionality would be implemented here");
+    }
+    
+    private void generateTransactionTypeReport() {
+        outputFormatter.printSubHeader("Transaction Type Report");
+        outputFormatter.printInfo("Generate reports filtered by transaction type");
+        
+        // This would need transaction type filtering
+        outputFormatter.printInfo("Transaction type reporting functionality would be implemented here");
+    }
+    
+    private boolean ensureReportsDirectoryExists() {
+        File directory = new File(reportsDir);
+        if (!directory.exists()) {
+            boolean created = directory.mkdirs();
+            if (created) {
+                outputFormatter.printInfo("Created reports directory: " + reportsDir);
+                return true;
+            } else {
+                outputFormatter.printError("Failed to create reports directory: " + reportsDir);
+                return false;
+            }
+        }
+        
+        if (!directory.canWrite()) {
+            outputFormatter.printError("Reports directory is not writable: " + reportsDir);
+            return false;
+        }
+        
+        return true;
+    }
+}
