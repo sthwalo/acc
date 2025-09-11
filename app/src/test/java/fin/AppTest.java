@@ -4,28 +4,48 @@
  */
 package fin;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class AppTest {
-    private App appWithoutDb;
     
-    @BeforeEach
-    void setUp() {
-        // Create App instance
-        appWithoutDb = new App();
+    @BeforeAll
+    static void setUpClass() throws Exception {
+        TestConfiguration.setupTestDatabase();
+        // Set test database URL for the duration of tests
+        System.setProperty("fin.database.url", TestConfiguration.TEST_DB_URL);
+        System.setProperty("fin.test.mode", "true");
     }
     
-    @Test void appHasADefaultGreeting() {
-        assertNotNull(appWithoutDb.getGreeting(null), "app should have a default greeting");
-        assertTrue(appWithoutDb.getGreeting(null).contains("Hello World"), "default greeting should contain 'Hello World'");
+    @AfterAll
+    static void tearDownClass() throws Exception {
+        TestConfiguration.cleanupTestDatabase();
+        System.clearProperty("fin.database.url");
+        System.clearProperty("fin.test.mode");
     }
     
-    @Test void appHasAPersonalizedGreeting() {
+    @Test 
+    void appHasADefaultGreeting() {
+        App app = new App();
+        assertNotNull(app.getGreeting(null), "app should have a default greeting");
+        assertTrue(app.getGreeting(null).contains("Hello World"), "default greeting should contain 'Hello World'");
+    }
+    
+    @Test 
+    void appHasAPersonalizedGreeting() {
+        App app = new App();
         String name = "John";
-        String greeting = appWithoutDb.getGreeting(name);
+        String greeting = app.getGreeting(name);
         assertNotNull(greeting, "app should have a personalized greeting");
         assertTrue(greeting.contains(name), "personalized greeting should contain the name");
+    }
+    
+    @Test
+    void appCanInitializeServices() {
+        // Test that the app can initialize its services without crashing
+        assertDoesNotThrow(() -> {
+            App app = new App();
+            app.getGreeting("TestUser");
+        }, "App services should initialize without errors");
     }
 }
