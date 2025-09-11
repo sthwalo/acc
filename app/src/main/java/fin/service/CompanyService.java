@@ -37,7 +37,8 @@ public class CompanyService {
                     "address TEXT," +
                     "contact_email VARCHAR(255)," +
                     "contact_phone VARCHAR(50)," +
-                    "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP" +
+                    "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
+                    "updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP" +
                     ")");
             
             // Create fiscal_periods table
@@ -229,6 +230,67 @@ public class CompanyService {
         } catch (SQLException e) {
             System.err.println("Error getting company: " + e.getMessage());
             throw new RuntimeException("Failed to get company", e);
+        }
+    }
+    
+    /**
+     * Update an existing company in the database
+     * @param company The company with updated fields
+     * @return The updated company
+     */
+    public Company updateCompany(Company company) {
+        if (company.getId() == null) {
+            throw new IllegalArgumentException("Company ID cannot be null for update operation");
+        }
+        
+        String sql = "UPDATE companies SET name = ?, registration_number = ?, tax_number = ?, " +
+                "address = ?, contact_email = ?, contact_phone = ?, updated_at = ? " +
+                "WHERE id = ?";
+        
+        try (Connection conn = DriverManager.getConnection(dbUrl);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, company.getName());
+            pstmt.setString(2, company.getRegistrationNumber());
+            pstmt.setString(3, company.getTaxNumber());
+            pstmt.setString(4, company.getAddress());
+            pstmt.setString(5, company.getContactEmail());
+            pstmt.setString(6, company.getContactPhone());
+            pstmt.setTimestamp(7, Timestamp.valueOf(LocalDateTime.now()));
+            pstmt.setLong(8, company.getId());
+            
+            int affectedRows = pstmt.executeUpdate();
+            if (affectedRows == 0) {
+                throw new SQLException("Updating company failed, no rows affected.");
+            }
+            
+            return getCompanyById(company.getId());
+            
+        } catch (SQLException e) {
+            System.err.println("Error updating company: " + e.getMessage());
+            throw new RuntimeException("Failed to update company", e);
+        }
+    }
+    
+    /**
+     * Delete a company from the database
+     * @param id The ID of the company to delete
+     * @return true if deleted successfully, false otherwise
+     */
+    public boolean deleteCompany(Long id) {
+        String sql = "DELETE FROM companies WHERE id = ?";
+        
+        try (Connection conn = DriverManager.getConnection(dbUrl);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setLong(1, id);
+            
+            int affectedRows = pstmt.executeUpdate();
+            return affectedRows > 0;
+            
+        } catch (SQLException e) {
+            System.err.println("Error deleting company: " + e.getMessage());
+            throw new RuntimeException("Failed to delete company", e);
         }
     }
     
