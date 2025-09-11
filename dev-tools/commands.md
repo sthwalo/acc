@@ -360,6 +360,27 @@ psql -c "SELECT schemaname,tablename,pg_size_pretty(pg_total_relation_size(schem
 # Full system test
 ./gradlew clean build -x test && ./gradlew run
 
+# Run console app with auto-confirm license
+echo "yes" | timeout 10s java -jar app/build/libs/app.jar || echo "Process completed or timed out"
+
+# Run API server with auto-confirm license
+echo "yes" | java -jar app/build/libs/app.jar
+
+
+echo -e "yes\n1\n" | java -jar app/build/libs/app.jar
+
+
+java -jar app/build/libs/app.jar
+
+# Run API server and monitor logs
+./gradlew run --args="api" 2>&1 | tee api_server.log &  
+
+# Run database migration
+./gradlew run --args="migrate" 2>&1 | tee db_migration.log &
+
+# Run database seeder
+./gradlew run --args="seed" 2>&1 | tee db_seeder.log &
+
 # Generate report and open
 ./gradlew run --args="excel" && open reports/*.xls
 

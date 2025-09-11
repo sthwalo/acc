@@ -231,6 +231,7 @@ public class AccountClassificationService {
     private void analyzeTransactionPatterns(Long companyId) throws SQLException {
         System.out.println("\n🔍 Analyzing transaction patterns for account mapping...");
         
+        // Query to analyze patterns without using PostgreSQL-specific functions
         String sql = """
             SELECT 
                 CASE 
@@ -248,8 +249,7 @@ public class AccountClassificationService {
                 END as suggested_category,
                 COUNT(*) as transaction_count,
                 SUM(COALESCE(credit_amount, 0)) as total_credits,
-                SUM(COALESCE(debit_amount, 0)) as total_debits,
-                ARRAY_AGG(DISTINCT details ORDER BY details LIMIT 3) as sample_descriptions
+                SUM(COALESCE(debit_amount, 0)) as total_debits
             FROM bank_transactions 
             WHERE details IS NOT NULL
             GROUP BY 1
@@ -277,6 +277,58 @@ public class AccountClassificationService {
                     formatAmount(debits));
             }
             System.out.println("=" .repeat(80));
+            
+            // Also get sample transactions for each category
+            System.out.println("\n📝 Sample Transactions:");
+            System.out.println("-".repeat(80));
+            
+            String sampleSql = """
+                SELECT 
+                    CASE 
+                        WHEN details LIKE '%FEE%' OR details LIKE '%CHARGE%' THEN 'Bank Charges'
+                        WHEN details LIKE '%TRANSFER FROM%' OR details LIKE '%DEPOSIT%' THEN 'Deposits/Transfers In'
+                        WHEN details LIKE '%TRANSFER TO%' OR details LIKE '%PAYMENT TO%' THEN 'Payments/Transfers Out'
+                        WHEN details LIKE '%SALARY%' OR details LIKE '%WAGE%' THEN 'Employee Costs'
+                        WHEN details LIKE '%INTEREST%' THEN 'Interest'
+                        WHEN details LIKE '%RENT%' THEN 'Rent'
+                        WHEN details LIKE '%INSURANCE%' THEN 'Insurance'
+                        WHEN details LIKE '%FUEL%' OR details LIKE '%PETROL%' THEN 'Vehicle Expenses'
+                        WHEN details LIKE '%ELECTRIC%' OR details LIKE '%WATER%' OR details LIKE '%MUNICIPAL%' THEN 'Utilities'
+                        WHEN details LIKE '%TELEPHONE%' OR details LIKE '%MOBILE%' OR details LIKE '%INTERNET%' THEN 'Communication'
+                        ELSE 'Unclassified'
+                    END as category,
+                    details
+                FROM bank_transactions
+                WHERE details IS NOT NULL
+                ORDER BY category, details
+                LIMIT 10
+                """;
+            
+            try (PreparedStatement sampleStmt = conn.prepareStatement(sampleSql);
+                 ResultSet sampleRs = sampleStmt.executeQuery()) {
+                
+                String currentCategory = "";
+                int sampleCount = 0;
+                
+                while (sampleRs.next()) {
+                    String category = sampleRs.getString("category");
+                    String details = sampleRs.getString("details");
+                    
+                    if (!category.equals(currentCategory)) {
+                        if (!currentCategory.isEmpty()) {
+                            System.out.println();
+                        }
+                        currentCategory = category;
+                        System.out.println(category + ":");
+                        sampleCount = 0;
+                    }
+                    
+                    if (sampleCount < 3) { // Limit to 3 samples per category
+                        System.out.println("  - " + details);
+                        sampleCount++;
+                    }
+                }
+            }
         }
     }
     
