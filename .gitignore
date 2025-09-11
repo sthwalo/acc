@@ -157,6 +157,7 @@ docs/TRANSACTION_CLASSIFICATION_GUIDE.md
 docs/SYSTEM_ARCHITECTURE_STATUS.md
 docs/TYPESCRIPT_INTEGRATION_STRATEGY.md
 docs/technical/DATABASE_REFERENCE.md
+docs/DATABASE_REFERENCE.md
 
 
 # Exclude any docs with real credentials or sensitive data
