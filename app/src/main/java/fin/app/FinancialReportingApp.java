@@ -5,7 +5,9 @@ import fin.service.TransactionMappingService;
 import fin.service.FinancialReportingService;
 import fin.service.InteractiveCategorizationService;
 import fin.service.ExcelFinancialReportService;
+import fin.config.DatabaseConfig;
 
+import java.io.File;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -29,20 +31,55 @@ import java.util.logging.Level;
  */
 public class FinancialReportingApp {
     private static final Logger LOGGER = Logger.getLogger(FinancialReportingApp.class.getName());
-    private static final String DB_URL = "jdbc:postgresql://localhost:5432/drimacc_db";
-    
-    private final TransactionMappingService mappingService;
     private final FinancialReportingService reportingService;
+    private final TransactionMappingService mappingService;
     private final InteractiveCategorizationService categorizationService;
     private final ExcelFinancialReportService excelReportService;
     private final Scanner scanner;
+    private final String dbUrl;
     
     public FinancialReportingApp() {
-        this.mappingService = new TransactionMappingService(DB_URL);
-        this.reportingService = new FinancialReportingService(DB_URL);
-        this.categorizationService = new InteractiveCategorizationService(DB_URL);
-        this.excelReportService = new ExcelFinancialReportService(DB_URL);
+        // Initialize database URL from configuration
+        this.dbUrl = DatabaseConfig.getDatabaseUrl();
+        
+        // Initialize scanner for user input
         this.scanner = new Scanner(System.in);
+        
+        // Check database connection and environment before proceeding
+        if (!initializeEnvironment()) {
+            LOGGER.warning("Financial Reporting App initialized with warnings");
+        }
+        
+        // Initialize services
+        this.reportingService = new FinancialReportingService(dbUrl);
+        this.mappingService = new TransactionMappingService(dbUrl);
+        this.categorizationService = new InteractiveCategorizationService(dbUrl);
+        this.excelReportService = new ExcelFinancialReportService(dbUrl);
+        
+        LOGGER.info("Financial Reporting App initialized successfully");
+    }
+    
+    /**
+     * Check environment configuration and setup
+     */
+    private boolean initializeEnvironment() {
+        boolean isValid = true;
+        
+        // Check database configuration
+        if (dbUrl == null || dbUrl.isEmpty()) {
+            LOGGER.severe("Database URL is not configured properly");
+            System.err.println("❌ Database URL is missing - check environment variables");
+            isValid = false;
+        }
+        
+        // Check reports directory
+        String reportsDir = "/Users/sthwalonyoni/FIN/reports";
+        if (!ensureReportDirectoryExists(reportsDir)) {
+            LOGGER.warning("Could not verify or create reports directory: " + reportsDir);
+            isValid = false;
+        }
+        
+        return isValid;
     }
     
     public static void main(String[] args) {
@@ -136,7 +173,7 @@ public class FinancialReportingApp {
                         break;
                         
                     case 7:
-                        System.out.println("\n👋 Thank you for using Xinghizana Group Financial Reporting System!");
+                        System.out.println("\n👋 Thank you for using Sthwalo Holdings Financial Reporting System!");
                         System.out.println("All changes have been saved to the database.");
                         return;
                         
@@ -192,7 +229,28 @@ public class FinancialReportingApp {
         
         try {
             String reportsDir = "/Users/sthwalonyoni/FIN/reports";
+            
+            // Ensure reports directory exists
+            if (!ensureReportDirectoryExists(reportsDir)) {
+                System.err.println("❌ Cannot generate Excel reports due to directory issues");
+                return;
+            }
+            
             excelReportService.generateComprehensiveFinancialReport(companyId, fiscalPeriodId, reportsDir);
+            
+            // Verify report file was created
+            File reportDir = new File(reportsDir);
+            if (reportDir.exists() && reportDir.isDirectory()) {
+                File[] files = reportDir.listFiles((dir, name) -> name.toLowerCase().endsWith(".xlsx"));
+                if (files != null && files.length > 0) {
+                    for (File file : files) {
+                        System.out.println("✅ Verified report file was created: " + file.getAbsolutePath());
+                        System.out.println("📊 File size: " + (file.length() / 1024) + " KB");
+                    }
+                } else {
+                    System.err.println("⚠️ Warning: No Excel report files found in " + reportsDir);
+                }
+            }
             
             System.out.println("✅ Excel Financial Report generated successfully!");
             System.out.println("📁 Location: " + reportsDir);
@@ -216,8 +274,36 @@ public class FinancialReportingApp {
             
         } catch (Exception e) {
             System.err.println("❌ Error generating Excel financial report: " + e.getMessage());
-            throw e;
+            LOGGER.log(Level.SEVERE, "Detailed error info", e);
+            // Don't throw - this prevents the menu from continuing
         }
+    }
+    
+    /**
+     * Ensures the reports directory exists, creating it if necessary
+     * @return true if directory exists or was created successfully
+     */
+    private boolean ensureReportDirectoryExists(String reportsDir) {
+        File directory = new File(reportsDir);
+        if (!directory.exists()) {
+            boolean created = directory.mkdirs();
+            if (created) {
+                System.out.println("📁 Created reports directory: " + reportsDir);
+            } else {
+                System.err.println("❌ Failed to create reports directory: " + reportsDir);
+                return false;
+            }
+        } else {
+            System.out.println("📁 Using existing reports directory: " + reportsDir);
+        }
+        
+        // Check if directory is writable
+        if (!directory.canWrite()) {
+            System.err.println("❌ Reports directory is not writable: " + reportsDir);
+            return false;
+        }
+        
+        return true;
     }
     
     /**
@@ -325,7 +411,20 @@ public class FinancialReportingApp {
     public void generateAllReports(Long companyId, Long fiscalPeriodId) {
         System.out.println("Generating comprehensive financial reports...");
         
+        // Verify database connection first
+        if (!verifyDatabaseConnection()) {
+            System.err.println("❌ Cannot generate reports due to database connection issues");
+            return;
+        }
+        
         try {
+            // Ensure reports directory exists
+            String reportsDir = "/Users/sthwalonyoni/FIN/reports";
+            if (!ensureReportDirectoryExists(reportsDir)) {
+                System.err.println("❌ Cannot generate reports due to directory issues");
+                return;
+            }
+            
             // 1. Audit Trail
             System.out.println("\\n📋 Generating Audit Trail...");
             reportingService.generateAuditTrail(companyId, fiscalPeriodId, true);
@@ -356,6 +455,9 @@ public class FinancialReportingApp {
             reportingService.generateBalanceSheet(companyId, fiscalPeriodId, true);
             System.out.println("✅ Balance Sheet generated and exported");
             
+            // Verify files were created and show file details
+            verifyAndPrintReportFiles(reportsDir);
+            
             // Show summary in console
             System.out.println("\\n" + "=".repeat(80));
             System.out.println("📋 FINANCIAL REPORTING SUMMARY");
@@ -372,7 +474,69 @@ public class FinancialReportingApp {
             
         } catch (Exception e) {
             System.err.println("❌ Error generating reports: " + e.getMessage());
-            throw e;
+            LOGGER.log(Level.SEVERE, "Detailed error info", e);
+            // Don't throw - this prevents the menu from continuing
+        }
+    }
+    
+    /**
+     * Verify database connection before running reports
+     */
+    private boolean verifyDatabaseConnection() {
+        try (Connection conn = DriverManager.getConnection(dbUrl)) {
+            if (conn != null && !conn.isClosed()) {
+                System.out.println("✅ Database connection verified");
+                
+                // Check if we're using PostgreSQL or SQLite
+                String dbType = isPostgreSQLDatabase() ? "PostgreSQL" : "SQLite";
+                System.out.println("🔍 Using " + dbType + " database");
+                
+                return true;
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Database connection failed", e);
+            System.err.println("❌ Database connection error: " + e.getMessage());
+        }
+        return false;
+    }
+    
+    /**
+     * Check if the application is using PostgreSQL database
+     */
+    private boolean isPostgreSQLDatabase() {
+        return dbUrl != null && dbUrl.startsWith("jdbc:postgresql:");
+    }
+    
+    /**
+     * Verify report files exist and print their details
+     */
+    private void verifyAndPrintReportFiles(String reportsDir) {
+        File reportDir = new File(reportsDir);
+        if (reportDir.exists() && reportDir.isDirectory()) {
+            File[] files = reportDir.listFiles((dir, name) -> name.toLowerCase().endsWith(".txt"));
+            if (files != null && files.length > 0) {
+                System.out.println("\n✅ Successfully generated " + files.length + " report files:");
+                for (File file : files) {
+                    long fileSize = file.length();
+                    String sizeUnit = "B";
+                    double displaySize = fileSize;
+                    
+                    if (fileSize > 1024) {
+                        displaySize = fileSize / 1024.0;
+                        sizeUnit = "KB";
+                    }
+                    if (displaySize > 1024) {
+                        displaySize = displaySize / 1024.0;
+                        sizeUnit = "MB";
+                    }
+                    
+                    System.out.printf("   - %s (%.1f %s)%n", file.getName(), displaySize, sizeUnit);
+                }
+            } else {
+                System.err.println("⚠️ Warning: No report files found in " + reportsDir);
+            }
+        } else {
+            System.err.println("⚠️ Warning: Report directory not found: " + reportsDir);
         }
     }
     
@@ -381,7 +545,7 @@ public class FinancialReportingApp {
     private Long getCompanyId(String companyName) {
         String sql = "SELECT id FROM companies WHERE name = ?";
         
-        try (Connection conn = DriverManager.getConnection(DB_URL);
+        try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             
             pstmt.setString(1, companyName);
@@ -401,7 +565,7 @@ public class FinancialReportingApp {
     private Long getCurrentFiscalPeriodId(Long companyId) {
         String sql = "SELECT id FROM fiscal_periods WHERE company_id = ? AND is_closed = false ORDER BY start_date DESC LIMIT 1";
         
-        try (Connection conn = DriverManager.getConnection(DB_URL);
+        try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             
             pstmt.setLong(1, companyId);
@@ -421,7 +585,7 @@ public class FinancialReportingApp {
     private int getJournalEntryCount(Long companyId) {
         String sql = "SELECT COUNT(*) FROM journal_entries WHERE company_id = ?";
         
-        try (Connection conn = DriverManager.getConnection(DB_URL);
+        try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             
             pstmt.setLong(1, companyId);
@@ -441,7 +605,7 @@ public class FinancialReportingApp {
     private int getTotalTransactionCount(Long companyId) {
         String sql = "SELECT COUNT(*) FROM bank_transactions WHERE company_id = ?";
         
-        try (Connection conn = DriverManager.getConnection(DB_URL);
+        try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             
             pstmt.setLong(1, companyId);
@@ -461,7 +625,7 @@ public class FinancialReportingApp {
     private int getUnclassifiedTransactionCount(Long companyId) {
         String sql = "SELECT COUNT(*) FROM bank_transactions WHERE company_id = ? AND account_id IS NULL";
         
-        try (Connection conn = DriverManager.getConnection(DB_URL);
+        try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             
             pstmt.setLong(1, companyId);
@@ -493,7 +657,7 @@ public class FinancialReportingApp {
             LIMIT 10
         """;
         
-        try (Connection conn = DriverManager.getConnection(DB_URL);
+        try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             
             pstmt.setLong(1, companyId);

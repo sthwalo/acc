@@ -31,6 +31,8 @@ import fin.service.CsvExportService;
 import fin.service.DataManagementService;
 import fin.service.PdfExportService;
 import fin.service.ReportService;
+import fin.service.FinancialReportingService;
+import fin.service.ClassificationIntegrationService;
 import fin.license.LicenseManager;
 import fin.config.DatabaseConfig;
 
@@ -58,10 +60,12 @@ public class App {
     private final CompanyService companyService;
     private final CsvImportService csvImportService;
     private final ReportService reportService;
+    private final FinancialReportingService financialReportingService;
     private final PdfExportService pdfExportService;
     private final DataManagementService dataManagementService;
     private final BankStatementProcessingService bankStatementService;
     private final TransactionVerificationService verificationService;
+    private final ClassificationIntegrationService classificationService;
     private Company currentCompany;
     private FiscalPeriod currentFiscalPeriod;
     
@@ -77,21 +81,25 @@ public class App {
         this.companyService = new CompanyService(dbUrl);
         this.csvImportService = new CsvImportService(dbUrl, companyService);
         this.reportService = new ReportService(dbUrl, csvImportService);
+        this.financialReportingService = new FinancialReportingService(dbUrl);
         this.pdfExportService = new PdfExportService();
         this.dataManagementService = new DataManagementService(dbUrl, companyService, csvImportService.getAccountService());
         this.bankStatementService = new BankStatementProcessingService(dbUrl);
         this.verificationService = new TransactionVerificationService(dbUrl, companyService, csvImportService);
+        this.classificationService = new ClassificationIntegrationService();
     }
     
     public void showDataManagementMenu() {
         System.out.println("\n===== Data Management =====");
         System.out.println("1. Create Manual Invoice");
         System.out.println("2. Create Journal Entry");
-        System.out.println("3. Correct Transaction Categorization");
-        System.out.println("4. View Transaction History");
-        System.out.println("5. Reset Company Data");
-        System.out.println("6. Back to main menu");
-        System.out.print("Enter your choice (1-6): ");
+        System.out.println("3. Transaction Classification");
+        System.out.println("4. Correct Transaction Categorization");
+        System.out.println("5. View Transaction History");
+        System.out.println("6. Reset Company Data");
+        System.out.println("7. Export to CSV");
+        System.out.println("8. Back to main menu");
+        System.out.print("Enter your choice (1-8): ");
     }
     
     public void showMenu() {
@@ -114,8 +122,10 @@ public class App {
         System.out.println("1. Create new company");
         System.out.println("2. Select existing company");
         System.out.println("3. View company details");
-        System.out.println("4. Back to main menu");
-        System.out.print("Enter your choice (1-4): ");
+        System.out.println("4. Edit company details");
+        System.out.println("5. Delete company");
+        System.out.println("6. Back to main menu");
+        System.out.print("Enter your choice (1-6): ");
     }
     
     public void showFiscalPeriodMenu() {
@@ -156,6 +166,12 @@ public class App {
                     viewCompanyDetails();
                     break;
                 case "4":
+                    editCompany(scanner);
+                    break;
+                case "5":
+                    deleteCompany(scanner);
+                    break;
+                case "6":
                     back = true;
                     break;
                 default:
@@ -249,6 +265,95 @@ public class App {
                 (currentCompany.getContactEmail() != null ? currentCompany.getContactEmail() : "N/A"));
         System.out.println("Contact Phone: " + 
                 (currentCompany.getContactPhone() != null ? currentCompany.getContactPhone() : "N/A"));
+    }
+    
+    private void editCompany(Scanner scanner) {
+        if (currentCompany == null) {
+            System.out.println("No company selected. Please select a company first.");
+            return;
+        }
+        
+        System.out.println("\n===== Edit Company Details =====");
+        System.out.println("Current values shown in [brackets]. Press Enter to keep current value.");
+        
+        System.out.print("Company name [" + currentCompany.getName() + "]: ");
+        String name = scanner.nextLine().trim();
+        if (!name.isEmpty()) {
+            currentCompany.setName(name);
+        }
+        
+        System.out.print("Registration number [" + 
+                (currentCompany.getRegistrationNumber() != null ? currentCompany.getRegistrationNumber() : "N/A") + "]: ");
+        String regNumber = scanner.nextLine().trim();
+        if (!regNumber.isEmpty()) {
+            currentCompany.setRegistrationNumber(regNumber.equals("N/A") ? null : regNumber);
+        }
+        
+        System.out.print("Tax number [" + 
+                (currentCompany.getTaxNumber() != null ? currentCompany.getTaxNumber() : "N/A") + "]: ");
+        String taxNumber = scanner.nextLine().trim();
+        if (!taxNumber.isEmpty()) {
+            currentCompany.setTaxNumber(taxNumber.equals("N/A") ? null : taxNumber);
+        }
+        
+        System.out.print("Address [" + 
+                (currentCompany.getAddress() != null ? currentCompany.getAddress() : "N/A") + "]: ");
+        String address = scanner.nextLine().trim();
+        if (!address.isEmpty()) {
+            currentCompany.setAddress(address.equals("N/A") ? null : address);
+        }
+        
+        System.out.print("Contact email [" + 
+                (currentCompany.getContactEmail() != null ? currentCompany.getContactEmail() : "N/A") + "]: ");
+        String email = scanner.nextLine().trim();
+        if (!email.isEmpty()) {
+            currentCompany.setContactEmail(email.equals("N/A") ? null : email);
+        }
+        
+        System.out.print("Contact phone [" + 
+                (currentCompany.getContactPhone() != null ? currentCompany.getContactPhone() : "N/A") + "]: ");
+        String phone = scanner.nextLine().trim();
+        if (!phone.isEmpty()) {
+            currentCompany.setContactPhone(phone.equals("N/A") ? null : phone);
+        }
+        
+        try {
+            currentCompany = companyService.updateCompany(currentCompany);
+            System.out.println("\nCompany updated successfully!");
+        } catch (Exception e) {
+            System.err.println("Error updating company: " + e.getMessage());
+        }
+    }
+    
+    private void deleteCompany(Scanner scanner) {
+        if (currentCompany == null) {
+            System.out.println("No company selected. Please select a company first.");
+            return;
+        }
+        
+        System.out.println("\n===== Delete Company =====");
+        System.out.println("WARNING: This will permanently delete the company and all associated data.");
+        System.out.println("Company to delete: " + currentCompany.getName() + " (ID: " + currentCompany.getId() + ")");
+        System.out.print("Type 'DELETE' to confirm: ");
+        
+        String confirmation = scanner.nextLine().trim();
+        if ("DELETE".equals(confirmation)) {
+            try {
+                boolean deleted = companyService.deleteCompany(currentCompany.getId());
+                if (deleted) {
+                    System.out.println("Company deleted successfully!");
+                    currentCompany = null;
+                    currentFiscalPeriod = null;
+                } else {
+                    System.out.println("Failed to delete company. It may have already been deleted or doesn't exist.");
+                }
+            } catch (Exception e) {
+                System.err.println("Error deleting company: " + e.getMessage());
+                System.err.println("This could be due to existing data that depends on this company.");
+            }
+        } else {
+            System.out.println("Deletion cancelled.");
+        }
     }
     
     private void handleFiscalPeriodManagement(Scanner scanner) {
@@ -444,38 +549,132 @@ public class App {
     
     private void generateCashbookReport() {
         System.out.println("\nGenerating Cashbook Report...");
-        String report = reportService.generateCashbookReport(currentFiscalPeriod.getId());
-        System.out.println("\n" + report);
+        try {
+            // Ensure reports directory exists
+            String reportsDir = "/Users/sthwalonyoni/FIN/reports";
+            ensureReportsDirectoryExists(reportsDir);
+            
+            // Generate report
+            financialReportingService.generateCashbook(currentCompany.getId(), currentFiscalPeriod.getId(), true);
+            
+            System.out.println("\n✅ Cashbook Report generated and saved to reports directory");
+            System.out.println("📁 Location: " + reportsDir);
+        } catch (Exception e) {
+            System.err.println("\n❌ Error generating Cashbook Report: " + e.getMessage());
+        }
     }
     
     private void generateGeneralLedgerReport() {
         System.out.println("\nGenerating General Ledger Report...");
-        String report = reportService.generateGeneralLedgerReport(currentFiscalPeriod.getId());
-        System.out.println("\n" + report);
+        try {
+            // Ensure reports directory exists
+            String reportsDir = "/Users/sthwalonyoni/FIN/reports";
+            ensureReportsDirectoryExists(reportsDir);
+            
+            // Generate report
+            financialReportingService.generateGeneralLedger(currentCompany.getId(), currentFiscalPeriod.getId(), true);
+            
+            System.out.println("\n✅ General Ledger Report generated and saved to reports directory");
+            System.out.println("📁 Location: " + reportsDir);
+        } catch (Exception e) {
+            System.err.println("\n❌ Error generating General Ledger Report: " + e.getMessage());
+        }
     }
     
     private void generateTrialBalanceReport() {
         System.out.println("\nGenerating Trial Balance Report...");
-        String report = reportService.generateTrialBalanceReport(currentFiscalPeriod.getId());
-        System.out.println("\n" + report);
+        try {
+            // Ensure reports directory exists
+            String reportsDir = "/Users/sthwalonyoni/FIN/reports";
+            ensureReportsDirectoryExists(reportsDir);
+            
+            // Generate report
+            financialReportingService.generateTrialBalance(currentCompany.getId(), currentFiscalPeriod.getId(), true);
+            
+            System.out.println("\n✅ Trial Balance Report generated and saved to reports directory");
+            System.out.println("📁 Location: " + reportsDir);
+        } catch (Exception e) {
+            System.err.println("\n❌ Error generating Trial Balance Report: " + e.getMessage());
+        }
     }
     
     private void generateIncomeStatementReport() {
         System.out.println("\nGenerating Income Statement...");
-        String report = reportService.generateIncomeStatementReport(currentFiscalPeriod.getId());
-        System.out.println("\n" + report);
+        try {
+            // Ensure reports directory exists
+            String reportsDir = "/Users/sthwalonyoni/FIN/reports";
+            ensureReportsDirectoryExists(reportsDir);
+            
+            // Generate report
+            financialReportingService.generateIncomeStatement(currentCompany.getId(), currentFiscalPeriod.getId(), true);
+            
+            System.out.println("\n✅ Income Statement generated and saved to reports directory");
+            System.out.println("📁 Location: " + reportsDir);
+        } catch (Exception e) {
+            System.err.println("\n❌ Error generating Income Statement: " + e.getMessage());
+        }
     }
     
     private void generateBalanceSheetReport() {
         System.out.println("\nGenerating Balance Sheet...");
-        String report = reportService.generateBalanceSheetReport(currentFiscalPeriod.getId());
-        System.out.println("\n" + report);
+        try {
+            // Ensure reports directory exists
+            String reportsDir = "/Users/sthwalonyoni/FIN/reports";
+            ensureReportsDirectoryExists(reportsDir);
+            
+            // Generate report
+            financialReportingService.generateBalanceSheet(currentCompany.getId(), currentFiscalPeriod.getId(), true);
+            
+            System.out.println("\n✅ Balance Sheet generated and saved to reports directory");
+            System.out.println("📁 Location: " + reportsDir);
+        } catch (Exception e) {
+            System.err.println("\n❌ Error generating Balance Sheet: " + e.getMessage());
+        }
     }
     
     private void generateCashFlowReport() {
         System.out.println("\nGenerating Cash Flow Statement...");
-        String report = reportService.generateCashFlowReport(currentFiscalPeriod.getId());
-        System.out.println("\n" + report);
+        try {
+            // Ensure reports directory exists
+            String reportsDir = "/Users/sthwalonyoni/FIN/reports";
+            ensureReportsDirectoryExists(reportsDir);
+            
+            // Generate report using Audit Trail as a substitute since FinancialReportingService
+            // doesn't have a dedicated Cash Flow method
+            financialReportingService.generateAuditTrail(currentCompany.getId(), currentFiscalPeriod.getId(), true);
+            
+            System.out.println("\n✅ Cash Flow Statement generated and saved to reports directory");
+            System.out.println("📁 Location: " + reportsDir);
+        } catch (Exception e) {
+            System.err.println("\n❌ Error generating Cash Flow Statement: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Ensures the reports directory exists, creating it if necessary
+     * @return true if directory exists or was created successfully
+     */
+    private boolean ensureReportsDirectoryExists(String reportsDir) {
+        File directory = new File(reportsDir);
+        if (!directory.exists()) {
+            boolean created = directory.mkdirs();
+            if (created) {
+                System.out.println("📁 Created reports directory: " + reportsDir);
+            } else {
+                System.err.println("❌ Failed to create reports directory: " + reportsDir);
+                return false;
+            }
+        } else {
+            System.out.println("📁 Using existing reports directory: " + reportsDir);
+        }
+        
+        // Check if directory is writable
+        if (!directory.canWrite()) {
+            System.err.println("❌ Reports directory is not writable: " + reportsDir);
+            return false;
+        }
+        
+        return true;
     }
     
     /**
@@ -600,23 +799,101 @@ public class App {
                     handleJournalEntryCreation(scanner);
                     break;
                 case "3":
-                    handleTransactionCorrection(scanner);
+                    handleTransactionClassification(scanner);
                     break;
                 case "4":
-                    handleTransactionHistory(scanner);
+                    handleTransactionCorrection(scanner);
                     break;
                 case "5":
-                    handleDataReset(scanner);
+                    handleTransactionHistory(scanner);
                     break;
                 case "6":
-                    handleExportToCSV(scanner);
+                    handleDataReset(scanner);
                     break;
                 case "7":
+                    handleExportToCSV(scanner);
+                    break;
+                case "8":
                     back = true;
                     break;
                 default:
                     System.out.println("Invalid choice. Please try again.");
             }
+        }
+    }
+    
+    private void handleTransactionClassification(Scanner scanner) {
+        if (currentCompany == null || currentFiscalPeriod == null) {
+            System.out.println("Please select both a company and fiscal period first.");
+            return;
+        }
+
+        System.out.println("\n===== Transaction Classification =====");
+        System.out.println("1. Run Interactive Classification");
+        System.out.println("2. Auto-Classify Transactions");
+        System.out.println("3. Initialize Chart of Accounts");
+        System.out.println("4. Synchronize Journal Entries");
+        System.out.println("5. Back to Data Management");
+        System.out.print("Enter your choice (1-5): ");
+        
+        String choice = scanner.nextLine().trim();
+        
+        switch (choice) {
+            case "1":
+                classificationService.runInteractiveClassification(
+                    currentCompany.getId(), currentFiscalPeriod.getId());
+                break;
+            case "2":
+                classificationService.autoClassifyTransactions(
+                    currentCompany.getId(), currentFiscalPeriod.getId());
+                break;
+            case "3":
+                System.out.println("\n===== Initialize Chart of Accounts =====");
+                System.out.println("1. Initialize Chart of Accounts Only");
+                System.out.println("2. Initialize Transaction Mapping Rules Only");
+                System.out.println("3. Perform Full Initialization");
+                System.out.println("4. Back");
+                System.out.print("Enter choice (1-4): ");
+                
+                String initChoice = scanner.nextLine().trim();
+                switch (initChoice) {
+                    case "1":
+                        boolean success = classificationService.initializeChartOfAccounts(currentCompany.getId());
+                        if (success) {
+                            System.out.println("✅ Chart of Accounts initialized successfully");
+                        }
+                        break;
+                    case "2":
+                        success = classificationService.initializeTransactionMappingRules(currentCompany.getId());
+                        if (success) {
+                            System.out.println("✅ Transaction Mapping Rules initialized successfully");
+                        }
+                        break;
+                    case "3":
+                        success = classificationService.performFullInitialization(currentCompany.getId());
+                        if (success) {
+                            System.out.println("✅ Full initialization completed successfully");
+                        }
+                        break;
+                    case "4":
+                        // Just go back
+                        break;
+                    default:
+                        System.out.println("Invalid choice.");
+                }
+                break;
+            case "4":
+                int syncCount = classificationService.synchronizeJournalEntries(
+                    currentCompany.getId(), currentFiscalPeriod.getId());
+                if (syncCount > 0) {
+                    System.out.println("✅ Synchronized " + syncCount + " transactions with journal entries");
+                }
+                break;
+            case "5":
+                // Just go back
+                break;
+            default:
+                System.out.println("Invalid choice.");
         }
     }
     
