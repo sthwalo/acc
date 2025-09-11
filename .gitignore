@@ -50,7 +50,16 @@ processed_statement_*.csv
 
 # Reports containing sensitive financial information
 reports/
-scripts/
+dev-tools/scripts/
+
+# Scripts with sensitive data (exclude specific ones)
+scripts/connect_db.sh
+scripts/export_data.sh
+scripts/process_statement.sh
+scripts/frontend-licensing-*.sh
+scripts/*_data_*.sh
+scripts/*_db_*.sh
+scripts/*_credentials_*.sh
 
 
 # ========================================
