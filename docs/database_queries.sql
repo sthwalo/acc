@@ -1,6 +1,6 @@
 -- ===============================================
 -- FINANCIAL DATA ANALYSIS QUERIES
--- Database: drimacc_db (PostgreSQL)
+-- Database: (PostgreSQL)
 -- Total Transactions: 3,829
 -- Period: 2024-03-01 to 2025-02-28
 -- ===============================================
