@@ -1,6 +1,8 @@
 # FIN Financial Management System - Commercial License Terms
 
-**Copyright 2025 Sthwalo Nyoni. All Rights Reserved.**
+**Copyright 2024-2025 Sthwalo Holdings (Pty) Ltd. All Rights Reserved.**
+**Owner: Immaculate Nyoni**
+**Contact: sthwaloe@gmail.com | +27 61 514 6185**
 
 ## 📋 **License Summary**
 
@@ -95,13 +97,13 @@ Commercial use includes but is not limited to:
 This software and its unique approaches to financial data processing are protected by pending patents and trade secrets. Any attempt to reverse engineer, copy, or create derivative works for commercial purposes without proper licensing is strictly prohibited.
 
 ### **Copyright Protection**
-- All source code: Copyright 2025 Sthwalo Nyoni
-- All algorithms and business logic: Proprietary
-- All documentation and user interfaces: Proprietary
-- All data processing methods: Trade secrets
+- All source code: Copyright 2024-2025 Sthwalo Holdings (Pty) Ltd.
+- All algorithms and business logic: Proprietary to Sthwalo Holdings
+- All documentation and user interfaces: Proprietary to Sthwalo Holdings
+- All data processing methods: Trade secrets of Sthwalo Holdings
 
 ### **Trademark Protection**
-"FIN Financial Management System" and related logos are trademarks of Sthwalo Nyoni.
+"FIN Financial Management System" and related logos are trademarks of Sthwalo Holdings (Pty) Ltd.
 
 ## ⚖️ **Legal Enforcement**
 
@@ -123,8 +125,8 @@ We actively monitor for unauthorized commercial use through:
 
 ### **Start Your Commercial License:**
 1. **Visit:** https://fin-licensing.com/get-started
-2. **Email:** licensing@fin-software.com
-3. **Phone:** +1-xxx-xxx-xxxx
+2. **Email:** sthwaloe@gmail.com
+3. **Phone:** +27 61 514 6185
 4. **Schedule:** Free consultation call
 
 ### **License Activation Process:**
@@ -171,8 +173,9 @@ We actively monitor for unauthorized commercial use through:
 
 ---
 
-**© 2024 Immaculate Nyoni. All rights reserved.**
+**© 2024-2025 Sthwalo Holdings (Pty) Ltd. All rights reserved.**
+**Owner: Immaculate Nyoni | Contact: sthwaloe@gmail.com | +27 61 514 6185**
 
 **This commercial license is required for any business or commercial use of FIN Financial Management System. Unauthorized commercial use is strictly prohibited and subject to legal action.**
 
-**Contact licensing@fin-software.com for questions or to begin your commercial license.**
+**Contact sthwaloe@gmail.com for questions or to begin your commercial license.**

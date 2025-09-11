@@ -141,12 +141,19 @@ debug.log
 # Keep documentation but exclude files with sensitive information
 docs/technical/DATABASE_REFERENCE.md
 docs/development/ENHANCED_PARSER_COMPLETION_REPORT.md
+docs/development/DEVELOPMENT_NOTES.md
+docs/PHASE3_REFACTORING_REPORT.md
+docs/REFACTORING_PHASE2_COMPLETION.md
+docs/development/BUILD_INSTRUCTIONS.md
+
 
 # Exclude any docs with real credentials or sensitive data
 docs/**/credentials.md
 docs/**/passwords.md
 docs/**/*_credentials_*.md
 docs/**/*_sensitive_*.md
+docs/troubleshooting/DATA_MANAGEMENT_DEEP_DIVE_ANALYSIS.md
+chart_of_accounts_mapping_guide.txt
 cmd.txt
 rules.txt
 
@@ -157,6 +164,8 @@ rules.txt
 # Development utilities and debugging tools (Java files only)
 dev-tools/*.java
 dev-tools/*.class
+dev-tools/
+
 
 # Allow documentation in dev-tools
 !dev-tools/*.md

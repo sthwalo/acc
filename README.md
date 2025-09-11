@@ -105,15 +105,15 @@ source .env
 ```bash
 # PostgreSQL must be running with credentials in .env
 source .env
-psql -h localhost -U sthwalonyoni -d drimacc_db -c "SELECT COUNT(*) FROM accounts;"
+psql -h localhost -U [YOUR_DB_USER] -d [YOUR_DB_NAME] -c "SELECT COUNT(*) FROM accounts;"
 ```
 
 ### **Environment Configuration**
 See `.env` file for database connection settings:
 ```bash
-DATABASE_URL=jdbc:postgresql://localhost:5432/drimacc_db
-DATABASE_USER=sthwalonyoni
-DATABASE_PASSWORD=LeZipho24#
+DATABASE_URL=jdbc:postgresql://localhost:5432/[YOUR_DATABASE]
+DATABASE_USER=[YOUR_USERNAME]  
+DATABASE_PASSWORD=[YOUR_PASSWORD]
 ```
 
 ## 📋 System Status
@@ -173,8 +173,11 @@ Contributions welcome! The system is actively developed with modern architecture
 - Comprehensive error handling
 - Production-ready database design
 
-## 📞 Support
+## 📞 Support & Contact
 
+- **Owner:** Immaculate Nyoni | Sthwalo Holdings (Pty) Ltd.
+- **Email:** sthwaloe@gmail.com
+- **Phone:** +27 61 514 6185
 - **Issues:** Open a GitHub issue
 - **Documentation:** See `/docs` directory
 - **Architecture:** Review `SYSTEM_ARCHITECTURE_STATUS.md`
@@ -241,7 +244,9 @@ Detailed documentation is available in the `docs` directory:
 
 **Application Use License:** Commercial license required for business use.
 
-**Copyright:** 2025 Sthwalo Nyoni
+**Copyright:** 2024-2025 Sthwalo Holdings (Pty) Ltd.
+**Owner:** Immaculate Nyoni
+**Contact:** sthwaloe@gmail.com | +27 61 514 6185
 
 ```
 Licensed under the Apache License, Version 2.0 (the "License");
