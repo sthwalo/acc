@@ -145,6 +145,8 @@ docs/development/DEVELOPMENT_NOTES.md
 docs/PHASE3_REFACTORING_REPORT.md
 docs/REFACTORING_PHASE2_COMPLETION.md
 docs/development/BUILD_INSTRUCTIONS.md
+docs/TRANSACTION_CLASSIFICATION_SUMMARY.md
+docs/UPDATE_SUMMARY.md
 
 
 # Exclude any docs with real credentials or sensitive data
@@ -178,3 +180,22 @@ dev-tools/
 # sample-data/
 # demo-bank-statements/
 # test-fixtures/
+
+# ========================================
+# SYSTEM FILES
+# ========================================
+
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Environment files
+.env
+.env.local
+.env.production
+.env.test
