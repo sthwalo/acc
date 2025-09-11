@@ -1,5 +1,9 @@
 # FIN Financial Management System - Licensing Options
 
+**Copyright 2024-2025 Sthwalo Holdings (Pty) Ltd.**  
+**Owner: Immaculate Nyoni**  
+**Contact: sthwaloe@gmail.com | +27 61 514 6185**
+
 ## Open Source License (Apache 2.0)
 
 The FIN Financial Management System is available under the Apache License 2.0 for:
@@ -18,7 +22,7 @@ For commercial use requiring:
 - **Liability coverage**
 - **White-label licensing**
 
-Please contact: sthwalo@example.com for commercial licensing terms.
+Please contact: sthwaloe@gmail.com for commercial licensing terms.
 
 ## Hosted Solutions
 
@@ -47,6 +51,8 @@ Don't want to manage the infrastructure? We offer:
 
 ## Contact
 
+- **Owner:** Immaculate Nyoni | Sthwalo Holdings (Pty) Ltd.
+- **Email:** sthwaloe@gmail.com
+- **Phone:** +27 61 514 6185
 - **Technical Questions:** GitHub Issues
-- **Commercial Inquiries:** sthwalo@example.com
-- **Partnership Opportunities:** partnerships@example.com
+- **Commercial Inquiries:** sthwaloe@gmail.com
