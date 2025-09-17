@@ -12,6 +12,12 @@ public class ConsoleApplication {
     
     public static void main(String[] args) {
         try {
+            // Check for batch mode
+            if (args.length > 0 && "--batch".equals(args[0])) {
+                runBatchMode(args);
+                return;
+            }
+            
             // License compliance check
             if (!LicenseManager.checkLicenseCompliance()) {
                 System.err.println("❌ License compliance check failed");
@@ -45,6 +51,39 @@ public class ConsoleApplication {
             
         } catch (Exception e) {
             System.err.println("❌ Failed to start application: " + e.getMessage());
+            e.printStackTrace();
+            System.exit(1);
+        }
+    }
+    
+    /**
+     * Run application in batch mode for automated processing
+     */
+    private static void runBatchMode(String[] args) {
+        try {
+            System.out.println("🚀 Starting FIN Financial Management System - Batch Mode");
+            System.out.println("📊 Automated Processing");
+            System.out.println("===============================================");
+            
+            // License compliance check
+            if (!LicenseManager.checkLicenseCompliance()) {
+                System.err.println("❌ License compliance check failed");
+                System.exit(1);
+            }
+            
+            // Initialize application context
+            ApplicationContext context = new ApplicationContext();
+            
+            // Parse batch arguments
+            BatchProcessor processor = new BatchProcessor(context);
+            processor.processBatchCommand(args);
+            
+            // Shutdown cleanly
+            context.shutdown();
+            System.out.println("✅ Batch processing completed successfully");
+            
+        } catch (Exception e) {
+            System.err.println("❌ Batch processing failed: " + e.getMessage());
             e.printStackTrace();
             System.exit(1);
         }
