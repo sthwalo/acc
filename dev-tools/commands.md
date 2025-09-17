@@ -41,6 +41,30 @@ pkill -f "java.*ApiServer"
 ./gradlew run --args="excel reports/custom_report.xls"
 ```
 
+### **CI/CD and Deployment**
+```bash
+# Full CI pipeline simulation
+./gradlew clean build test
+
+# Build JAR for deployment
+./gradlew build -x test
+ls -la app/build/libs/
+
+# Run smoke tests after deployment
+curl http://localhost:8080/api/health
+./gradlew run --args="console" &
+sleep 5 && pkill -f "gradle"
+
+# Database migration for deployment
+PGPASSWORD='your_password' psql -h localhost -U drimacc_user -d drimacc_db -f scripts/migrate.sql
+
+# Backup before deployment
+pg_dump -h localhost -U drimacc_user -d drimacc_db > backup_$(date +%Y%m%d_%H%M%S).sql
+
+# Health check script
+watch -n 30 'curl -s http://localhost:8080/api/health && echo " ✓ API OK" || echo " ✗ API DOWN"'
+```
+
 ## 🗄️ Database Commands
 
 ### **PostgreSQL Connection**
@@ -190,6 +214,28 @@ grep -r "@GetMapping\|@PostMapping" --include="*.java" .
 
 # Find configuration references
 grep -r "application\.properties\|application\.yml" .
+
+# Find test classes and methods
+grep -r "class.*Test" --include="*.java" .
+grep -r "@Test" --include="*.java" .
+
+# Find main methods
+grep -r "public static void main" --include="*.java" .
+
+# Find service classes
+grep -r "Service" --include="*.java" app/src/main/java/fin/service/
+
+# Find controller classes
+grep -r "Controller" --include="*.java" app/src/main/java/fin/controller/
+
+# Find UI classes
+grep -r "ConsoleMenu\|InputHandler\|OutputFormatter" --include="*.java" .
+
+# Find error handling
+grep -r "try\|catch\|Exception" --include="*.java" .
+
+# Find TODO comments
+grep -r "TODO\|FIXME\|XXX" --include="*.java" .
 ```
 
 ### **Grep Commands for Code Analysis**
@@ -240,8 +286,25 @@ find app/src/main/java -type d | sed 's|app/src/main/java/||' | grep -v "^$"
 # Build without tests
 ./gradlew build -x test
 
-# Run specific tests
+# Run all tests
+./gradlew test
+
+# Run specific test class
 ./gradlew test --tests "*BankStatementProcessingServiceTest*"
+./gradlew test --tests "fin.ui.ConsoleMenuTest"
+./gradlew test --tests "fin.controller.ApplicationControllerTest"
+
+# Run specific test method
+./gradlew test --tests "fin.ui.ConsoleMenuTest.displayMainMenu_PrintsAllOptions"
+./gradlew test --tests "fin.controller.ApplicationControllerTest.start_WithExitChoice_ExitsCleanly"
+
+# Run tests by pattern
+./gradlew test --tests "*UI*" --quiet
+./gradlew test --tests "fin.ui.*Test"
+./gradlew test --tests "*Controller*"
+
+# Run tests with detailed output
+./gradlew test --tests "*UI*" --info | head -50
 
 # Generate test report
 ./gradlew test && open app/build/reports/tests/test/index.html
@@ -353,6 +416,38 @@ psql -c "SELECT pg_size_pretty(pg_database_size('drimacc_db'));"
 psql -c "SELECT schemaname,tablename,pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) as size FROM pg_tables WHERE schemaname = 'public' ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC;"
 ```
 
+### **Debugging and Troubleshooting**
+```bash
+# View test failure details
+./gradlew test --tests "*TestName*" --info
+
+# Run tests with stack traces
+./gradlew test --tests "*TestName*" --stacktrace
+
+# Debug test execution
+./gradlew test --tests "*TestName*" --debug-jvm
+
+# View build logs
+./gradlew build --info | tee build.log
+
+# Check for compilation errors
+./gradlew compileJava --info
+
+# View dependency tree
+./gradlew dependencies --configuration runtimeClasspath
+
+# Find hanging processes
+ps aux | grep java
+pkill -f "gradle"
+
+# Clear Gradle cache
+./gradlew clean && rm -rf ~/.gradle/caches
+
+# Check disk space
+df -h
+du -sh app/build/
+```
+
 ## 🎯 Quick Commands
 
 ### **One-Liners for Common Tasks**
@@ -366,16 +461,18 @@ echo "yes" | timeout 10s java -jar app/build/libs/app.jar || echo "Process compl
 # Run API server with auto-confirm license
 echo "yes" | java -jar app/build/libs/app.jar
 
-
+# Run with specific inputs for testing
 echo -e "yes\n1\n" | java -jar app/build/libs/app.jar
 
-
+# Direct JAR execution
 java -jar app/build/libs/app.jar
 
+# Run specific application modes
 ./gradlew run --args="console"
+./gradlew run --args="api"
 
 # Run API server and monitor logs
-./gradlew run --args="api" 2>&1 | tee api_server.log &  
+./gradlew run --args="api" 2>&1 | tee api_server.log &
 
 # Run database migration
 ./gradlew run --args="migrate" 2>&1 | tee db_migration.log &
@@ -403,6 +500,15 @@ git log --oneline --since="1 day ago"
 
 # Clean and rebuild everything
 ./gradlew clean && rm -rf build && ./gradlew build
+
+# Quick test execution patterns
+./gradlew test --tests "*UI*" --quiet
+./gradlew test --tests "fin.controller.*Test"
+./gradlew test --tests "*Service*Test"
+
+# Debug failing tests
+./gradlew test --tests "*TestName*" --info | head -50
+./gradlew test --tests "*TestName*" --stacktrace
 ```
 
 ## 📝 Notes
@@ -420,7 +526,14 @@ Add these to your `.bashrc` or `.zshrc`:
 ```bash
 alias finrun='cd /Users/sthwalonyoni/FIN && ./gradlew run'
 alias finapi='cd /Users/sthwalonyoni/FIN && ./gradlew run --args="api"'
+alias finconsole='cd /Users/sthwalonyoni/FIN && ./gradlew run --args="console"'
 alias findb='PGPASSWORD="your_password" psql -h localhost -U drimacc_user -d drimacc_db'
 alias finbuild='cd /Users/sthwalonyoni/FIN && ./gradlew clean build'
 alias finstatus='cd /Users/sthwalonyoni/FIN && git status'
+alias fintest='cd /Users/sthwalonyoni/FIN && ./gradlew test'
+alias finuitest='cd /Users/sthwalonyoni/FIN && ./gradlew test --tests "*UI*" --quiet'
+alias fincleantest='cd /Users/sthwalonyoni/FIN && ./gradlew clean test'
+alias finhealth='curl -s http://localhost:8080/api/health || echo "API Down"'
+alias finlogs='tail -f /Users/sthwalonyoni/FIN/api_server.log'
+alias finstop='pkill -f "java.*ApiServer"'
 ```
