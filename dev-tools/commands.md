@@ -586,6 +586,11 @@ echo -e "yes\n1\n" | ./gradlew runConsole
 # Direct JAR execution (modular)
 java -jar app/build/libs/app.jar  # Runs ConsoleApplication by default
 
+# Batch mode (automated processing - exits cleanly)
+java -jar app/build/libs/app.jar --batch process-statement "input/xxxxx3753 (14).pdf"
+java -jar app/build/libs/app.jar --batch create-company "Company Name"
+java -jar app/build/libs/app.jar --batch create-fiscal-period "FY2025-2026" "2025-01-01" "2025-12-31"
+
 # Run specific application modes
 ./gradlew runConsole    # Console mode
 ./gradlew runApi        # API mode
@@ -666,4 +671,5 @@ alias finstopall='pkill -f "java.*Application"'
 alias findb='PGPASSWORD="your_password" psql -h localhost -U drimacc_user -d drimacc_db'
 alias finfat='cd /Users/sthwalonyoni/FIN && ./gradlew fatJar'
 alias finboth='cd /Users/sthwalonyoni/FIN && ./gradlew runApi & ./gradlew runConsole'
+alias finbatch='cd /Users/sthwalonyoni/FIN && java -jar app/build/libs/app.jar --batch process-statement "input/xxxxx3753 (14).pdf"'
 ```
