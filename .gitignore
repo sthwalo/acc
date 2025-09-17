@@ -167,6 +167,7 @@ docs/SYSTEM_ARCHITECTURE_STATUS.md
 docs/TYPESCRIPT_INTEGRATION_STRATEGY.md
 docs/technical/DATABASE_REFERENCE.md
 docs/DATABASE_REFERENCE.md
+dev-tools/commands.md
 
 
 # Exclude any docs with real credentials or sensitive data
