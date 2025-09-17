@@ -541,6 +541,39 @@ public class TransactionMappingService {
     public Long mapTransactionToAccount(BankTransaction transaction) {
         String details = transaction.getDetails().toUpperCase();
         
+        // PRIORITY: Check revenue transactions first for credit amounts
+        if (transaction.getCreditAmount() != null) {
+            // Sales revenue (deposits/credits) - check this early for credit transactions
+            if (!details.contains("LOAN") && !details.contains("CAPITAL") && 
+                !details.contains("BOND") && !details.contains("INTEREST") && 
+                !details.contains("REFUND") && !details.contains("REVERSAL") && 
+                !details.contains("RTD-DEBIT")) {
+                // Allow CREDIT TRANSFER as revenue if it doesn't match other patterns
+                if (details.contains("CREDIT TRANSFER") || details.contains("DEPOSIT") || 
+                    details.contains("PAYMENT") || !details.contains("TRANSFER")) {
+                    return getAccountByCode("6100"); // Service Revenue
+                }
+            }
+            
+            // Interest income
+            if (details.contains("INTEREST")) {
+                return getAccountByCode("7000"); // Interest Income
+            }
+            
+            // Refunds (credit transactions that are actually refunds)
+            if (details.contains("REFUND") || details.contains("RTD-DEBIT") || 
+                details.contains("REVERSAL")) {
+                return getAccountByCode("6200"); // Refunds
+            }
+            
+            // Director/Shareholder transfers (credits)
+            if (details.contains("DIRECTOR") || details.contains("SHAREHOLDER") || 
+                details.contains("OWNER") || (details.contains("IB TRANSFER") && details.contains("FROM"))) {
+                return getAccountByCode("4000"); // Long-term Loans
+            }
+        }
+        
+        // EXPENSE PATTERNS (debit transactions or specific patterns)
         // Bank charges and fees
         if (details.contains("FEE")) {
             return getAccountByCode("9600"); // Bank Charges
@@ -598,7 +631,7 @@ public class TransactionMappingService {
             return getAccountByCode("9000"); // Office Supplies
         }
         
-        // Computer expenses
+        // Computer expenses - check this after revenue to avoid false matches
         if (details.contains("SOFTWARE") || details.contains("COMPUTER") || 
             details.contains("IT") || details.contains("TECHNOLOGY")) {
             return getAccountByCode("9100"); // Computer Expenses
@@ -610,32 +643,21 @@ public class TransactionMappingService {
             return getAccountByCode("9200"); // Marketing & Advertising
         }
         
-        // Interest payments
+        // Bond repayments (debit transactions)
+        if (details.contains("BOND") && details.contains("REPAYMENT") && transaction.getDebitAmount() != null) {
+            return getAccountByCode("9500"); // Interest Expense
+        }
+        
+        // Interest payments (debits)
         if (details.contains("INTEREST") && transaction.getDebitAmount() != null) {
             return getAccountByCode("9500"); // Interest Expense
         }
         
-        // Interest income
-        if (details.contains("INTEREST") && transaction.getCreditAmount() != null) {
-            return getAccountByCode("7000"); // Interest Income
-        }
-        
-        // Sales revenue (deposits/credits)
-        if (transaction.getCreditAmount() != null && !details.contains("TRANSFER") && 
-            !details.contains("LOAN") && !details.contains("CAPITAL")) {
-            return getAccountByCode("6100"); // Service Revenue
-        }
-        
-        // Loans from directors/shareholders
-        if (details.contains("DIRECTOR") || details.contains("SHAREHOLDER") || 
-            details.contains("OWNER")) {
-            if (transaction.getCreditAmount() != null) {
-                // Money coming in from directors - liability
-                return getAccountByCode("4000"); // Long-term Loans
-            } else {
-                // Money going out to directors - asset
-                return getAccountByCode("1200"); // Accounts Receivable
-            }
+        // Director/Shareholder transfers (debits)
+        if ((details.contains("DIRECTOR") || details.contains("SHAREHOLDER") || 
+             details.contains("OWNER") || details.contains("IB TRANSFER")) && 
+            transaction.getDebitAmount() != null) {
+            return getAccountByCode("1200"); // Accounts Receivable
         }
         
         // VAT payments

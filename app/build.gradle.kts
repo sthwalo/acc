@@ -110,6 +110,7 @@ tasks.register<JavaExec>("runConsole") {
     mainClass.set("fin.ConsoleApplication")
     systemProperties = System.getProperties().toMap() as Map<String, Any>
     systemProperty("fin.license.autoconfirm", "true")
+    maxHeapSize = "2G"
 }
 
 tasks.named<Test>("test") {
