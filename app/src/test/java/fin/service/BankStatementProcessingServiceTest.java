@@ -52,6 +52,9 @@ class BankStatementProcessingServiceTest {
         assertEquals("SERVICE FEE", transaction.getDetails(), "Transaction details should match");
         assertNotNull(transaction.getDebitAmount(), "Service fee should have debit amount");
         assertEquals(new java.math.BigDecimal("35.00"), transaction.getDebitAmount(), "Debit amount should be 35.00");
+        
+        // Check that fiscal period was found (should be the 2025 period)
+        assertNotNull(transaction.getFiscalPeriodId(), "Fiscal period should be assigned");
     }
     
     @Test
