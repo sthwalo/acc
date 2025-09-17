@@ -43,9 +43,9 @@ public class CompanyService {
     }
     
     private void initializeDatabase() {
-        // Skip table creation if using PostgreSQL - tables are created via migration script
-        if (DatabaseConfig.isUsingPostgreSQL()) {
-            System.out.println("📊 Using PostgreSQL - schema already exists");
+        // Skip table creation if using PostgreSQL or H2 test database
+        if (DatabaseConfig.isUsingPostgreSQL() || isH2Database()) {
+            System.out.println("📊 Using " + (isH2Database() ? "H2" : "PostgreSQL") + " - schema already exists");
             return;
         }
         
@@ -96,6 +96,13 @@ public class CompanyService {
             System.err.println("Error initializing database: " + e.getMessage());
             throw new RuntimeException("Failed to initialize database", e);
         }
+    }
+    
+    /**
+     * Check if this service is using an H2 in-memory database
+     */
+    private boolean isH2Database() {
+        return dbUrl != null && (dbUrl.contains("h2") || dbUrl.contains(":mem:"));
     }
     
     public Company createCompany(Company company) {

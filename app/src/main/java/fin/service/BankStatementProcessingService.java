@@ -122,8 +122,8 @@ public class BankStatementProcessingService {
         // Extract statement date from the PDF content
         LocalDate statementDate = extractStatementDateFromPdf();
         if (statementDate == null) {
-            // Fallback to a date in the correct fiscal year (2024)
-            statementDate = LocalDate.of(2024, 6, 30); // Mid fiscal year
+            // Fallback to a date in the correct fiscal year (2025)
+            statementDate = LocalDate.of(2025, 6, 30); // Mid fiscal year
         }
         
         return new TransactionParsingContext.Builder()

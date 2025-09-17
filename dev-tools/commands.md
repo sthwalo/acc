@@ -2,34 +2,102 @@
 
 ## 🚀 Application Execution Commands
 
-### **Console Application**
+### **Modular Architecture Entry Points**
+
+#### **Console Application (Default)**
 ```bash
-# Run main console application
+# Run console application (default mode)
 ./gradlew run
+
+# Run console application explicitly
+./gradlew runConsole
 
 # Run console with specific args
 ./gradlew run --args="console"
 
 # Run console app directly
 cd /Users/sthwalonyoni/FIN && ./gradlew run
-
-# Build and run console
-./gradlew build && ./gradlew run
 ```
 
-### **API Server**
+#### **API Server**
 ```bash
-# Start API server (background)
-./gradlew run --args="api" &
+# Start API server (modular architecture)
+./gradlew runApi
+
+# Start API server with args
+./gradlew run --args="api"
 
 # Start API server with logs
 ./gradlew run --args="api" 2>&1 | tee api_server.log
+
+# Start API server (background)
+./gradlew run --args="api" &
 
 # Test API server is running
 curl http://localhost:8080/api/health
 
 # Stop API server
-pkill -f "java.*ApiServer"
+pkill -f "java.*ApiApplication"
+```
+
+#### **Application Context Commands**
+```bash
+# View application context services
+./gradlew run --args="--context-info"
+
+# Test dependency injection
+./gradlew run --args="--di-test"
+
+# Validate service initialization
+./gradlew run --args="--validate-services"
+```
+
+## 🏗️ Modular Architecture Commands
+
+### **Dependency Injection & Context**
+```bash
+# Test application context initialization
+./gradlew test --tests "fin.context.ApplicationContextTest"
+
+# Validate service registration
+./gradlew run --args="--services-validate"
+
+# Check dependency injection health
+./gradlew run --args="--di-health"
+
+# View registered services
+./gradlew run --args="--services-list"
+```
+
+### **Entry Point Management**
+```bash
+# Switch between application modes
+./gradlew runApi      # API server mode
+./gradlew runConsole  # Console application mode
+
+# Run both applications simultaneously
+./gradlew runApi & ./gradlew runConsole &
+
+# Graceful shutdown of both
+pkill -f "java.*ApiApplication" && pkill -f "java.*ConsoleApplication"
+
+# Check which mode is running
+ps aux | grep -E "(ApiApplication|ConsoleApplication)" | grep -v grep
+```
+
+### **Modular Testing**
+```bash
+# Test architectural layers separately
+./gradlew test --tests "fin.context.*"     # Context/Injection layer
+./gradlew test --tests "fin.api.*"         # API layer
+./gradlew test --tests "fin.controller.*"  # Controller layer
+./gradlew test --tests "fin.service.*"     # Service layer
+./gradlew test --tests "fin.repository.*"  # Repository layer
+./gradlew test --tests "fin.ui.*"          # UI layer
+
+# Integration tests for modular components
+./gradlew test --tests "*IntegrationTest"
+./gradlew test --tests "*ModularTest"
 ```
 
 ### **Excel Report Generation**
@@ -43,17 +111,27 @@ pkill -f "java.*ApiServer"
 
 ### **CI/CD and Deployment**
 ```bash
-# Full CI pipeline simulation
+# Full CI pipeline simulation (local)
 ./gradlew clean build test
 
 # Build JAR for deployment
 ./gradlew build -x test
 ls -la app/build/libs/
 
+# Build fat JAR with all dependencies
+./gradlew fatJar
+ls -la app/build/libs/*-fat.jar
+
 # Run smoke tests after deployment
 curl http://localhost:8080/api/health
-./gradlew run --args="console" &
+./gradlew runConsole &
 sleep 5 && pkill -f "gradle"
+
+# Test both application modes
+./gradlew runApi &
+sleep 3 && curl http://localhost:8080/api/health && pkill -f "ApiApplication"
+./gradlew runConsole &
+sleep 3 && pkill -f "ConsoleApplication"
 
 # Database migration for deployment
 PGPASSWORD='your_password' psql -h localhost -U drimacc_user -d drimacc_db -f scripts/migrate.sql
@@ -61,8 +139,9 @@ PGPASSWORD='your_password' psql -h localhost -U drimacc_user -d drimacc_db -f sc
 # Backup before deployment
 pg_dump -h localhost -U drimacc_user -d drimacc_db > backup_$(date +%Y%m%d_%H%M%S).sql
 
-# Health check script
+# Health check script for both modes
 watch -n 30 'curl -s http://localhost:8080/api/health && echo " ✓ API OK" || echo " ✗ API DOWN"'
+watch -n 30 'ps aux | grep -q ConsoleApplication && echo " ✓ Console OK" || echo " ✗ Console DOWN"'
 ```
 
 ## 🗄️ Database Commands
@@ -286,22 +365,32 @@ find app/src/main/java -type d | sed 's|app/src/main/java/||' | grep -v "^$"
 # Build without tests
 ./gradlew build -x test
 
+# Build fat JAR
+./gradlew fatJar
+
 # Run all tests
 ./gradlew test
 
-# Run specific test class
+# Run modular architecture tests
+./gradlew test --tests "fin.context.*Test"       # Application context tests
+./gradlew test --tests "fin.api.*Test"          # API server tests
+
+# Run specific test class (updated for modular structure)
 ./gradlew test --tests "*BankStatementProcessingServiceTest*"
 ./gradlew test --tests "fin.ui.ConsoleMenuTest"
 ./gradlew test --tests "fin.controller.ApplicationControllerTest"
+./gradlew test --tests "fin.service.*ServiceTest"
 
 # Run specific test method
 ./gradlew test --tests "fin.ui.ConsoleMenuTest.displayMainMenu_PrintsAllOptions"
 ./gradlew test --tests "fin.controller.ApplicationControllerTest.start_WithExitChoice_ExitsCleanly"
 
-# Run tests by pattern
-./gradlew test --tests "*UI*" --quiet
-./gradlew test --tests "fin.ui.*Test"
-./gradlew test --tests "*Controller*"
+# Run tests by architectural layer
+./gradlew test --tests "*UI*" --quiet           # UI layer tests
+./gradlew test --tests "fin.controller.*Test"   # Controller layer tests
+./gradlew test --tests "fin.service.*Test"      # Service layer tests
+./gradlew test --tests "fin.repository.*Test"   # Repository layer tests
+./gradlew test --tests "fin.context.*Test"      # Context/Injection tests
 
 # Run tests with detailed output
 ./gradlew test --tests "*UI*" --info | head -50
@@ -314,6 +403,10 @@ find app/src/main/java -type d | sed 's|app/src/main/java/||' | grep -v "^$"
 
 # View project structure
 ./gradlew projects
+
+# Run separate application tasks
+./gradlew runApi     # Run API server only
+./gradlew runConsole # Run console application only
 ```
 
 ## 🛠️ Development Commands
@@ -384,14 +477,16 @@ mkdir -p path/to/new/directory
 
 ### **Application Monitoring**
 ```bash
-# Check Java processes
-jps -l | grep fin
+# Check Java processes (modular architecture)
+jps -l | grep -E "(ApiApplication|ConsoleApplication)"
 
-# Monitor Java heap usage
-jstat -gc [PID]
+# Monitor Java heap usage for both applications
+jstat -gc [API_PID]     # API server memory
+jstat -gc [CONSOLE_PID] # Console app memory
 
 # View application logs
 tail -f api_server.log
+tail -f console_app.log
 
 # Monitor file changes
 watch -n 2 'ls -lat reports/'
@@ -399,6 +494,24 @@ watch -n 2 'ls -lat reports/'
 # Check port usage
 lsof -i :8080
 netstat -an | grep 8080
+
+# Monitor both applications
+watch -n 10 'ps aux | grep -E "(ApiApplication|ConsoleApplication)" | grep -v grep || echo "No FIN apps running"'
+```
+
+### **Modular Architecture Monitoring**
+```bash
+# Check application context status
+curl http://localhost:8080/api/health
+
+# Monitor dependency injection
+./gradlew run --args="--di-status"
+
+# Check service initialization
+./gradlew run --args="--services-status"
+
+# View active application contexts
+jps -l | grep Application | xargs -I {} jstack {} | grep -A 5 -B 5 "ApplicationContext"
 ```
 
 ### **Database Monitoring**
@@ -452,27 +565,36 @@ du -sh app/build/
 
 ### **One-Liners for Common Tasks**
 ```bash
-# Full system test
-./gradlew clean build -x test && ./gradlew run
+# Full system test (modular architecture)
+./gradlew clean build -x test && ./gradlew runConsole
+
+# Test both application modes
+./gradlew runApi &
+sleep 3 && curl http://localhost:8080/api/health && pkill -f "ApiApplication"
+./gradlew runConsole &
+sleep 3 && pkill -f "ConsoleApplication"
 
 # Run console app with auto-confirm license
-echo "yes" | timeout 10s java -jar app/build/libs/app.jar || echo "Process completed or timed out"
+echo "yes" | timeout 10s ./gradlew runConsole || echo "Process completed or timed out"
 
 # Run API server with auto-confirm license
-echo "yes" | java -jar app/build/libs/app.jar
+echo "yes" | ./gradlew runApi
 
 # Run with specific inputs for testing
-echo -e "yes\n1\n" | java -jar app/build/libs/app.jar
+echo -e "yes\n1\n" | ./gradlew runConsole
 
-# Direct JAR execution
-java -jar app/build/libs/app.jar
+# Direct JAR execution (modular)
+java -jar app/build/libs/app.jar  # Runs ConsoleApplication by default
 
 # Run specific application modes
-./gradlew run --args="console"
-./gradlew run --args="api"
+./gradlew runConsole    # Console mode
+./gradlew runApi        # API mode
 
 # Run API server and monitor logs
-./gradlew run --args="api" 2>&1 | tee api_server.log &
+./gradlew runApi 2>&1 | tee api_server.log &
+
+# Run console and monitor logs
+./gradlew runConsole 2>&1 | tee console_app.log &
 
 # Run database migration
 ./gradlew run --args="migrate" 2>&1 | tee db_migration.log &
@@ -483,8 +605,8 @@ java -jar app/build/libs/app.jar
 # Generate report and open
 ./gradlew run --args="excel" && open reports/*.xls
 
-# Search for specific functionality
-grep -r "generateExcel\|ExcelGenerator" --include="*.java" app/src/
+# Search for modular architecture components
+grep -r "ApplicationContext\|ApiApplication\|ConsoleApplication" --include="*.java" app/src/
 
 # Find configuration files
 find . -name "*.properties" -o -name "*.yml" -o -name "application.*"
@@ -492,8 +614,9 @@ find . -name "*.properties" -o -name "*.yml" -o -name "application.*"
 # Quick database query
 PGPASSWORD='your_password' psql -h localhost -U drimacc_user -d drimacc_db -c "SELECT COUNT(*) FROM journal_entries;"
 
-# Monitor API health
+# Monitor both application modes
 watch -n 5 'curl -s http://localhost:8080/api/health || echo "API Down"'
+watch -n 5 'ps aux | grep -E "(ApiApplication|ConsoleApplication)" | grep -v grep || echo "Apps Down"'
 
 # View recent git changes
 git log --oneline --since="1 day ago"
@@ -501,10 +624,11 @@ git log --oneline --since="1 day ago"
 # Clean and rebuild everything
 ./gradlew clean && rm -rf build && ./gradlew build
 
-# Quick test execution patterns
+# Quick test execution patterns (modular)
 ./gradlew test --tests "*UI*" --quiet
 ./gradlew test --tests "fin.controller.*Test"
-./gradlew test --tests "*Service*Test"
+./gradlew test --tests "fin.service.*Test"
+./gradlew test --tests "fin.context.*Test"  # New: Context tests
 
 # Debug failing tests
 ./gradlew test --tests "*TestName*" --info | head -50
@@ -525,15 +649,21 @@ Add these to your `.bashrc` or `.zshrc`:
 
 ```bash
 alias finrun='cd /Users/sthwalonyoni/FIN && ./gradlew run'
-alias finapi='cd /Users/sthwalonyoni/FIN && ./gradlew run --args="api"'
-alias finconsole='cd /Users/sthwalonyoni/FIN && ./gradlew run --args="console"'
-alias findb='PGPASSWORD="your_password" psql -h localhost -U drimacc_user -d drimacc_db'
+alias finapi='cd /Users/sthwalonyoni/FIN && ./gradlew runApi'
+alias finconsole='cd /Users/sthwalonyoni/FIN && ./gradlew runConsole'
 alias finbuild='cd /Users/sthwalonyoni/FIN && ./gradlew clean build'
 alias finstatus='cd /Users/sthwalonyoni/FIN && git status'
 alias fintest='cd /Users/sthwalonyoni/FIN && ./gradlew test'
 alias finuitest='cd /Users/sthwalonyoni/FIN && ./gradlew test --tests "*UI*" --quiet'
+alias fincontexttest='cd /Users/sthwalonyoni/FIN && ./gradlew test --tests "fin.context.*Test"'
 alias fincleantest='cd /Users/sthwalonyoni/FIN && ./gradlew clean test'
 alias finhealth='curl -s http://localhost:8080/api/health || echo "API Down"'
 alias finlogs='tail -f /Users/sthwalonyoni/FIN/api_server.log'
-alias finstop='pkill -f "java.*ApiServer"'
+alias finconsolelogs='tail -f /Users/sthwalonyoni/FIN/console_app.log'
+alias finstop='pkill -f "java.*ApiApplication"'
+alias finstopconsole='pkill -f "java.*ConsoleApplication"'
+alias finstopall='pkill -f "java.*Application"'
+alias findb='PGPASSWORD="your_password" psql -h localhost -U drimacc_user -d drimacc_db'
+alias finfat='cd /Users/sthwalonyoni/FIN && ./gradlew fatJar'
+alias finboth='cd /Users/sthwalonyoni/FIN && ./gradlew runApi & ./gradlew runConsole'
 ```
