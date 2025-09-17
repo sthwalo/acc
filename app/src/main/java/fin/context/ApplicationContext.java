@@ -75,6 +75,10 @@ public class ApplicationContext {
         CsvExportService csvExportService = new CsvExportService(companyService);
         register(CsvExportService.class, csvExportService);
         
+        // Payroll service
+        PayrollService payrollService = new PayrollService(dbUrl);
+        register(PayrollService.class, payrollService);
+        
         System.out.println("📦 Core services initialized");
     }
     
@@ -174,6 +178,14 @@ public class ApplicationContext {
         );
         register(VerificationController.class, verificationController);
         
+        // Payroll controller
+        PayrollController payrollController = new PayrollController(
+            get(PayrollService.class),
+            inputHandler,
+            outputFormatter
+        );
+        register(PayrollController.class, payrollController);
+        
         System.out.println("🎮 Domain controllers initialized");
     }
     
@@ -192,7 +204,8 @@ public class ApplicationContext {
             get(ImportController.class),
             get(ReportController.class),
             get(DataManagementController.class),
-            get(VerificationController.class)
+            get(VerificationController.class),
+            get(PayrollController.class)
         );
         register(ApplicationController.class, applicationController);
         
