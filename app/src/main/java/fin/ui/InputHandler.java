@@ -29,6 +29,12 @@ public class InputHandler {
         return input.isEmpty() ? defaultValue : input;
     }
     
+    public String getOptionalString(String prompt) {
+        System.out.print(prompt + " (optional): ");
+        String input = scanner.nextLine().trim();
+        return input.isEmpty() ? null : input;
+    }
+    
     public int getInteger(String prompt) {
         while (true) {
             try {

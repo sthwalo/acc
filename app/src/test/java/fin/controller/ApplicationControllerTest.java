@@ -68,6 +68,9 @@ class ApplicationControllerTest {
     @Mock
     private VerificationController mockVerificationController;
     
+    @Mock
+    private PayrollController mockPayrollController;
+    
     private InputHandler inputHandler;
     private ApplicationController applicationController;
     
@@ -88,6 +91,11 @@ class ApplicationControllerTest {
         // Setup all controller mocks to prevent infinite loops
         doNothing().when(mockCompanyController).handleCompanySetup();
         doNothing().when(mockDataManagementController).handleDataManagement();
+        doNothing().when(mockPayrollController).handlePayrollManagement(anyLong());
+        
+        // Stub applicationState methods to avoid NPE
+        when(mockApplicationState.hasCurrentCompany()).thenReturn(false);
+        when(mockApplicationState.hasCurrentFiscalPeriod()).thenReturn(false);
         
         // Create InputHandler with exit command
         String exitInput = "10\n"; // Assuming 10 is exit
@@ -104,7 +112,8 @@ class ApplicationControllerTest {
             mockImportController,
             mockReportController,
             mockDataManagementController,
-            mockVerificationController
+            mockVerificationController,
+            mockPayrollController
         );
     }    @Test
     void start_DisplaysMainMenu() {
@@ -135,7 +144,8 @@ class ApplicationControllerTest {
             mockImportController,
             mockReportController,
             mockDataManagementController,
-            mockVerificationController
+            mockVerificationController,
+            mockPayrollController
         );
         
         // Execute
@@ -165,7 +175,8 @@ class ApplicationControllerTest {
             mockImportController,
             mockReportController,
             mockDataManagementController,
-            mockVerificationController
+            mockVerificationController,
+            mockPayrollController
         );
         
         // Execute

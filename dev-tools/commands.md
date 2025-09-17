@@ -372,6 +372,8 @@ echo -e "yes\n1\n" | java -jar app/build/libs/app.jar
 
 java -jar app/build/libs/app.jar
 
+./gradlew run --args="console"
+
 # Run API server and monitor logs
 ./gradlew run --args="api" 2>&1 | tee api_server.log &  
 
