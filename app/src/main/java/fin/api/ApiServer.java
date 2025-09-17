@@ -54,7 +54,14 @@ public class ApiServer {
     // In-memory store for API session data (replace with proper session management)
     private final Map<String, Object> sessionStore = new ConcurrentHashMap<>();
     
-    public ApiServer() {
+    // Constructor for modular architecture with dependency injection
+    public ApiServer(CompanyService companyService, CsvImportService csvImportService, 
+                    ReportService reportService, FinancialReportingService financialReportingService,
+                    PdfExportService pdfExportService, DataManagementService dataManagementService,
+                    BankStatementProcessingService bankStatementService, 
+                    TransactionVerificationService transactionVerificationService,
+                    ClassificationIntegrationService classificationService,
+                    PayrollService payrollService) {
         this.gson = new GsonBuilder()
             .registerTypeAdapter(LocalDateTime.class, new JsonSerializer<LocalDateTime>() {
                 @Override
@@ -71,13 +78,18 @@ public class ApiServer {
             throw new RuntimeException("Failed to connect to database");
         }
         
-        String dbUrl = DatabaseConfig.getDatabaseUrl();
         System.out.println("🔌 Using database: " + DatabaseConfig.getDatabaseType());
         
-        this.companyService = new CompanyService(dbUrl);
-        this.csvImportService = new CsvImportService(dbUrl, companyService);
-        this.reportService = new ReportService(dbUrl, csvImportService);
-        this.bankStatementService = new BankStatementProcessingService(dbUrl);
+        // Use injected services from ApplicationContext
+        this.companyService = companyService != null ? companyService : new CompanyService(DatabaseConfig.getDatabaseUrl());
+        this.csvImportService = csvImportService != null ? csvImportService : new CsvImportService(DatabaseConfig.getDatabaseUrl(), this.companyService);
+        this.reportService = reportService != null ? reportService : new ReportService(DatabaseConfig.getDatabaseUrl(), this.csvImportService);
+        this.bankStatementService = bankStatementService != null ? bankStatementService : new BankStatementProcessingService(DatabaseConfig.getDatabaseUrl());
+    }
+    
+    // Legacy constructor for backward compatibility
+    public ApiServer() {
+        this(null, null, null, null, null, null, null, null, null, null);
     }
     
     public void start() {
