@@ -82,6 +82,34 @@ tasks.named<JavaExec>("run") {
     systemProperties = System.getProperties().toMap() as Map<String, Any>
     // Auto-confirm license for gradle run to avoid NoSuchElementException
     systemProperty("fin.license.autoconfirm", "true")
+    
+    // Check if API mode is requested
+    if (project.hasProperty("api") || System.getProperty("api") != null) {
+        mainClass.set("fin.ApiApplication")
+        args("api")
+    } else {
+        mainClass.set("fin.ConsoleApplication")
+    }
+}
+
+// Add separate task for API server
+tasks.register<JavaExec>("runApi") {
+    group = "application"
+    description = "Run the FIN API server"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("fin.ApiApplication")
+    systemProperties = System.getProperties().toMap() as Map<String, Any>
+    systemProperty("fin.license.autoconfirm", "true")
+}
+
+// Add separate task for console application
+tasks.register<JavaExec>("runConsole") {
+    group = "application"
+    description = "Run the FIN console application"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("fin.ConsoleApplication")
+    systemProperties = System.getProperties().toMap() as Map<String, Any>
+    systemProperty("fin.license.autoconfirm", "true")
 }
 
 tasks.named<Test>("test") {

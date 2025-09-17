@@ -40,20 +40,18 @@ class BankStatementProcessingServiceTest {
             "SERVICE FEE  35.00-"
         );
         
-        // When - Only test parsing without database persistence
-        try {
-            List<BankTransaction> result = service.processLines(lines, "test-statement.pdf", company);
-            
-            // Then
-            assertNotNull(result, "Result should not be null");
-            // Additional assertions can be added here if service returns parsed data without DB
-        } catch (Exception e) {
-            // Test passes as long as no unexpected exceptions are thrown
-            assertTrue(e.getMessage().contains("database") || 
-                      e.getMessage().contains("connection") || 
-                      e.getMessage().contains("SQL"),
-                      "Expected database-related exception, got: " + e.getMessage());
-        }
+        // When
+        List<BankTransaction> result = service.processLines(lines, "test-statement.pdf", company);
+        
+        // Then
+        assertNotNull(result, "Result should not be null");
+        assertFalse(result.isEmpty(), "Result should contain parsed transactions");
+        
+        // Check that the service fee transaction was parsed
+        BankTransaction transaction = result.get(0);
+        assertEquals("SERVICE FEE", transaction.getDetails(), "Transaction details should match");
+        assertNotNull(transaction.getDebitAmount(), "Service fee should have debit amount");
+        assertEquals(new java.math.BigDecimal("35.00"), transaction.getDebitAmount(), "Debit amount should be 35.00");
     }
     
     @Test
