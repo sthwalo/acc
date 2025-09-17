@@ -114,6 +114,7 @@ class CompanyControllerTest {
         );
         
         when(mockCompanyService.getAllCompanies()).thenReturn(companies);
+        when(mockApplicationState.getCurrentCompany()).thenReturn(companies.get(0));
         
         // Create new InputHandler with selection input
         String selectionInput = "1\n";
@@ -132,8 +133,8 @@ class CompanyControllerTest {
         controllerWithSelection.selectCompany();
         
         // Verify
-        verify(mockApplicationState, times(1)).setCurrentCompany(any(Company.class));
-        verify(mockOutputFormatter, times(1)).printSuccess(contains("selected"));
+        verify(mockApplicationState, times(1)).setCurrentCompany(companies.get(0));
+        verify(mockOutputFormatter, times(1)).printSuccess("Selected company: Company A");
     }
     
     @Test
@@ -141,13 +142,13 @@ class CompanyControllerTest {
         // Setup
         Company currentCompany = createTestCompany(1L, "Current Company");
         when(mockApplicationState.getCurrentCompany()).thenReturn(currentCompany);
+        when(mockApplicationState.hasCurrentCompany()).thenReturn(true);
         
         // Execute
         companyController.viewCompanyDetails();
         
         // Verify
-        verify(mockOutputFormatter, times(1)).printHeader(contains("Company Details"));
-        verify(mockOutputFormatter, atLeastOnce()).printInfo(anyString());
+        verify(mockOutputFormatter, times(1)).printCompanyDetails(currentCompany);
     }
     
     @Test
@@ -155,6 +156,7 @@ class CompanyControllerTest {
         // Setup
         Company currentCompany = createTestCompany(1L, "Current Company");
         when(mockApplicationState.getCurrentCompany()).thenReturn(currentCompany);
+        when(mockApplicationState.hasCurrentCompany()).thenReturn(true);
         when(mockCompanyService.updateCompany(any(Company.class))).thenReturn(currentCompany);
         
         // Execute
@@ -170,10 +172,11 @@ class CompanyControllerTest {
         // Setup
         Company currentCompany = createTestCompany(1L, "Current Company");
         when(mockApplicationState.getCurrentCompany()).thenReturn(currentCompany);
+        when(mockApplicationState.hasCurrentCompany()).thenReturn(true);
         when(mockCompanyService.deleteCompany(anyLong())).thenReturn(true);
         
         // Create InputHandler with confirmation
-        String confirmInput = "y\n";
+        String confirmInput = "DELETE\n";
         Scanner scanner = new Scanner(new ByteArrayInputStream(confirmInput.getBytes()));
         InputHandler confirmInputHandler = new InputHandler(scanner);
         

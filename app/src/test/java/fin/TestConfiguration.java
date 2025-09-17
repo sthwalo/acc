@@ -42,7 +42,7 @@ public class TestConfiguration {
                     period_name VARCHAR(100) NOT NULL,
                     start_date DATE NOT NULL,
                     end_date DATE NOT NULL,
-                    is_current BOOLEAN DEFAULT FALSE,
+                    is_closed BOOLEAN DEFAULT FALSE,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (company_id) REFERENCES companies(id)
                 )
@@ -175,8 +175,8 @@ public class TestConfiguration {
         
         // Insert test fiscal period
         stmt.executeUpdate("""
-            INSERT INTO fiscal_periods (id, company_id, period_name, start_date, end_date, is_current)
-            VALUES (1, 1, '2025 Financial Year', '2025-01-01', '2025-12-31', true)
+            INSERT INTO fiscal_periods (id, company_id, period_name, start_date, end_date, is_closed)
+            VALUES (1, 1, '2025 Financial Year', '2025-01-01', '2025-12-31', false)
         """);
         
         // Insert test account categories
