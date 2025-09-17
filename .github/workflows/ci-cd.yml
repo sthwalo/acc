@@ -98,20 +98,20 @@ jobs:
     - name: 🎮 Run Controller Tests  
       if: matrix.test-group == 'Controllers'
       run: |
-        ./gradlew test --tests "fin.AppTest" --continue
-        echo "✅ Controller Tests: Completed"
+        ./gradlew test --tests "fin.controller.*Test" --continue
+        echo "✅ Controller Tests: $(grep -c 'PASSED' app/build/test-results/test/TEST-*.xml 2>/dev/null || echo 0) passed"
     
     - name: ⚙️ Run Service Tests
       if: matrix.test-group == 'Services'
       run: |
-        ./gradlew test --tests "fin.service.DocumentTextExtractorTest" --tests "fin.service.parser.*Test" --continue
-        echo "✅ Service Tests: Completed"
+        ./gradlew test --tests "fin.service.*Test" --continue
+        echo "✅ Service Tests: $(grep -c 'PASSED' app/build/test-results/test/TEST-*.xml 2>/dev/null || echo 0) passed"
     
     - name: 📊 Run State Management Tests
       if: matrix.test-group == 'State Management' 
       run: |
-        ./gradlew test --tests "fin.state.ApplicationStateTestSimple" --tests "fin.context.ApplicationContextTest" --continue
-        echo "✅ State Tests: Completed"
+        ./gradlew test --tests "fin.context.*Test" --continue
+        echo "✅ State Tests: $(grep -c 'PASSED' app/build/test-results/test/TEST-*.xml 2>/dev/null || echo 0) passed"
     
     - name: 📈 Upload Test Results
       uses: actions/upload-artifact@v4
@@ -145,7 +145,7 @@ jobs:
     - name: 🚀 Run Complete Test Suite
       run: |
         echo "🧪 Running comprehensive test suite..."
-        ./gradlew test --tests "fin.AppTest" --tests "fin.ui.*Test" --tests "fin.state.ApplicationStateTestSimple" --tests "fin.context.ApplicationContextTest" --continue
+        ./gradlew test --continue
         
         echo ""
         echo "📊 Test Summary:"
@@ -222,7 +222,7 @@ jobs:
         time ./gradlew run --args="--version" || echo "Performance test completed"
         
         echo "⚡ Testing test execution speed..."
-        time ./gradlew test --tests "fin.AppTest" 
+        time ./gradlew test --tests "fin.controller.ApplicationControllerTest" 
 
   # Job 6: Deployment Readiness
   deploy-check:
