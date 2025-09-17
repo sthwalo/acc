@@ -1,5 +1,6 @@
 package fin.controller;
 
+import fin.controller.PayrollController;
 import fin.state.ApplicationState;
 import fin.ui.ConsoleMenu;
 import fin.ui.InputHandler;
@@ -25,17 +26,21 @@ public class ApplicationController {
     private final ReportController reportController;
     private final DataManagementController dataManagementController;
     private final VerificationController verificationController;
+    private final PayrollController payrollController;
     
-    public ApplicationController(ConsoleMenu menu,
-                               InputHandler inputHandler,
-                               OutputFormatter outputFormatter,
-                               ApplicationState applicationState,
-                               CompanyController companyController,
-                               FiscalPeriodController fiscalPeriodController,
-                               ImportController importController,
-                               ReportController reportController,
-                               DataManagementController dataManagementController,
-                               VerificationController verificationController) {
+    public ApplicationController(
+        ConsoleMenu menu,
+        InputHandler inputHandler,
+        OutputFormatter outputFormatter,
+        ApplicationState applicationState,
+        CompanyController companyController,
+        FiscalPeriodController fiscalPeriodController,
+        ImportController importController,
+        ReportController reportController,
+        DataManagementController dataManagementController,
+        VerificationController verificationController,
+        PayrollController payrollController // add this parameter
+    ) {
         this.menu = menu;
         this.inputHandler = inputHandler;
         this.outputFormatter = outputFormatter;
@@ -46,8 +51,9 @@ public class ApplicationController {
         this.reportController = reportController;
         this.dataManagementController = dataManagementController;
         this.verificationController = verificationController;
+        this.payrollController = payrollController; // initialize field
     }
-    
+
     /**
      * Main application loop
      * Replaces the main method logic from original App.java
@@ -65,7 +71,7 @@ public class ApplicationController {
                 displayCurrentContext();
                 menu.displayMainMenu();
                 
-                int choice = inputHandler.getInteger("Enter your choice", 1, 10);
+                int choice = inputHandler.getInteger("Enter your choice", 1, 11);
                 
                 switch (choice) {
                     case 1:
@@ -93,9 +99,17 @@ public class ApplicationController {
                         verificationController.handleTransactionVerification();
                         break;
                     case 9:
-                        displayCurrentTime();
+                        if (applicationState.hasCurrentCompany()) {
+                            payrollController.handlePayrollManagement(applicationState.getCurrentCompany().getId());
+                        } else {
+                            outputFormatter.printWarning("Please select a company first (Option 1)");
+                            inputHandler.waitForEnter();
+                        }
                         break;
                     case 10:
+                        displayCurrentTime();
+                        break;
+                    case 11:
                         exit = handleExit();
                         break;
                     default:

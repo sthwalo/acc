@@ -16,9 +16,10 @@ public class ConsoleMenu {
         System.out.println("6. Generate Reports");
         System.out.println("7. Data Management");
         System.out.println("8. Verify Transactions");
-        System.out.println("9. Show current time");
-        System.out.println("10. Exit");
-        System.out.print("Enter your choice (1-10): ");
+        System.out.println("9. Payroll Management");
+        System.out.println("10. Show current time");
+        System.out.println("11. Exit");
+        System.out.print("Enter your choice (1-11): ");
     }
 
     public void displayCompanyMenu() {
@@ -110,5 +111,54 @@ public class ConsoleMenu {
     
     public void displayFooter() {
         System.out.println("-".repeat(50));
+    }
+    
+    // Payroll menu methods
+    public void displayPayrollMenu() {
+        System.out.println("\n===== Payroll Management =====");
+        System.out.println("1. Employee Management");
+        System.out.println("2. Payroll Period Management");
+        System.out.println("3. Process Payroll");
+        System.out.println("4. Payroll Reports");
+        System.out.println("5. Payroll Setup");
+        System.out.println("6. Back to Main Menu");
+        System.out.print("Enter your choice (1-6): ");
+    }
+    
+    public void displayEmployeeMenu() {
+        System.out.println("\n===== Employee Management =====");
+        System.out.println("1. Add New Employee");
+        System.out.println("2. View All Employees");
+        System.out.println("3. Edit Employee");
+        System.out.println("4. Employee Details");
+        System.out.println("5. Back");
+        System.out.print("Enter your choice (1-5): ");
+    }
+    
+    public void displayPayrollPeriodMenu() {
+        System.out.println("\n===== Payroll Period Management =====");
+        System.out.println("1. Create New Payroll Period");
+        System.out.println("2. View Payroll Periods");
+        System.out.println("3. Back");
+        System.out.print("Enter your choice (1-3): ");
+    }
+    
+    public void displayPayrollReportsMenu() {
+        System.out.println("\n===== Payroll Reports =====");
+        System.out.println("1. Payroll Summary");
+        System.out.println("2. Employee Payslips");
+        System.out.println("3. Tax Summary");
+        System.out.println("4. Back");
+        System.out.print("Enter your choice (1-4): ");
+    }
+    
+    public void displayPayrollSetupMenu() {
+        System.out.println("\n===== Payroll Setup =====");
+        System.out.println("1. Initialize Payroll Database Schema");
+        System.out.println("2. Tax Configuration");
+        System.out.println("3. Benefit Setup");
+        System.out.println("4. Deduction Setup");
+        System.out.println("5. Back");
+        System.out.print("Enter your choice (1-5): ");
     }
 }

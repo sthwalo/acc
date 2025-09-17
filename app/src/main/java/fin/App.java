@@ -137,9 +137,10 @@ public class App {
         System.out.println("6. Generate Reports");
         System.out.println("7. Data Management");
         System.out.println("8. Verify Transactions");
-        System.out.println("9. Show current time");
-        System.out.println("10. Exit");
-        System.out.print("Enter your choice (1-10): ");
+        System.out.println("9. Payroll Management");
+        System.out.println("10. Show current time");
+        System.out.println("11. Exit");
+        System.out.print("Enter your choice (1-11): ");
     }
 
     public void showCompanyMenu() {
@@ -1522,7 +1523,7 @@ public class App {
                     try {
                         String input = scanner.nextLine().trim();
                         if (input.isEmpty()) {
-                            System.out.println("❌ Empty input. Please enter a number between 1-10.");
+                            System.out.println("❌ Empty input. Please enter a number between 1-11.");
                             continue;
                         }
                         int choice = Integer.parseInt(input);
@@ -1553,9 +1554,13 @@ public class App {
                                 app.handleTransactionVerification(scanner);
                                 break;
                             case 9:
-                                System.out.println("Current time: " + LocalDate.now());
+                                System.out.println("⚠️ Payroll management is now available in the new modular application.");
+                                System.out.println("Please use the ConsoleApplication entry point for payroll features.");
                                 break;
                             case 10:
+                                System.out.println("Current time: " + LocalDate.now());
+                                break;
+                            case 11:
                                 exit = true;
                                 System.out.println("Exiting Sthwalo application. Goodbye!");
                                 break;
