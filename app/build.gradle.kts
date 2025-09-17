@@ -74,7 +74,7 @@ java {
 
 application {
     // Define the main class for the application.
-    mainClass = "fin.App"
+    mainClass.set("fin.ConsoleApplication")
 }
 
 // Configure the run task to pass system properties
@@ -87,6 +87,7 @@ tasks.named<JavaExec>("run") {
 tasks.named<Test>("test") {
     // Use JUnit Platform for unit tests.
     useJUnitPlatform()
+    maxHeapSize = "2G"
 }
 
 tasks.jar {
