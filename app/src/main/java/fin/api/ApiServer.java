@@ -242,7 +242,8 @@ public class ApiServer {
                 
                 try {
                     // Parse company data from request body
-                    Map<String, Object> companyData = gson.fromJson(req.body(), Map.class);
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> companyData = (Map<String, Object>) gson.fromJson(req.body(), Map.class);
                     
                     String name = (String) companyData.get("name");
                     String registrationNumber = (String) companyData.get("registrationNumber");
@@ -452,7 +453,7 @@ public class ApiServer {
                     
                     // Get file path from request body
                     @SuppressWarnings("unchecked")
-                    Map<String, String> requestData = gson.fromJson(req.body(), Map.class);
+                    Map<String, String> requestData = (Map<String, String>) gson.fromJson(req.body(), Map.class);
                     String filePath = requestData.get("filePath");
                     
                     if (filePath == null || filePath.trim().isEmpty()) {

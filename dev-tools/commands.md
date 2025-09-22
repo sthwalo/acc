@@ -672,4 +672,18 @@ alias findb='PGPASSWORD="your_password" psql -h localhost -U drimacc_user -d dri
 alias finfat='cd /Users/sthwalonyoni/FIN && ./gradlew fatJar'
 alias finboth='cd /Users/sthwalonyoni/FIN && ./gradlew runApi & ./gradlew runConsole'
 alias finbatch='cd /Users/sthwalonyoni/FIN && java -jar app/build/libs/app.jar --batch process-statement "input/xxxxx3753 (14).pdf"'
+
+java -jar app/build/libs/app.jar 
 ```
+
+
+java -cp "app/build/classes/java/main:/Users/sthwalonyoni/.gradle/caches/modules-2/files-2.1/org.apache.pdfbox/pdfbox/3.0.0/8903a0ddcdcb138b335ac4cd08d4923eb4163b8f/pdfbox-3.0.0.jar:/Users/sthwalonyoni/.gradle/caches/modules-2/files-2.1/org.apache.pdfbox/fontbox/3.0.0/ea02f9341689fb275f7b1969de51669d618a1d6f/fontbox-3.0.0.jar:/Users/sthwalonyoni/.gradle/caches/modules-2/files-2.1/commons-logging/commons-logging/1.2/4bfc12adfe4842bf07b657f0369c4cb522955686/commons-logging-1.2.jar:/Users/sthwalonyoni/.gradle/caches/modules-2/files-2.1/org.apache.pdfbox/pdfbox-io/3.0.0/14d85db521aa4f0b56dde0d90204d0973d92537/pdfbox-io-3.0.0.jar" fin.service.PdfTextExtractionService "input/xxxxx3753 (14).pdf"
+
+# Check if file exists
+ls -la raw_pdf_text_output.txt
+
+# If it exists, view first few lines
+head -20 raw_pdf_text_output.txt
+
+# Check file size
+wc -l raw_pdf_text_output.txt
