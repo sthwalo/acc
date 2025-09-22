@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 import java.util.logging.Level;
+import java.math.BigDecimal;
 
 /**
  * Service for automatically mapping bank transactions to appropriate accounts
@@ -536,154 +537,418 @@ public class TransactionMappingService {
     }
     
     /**
-     * Maps a bank transaction to the appropriate account based on its details
+     * Enhanced comprehensive transaction mapping that creates proper double-entry accounting
+     * Distinguishes between operational revenue, non-operational income, and reversals/refunds
+     * Now includes supplier extraction and detailed account creation
      */
     public Long mapTransactionToAccount(BankTransaction transaction) {
         String details = transaction.getDetails().toUpperCase();
-        
-        // PRIORITY: Check revenue transactions first for credit amounts
-        if (transaction.getCreditAmount() != null) {
-            // Sales revenue (deposits/credits) - check this early for credit transactions
-            if (!details.contains("LOAN") && !details.contains("CAPITAL") && 
-                !details.contains("BOND") && !details.contains("INTEREST") && 
-                !details.contains("REFUND") && !details.contains("REVERSAL") && 
-                !details.contains("RTD-DEBIT")) {
-                // Allow CREDIT TRANSFER as revenue if it doesn't match other patterns
-                if (details.contains("CREDIT TRANSFER") || details.contains("DEPOSIT") || 
-                    details.contains("PAYMENT") || !details.contains("TRANSFER")) {
-                    return getAccountByCode("6100"); // Service Revenue
+
+        // =================================================================
+        // INCOME TRANSACTIONS (CREDIT AMOUNTS) - PROPER DOUBLE-ENTRY CLASSIFICATION
+        // =================================================================
+        if (transaction.getCreditAmount() != null && transaction.getCreditAmount().compareTo(BigDecimal.ZERO) > 0) {
+
+            // OPERATIONAL REVENUE - Service Income (goes to Revenue accounts 4000-4999)
+            if (details.contains("COROBRIK")) {
+                return getOrCreateDetailedAccount("4000-001", "Corobrik Service Revenue", "4000", "Revenue");
+            }
+
+            // NON-OPERATIONAL INCOME - Director Injections (Long-term loans - Liability accounts 2000-2999)
+            if (details.contains("COMPANY ASSIST")) {
+                return getOrCreateDetailedAccount("2000-001", "Director Loan - Company Assist", "2000", "Long-term Liabilities");
+            }
+
+            // LOAN REPAYMENTS - Short-term loans (Asset reduction - 1000-1999)
+            if (details.contains("XINGHIZANA LOA")) {
+                if (details.contains("TAU")) {
+                    return getOrCreateDetailedAccount("1000-001", "Loan Receivable - Tau", "1000", "Current Assets");
+                } else if (details.contains("MAPHOSA")) {
+                    return getOrCreateDetailedAccount("1000-002", "Loan Receivable - Maposa", "1000", "Current Assets");
+                } else {
+                    return getOrCreateDetailedAccount("1000-003", "Loan Receivable - Other", "1000", "Current Assets");
                 }
             }
-            
-            // Interest income
+
+            // INVESTMENT INCOME - Non-operational (goes to Other Income 5000-5999)
+            if (details.contains("STANLIB")) {
+                return getOrCreateDetailedAccount("5000-001", "Stanlib Investment Income", "5000", "Other Income");
+            }
+
+            // INTEREST INCOME - Non-operational
             if (details.contains("INTEREST")) {
-                return getAccountByCode("7000"); // Interest Income
+                if (details.contains("STANDARD BANK")) {
+                    return getOrCreateDetailedAccount("5000-002", "Interest Income - Standard Bank", "5000", "Other Income");
+                } else if (details.contains("CAPITEC")) {
+                    return getOrCreateDetailedAccount("5000-003", "Interest Income - Capitec", "5000", "Other Income");
+                } else {
+                    return getOrCreateDetailedAccount("5000-004", "Interest Income - Other Banks", "5000", "Other Income");
+                }
             }
-            
-            // Refunds (credit transactions that are actually refunds)
-            if (details.contains("REFUND") || details.contains("RTD-DEBIT") || 
-                details.contains("REVERSAL")) {
-                return getAccountByCode("6200"); // Refunds
+
+            // EXCESS INTEREST - Non-operational income
+            if (details.contains("EXCESS INTEREST")) {
+                return getOrCreateDetailedAccount("5000-005", "Excess Interest Income", "5000", "Other Income");
             }
-            
-            // Director/Shareholder transfers (credits)
-            if (details.contains("DIRECTOR") || details.contains("SHAREHOLDER") || 
-                details.contains("OWNER") || (details.contains("IB TRANSFER") && details.contains("FROM"))) {
-                return getAccountByCode("4000"); // Long-term Loans
+
+            // REFUNDS AND REVERSALS - Trace back to original transaction
+            if (details.contains("REVERSAL") || details.contains("RETURNED") ||
+                details.contains("NO AUTHORITY") || details.contains("CREDIT NOTE")) {
+
+                // Salary reversals
+                if (details.contains("SALARY") || details.contains("XG SALARIES")) {
+                    return getOrCreateDetailedAccount("6000-001", "Salary Reversals", "6000", "Reversals & Adjustments");
+                }
+
+                // Insurance reversals
+                if (details.contains("INSURANCE") || details.contains("PREMIUM")) {
+                    return getOrCreateDetailedAccount("6000-002", "Insurance Reversals", "6000", "Reversals & Adjustments");
+                }
+
+                // Fee reversals
+                if (details.contains("FEE") || details.contains("CHARGE")) {
+                    return getOrCreateDetailedAccount("6000-003", "Fee Reversals", "6000", "Reversals & Adjustments");
+                }
+
+            // RTD reversals (failed debits) - Enhanced to catch all variations
+            if (details.contains("RTD")) {
+                if (details.contains("NOT PROVIDED FOR")) {
+                    // Failed debits from insurance companies
+                    if (details.contains("DOTSURE") || details.contains("MIWAY") ||
+                        details.contains("LIBERTY") || details.contains("BADGER") ||
+                        details.contains("CARTRACK") || details.contains("FAW")) {
+                        return getOrCreateDetailedAccount("6000-005", "Insurance RTD Reversals", "6000", "Reversals & Adjustments");
+                    }
+                } else if (details.contains("DEBIT AGAINST PAYERS AUTH")) {
+                    // Failed debit authorizations
+                    if (details.contains("DOTSURE") || details.contains("MIWAY") ||
+                        details.contains("LIBERTY") || details.contains("BADGER") ||
+                        details.contains("CARTRACK") || details.contains("FAW")) {
+                        return getOrCreateDetailedAccount("6000-006", "Insurance Debit Reversals", "6000", "Reversals & Adjustments");
+                    }
+                } else if (details.contains("AUTHORISATION CANCELLED")) {
+                    // Cancelled authorizations
+                    return getOrCreateDetailedAccount("6000-007", "Cancelled Authorizations", "6000", "Reversals & Adjustments");
+                }
+                // General RTD reversals
+                return getOrCreateDetailedAccount("6000-008", "RTD Reversals", "6000", "Reversals & Adjustments");
+            }                // General reversals
+                return getOrCreateDetailedAccount("6000-999", "General Reversals", "6000", "Reversals & Adjustments");
+            }
+
+            // CASH DEPOSITS - Non-operational income
+            if (details.contains("DEPOSIT")) {
+                if (details.contains("STOKFELA")) {
+                    return getOrCreateDetailedAccount("5000-005", "Cash Deposit Income - Stokvela", "5000", "Other Income");
+                } else if (details.contains("TAU")) {
+                    return getOrCreateDetailedAccount("5000-006", "Cash Deposit Income - Tau", "5000", "Other Income");
+                } else if (details.contains("DAN")) {
+                    return getOrCreateDetailedAccount("5000-007", "Cash Deposit Income - Dan", "5000", "Other Income");
+                } else {
+                    return getOrCreateDetailedAccount("5000-008", "Cash Deposit Income - Other", "5000", "Other Income");
+                }
+            }
+
+            // INSURANCE CLAIM PAYMENTS - Non-operational income
+            if (details.contains("PAYMENT OF INSURANCE CLAIMS")) {
+                return getOrCreateDetailedAccount("5000-006", "Insurance Claim Payments", "5000", "Other Income");
             }
         }
-        
-        // EXPENSE PATTERNS (debit transactions or specific patterns)
-        // Bank charges and fees
-        if (details.contains("FEE")) {
-            return getAccountByCode("9600"); // Bank Charges
+
+        // =================================================================
+        // EXPENSE TRANSACTIONS (DEBIT AMOUNTS) - PROPER DOUBLE-ENTRY CLASSIFICATION
+        // =================================================================
+        if (transaction.getDebitAmount() != null && transaction.getDebitAmount().compareTo(BigDecimal.ZERO) > 0) {
+
+            // VEHICLE TRACKING - Operational expenses
+            if (details.contains("CARTRACK")) {
+                return getOrCreateDetailedAccount("8500-001", "Cartrack Vehicle Tracking", "8500", "Motor Vehicle Expenses");
+            }
+            if (details.contains("NETSTAR")) {
+                return getOrCreateDetailedAccount("8500-002", "Netstar Vehicle Tracking", "8500", "Motor Vehicle Expenses");
+            }
+
+            // INSURANCE PREMIUMS - Operational expenses
+            if (details.contains("INSURANCE") || details.contains("PREMIUM")) {
+                if (details.contains("KINGPRICE") || details.contains("KING PRICE")) {
+                    return getOrCreateDetailedAccount("8800-001", "King Price Insurance Premiums", "8800", "Insurance");
+                } else if (details.contains("DOTSURE")) {
+                    return getOrCreateDetailedAccount("8800-002", "DOTSURE Insurance Premiums", "8800", "Insurance");
+                } else if (details.contains("OUTSURANCE")) {
+                    return getOrCreateDetailedAccount("8800-003", "OUTSurance Insurance Premiums", "8800", "Insurance");
+                } else if (details.contains("MIWAY")) {
+                    return getOrCreateDetailedAccount("8800-004", "MIWAY Insurance Premiums", "8800", "Insurance");
+                } else if (details.contains("LIBERTY")) {
+                    return getOrCreateDetailedAccount("8800-005", "Liberty Insurance Premiums", "8800", "Insurance");
+                } else if (details.contains("BADGER")) {
+                    return getOrCreateDetailedAccount("8800-006", "Badger Insurance Premiums", "8800", "Insurance");
+                } else {
+                    return getOrCreateDetailedAccount("8800-999", "Other Insurance Premiums", "8800", "Insurance");
+                }
+            }
+
+            // FUEL EXPENSES - Operational expenses
+            if (details.contains("FUEL") || details.contains("PETROL") || details.contains("DIESEL")) {
+                if (details.contains("BP")) {
+                    return getOrCreateDetailedAccount("8600-001", "Fuel Expenses - BP Stations", "8600", "Travel & Entertainment");
+                } else if (details.contains("SHELL")) {
+                    return getOrCreateDetailedAccount("8600-002", "Fuel Expenses - Shell Stations", "8600", "Travel & Entertainment");
+                } else if (details.contains("SASOL")) {
+                    return getOrCreateDetailedAccount("8600-003", "Fuel Expenses - Sasol Stations", "8600", "Travel & Entertainment");
+                } else if (details.contains("ENGEN")) {
+                    return getOrCreateDetailedAccount("8600-004", "Engen Fuel Expenses", "8600", "Travel & Entertainment");
+                } else {
+                    return getOrCreateDetailedAccount("8600-099", "Fuel Expenses - Other Stations", "8600", "Travel & Entertainment");
+                }
+            }
+
+            // BANK FEES - Operational expenses
+            if (details.contains("FEE") || details.contains("CHARGE")) {
+                if (details.contains("STANDARD BANK")) {
+                    return getOrCreateDetailedAccount("9600-001", "Standard Bank Fees", "9600", "Bank Charges");
+                } else if (details.contains("CAPITEC")) {
+                    return getOrCreateDetailedAccount("9600-002", "Capitec Bank Fees", "9600", "Bank Charges");
+                } else if (details.contains("ATM")) {
+                    return getOrCreateDetailedAccount("9600-003", "ATM Withdrawal Fees", "9600", "Bank Charges");
+                } else if (details.contains("EFT")) {
+                    return getOrCreateDetailedAccount("9600-004", "EFT Transaction Fees", "9600", "Bank Charges");
+                } else if (details.contains("DEBIT ORDER")) {
+                    return getOrCreateDetailedAccount("9600-005", "Debit Order Fees", "9600", "Bank Charges");
+                } else {
+                    return getOrCreateDetailedAccount("9600-999", "Other Bank Fees", "9600", "Bank Charges");
+                }
+            }
+
+            // SALARY PAYMENTS - Operational expenses
+            if (details.contains("SALARIES") || details.contains("SALARY") ||
+                details.contains("WAGES") || details.contains("XG SALARIES") ||
+                (details.contains("IB PAYMENT TO") && (details.contains("XG SALARIES") || details.contains("WAGES")))) {
+
+                // Extract employee name from payment description
+                String employeeName = extractEmployeeName(details);
+                if (employeeName != null) {
+                    String accountCode = "8100-" + generateEmployeeCode(employeeName);
+                    String accountName = "Salary - " + employeeName;
+                    return getOrCreateDetailedAccount(accountCode, accountName, "8100", "Employee Costs");
+                } else {
+                    return getOrCreateDetailedAccount("8100-999", "Salary Payments - Unspecified", "8100", "Employee Costs");
+                }
+            }
+
+            // TRUNCATED SALARY PAYMENTS - Handle incomplete descriptions
+            if (details.equals("IB PAYMENT TO") || details.equals("IMMEDIATE PAYMENT")) {
+                // These are salary payments with missing recipient details
+                return getOrCreateDetailedAccount("8100-999", "Salary Payments - Unspecified", "8100", "Employee Costs");
+            }
+
+            // TRUNCATED BANK TRANSFERS - Handle incomplete transfer descriptions
+            if (details.equals("IB TRANSFER FROM")) {
+                return getOrCreateDetailedAccount("1100-001", "Bank Transfers", "1100", "Current Assets");
+            }
+
+            // EXCESS INTEREST - Already handled in income section above
+
+            // PENSION FUND CONTRIBUTIONS - Operational expenses
+            if (details.contains("PENSION") && details.contains("FUND") && details.contains("CONTRIBUTION")) {
+                if (details.contains("FAW")) {
+                    return getOrCreateDetailedAccount("8110-001", "Pension Contributions - FAW Fund", "8110", "Pension Contributions");
+                } else {
+                    return getOrCreateDetailedAccount("8110-999", "Pension Contributions - Other", "8110", "Pension Contributions");
+                }
+            }
+
+            // TAX PAYMENTS - Operational expenses
+            if (details.contains("SARS") || details.contains("PAYE") || details.contains("VAT")) {
+                if (details.contains("PAYE") || details.contains("PAY-AS-YOU-EARN")) {
+                    return getOrCreateDetailedAccount("3100-001", "PAYE Tax Payments", "3100", "Tax Liabilities");
+                } else if (details.contains("VAT")) {
+                    return getOrCreateDetailedAccount("3100-002", "VAT Payments", "3100", "Tax Liabilities");
+                } else {
+                    return getOrCreateDetailedAccount("3100-999", "Other Tax Payments", "3100", "Tax Liabilities");
+                }
+            }
+
+            // UTILITIES - Operational expenses
+            if (details.contains("ELECTRICITY")) {
+                return getOrCreateDetailedAccount("8900-001", "Electricity Expenses", "8900", "Administrative Expenses");
+            }
+            if (details.contains("WATER")) {
+                return getOrCreateDetailedAccount("8900-002", "Water Expenses", "8900", "Administrative Expenses");
+            }
+            if (details.contains("INTERNET") || details.contains("TELKOM")) {
+                return getOrCreateDetailedAccount("8900-003", "Internet & Telephone", "8900", "Administrative Expenses");
+            }
+
+            // OFFICE SUPPLIES - Operational expenses
+            if (details.contains("STATIONERY") || details.contains("PRINTING") || details.contains("OFFICE")) {
+                return getOrCreateDetailedAccount("8900-004", "Office Supplies & Printing", "8900", "Administrative Expenses");
+            }
+
+            // PROFESSIONAL SERVICES - Operational expenses
+            if (details.contains("LEGAL") || details.contains("ATTORNEY")) {
+                return getOrCreateDetailedAccount("8700-001", "Legal Services", "8700", "Professional Services");
+            }
+            if (details.contains("ACCOUNTING") || details.contains("AUDIT")) {
+                return getOrCreateDetailedAccount("8700-002", "Accounting & Audit Services", "8700", "Professional Services");
+            }
+            if (details.contains("CONSULTANT") || details.contains("CONSULTING")) {
+                return getOrCreateDetailedAccount("8700-003", "Consulting Services", "8700", "Professional Services");
+            }
+
+            // VEHICLE MAINTENANCE & PARTS - Operational expenses
+            if (details.contains("MAINTENANCE") || details.contains("REPAIR") || details.contains("SERVICE")) {
+                return getOrCreateDetailedAccount("8500-003", "Vehicle Maintenance & Repairs", "8500", "Motor Vehicle Expenses");
+            }
+
+            // TOLL FEES - Operational expenses
+            if (details.contains("TOLL")) {
+                return getOrCreateDetailedAccount("8600-005", "Toll Fees", "8600", "Travel & Entertainment");
+            }
+
+            // PARKING - Operational expenses
+            if (details.contains("PARKING")) {
+                return getOrCreateDetailedAccount("8600-006", "Parking Fees", "8600", "Travel & Entertainment");
+            }
+
+            // =================================================================
+            // SUPPLIER PAYMENTS - DETAILED ACCOUNT STRUCTURE
+            // =================================================================
+
+            // REIMBURSEMENTS - Special category for employee reimbursements
+            if (details.contains("REIMBURSE")) {
+                String supplierName = extractSupplierName(details);
+                if (supplierName != null) {
+                    String accountCode = "8900-" + generateSupplierCode(supplierName);
+                    String accountName = "Reimbursement - " + supplierName;
+                    return getOrCreateDetailedAccount(accountCode, accountName, "8900", "Administrative Expenses");
+                } else {
+                    return getOrCreateDetailedAccount("8900-999", "Employee Reimbursements", "8900", "Administrative Expenses");
+                }
+            }
+
+            // SCHOOL FEES - Education expenses
+            if (details.contains("SCHOOL") || details.contains("COLLEGE") || details.contains("LYCEUM")) {
+                String supplierName = extractSupplierName(details);
+                if (supplierName != null) {
+                    String accountCode = "8900-" + generateSupplierCode(supplierName);
+                    String accountName = "School Fees - " + supplierName;
+                    return getOrCreateDetailedAccount(accountCode, accountName, "8900", "Administrative Expenses");
+                } else {
+                    return getOrCreateDetailedAccount("8900-005", "School Fees", "8900", "Administrative Expenses");
+                }
+            }
+
+            // STOKFELA PAYMENTS - Special loans/payments to stokvela
+            if (details.contains("STOKFELA") || details.contains("STOKVELA")) {
+                String supplierName = extractSupplierName(details);
+                if (supplierName != null) {
+                    String accountCode = "2000-" + generateSupplierCode(supplierName);
+                    String accountName = "Stokvela Loan - " + supplierName;
+                    return getOrCreateDetailedAccount(accountCode, accountName, "2000", "Long-term Liabilities");
+                } else {
+                    return getOrCreateDetailedAccount("2000-999", "Stokvela Loans", "2000", "Long-term Liabilities");
+                }
+            }
+
+            // BOND REPAYMENTS - Liability reduction (mortgage payments)
+            if (details.contains("STD BANK BOND REPAYMENT") || details.contains("BOND REPAYMENT")) {
+                return getOrCreateDetailedAccount("2000-003", "Bond Liability", "2000", "Long-term Liabilities");
+            }
+
+            // CAR PURCHASES - Vehicle assets
+            if (details.contains("CAR SALES") || details.contains("MERCEDES") ||
+                details.contains("VEHICLE") || details.contains("AUTOMOTIVE")) {
+                String supplierName = extractSupplierName(details);
+                if (supplierName != null) {
+                    String accountCode = "2000-" + generateSupplierCode(supplierName);
+                    String accountName = "Vehicle Purchase - " + supplierName;
+                    return getOrCreateDetailedAccount(accountCode, accountName, "2000", "Non-Current Assets");
+                } else {
+                    return getOrCreateDetailedAccount("2000-002", "Vehicle Purchases", "2000", "Non-Current Assets");
+                }
+            }
+
+            // COMMUNICATION & IT SERVICES - Two Way Technologies, etc.
+            if (details.contains("TWO WAY TECHNOLOGIES") || details.contains("TECHNOLOGIES") ||
+                details.contains("SOFTWARE") || details.contains("IT ")) {
+                String supplierName = extractSupplierName(details);
+                if (supplierName != null) {
+                    String accountCode = "8400-" + generateSupplierCode(supplierName);
+                    String accountName = "IT Services - " + supplierName;
+                    return getOrCreateDetailedAccount(accountCode, accountName, "8400", "Communication");
+                } else {
+                    return getOrCreateDetailedAccount("8400-999", "IT & Communication Services", "8400", "Communication");
+                }
+            }
+
+            // LABOUR & HUMAN RESOURCES - Neo Entle Labour, etc.
+            if (details.contains("LABOUR") || details.contains("HUMAN RESOUR") ||
+                details.contains("RECRUITMENT") || details.contains("STAFFING")) {
+                String supplierName = extractSupplierName(details);
+                if (supplierName != null) {
+                    String accountCode = "8100-" + generateSupplierCode(supplierName);
+                    String accountName = "Labour Services - " + supplierName;
+                    return getOrCreateDetailedAccount(accountCode, accountName, "8100", "Employee Costs");
+                } else {
+                    return getOrCreateDetailedAccount("8100-998", "Labour & HR Services", "8100", "Employee Costs");
+                }
+            }
+
+            // CONSTRUCTION & BUILDING - Modderfontein, Ellispark Stadium, etc.
+            if (details.contains("STADIUM") || details.contains("CONSTRUCTION") ||
+                details.contains("BUILDING") || details.contains("MODDERFONTEIN")) {
+                String supplierName = extractSupplierName(details);
+                if (supplierName != null) {
+                    String accountCode = "8200-" + generateSupplierCode(supplierName);
+                    String accountName = "Construction Services - " + supplierName;
+                    return getOrCreateDetailedAccount(accountCode, accountName, "8200", "Rent Expense");
+                } else {
+                    return getOrCreateDetailedAccount("8200-999", "Construction & Building Services", "8200", "Rent Expense");
+                }
+            }
+
+            // TRANSPORT SERVICES - Mbhoni Miyambo Transport, etc.
+            if (details.contains("TRANSPORT") || details.contains("LOGISTICS") ||
+                details.contains("DELIVERY") || details.contains("COURIER")) {
+                String supplierName = extractSupplierName(details);
+                if (supplierName != null) {
+                    String accountCode = "8600-" + generateSupplierCode(supplierName);
+                    String accountName = "Transport Services - " + supplierName;
+                    return getOrCreateDetailedAccount(accountCode, accountName, "8600", "Travel & Entertainment");
+                } else {
+                    return getOrCreateDetailedAccount("8600-999", "Transport & Logistics Services", "8600", "Travel & Entertainment");
+                }
+            }
+
+            // GENERAL SUPPLIER PAYMENTS - Catch all for other supplier payments
+            if (details.contains("IB PAYMENT TO") && !details.contains("XG SALARIES") &&
+                !details.contains("WAGES")) {
+                String supplierName = extractSupplierName(details);
+                if (supplierName != null && supplierName.length() > 2) {
+                    String accountCode = "3000-" + generateSupplierCode(supplierName);
+                    String accountName = "Supplier - " + supplierName;
+                    return getOrCreateDetailedAccount(accountCode, accountName, "3000", "Accounts Payable");
+                }
+            }
+
+            // ATM CASH WITHDRAWALS - Petty cash (current assets)
+            if (details.contains("AUTOBANK CASH WITHDRAWAL")) {
+                return getOrCreateDetailedAccount("1000-006", "Petty Cash Withdrawals", "1000", "Current Assets");
+            }
+
+            // MOBILE PHONE PAYMENTS - Communication expenses
+            if (details.contains("PRE-PAID PAYMENT TO")) {
+                if (details.contains("MTN") || details.contains("VOD")) {
+                    return getOrCreateDetailedAccount("8310-001", "Mobile Phone Payments", "8310", "Telephone & Internet");
+                }
+            }
         }
-        
-        // Salaries and wages
-        if (details.contains("SALARIES") || details.contains("SALARY") || 
-            details.contains("WAGES") || details.contains("PAYROLL")) {
-            return getAccountByCode("8100"); // Employee Costs
-        }
-        
-        // Insurance payments
-        if (details.contains("INSURANCE") || details.contains("ASSURANCE")) {
-            return getAccountByCode("8800"); // Insurance
-        }
-        
-        // Rent payments
-        if (details.contains("RENT") || details.contains("LEASE")) {
-            return getAccountByCode("8200"); // Rent Expense
-        }
-        
-        // Communication expenses
-        if (details.contains("TELEPHONE") || details.contains("INTERNET") || 
-            details.contains("COMMUNICATION") || details.contains("CELL")) {
-            return getAccountByCode("8400"); // Communication
-        }
-        
-        // Vehicle expenses
-        if (details.contains("FUEL") || details.contains("VEHICLE") || 
-            details.contains("MOTOR") || details.contains("CAR")) {
-            return getAccountByCode("8500"); // Motor Vehicle Expenses
-        }
-        
-        // Utilities
-        if (details.contains("ELECTRICITY") || details.contains("WATER") || 
-            details.contains("MUNICIPAL") || details.contains("UTILITIES")) {
-            return getAccountByCode("8300"); // Utilities
-        }
-        
-        // Professional services
-        if (details.contains("LEGAL") || details.contains("ACCOUNTING") || 
-            details.contains("PROFESSIONAL") || details.contains("CONSULTANT")) {
-            return getAccountByCode("8700"); // Professional Services
-        }
-        
-        // Travel and entertainment
-        if (details.contains("TRAVEL") || details.contains("HOTEL") || 
-            details.contains("ENTERTAINMENT") || details.contains("MEALS")) {
-            return getAccountByCode("8600"); // Travel & Entertainment
-        }
-        
-        // Office supplies
-        if (details.contains("STATIONERY") || details.contains("OFFICE") || 
-            details.contains("SUPPLIES")) {
-            return getAccountByCode("9000"); // Office Supplies
-        }
-        
-        // Computer expenses - check this after revenue to avoid false matches
-        if (details.contains("SOFTWARE") || details.contains("COMPUTER") || 
-            details.contains("IT") || details.contains("TECHNOLOGY")) {
-            return getAccountByCode("9100"); // Computer Expenses
-        }
-        
-        // Marketing
-        if (details.contains("MARKETING") || details.contains("ADVERTISING") || 
-            details.contains("PROMOTION")) {
-            return getAccountByCode("9200"); // Marketing & Advertising
-        }
-        
-        // Bond repayments (debit transactions)
-        if (details.contains("BOND") && details.contains("REPAYMENT") && transaction.getDebitAmount() != null) {
-            return getAccountByCode("9500"); // Interest Expense
-        }
-        
-        // Interest payments (debits)
-        if (details.contains("INTEREST") && transaction.getDebitAmount() != null) {
-            return getAccountByCode("9500"); // Interest Expense
-        }
-        
-        // Director/Shareholder transfers (debits)
-        if ((details.contains("DIRECTOR") || details.contains("SHAREHOLDER") || 
-             details.contains("OWNER") || details.contains("IB TRANSFER")) && 
-            transaction.getDebitAmount() != null) {
-            return getAccountByCode("1200"); // Accounts Receivable
-        }
-        
-        // VAT payments
-        if (details.contains("VAT") || details.contains("SARS")) {
-            return getAccountByCode("3100"); // VAT Output
-        }
-        
-        // PAYE/UIF/SDL payments
-        if (details.contains("PAYE")) {
-            return getAccountByCode("3200"); // PAYE Payable
-        }
-        if (details.contains("UIF")) {
-            return getAccountByCode("3300"); // UIF Payable
-        }
-        if (details.contains("SDL")) {
-            return getAccountByCode("3400"); // SDL Payable
-        }
-        
-        // Default mappings based on debit/credit
-        if (transaction.getDebitAmount() != null) {
-            // Debit transactions - typically expenses
-            return getAccountByCode("8000"); // Cost of Goods Sold (generic expense)
-        } else {
-            // Credit transactions - typically income
-            return getAccountByCode("6200"); // Other Operating Revenue
-        }
+
+        // =================================================================
+        // FALLBACK: If no specific pattern matches, return null to leave unclassified
+        // =================================================================
+        LOGGER.info("Transaction not classified: " + details);
+        return null;
     }
     
     /**
@@ -712,6 +977,12 @@ public class TransactionMappingService {
             while (rs.next()) {
                 BankTransaction transaction = mapResultSetToBankTransaction(rs);
                 Long accountId = mapTransactionToAccount(transaction);
+                
+                // Skip transactions that can't be classified
+                if (accountId == null) {
+                    continue;
+                }
+                
                 String accountCode = getAccountCodeById(accountId);
                 String accountName = getAccountNameById(accountId);
                 String groupKey = accountCode + " - " + accountName;
@@ -751,7 +1022,14 @@ public class TransactionMappingService {
                 int entryCount = 1;
                 while (rs.next()) {
                     BankTransaction transaction = mapResultSetToBankTransaction(rs);
-                    createJournalEntryForTransaction(conn, transaction, entryCount, createdBy);
+                    
+                    // Skip transactions that can't be classified
+                    Long mappedAccountId = mapTransactionToAccount(transaction);
+                    if (mappedAccountId == null) {
+                        continue;
+                    }
+                    
+                    createJournalEntryForTransaction(conn, transaction, entryCount, mappedAccountId, createdBy);
                     entryCount++;
                 }
                 
@@ -770,18 +1048,18 @@ public class TransactionMappingService {
     }
     
     private void createJournalEntryForTransaction(Connection conn, BankTransaction transaction, 
-                                                int entryNumber, String createdBy) throws SQLException {
+                                                int entryNumber, Long mappedAccountId, String createdBy) throws SQLException {
         // Create journal entry header
         String reference = "AUTO-" + String.format("%05d", entryNumber);
         String description = "Auto-generated: " + transaction.getDetails();
-        
+
         String insertJournalEntry = """
-            INSERT INTO journal_entries (reference, entry_date, description, fiscal_period_id, 
+            INSERT INTO journal_entries (reference, entry_date, description, fiscal_period_id,
                                        company_id, created_by, created_at, updated_at)
             VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
             RETURNING id
             """;
-        
+
         Long journalEntryId;
         try (PreparedStatement pstmt = conn.prepareStatement(insertJournalEntry)) {
             pstmt.setString(1, reference);
@@ -790,7 +1068,7 @@ public class TransactionMappingService {
             pstmt.setLong(4, transaction.getFiscalPeriodId());
             pstmt.setLong(5, transaction.getCompanyId());
             pstmt.setString(6, createdBy);
-            
+
             ResultSet rs = pstmt.executeQuery();
             if (rs.next()) {
                 journalEntryId = rs.getLong("id");
@@ -798,46 +1076,45 @@ public class TransactionMappingService {
                 throw new SQLException("Failed to create journal entry");
             }
         }
-        
-        // Get the mapped account
-        Long mappedAccountId = mapTransactionToAccount(transaction);
+
+        // Get the mapped account (passed as parameter)
         Long bankAccountId = getAccountByCode("1100"); // Bank - Current Account
-        
-        // Create journal entry lines
+
+        // Create journal entry lines - CORRECT DOUBLE-ENTRY ACCOUNTING
         String insertLine = """
-            INSERT INTO journal_entry_lines (journal_entry_id, account_id, debit_amount, 
-                                           credit_amount, description, reference, 
+            INSERT INTO journal_entry_lines (journal_entry_id, account_id, debit_amount,
+                                           credit_amount, description, reference,
                                            source_transaction_id, created_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
             """;
-        
+
         try (PreparedStatement pstmt = conn.prepareStatement(insertLine)) {
-            // First line: Bank account (opposite of transaction)
+            // CORRECTED LOGIC: Bank account reflects actual bank transaction
             pstmt.setLong(1, journalEntryId);
             pstmt.setLong(2, bankAccountId);
             if (transaction.getDebitAmount() != null) {
-                // Transaction is debit, so credit the bank account
-                pstmt.setBigDecimal(3, null);
-                pstmt.setBigDecimal(4, transaction.getDebitAmount());
-            } else {
-                // Transaction is credit, so debit the bank account
-                pstmt.setBigDecimal(3, transaction.getCreditAmount());
+                // Bank debit = money going out of bank account
+                pstmt.setBigDecimal(3, transaction.getDebitAmount());
                 pstmt.setBigDecimal(4, null);
+            } else {
+                // Bank credit = money coming into bank account
+                pstmt.setBigDecimal(3, null);
+                pstmt.setBigDecimal(4, transaction.getCreditAmount());
             }
             pstmt.setString(5, "Bank Account");
             pstmt.setString(6, reference + "-01");
             pstmt.setLong(7, transaction.getId());
             pstmt.executeUpdate();
-            
-            // Second line: Mapped account (same as transaction)
+
+            // Second line: Mapped account (opposite of bank transaction for double-entry)
             pstmt.setLong(1, journalEntryId);
             pstmt.setLong(2, mappedAccountId);
             if (transaction.getDebitAmount() != null) {
-                // Transaction is debit, so debit the expense/asset account
-                pstmt.setBigDecimal(3, transaction.getDebitAmount());
-                pstmt.setBigDecimal(4, null);
+                // Bank debit (expense) = credit the expense account (increase expense)
+                pstmt.setBigDecimal(3, null);
+                pstmt.setBigDecimal(4, transaction.getDebitAmount());
             } else {
-                // Transaction is credit, so credit the income/liability account
+                // Bank credit (income) = credit the income account (increase income)
                 pstmt.setBigDecimal(3, null);
                 pstmt.setBigDecimal(4, transaction.getCreditAmount());
             }
@@ -926,5 +1203,269 @@ public class TransactionMappingService {
         transaction.setStatementPeriod(rs.getString("statement_period"));
         transaction.setSourceFile(rs.getString("source_file"));
         return transaction;
+    }
+    
+    /**
+     * Get or create a detailed account with automatic account creation
+     * This ensures every transaction gets its own detailed account
+     */
+    private Long getOrCreateDetailedAccount(String detailedCode, String detailedName,
+                                           String rollupCode, String rollupName) {
+        try {
+            // First try to get existing account
+            Long existingAccountId = getAccountIdByCode(1L, detailedCode); // Use company ID 1 for Xinghizana
+            if (existingAccountId != null) {
+                return existingAccountId;
+            }
+
+            // Account doesn't exist, create it
+            return createDetailedAccount(detailedCode, detailedName, rollupCode, rollupName);
+
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error getting/creating detailed account: " + detailedCode, e);
+            return null;
+        }
+    }
+
+    /**
+     * Create a new detailed account in the database
+     */
+    private Long createDetailedAccount(String accountCode, String accountName,
+                                     String rollupCode, String rollupName) throws SQLException {
+        // For now, we'll assume company_id = 1 (Xinghizana Group)
+        // In a real implementation, this should be passed as a parameter
+        Long companyId = 1L;
+
+        // Determine category_id based on account code prefix
+        int categoryId = getCategoryIdForAccountCode(accountCode);
+
+        // First, find the parent account ID by code
+        Long parentAccountId = null;
+        if (rollupCode != null) {
+            String parentSql = "SELECT id FROM accounts WHERE company_id = ? AND account_code = ?";
+            try (Connection conn = getConnection();
+                 PreparedStatement parentStmt = conn.prepareStatement(parentSql)) {
+                parentStmt.setLong(1, companyId);
+                parentStmt.setString(2, rollupCode);
+                ResultSet parentRs = parentStmt.executeQuery();
+                if (parentRs.next()) {
+                    parentAccountId = parentRs.getLong("id");
+                }
+            }
+        }
+
+        String sql = """
+            INSERT INTO accounts (company_id, account_code, account_name, category_id, parent_account_id, is_active, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            RETURNING id
+            """;
+
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setLong(1, companyId);
+            stmt.setString(2, accountCode);
+            stmt.setString(3, accountName);
+            stmt.setInt(4, categoryId);
+            if (parentAccountId != null) {
+                stmt.setLong(5, parentAccountId);
+            } else {
+                stmt.setNull(5, java.sql.Types.INTEGER);
+            }
+
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                Long newAccountId = rs.getLong("id");
+                // Update cache
+                accountCache.put(accountCode, newAccountId);
+                LOGGER.info("Created new detailed account: " + accountCode + " - " + accountName);
+                return newAccountId;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Get the appropriate category_id for an account code
+     */
+    private int getCategoryIdForAccountCode(String accountCode) {
+        if (accountCode == null) return 18; // Default to Operating Expenses
+
+        String prefix = accountCode.split("-")[0];
+
+        switch (prefix) {
+            case "1000": return 11; // Current Assets (loan receivables)
+            case "2000": return 13; // Current Liabilities (director loans)
+            case "4000": return 16; // Operating Revenue
+            case "5000": return 17; // Other Income
+            case "6000": return 17; // Other Income (reversals/adjustments)
+            case "8100": return 18; // Operating Expenses (salaries)
+            case "8500": return 18; // Operating Expenses (vehicle expenses)
+            case "8800": return 18; // Operating Expenses (insurance)
+            case "9600": return 20; // Finance Costs (bank fees)
+            case "3100": return 18; // Operating Expenses (VAT)
+            default: return 18; // Default to Operating Expenses
+        }
+    }
+
+    /**
+     * Generate journal entries for all classified transactions that don't have journal entries yet
+     *
+     * @param companyId The company ID
+     * @return The number of journal entries created
+     */
+    public int generateJournalEntriesForUnclassifiedTransactions(Long companyId) {
+        int journalEntriesCreated = 0;
+
+        try (Connection conn = DriverManager.getConnection(dbUrl)) {
+            // Get classified transactions that don't have journal entries
+            String sql = """
+                SELECT bt.id, bt.transaction_date, bt.details, bt.debit_amount, bt.credit_amount,
+                       bt.account_code, bt.account_name
+                FROM bank_transactions bt
+                LEFT JOIN journal_entries je ON je.reference = CONCAT('JE-', bt.id)
+                WHERE bt.company_id = ?
+                AND bt.account_code IS NOT NULL
+                AND je.id IS NULL
+                ORDER BY bt.transaction_date, bt.id
+                """;
+
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setLong(1, companyId);
+
+                try (ResultSet rs = stmt.executeQuery()) {
+                    JournalEntryCreationService journalService = new JournalEntryCreationService(dbUrl);
+
+                    while (rs.next()) {
+                        // Create BankTransaction object
+                        BankTransaction transaction = new BankTransaction();
+                        transaction.setId(rs.getLong("id"));
+                        transaction.setTransactionDate(rs.getDate("transaction_date").toLocalDate());
+                        transaction.setDetails(rs.getString("details"));
+                        transaction.setDebitAmount(rs.getBigDecimal("debit_amount"));
+                        transaction.setCreditAmount(rs.getBigDecimal("credit_amount"));
+                        transaction.setAccountCode(rs.getString("account_code"));
+                        transaction.setAccountName(rs.getString("account_name"));
+
+                        // Create journal entry
+                        try {
+                            journalService.createJournalEntryForTransaction(
+                                transaction,
+                                transaction.getAccountCode(),
+                                transaction.getAccountName()
+                            );
+                            journalEntriesCreated++;
+
+                            // Log progress every 100 entries
+                            if (journalEntriesCreated % 100 == 0) {
+                                LOGGER.info("Created " + journalEntriesCreated + " journal entries so far...");
+                            }
+                        } catch (Exception e) {
+                            LOGGER.log(Level.SEVERE, "Failed to create journal entry for transaction ID: " + transaction.getId(), e);
+                        }
+                    }
+                }
+            }
+
+            LOGGER.info("Journal entry generation completed. Created " + journalEntriesCreated + " journal entries.");
+            return journalEntriesCreated;
+
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error generating journal entries", e);
+            throw new RuntimeException("Failed to generate journal entries", e);
+        }
+    }
+
+    /**
+     * Extract employee name from salary payment description
+     */
+    private String extractEmployeeName(String details) {
+        // Common patterns: "IB PAYMENT TO [NAME] XG SALARIES"
+        if (details.contains("IB PAYMENT TO") && details.contains("XG SALARIES")) {
+            int start = details.indexOf("IB PAYMENT TO") + "IB PAYMENT TO".length();
+            int end = details.indexOf("XG SALARIES");
+            if (start < end) {
+                String namePart = details.substring(start, end).trim();
+                // Clean up common prefixes/suffixes
+                namePart = namePart.replaceAll("^(MR|MRS|MS|DR|PROF)\\s+", "");
+                return namePart;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Generate a unique code for employee salary accounts
+     */
+    private String generateEmployeeCode(String employeeName) {
+        if (employeeName == null || employeeName.trim().isEmpty()) {
+            return "999";
+        }
+        
+        // Create a simple hash-like code from the employee name
+        String cleanName = employeeName.trim().toUpperCase().replaceAll("[^A-Z0-9]", "");
+        if (cleanName.length() >= 3) {
+            return cleanName.substring(0, 3);
+        } else {
+            return String.format("%03d", cleanName.hashCode() % 1000);
+        }
+    }
+
+    /**
+     * Extract supplier name from payment description
+     */
+    private String extractSupplierName(String details) {
+        // Common patterns for supplier payments
+        if (details.contains("IB PAYMENT TO")) {
+            int start = details.indexOf("IB PAYMENT TO") + "IB PAYMENT TO".length();
+            // Look for common endings
+            String[] endings = {"LOAN REPAYM", "REIMBURSE", "XG SALARIES", "VEHICL", "CLEANING", "TRANSPORT", "TECHNOLOGIES", "LABOUR"};
+            int earliestEnd = details.length();
+            
+            for (String ending : endings) {
+                int endPos = details.indexOf(ending);
+                if (endPos > start && endPos < earliestEnd) {
+                    earliestEnd = endPos;
+                }
+            }
+            
+            if (earliestEnd > start) {
+                String supplierPart = details.substring(start, earliestEnd).trim();
+                // Clean up common prefixes/suffixes
+                supplierPart = supplierPart.replaceAll("^(MR|MRS|MS|DR|PROF)\\s+", "");
+                return supplierPart;
+            }
+        }
+        
+        // For other patterns, try to extract reasonable supplier names
+        if (details.contains("PAYMENT TO")) {
+            int start = details.indexOf("PAYMENT TO") + "PAYMENT TO".length();
+            // Take up to next space or common delimiter
+            int end = details.indexOf(" ", start + 1);
+            if (end == -1) end = details.length();
+            if (end > start) {
+                return details.substring(start, end).trim();
+            }
+        }
+        
+        return null;
+    }
+
+    /**
+     * Generate a unique code for supplier accounts
+     */
+    private String generateSupplierCode(String supplierName) {
+        if (supplierName == null || supplierName.trim().isEmpty()) {
+            return "999";
+        }
+        
+        // Create a simple hash-like code from the supplier name
+        String cleanName = supplierName.trim().toUpperCase().replaceAll("[^A-Z0-9]", "");
+        if (cleanName.length() >= 3) {
+            return cleanName.substring(0, 3);
+        } else {
+            return String.format("%03d", Math.abs(cleanName.hashCode()) % 1000);
+        }
     }
 }
