@@ -86,22 +86,38 @@ public class FinancialReportingApp {
         System.out.println("🏢 XINGHIZANA GROUP - FINANCIAL REPORTING SYSTEM");
         System.out.println("================================================");
         System.out.println();
-        
+
         FinancialReportingApp app = new FinancialReportingApp();
-        
+
         try {
+            // Check for command line arguments
+            if (args.length > 0 && "generate-journal-entries".equals(args[0])) {
+                // Non-interactive mode: generate journal entries
+                System.out.println("🔄 Running in non-interactive mode: Generating journal entries...");
+
+                Long companyId = app.getCompanyId("Xinghizana Group");
+                if (companyId == null) {
+                    System.err.println("❌ Error: Could not find company 'Xinghizana Group'");
+                    return;
+                }
+
+                app.generateJournalEntries(companyId);
+                System.out.println("✅ Journal entries generated successfully!");
+                return;
+            }
+
             // Get company and fiscal period IDs
             Long companyId = app.getCompanyId("Xinghizana Group");
             Long fiscalPeriodId = app.getCurrentFiscalPeriodId(companyId);
-            
+
             if (companyId == null || fiscalPeriodId == null) {
                 System.err.println("❌ Error: Could not find company or fiscal period");
                 return;
             }
-            
+
             // Interactive Menu System
             app.showMainMenu(companyId, fiscalPeriodId);
-            
+
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error in financial reporting process", e);
             System.err.println("❌ Error: " + e.getMessage());

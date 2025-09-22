@@ -74,4 +74,43 @@ public class PdfTextExtractionService {
                                pageCount, lineCount, text.length());
         }
     }
+    
+    // Corrected main method
+    public static void main(String[] args) {
+        if (args.length != 1) {
+            System.out.println("Usage: java PdfTextExtractionService <pdf-file-path>");
+            return;
+        }
+        
+        String pdfPath = args[0];
+        String outputFile = "raw_pdf_text_output.txt";
+        
+        System.out.println("=== DEBUG INFO ===");
+        System.out.println("Current directory: " + System.getProperty("user.dir"));
+        System.out.println("PDF path: " + pdfPath);
+        System.out.println("Output file: " + outputFile);
+        System.out.println("Absolute output path: " + new File(outputFile).getAbsolutePath());
+        System.out.println("PDF file exists: " + new File(pdfPath).exists());
+        System.out.println("==================");
+        
+        try {
+            PdfTextExtractionService service = new PdfTextExtractionService();
+            System.out.println("Starting text extraction...");
+            service.extractTextToFile(pdfPath, outputFile);
+            
+            File output = new File(outputFile);
+            if (output.exists()) {
+                System.out.println("✓ Raw text extracted and saved to: " + outputFile);
+                System.out.println("✓ File size: " + output.length() + " bytes");
+                System.out.println("✓ Character count: " + output.length()); // Approximate
+            } else {
+                System.out.println("✗ File was not created: " + outputFile);
+                System.out.println("✗ Absolute path: " + output.getAbsolutePath());
+            }
+            
+        } catch (Exception e) {
+            System.err.println("✗ Error during extraction: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
 }

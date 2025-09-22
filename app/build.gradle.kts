@@ -92,25 +92,14 @@ tasks.named<JavaExec>("run") {
     }
 }
 
-// Add separate task for API server
-tasks.register<JavaExec>("runApi") {
+// Add separate task for running classification test
+tasks.register<JavaExec>("runClassificationTest") {
     group = "application"
-    description = "Run the FIN API server"
-    classpath = sourceSets["main"].runtimeClasspath
-    mainClass.set("fin.ApiApplication")
+    description = "Run the ClassificationTest"
+    classpath = sourceSets["main"].runtimeClasspath + sourceSets["test"].runtimeClasspath
+    mainClass.set("fin.service.ClassificationTest")
     systemProperties = System.getProperties().toMap() as Map<String, Any>
     systemProperty("fin.license.autoconfirm", "true")
-}
-
-// Add separate task for console application
-tasks.register<JavaExec>("runConsole") {
-    group = "application"
-    description = "Run the FIN console application"
-    classpath = sourceSets["main"].runtimeClasspath
-    mainClass.set("fin.ConsoleApplication")
-    systemProperties = System.getProperties().toMap() as Map<String, Any>
-    systemProperty("fin.license.autoconfirm", "true")
-    maxHeapSize = "2G"
 }
 
 tasks.named<Test>("test") {

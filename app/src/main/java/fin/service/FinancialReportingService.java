@@ -437,16 +437,20 @@ public class FinancialReportingService {
         report.append(generateReportHeader("CASHBOOK", company, period));
         
         String sql = """
-            SELECT 
+            SELECT
                 bt.transaction_date,
                 bt.details,
-                bt.debit_amount,
-                bt.credit_amount,
+                jel.debit_amount as bank_debit,
+                jel.credit_amount as bank_credit,
                 bt.balance,
-                a.account_name
+                COALESCE(bt.account_name, a.account_name) as account_name,
+                COALESCE(bt.account_code, a.account_code) as account_code
             FROM bank_transactions bt
-            LEFT JOIN journal_entry_lines jel ON bt.id = jel.source_transaction_id
-            LEFT JOIN accounts a ON jel.account_id = a.id
+            LEFT JOIN journal_entry_lines jel ON bt.id = jel.source_transaction_id 
+                AND jel.account_id = (SELECT id FROM accounts WHERE account_code = '1100' LIMIT 1)
+            LEFT JOIN journal_entry_lines jel2 ON bt.id = jel2.source_transaction_id 
+                AND jel2.account_id != (SELECT id FROM accounts WHERE account_code = '1100' LIMIT 1)
+            LEFT JOIN accounts a ON jel2.account_id = a.id
             WHERE bt.company_id = ? AND bt.fiscal_period_id = ?
             ORDER BY bt.transaction_date, bt.id
             """;
@@ -470,17 +474,26 @@ public class FinancialReportingService {
                 java.sql.Date transactionDate = rs.getDate("transaction_date");
                 String details = rs.getString("details");
                 String accountName = rs.getString("account_name");
-                BigDecimal debitAmount = rs.getBigDecimal("debit_amount");
-                BigDecimal creditAmount = rs.getBigDecimal("credit_amount");
+                String accountCode = rs.getString("account_code");
+                BigDecimal bankDebit = rs.getBigDecimal("bank_debit");
+                BigDecimal bankCredit = rs.getBigDecimal("bank_credit");
                 BigDecimal balance = rs.getBigDecimal("balance");
+                
+                // Use journal entry amounts for bank account (correct debit/credit)
+                BigDecimal debitAmount = bankDebit;
+                BigDecimal creditAmount = bankCredit;
                 
                 if (debitAmount != null) totalDebits = totalDebits.add(debitAmount);
                 if (creditAmount != null) totalCredits = totalCredits.add(creditAmount);
                 
+                // Format account display - prefer account_name, fallback to account_code if name is null
+                String accountDisplay = accountName != null ? accountName : 
+                    (accountCode != null ? accountCode : "Unclassified");
+                
                 report.append(String.format("%-12s %-35s %-20s %15s %15s %15s\n",
                         transactionDate.toLocalDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")),
                         details != null && details.length() > 33 ? details.substring(0, 30) + "..." : details,
-                        accountName != null && accountName.length() > 18 ? accountName.substring(0, 15) + "..." : accountName,
+                        accountDisplay.length() > 18 ? accountDisplay.substring(0, 15) + "..." : accountDisplay,
                         debitAmount != null ? formatCurrency(debitAmount) : "",
                         creditAmount != null ? formatCurrency(creditAmount) : "",
                         balance != null ? formatCurrency(balance) : ""));
