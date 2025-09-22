@@ -1,5 +1,6 @@
 package fin.service.parser;
 
+import fin.context.TransactionParsingContext;
 import fin.model.parser.ParsedTransaction;
 import fin.model.parser.TransactionType;
 import java.math.BigDecimal;
@@ -151,7 +152,8 @@ public class StandardBankTabularParser implements TransactionParser {
         
         // Must be valid continuation text - alphanumeric with common punctuation
         // Continuation lines often contain reference numbers, company names, etc.
-        return trimmed.matches("^[A-Z0-9][A-Z0-9\\s\\*\\-\\(\\)\\.:/#\\+]+$");
+        // Fixed pattern - allows continuation lines starting with '*' or alphanumeric
+        return trimmed.matches("^[A-Z0-9*][A-Z0-9\\s\\*\\-\\(\\)\\.:/#\\+]+$");
     }
 
     @Override

@@ -1,5 +1,6 @@
 package fin.service.parser;
 
+import fin.context.TransactionParsingContext;
 import fin.model.parser.ParsedTransaction;
 import fin.model.parser.TransactionType;
 import java.math.BigDecimal;

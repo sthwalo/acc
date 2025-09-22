@@ -1,5 +1,6 @@
 package fin.service;
 
+import fin.context.TransactionParsingContext;
 import fin.model.BankTransaction;
 import fin.model.Company;
 import fin.model.FiscalPeriod;
@@ -12,6 +13,7 @@ import java.io.File;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -32,15 +34,11 @@ public class BankStatementProcessingService {
         this.transactionRepository = new BankTransactionRepository(dbUrl);
         this.validator = new BankTransactionValidator();
         this.companyService = new CompanyService(dbUrl);
-        this.parsers = new ArrayList<>();
-        
-        // Register parsers in order of specificity
-        // Use the corrected Standard Bank tabular parser first
-        parsers.add(new StandardBankTabularParser());
-        // parsers.add(new EnhancedStandardBankTabularParser()); // Temporarily disabled to test our fixes
-        parsers.add(new ServiceFeeParser());
-        parsers.add(new CreditTransactionParser());
-        parsers.add(new MultiTransactionParser());
+        this.parsers = Arrays.asList(
+            new StandardBankTabularParser(),
+            new CreditTransactionParser(),
+            new ServiceFeeParser()
+        );
     }
 
     /**
@@ -173,20 +171,12 @@ public class BankStatementProcessingService {
     private List<ParsedTransaction> parseTransactions(List<String> lines, TransactionParsingContext context) {
         List<ParsedTransaction> results = new ArrayList<>();
         
-        // Check if we have Standard Bank tabular format
-        boolean isStandardBank = textExtractor.isStandardBankFormat();
-        EnhancedStandardBankTabularParser enhancedParser = null;
-        StandardBankTabularParser fallbackParser = null;
-        
-        if (isStandardBank) {
-            // Find the Enhanced StandardBankTabularParser first
-            for (TransactionParser parser : parsers) {
-                if (parser instanceof EnhancedStandardBankTabularParser) {
-                    enhancedParser = (EnhancedStandardBankTabularParser) parser;
-                    break;
-                } else if (parser instanceof StandardBankTabularParser) {
-                    fallbackParser = (StandardBankTabularParser) parser;
-                }
+        // Find the StandardBankTabularParser
+        StandardBankTabularParser standardParser = null;
+        for (TransactionParser parser : parsers) {
+            if (parser instanceof StandardBankTabularParser) {
+                standardParser = (StandardBankTabularParser) parser;
+                break;
             }
         }
         
@@ -196,93 +186,49 @@ public class BankStatementProcessingService {
                 continue;
             }
             
-            // For Standard Bank format, use enhanced parser first, then fallback
-            if (enhancedParser != null) {
-                if (enhancedParser.canParse(line, context)) {
-                    try {
-                        ParsedTransaction parsed = enhancedParser.parse(line, context);
-                        if (parsed != null) {
-                            results.add(parsed);
-                        }
-                        // Continue processing even if null (description line)
-                        continue;
-                    } catch (Exception e) {
-                        System.err.println("Enhanced StandardBank parser failed for line: " + line + " - " + e.getMessage());
-                        // Try fallback parser
-                        if (fallbackParser != null && fallbackParser.canParse(line, context)) {
-                            try {
-                                ParsedTransaction parsed = fallbackParser.parse(line, context);
-                                if (parsed != null) {
-                                    results.add(parsed);
-                                }
-                                continue;
-                            } catch (Exception e2) {
-                                System.err.println("Fallback StandardBank parser also failed for line: " + line + " - " + e2.getMessage());
-                            }
-                        }
+            // Try StandardBankTabularParser first for Standard Bank format
+            if (standardParser != null && standardParser.canParse(line, context)) {
+                try {
+                    ParsedTransaction parsed = standardParser.parse(line, context);
+                    if (parsed != null) {
+                        results.add(parsed);
                     }
-                }
-            } else if (fallbackParser != null) {
-                // If enhanced parser is not available, use fallback parser directly
-                if (fallbackParser.canParse(line, context)) {
-                    try {
-                        ParsedTransaction parsed = fallbackParser.parse(line, context);
-                        if (parsed != null) {
-                            results.add(parsed);
-                        }
-                        // Continue processing even if null (description line)
-                        continue;
-                    } catch (Exception e) {
-                        System.err.println("StandardBank parser failed for line: " + line + " - " + e.getMessage());
-                    }
+                    // Continue processing even if null (description line)
+                    continue;
+                } catch (Exception e) {
+                    System.err.println("StandardBank parser failed for line: " + line + " - " + e.getMessage());
                 }
             }
             
-            // Skip header/footer lines for non-Standard Bank processing
-            if (!isStandardBank && !textExtractor.isTransaction(line)) {
-                continue;
-            }
-            
-            // For other formats, use the original logic
-            if (!isStandardBank) {
-                for (TransactionParser parser : parsers) {
-                    if (!(parser instanceof StandardBankTabularParser) && parser.canParse(line, context)) {
-                        try {
-                            ParsedTransaction parsed = parser.parse(line, context);
-                            if (parsed != null) {
-                                results.add(parsed);
-                                break; // Stop after first successful parse
-                            }
-                        } catch (Exception e) {
-                            // Log parsing error but continue with other lines
-                            System.err.println("Failed to parse line: " + line + " - " + e.getMessage());
-                            break; // Skip this line and continue with next
+            // For other formats, use remaining parsers
+            for (TransactionParser parser : parsers) {
+                if (!(parser instanceof StandardBankTabularParser) && parser.canParse(line, context)) {
+                    try {
+                        ParsedTransaction parsed = parser.parse(line, context);
+                        if (parsed != null) {
+                            results.add(parsed);
+                            break; // Stop after first successful parse
                         }
+                    } catch (Exception e) {
+                        // Log parsing error but continue with other lines
+                        System.err.println("Failed to parse line: " + line + " - " + e.getMessage());
+                        break; // Skip this line and continue with next
                     }
                 }
             }
         }
         
-        // Finalize any pending transactions from StandardBank parsers before resetting
-        if (enhancedParser != null) {
+        // Finalize any pending transactions from StandardBank parser
+        if (standardParser != null) {
             try {
-                // Note: Enhanced parser doesn't have finalizeParsing() method yet
-                // This is handled by the fallback logic below
-            } catch (Exception e) {
-                System.err.println("Failed to finalize enhanced parser - " + e.getMessage());
-            }
-        }
-        
-        if (fallbackParser != null) {
-            try {
-                ParsedTransaction finalTransaction = fallbackParser.finalizeParsing();
+                ParsedTransaction finalTransaction = standardParser.finalizeParsing();
                 if (finalTransaction != null) {
                     results.add(finalTransaction);
                 }
             } catch (Exception e) {
                 System.err.println("Failed to finalize pending transaction - " + e.getMessage());
             }
-            fallbackParser.reset();
+            standardParser.reset();
         }
         
         return results;

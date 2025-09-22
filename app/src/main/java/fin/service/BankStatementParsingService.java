@@ -22,7 +22,7 @@ public class BankStatementParsingService {
     // Header/Footer patterns
     private static final Set<String> HEADER_FOOTER_PATTERNS = Set.of(
         "^\\s*BANK\\s+STATEMENT\\s*$",
-        "^\\s*STATEMENT\\s+OF\\s+ACCOUNT\\s*$",
+        "^\\s*STATEMENT\\s+OF\\s+ACCOUNT\\s*$", 
         "^\\s*PAGE\\s+\\d+\\s*$",
         "^\\s*\\d+\\s*$",
         "^\\s*CONTINUED\\s*$",
@@ -250,14 +250,9 @@ public class BankStatementParsingService {
     private String cleanTransactionDetails(String details) {
         if (details == null) return "";
         
-        String cleaned = details.trim();
-        
-        // Remove common patterns
-        cleaned = cleaned.replaceAll("\\b\\d{8}\\b", ""); // 8-digit codes
-        cleaned = cleaned.replaceAll("\\b\\d{6,}\\b", ""); // 6+ digit numbers (account numbers)
-        cleaned = cleaned.replaceAll("\\s+", " "); // Multiple spaces
-        
-        return cleaned.trim();
+        // Remove aggressive truncation
+        // Keep original length, just normalize spacing
+        return details.replaceAll("\\s+", " ").trim();
     }
     
     /**

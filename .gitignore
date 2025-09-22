@@ -40,8 +40,8 @@ Commands
 
 # Cash transaction documents
 cash/
-#input/
-#exports/
+input/
+exports/
 
 
 # Processed financial data exports
@@ -188,7 +188,7 @@ rules.txt
 dev-tools/*.java
 dev-tools/*.class
 dev-tools/
-
+scripts/rules
 
 # Allow documentation in dev-tools
 !dev-tools/*.md

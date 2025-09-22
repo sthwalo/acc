@@ -3,6 +3,7 @@ package fin.controller;
 import fin.model.BankTransaction;
 import fin.service.BankStatementProcessingService;
 import fin.service.CsvImportService;
+import fin.service.PdfExportService;
 import fin.state.ApplicationState;
 import fin.ui.ConsoleMenu;
 import fin.ui.InputHandler;
@@ -207,8 +208,16 @@ public class ImportController {
                     inputHandler.waitForEnter();
                     break;
                 case 2:
-                    // Note: This would need PdfExportService integration
-                    outputFormatter.printInfo("PDF export functionality would be implemented here");
+                    try {
+                        PdfExportService pdfService = new PdfExportService();
+                        String pdfPath = pdfService.exportTransactionsToPdf(
+                            transactions, 
+                            applicationState.getCurrentCompany(), 
+                            applicationState.getCurrentFiscalPeriod());
+                        outputFormatter.printSuccess("PDF exported successfully: " + pdfPath);
+                    } catch (Exception e) {
+                        outputFormatter.printError("PDF export failed: " + e.getMessage());
+                    }
                     break;
                 case 3:
                     return;

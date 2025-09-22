@@ -1,5 +1,6 @@
 package fin.service.parser;
 
+import fin.context.TransactionParsingContext;
 import fin.model.parser.ParsedTransaction;
 
 /**

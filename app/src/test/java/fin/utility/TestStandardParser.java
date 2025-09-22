@@ -1,7 +1,7 @@
 package fin.utility;
 
 import fin.service.parser.StandardBankTabularParser;
-import fin.service.parser.TransactionParsingContext;
+import fin.context.TransactionParsingContext;
 import fin.model.parser.ParsedTransaction;
 import java.time.LocalDate;
 import java.util.ArrayList;

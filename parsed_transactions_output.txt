@@ -1,0 +1,2299 @@
+=== PARSED TRANSACTIONS ===
+Total transactions: 287
+
+Transaction 1:
+  Date: 2025-02-15
+  Type: CREDIT
+  Amount: null
+  Description: BALANCE BROUGHT FORWARD
+  Reference: 
+  Balance: 2448.85
+
+Transaction 2:
+  Date: 2025-02-17
+  Type: DEBIT
+  Amount: 1469.35
+  Description: INSURANCE PREMIUM DOTSURE NYP3439061
+  Reference: 
+  Balance: 979.50
+
+Transaction 3:
+  Date: 2025-02-17
+  Type: SERVICE_FEE
+  Amount: 20.00
+  Description: FEE - DEBIT ORDER ##
+  Reference: 
+  Balance: 959.50
+
+Transaction 4:
+  Date: 2025-02-17
+  Type: DEBIT
+  Amount: 153.70
+  Description: INSURANCE PREMIUM DOTSURE FITRA3355863
+  Reference: 
+  Balance: 805.80
+
+Transaction 5:
+  Date: 2025-02-17
+  Type: SERVICE_FEE
+  Amount: 20.00
+  Description: FEE - DEBIT ORDER ##
+  Reference: 
+  Balance: 785.80
+
+Transaction 6:
+  Date: 2025-02-17
+  Type: DEBIT
+  Amount: 274.54
+  Description: INSURANCE PREMIUM DOTSURE PLAT3354629
+  Reference: 
+  Balance: 511.26
+
+Transaction 7:
+  Date: 2025-02-17
+  Type: SERVICE_FEE
+  Amount: 20.00
+  Description: FEE - DEBIT ORDER ##
+  Reference: 
+  Balance: 491.26
+
+Transaction 8:
+  Date: 2025-02-17
+  Type: DEBIT
+  Amount: 179.14
+  Description: INSURANCE PREMIUM DOTSURE LBMA3355871
+  Reference: 
+  Balance: 312.12
+
+Transaction 9:
+  Date: 2025-02-17
+  Type: SERVICE_FEE
+  Amount: 20.00
+  Description: FEE - DEBIT ORDER ##
+  Reference: 
+  Balance: 292.12
+
+Transaction 10:
+  Date: 2025-02-17
+  Type: DEBIT
+  Amount: 179.14
+  Description: INSURANCE PREMIUM DOTSURE LBMA3440609
+  Reference: 
+  Balance: 112.98
+
+Transaction 11:
+  Date: 2025-02-17
+  Type: SERVICE_FEE
+  Amount: 20.00
+  Description: FEE - DEBIT ORDER ##
+  Reference: 
+  Balance: 92.98
+
+Transaction 12:
+  Date: 2025-02-17
+  Type: DEBIT
+  Amount: 3313.49
+  Description: INSURANCE PREMIUM DOTSURE NYPD3354628
+  Reference: 
+  Balance: 3220.51
+
+Transaction 13:
+  Date: 2025-02-17
+  Type: SERVICE_FEE
+  Amount: 20.00
+  Description: FEE - DEBIT ORDER ##
+  Reference: 
+  Balance: 3240.51
+
+Transaction 14:
+  Date: 2025-02-17
+  Type: CREDIT
+  Amount: 3313.49
+  Description: RTD-NOT PROVIDED FOR DOTSURE NYPD3354628
+  Reference: 
+  Balance: 72.98
+
+Transaction 15:
+  Date: 2025-02-17
+  Type: SERVICE_FEE
+  Amount: 155.00
+  Description: FEE-UNPAID ITEM ##
+  Reference: 
+  Balance: 82.02
+
+Transaction 16:
+  Date: 2025-02-17
+  Type: DEBIT
+  Amount: 270.30
+  Description: INSURANCE PREMIUM DOTSURE EXSA3439063
+  Reference: 
+  Balance: 352.32
+
+Transaction 17:
+  Date: 2025-02-17
+  Type: SERVICE_FEE
+  Amount: 20.00
+  Description: FEE - DEBIT ORDER ##
+  Reference: 
+  Balance: 372.32
+
+Transaction 18:
+  Date: 2025-02-17
+  Type: CREDIT
+  Amount: 270.30
+  Description: RTD-NOT PROVIDED FOR DOTSURE EXSA3439063
+  Reference: 
+  Balance: 102.02
+
+Transaction 19:
+  Date: 2025-02-17
+  Type: SERVICE_FEE
+  Amount: 155.00
+  Description: FEE-UNPAID ITEM ##
+  Reference: 
+  Balance: 257.02
+
+Transaction 20:
+  Date: 2025-02-17
+  Type: DEBIT
+  Amount: 153.70
+  Description: INSURANCE PREMIUM DOTSURE FITRA3440612
+  Reference: 
+  Balance: 410.72
+
+Transaction 21:
+  Date: 2025-02-17
+  Type: SERVICE_FEE
+  Amount: 20.00
+  Description: FEE - DEBIT ORDER ##
+  Reference: 
+  Balance: 430.72
+
+Transaction 22:
+  Date: 2025-02-17
+  Type: CREDIT
+  Amount: 153.70
+  Description: RTD-NOT PROVIDED FOR DOTSURE FITRA3440612
+  Reference: 
+  Balance: 277.02
+
+Transaction 23:
+  Date: 2025-02-17
+  Type: SERVICE_FEE
+  Amount: 155.00
+  Description: FEE-UNPAID ITEM ##
+  Reference: 
+  Balance: 432.02
+
+Transaction 24:
+  Date: 2025-02-17
+  Type: DEBIT
+  Amount: 254.40
+  Description: INSURANCE PREMIUM DOTSURE SCZ3355868
+  Reference: 
+  Balance: 686.42
+
+Transaction 25:
+  Date: 2025-02-17
+  Type: SERVICE_FEE
+  Amount: 20.00
+  Description: FEE - DEBIT ORDER ##
+  Reference: 
+  Balance: 706.42
+
+Transaction 26:
+  Date: 2025-02-17
+  Type: CREDIT
+  Amount: 254.40
+  Description: RTD-NOT PROVIDED FOR DOTSURE SCZ3355868
+  Reference: 
+  Balance: 452.02
+
+Transaction 27:
+  Date: 2025-02-17
+  Type: SERVICE_FEE
+  Amount: 155.00
+  Description: FEE-UNPAID ITEM ##
+  Reference: 
+  Balance: 607.02
+
+Transaction 28:
+  Date: 2025-02-17
+  Type: DEBIT
+  Amount: 412.34
+  Description: INSURANCE PREMIUM DOTSURE UDWD3354627
+  Reference: 
+  Balance: 1019.36
+
+Transaction 29:
+  Date: 2025-02-17
+  Type: SERVICE_FEE
+  Amount: 20.00
+  Description: FEE - DEBIT ORDER ##
+  Reference: 
+  Balance: 1039.36
+
+Transaction 30:
+  Date: 2025-02-17
+  Type: CREDIT
+  Amount: 412.34
+  Description: RTD-NOT PROVIDED FOR DOTSURE UDWD3354627
+  Reference: 
+  Balance: 627.02
+
+Transaction 31:
+  Date: 2025-02-17
+  Type: SERVICE_FEE
+  Amount: 155.00
+  Description: FEE-UNPAID ITEM ##
+  Reference: 
+  Balance: 782.02
+
+Transaction 32:
+  Date: 2025-02-17
+  Type: DEBIT
+  Amount: 270.30
+  Description: INSURANCE PREMIUM DOTSURE EXSA3354630
+  Reference: 
+  Balance: 1052.32
+
+Transaction 33:
+  Date: 2025-02-17
+  Type: SERVICE_FEE
+  Amount: 20.00
+  Description: FEE - DEBIT ORDER ##
+  Reference: 
+  Balance: 1072.32
+
+Transaction 34:
+  Date: 2025-02-17
+  Type: CREDIT
+  Amount: 270.30
+  Description: RTD-NOT PROVIDED FOR DOTSURE EXSA3354630
+  Reference: 
+  Balance: 802.02
+
+Transaction 35:
+  Date: 2025-02-17
+  Type: SERVICE_FEE
+  Amount: 155.00
+  Description: FEE-UNPAID ITEM ##
+  Reference: 
+  Balance: 957.02
+
+Transaction 36:
+  Date: 2025-02-18
+  Type: DEBIT
+  Amount: 2346.33
+  Description: INSURANCE PREMIUM MIWAYCOLLE00000057007338250218
+  Reference: 00000057007338250218
+  Balance: 3303.35
+
+Transaction 37:
+  Date: 2025-02-18
+  Type: SERVICE_FEE
+  Amount: 20.00
+  Description: FEE - DEBIT ORDER ##
+  Reference: 
+  Balance: 3323.35
+
+Transaction 38:
+  Date: 2025-02-18
+  Type: CREDIT
+  Amount: 2346.33
+  Description: RTD-NOT PROVIDED FOR MIWAYCOLLE00000057007338250218
+  Reference: 00000057007338250218
+  Balance: 977.02
+
+Transaction 39:
+  Date: 2025-02-18
+  Type: SERVICE_FEE
+  Amount: 155.00
+  Description: FEE-UNPAID ITEM ##
+  Reference: 
+  Balance: 1132.02
+
+Transaction 40:
+  Date: 2025-02-19
+  Type: CREDIT
+  Amount: 1469.35
+  Description: RTD-DEBIT AGAINST PAYERS AUTH DOTSURE NYP3439061
+  Reference: 
+  Balance: 337.33
+
+Transaction 41:
+  Date: 2025-02-19
+  Type: SERVICE_FEE
+  Amount: 10.00
+  Description: FEE: DISPUTED DEBIT ORDER ##
+  Reference: 
+  Balance: 327.33
+
+Transaction 42:
+  Date: 2025-02-19
+  Type: DEBIT
+  Amount: 300.00
+  Description: IB TRANSFER TO *****2689327 21H53 *****1911
+  Reference: 
+  Balance: 27.33
+
+Transaction 43:
+  Date: 2025-02-19
+  Type: CREDIT
+  Amount: 412.34
+  Description: RTD-DEBIT AGAINST PAYERS AUTH DOTSURE UDWD3439191
+  Reference: 
+  Balance: 439.67
+
+Transaction 44:
+  Date: 2025-02-19
+  Type: SERVICE_FEE
+  Amount: 5.00
+  Description: FEE: DISPUTED DEBIT ORDER ##
+  Reference: 
+  Balance: 434.67
+
+Transaction 45:
+  Date: 2025-02-19
+  Type: CREDIT
+  Amount: 274.54
+  Description: RTD-DEBIT AGAINST PAYERS AUTH DOTSURE PLAT3354629
+  Reference: 
+  Balance: 709.21
+
+Transaction 46:
+  Date: 2025-02-19
+  Type: SERVICE_FEE
+  Amount: 5.00
+  Description: FEE: DISPUTED DEBIT ORDER ##
+  Reference: 
+  Balance: 704.21
+
+Transaction 47:
+  Date: 2025-02-19
+  Type: DEBIT
+  Amount: 600.00
+  Description: IB TRANSFER TO
+  Reference: 
+  Balance: 104.21
+
+Transaction 48:
+  Date: 2025-02-20
+  Type: CREDIT
+  Amount: 254.40
+  Description: RTD-DEBIT AGAINST PAYERS AUTH DOTSURE SCZ3440611
+  Reference: 
+  Balance: 358.61
+
+Transaction 49:
+  Date: 2025-02-20
+  Type: SERVICE_FEE
+  Amount: 5.00
+  Description: FEE: DISPUTED DEBIT ORDER ##
+  Reference: 
+  Balance: 353.61
+
+Transaction 50:
+  Date: 2025-02-20
+  Type: CREDIT
+  Amount: 179.14
+  Description: RTD-DEBIT AGAINST PAYERS AUTH DOTSURE LBMA3440609
+  Reference: 
+  Balance: 532.75
+
+Transaction 51:
+  Date: 2025-02-20
+  Type: SERVICE_FEE
+  Amount: 5.00
+  Description: FEE: DISPUTED DEBIT ORDER ##
+  Reference: 
+  Balance: 527.75
+
+Transaction 52:
+  Date: 2025-02-20
+  Type: CREDIT
+  Amount: 259.00
+  Description: RTD-DEBIT AGAINST PAYERS AUTH DOTSURE PLAT3439062
+  Reference: 
+  Balance: 786.75
+
+Transaction 53:
+  Date: 2025-02-20
+  Type: SERVICE_FEE
+  Amount: 5.00
+  Description: FEE: DISPUTED DEBIT ORDER ##
+  Reference: 
+  Balance: 781.75
+
+Transaction 54:
+  Date: 2025-02-20
+  Type: CREDIT
+  Amount: 179.14
+  Description: RTD-DEBIT AGAINST PAYERS AUTH DOTSURE LBMA3355871
+  Reference: 
+  Balance: 960.89
+
+Transaction 55:
+  Date: 2025-02-20
+  Type: SERVICE_FEE
+  Amount: 5.00
+  Description: FEE: DISPUTED DEBIT ORDER ##
+  Reference: 
+  Balance: 955.89
+
+Transaction 56:
+  Date: 2025-02-20
+  Type: CREDIT
+  Amount: 153.70
+  Description: RTD-DEBIT AGAINST PAYERS AUTH DOTSURE FITRA3355863
+  Reference: 
+  Balance: 1109.59
+
+Transaction 57:
+  Date: 2025-02-20
+  Type: SERVICE_FEE
+  Amount: 5.00
+  Description: FEE: DISPUTED DEBIT ORDER ##
+  Reference: 
+  Balance: 1104.59
+
+Transaction 58:
+  Date: 2025-02-20
+  Type: CREDIT
+  Amount: 50.00
+  Description: IB TRANSFER FROM *****2689327 07H56 *****1911
+  Reference: 
+  Balance: 1154.59
+
+Transaction 59:
+  Date: 2025-02-20
+  Type: DEBIT
+  Amount: 1150.00
+  Description: IB INSTANT MONEY CASH TO
+  Reference: 
+  Balance: 4.59
+
+Transaction 60:
+  Date: 2025-02-20
+  Type: SERVICE_FEE
+  Amount: 19.00
+  Description: FEE - INSTANT MONEY ##
+  Reference: 
+  Balance: 14.41
+
+Transaction 61:
+  Date: 2025-02-20
+  Type: CREDIT
+  Amount: 15.00
+  Description: IB TRANSFER FROM *****2689327 08H02 *****1911
+  Reference: 
+  Balance: 0.59
+
+Transaction 62:
+  Date: 2025-02-25
+  Type: DEBIT
+  Amount: 3.99
+  Description: EXCESS INTEREST
+  Reference: 
+  Balance: 3.40
+
+Transaction 63:
+  Date: 2025-02-28
+  Type: CREDIT
+  Amount: 516892.22
+  Description: CREDIT TRANSFER 00976528COROBRIK
+  Reference: 00976528
+  Balance: 516888.82
+
+Transaction 64:
+  Date: 2025-03-01
+  Type: DEBIT
+  Amount: 13260.96
+  Description: IB PAYMENT TO STONE JEFFR MAPHOSA REIMBURSE
+  Reference: 
+  Balance: 503627.86
+
+Transaction 65:
+  Date: 2025-03-01
+  Type: DEBIT
+  Amount: 12000.00
+  Description: IB PAYMENT TO MODDERFONTEIN BIG NKUNA MAPHOS
+  Reference: 
+  Balance: 491627.86
+
+Transaction 66:
+  Date: 2025-03-01
+  Type: DEBIT
+  Amount: 5000.00
+  Description: IB PAYMENT TO CHAIRMANS CLUB STOKFELA
+  Reference: 
+  Balance: 486627.86
+
+Transaction 67:
+  Date: 2025-03-01
+  Type: DEBIT
+  Amount: 4000.00
+  Description: IB PAYMENT TO TWO WAY TECHNOLOGIES
+  Reference: 
+  Balance: 482627.86
+
+Transaction 68:
+  Date: 2025-03-01
+  Type: DEBIT
+  Amount: 11097.96
+  Description: IB PAYMENT TO NEO ENTLE LABOUR HUMAN RESOUR
+  Reference: 
+  Balance: 471529.90
+
+Transaction 69:
+  Date: 2025-03-01
+  Type: DEBIT
+  Amount: 9559.23
+  Description: IB PAYMENT TO ELLISPARK STADIUM XINGHIZANA
+  Reference: 
+  Balance: 461970.67
+
+Transaction 70:
+  Date: 2025-03-01
+  Type: DEBIT
+  Amount: 14375.00
+  Description: IB PAYMENT TO RENT A DOG
+  Reference: 
+  Balance: 447595.67
+
+Transaction 71:
+  Date: 2025-03-01
+  Type: DEBIT
+  Amount: 1310.00
+  Description: PAYSHAP PAYMENT TO XG SALARIES
+  Reference: 
+  Balance: 446285.67
+
+Transaction 72:
+  Date: 2025-03-01
+  Type: SERVICE_FEE
+  Amount: 14.00
+  Description: FEE: PAYSHAP PAYMENT ##
+  Reference: 
+  Balance: 446271.67
+
+Transaction 73:
+  Date: 2025-02-28
+  Type: DEBIT
+  Amount: 2326.34
+  Description: INSURANCE PREMIUM KINGPRICE REF26274899 0600
+  Reference: 26274899
+  Balance: 443945.33
+
+Transaction 74:
+  Date: 2025-02-28
+  Type: SERVICE_FEE
+  Amount: 20.00
+  Description: FEE - DEBIT ORDER ##
+  Reference: 
+  Balance: 443925.33
+
+Transaction 75:
+  Date: 2025-02-28
+  Type: DEBIT
+  Amount: 398.09
+  Description: DEBIT TRANSFER CARTRACK CART21B5D53NV63
+  Reference: 
+  Balance: 443527.24
+
+Transaction 76:
+  Date: 2025-02-28
+  Type: SERVICE_FEE
+  Amount: 20.00
+  Description: FEE - DEBIT ORDER ##
+  Reference: 
+  Balance: 443507.24
+
+Transaction 77:
+  Date: 2025-02-28
+  Type: DEBIT
+  Amount: 13898.73
+  Description: STD BANK BOND REPAYMENT SBSA HOMEL 537293620 250228
+  Reference: 537293620
+  Balance: 429608.51
+
+Transaction 78:
+  Date: 2025-02-28
+  Type: SERVICE_FEE
+  Amount: 5.50
+  Description: FEE - DEBIT ORDER ##
+  Reference: 
+  Balance: 429603.01
+
+Transaction 79:
+  Date: 2025-03-01
+  Type: DEBIT
+  Amount: 7500.00
+  Description: IB PAYMENT TO MBHONI MIYAMBO TRANSPORT
+  Reference: 
+  Balance: 422103.01
+
+Transaction 80:
+  Date: 2025-03-01
+  Type: DEBIT
+  Amount: 1200.00
+  Description: IB PAYMENT TO B THEMBA XG SALARIES
+  Reference: 
+  Balance: 420903.01
+
+Transaction 81:
+  Date: 2025-03-01
+  Type: DEBIT
+  Amount: 1260.00
+  Description: PAYSHAP PAYMENT TO XG SALARIES
+  Reference: 
+  Balance: 419643.01
+
+Transaction 82:
+  Date: 2025-03-01
+  Type: SERVICE_FEE
+  Amount: 13.00
+  Description: FEE: PAYSHAP PAYMENT ##
+  Reference: 
+  Balance: 419630.01
+
+Transaction 83:
+  Date: 2025-03-01
+  Type: DEBIT
+  Amount: 550.00
+  Description: IB PAYMENT TO MABUNDA IP XG SALARIES
+  Reference: 
+  Balance: 419080.01
+
+Transaction 84:
+  Date: 2025-03-01
+  Type: DEBIT
+  Amount: 3700.00
+  Description: IB PAYMENT TO JEFFREY S MAPHOSA REFUND
+  Reference: 
+  Balance: 415380.01
+
+Transaction 85:
+  Date: 2025-02-28
+  Type: SERVICE_FEE
+  Amount: 69.00
+  Description: OVERDRAFT SERVICE FEE NO-LIMIT ##
+  Reference: 
+  Balance: 415311.01
+
+Transaction 86:
+  Date: 2025-02-28
+  Type: SERVICE_FEE
+  Amount: 300.00
+  Description: MONTHLY MANAGEMENT FEE ##
+  Reference: 
+  Balance: 415011.01
+
+Transaction 87:
+  Date: 2025-02-28
+  Type: SERVICE_FEE
+  Amount: 182.00
+  Description: FEE: MYUPDATES FOR BUSINESS ## 0000000203163753 00364 R182.00
+  Reference: 0000000203163753
+  Balance: 414829.01
+
+Transaction 88:
+  Date: 2025-03-01
+  Type: DEBIT
+  Amount: 264600.00
+  Description: IB PAYMENT TO EUPHODIA N TAU XINGHIZANA
+  Reference: 
+  Balance: 150229.01
+
+Transaction 89:
+  Date: 2025-03-01
+  Type: DEBIT
+  Amount: 7870.50
+  Description: IB PAYMENT TO
+  Reference: 
+  Balance: 142358.51
+
+Transaction 90:
+  Date: 2025-03-01
+  Type: DEBIT
+  Amount: 7555.68
+  Description: IB PAYMENT TO MAWANDE MJOBO XG SALARIES
+  Reference: 
+  Balance: 134802.83
+
+Transaction 91:
+  Date: 2025-03-01
+  Type: DEBIT
+  Amount: 7555.68
+  Description: IB PAYMENT TO JORDAN MOYANE XG SALARIES
+  Reference: 
+  Balance: 127247.15
+
+Transaction 92:
+  Date: 2025-03-01
+  Type: DEBIT
+  Amount: 6055.68
+  Description: IB PAYMENT TO MAFIKA BUTHELEZI XG SALARIES
+  Reference: 
+  Balance: 121191.47
+
+Transaction 93:
+  Date: 2025-03-01
+  Type: DEBIT
+  Amount: 12740.00
+  Description: IB PAYMENT TO DAN BEN NKUNA XG SALARIES
+  Reference: 
+  Balance: 108451.47
+
+Transaction 94:
+  Date: 2025-03-01
+  Type: DEBIT
+  Amount: 7870.50
+  Description: IB PAYMENT TO PAUL MASHABA XG SALARIES
+  Reference: 
+  Balance: 100580.97
+
+Transaction 95:
+  Date: 2025-03-01
+  Type: DEBIT
+  Amount: 7870.50
+  Description: IB PAYMENT TO SEOPO NKADIMENG XG SALARIES
+  Reference: 
+  Balance: 92710.47
+
+Transaction 96:
+  Date: 2025-03-01
+  Type: DEBIT
+  Amount: 8803.20
+  Description: IB PAYMENT TO PIET MATHEBULA XG SALARIES
+  Reference: 
+  Balance: 83907.27
+
+Transaction 97:
+  Date: 2025-03-01
+  Type: DEBIT
+  Amount: 1000.00
+  Description: IB PAYMENT TO NYIKO MAPHOSA WAGES
+  Reference: 
+  Balance: 82907.27
+
+Transaction 98:
+  Date: 2025-03-01
+  Type: DEBIT
+  Amount: 1000.00
+  Description: IB PAYMENT TO MOZAMS MAPHOSA SCHOOL FEES
+  Reference: 
+  Balance: 81907.27
+
+Transaction 99:
+  Date: 2025-03-01
+  Type: DEBIT
+  Amount: 10000.00
+  Description: IB PAYMENT TO EBS CAR SALES MERCEDES BEN
+  Reference: 
+  Balance: 71907.27
+
+Transaction 100:
+  Date: 2025-03-01
+  Type: DEBIT
+  Amount: 3950.00
+  Description: IB PAYMENT TO TINYIKO UBISI WAGES
+  Reference: 
+  Balance: 67957.27
+
+Transaction 101:
+  Date: 2025-03-01
+  Type: DEBIT
+  Amount: 1000.00
+  Description: IB PAYMENT TO NTSAKO MAPHOSA SCHOOL
+  Reference: 
+  Balance: 66957.27
+
+Transaction 102:
+  Date: 2025-03-01
+  Type: CREDIT
+  Amount: 40000.00
+  Description: IB TRANSFER FROM *****2689327 09H08 *****1911
+  Reference: 
+  Balance: 106957.27
+
+Transaction 103:
+  Date: 2025-03-01
+  Type: DEBIT
+  Amount: 100000.00
+  Description: IMMEDIATE PAYMENT 228349669 JEFFREY MAPHOSA
+  Reference: 228349669
+  Balance: 6957.27
+
+Transaction 104:
+  Date: 2025-03-01
+  Type: DEBIT
+  Amount: 199.00
+  Description: INSURANCE PREMIUM DOTSURE EXSA3439063
+  Reference: 
+  Balance: 6758.27
+
+Transaction 105:
+  Date: 2025-03-01
+  Type: DEBIT
+  Amount: 412.34
+  Description: INSURANCE PREMIUM DOTSURE UDWD3354627
+  Reference: 
+  Balance: 6345.93
+
+Transaction 106:
+  Date: 2025-03-01
+  Type: DEBIT
+  Amount: 187.00
+  Description: ACCOUNT PAYMENT NETSTAR 5939695176250301
+  Reference: 5939695176250301
+  Balance: 6158.93
+
+Transaction 107:
+  Date: 2025-03-01
+  Type: DEBIT
+  Amount: 274.54
+  Description: INSURANCE PREMIUM DOTSURE PLAT3354629
+  Reference: 
+  Balance: 5884.39
+
+Transaction 108:
+  Date: 2025-03-01
+  Type: DEBIT
+  Amount: 270.30
+  Description: INSURANCE PREMIUM DOTSURE EXSA3354630
+  Reference: 
+  Balance: 5614.09
+
+Transaction 109:
+  Date: 2025-03-01
+  Type: DEBIT
+  Amount: 209.01
+  Description: ACCOUNT PAYMENT NETSTAR 5939494044250301
+  Reference: 5939494044250301
+  Balance: 5405.08
+
+Transaction 110:
+  Date: 2025-03-01
+  Type: DEBIT
+  Amount: 737.19
+  Description: INSURANCE PREMIUM LIBERTY04855856493800A/P01MAR
+  Reference: 04855856493800
+  Balance: 4667.89
+
+Transaction 111:
+  Date: 2025-03-01
+  Type: DEBIT
+  Amount: 922.20
+  Description: INSURANCE PREMIUM LIBERTY04855856388100A/P01MAR
+  Reference: 04855856388100
+  Balance: 3745.69
+
+Transaction 112:
+  Date: 2025-03-01
+  Type: DEBIT
+  Amount: 1338.44
+  Description: INSURANCE PREMIUM DOTSURE NYPD3354628
+  Reference: 
+  Balance: 2407.25
+
+Transaction 113:
+  Date: 2025-03-01
+  Type: DEBIT
+  Amount: 153.70
+  Description: INSURANCE PREMIUM DOTSURE FITRA3355863
+  Reference: 
+  Balance: 2253.55
+
+Transaction 114:
+  Date: 2025-03-01
+  Type: DEBIT
+  Amount: 398.09
+  Description: ACCOUNT PAYMENT CARTRACK CART27B5D549K8X
+  Reference: 
+  Balance: 1855.46
+
+Transaction 115:
+  Date: 2025-03-01
+  Type: SERVICE_FEE
+  Amount: 20.00
+  Description: FEE - DEBIT ORDER ##
+  Reference: 
+  Balance: 1835.46
+
+Transaction 116:
+  Date: 2025-03-01
+  Type: DEBIT
+  Amount: 2884.89
+  Description: INSURANCE PREMIUM OUTSURANCE OT84256593 FX0168
+  Reference: 84256593
+  Balance: 1049.43
+
+Transaction 117:
+  Date: 2025-03-01
+  Type: SERVICE_FEE
+  Amount: 20.00
+  Description: FEE - DEBIT ORDER ##
+  Reference: 
+  Balance: 1069.43
+
+Transaction 118:
+  Date: 2025-03-01
+  Type: CREDIT
+  Amount: 2884.89
+  Description: RTD-NOT PROVIDED FOR OUTSURANCE OT84256593 FX0168
+  Reference: 84256593
+  Balance: 1815.46
+
+Transaction 119:
+  Date: 2025-03-01
+  Type: SERVICE_FEE
+  Amount: 155.00
+  Description: FEE-UNPAID ITEM ##
+  Reference: 
+  Balance: 1660.46
+
+Transaction 120:
+  Date: 2025-03-01
+  Type: DEBIT
+  Amount: 179.14
+  Description: INSURANCE PREMIUM DOTSURE LBMA3355871
+  Reference: 
+  Balance: 1481.32
+
+Transaction 121:
+  Date: 2025-03-01
+  Type: SERVICE_FEE
+  Amount: 20.00
+  Description: FEE - DEBIT ORDER ##
+  Reference: 
+  Balance: 1461.32
+
+Transaction 122:
+  Date: 2025-03-01
+  Type: DEBIT
+  Amount: 254.40
+  Description: INSURANCE PREMIUM DOTSURE SCZ3355868
+  Reference: 
+  Balance: 1206.92
+
+Transaction 123:
+  Date: 2025-03-01
+  Type: SERVICE_FEE
+  Amount: 20.00
+  Description: FEE - DEBIT ORDER ##
+  Reference: 
+  Balance: 1186.92
+
+Transaction 124:
+  Date: 2025-03-01
+  Type: DEBIT
+  Amount: 1135.74
+  Description: INSURANCE PREMIUM DOTSURE NYP3439061
+  Reference: 
+  Balance: 51.18
+
+Transaction 125:
+  Date: 2025-03-01
+  Type: SERVICE_FEE
+  Amount: 20.00
+  Description: FEE - DEBIT ORDER ##
+  Reference: 
+  Balance: 31.18
+
+Transaction 126:
+  Date: 2025-03-01
+  Type: DEBIT
+  Amount: 2346.33
+  Description: INSURANCE PREMIUM MIWAYCOLLE00000057007338250301
+  Reference: 00000057007338250301
+  Balance: 2315.15
+
+Transaction 127:
+  Date: 2025-03-01
+  Type: SERVICE_FEE
+  Amount: 20.00
+  Description: FEE - DEBIT ORDER ##
+  Reference: 
+  Balance: 2335.15
+
+Transaction 128:
+  Date: 2025-03-01
+  Type: CREDIT
+  Amount: 2346.33
+  Description: RTD-NOT PROVIDED FOR MIWAYCOLLE00000057007338250301
+  Reference: 00000057007338250301
+  Balance: 11.18
+
+Transaction 129:
+  Date: 2025-03-01
+  Type: SERVICE_FEE
+  Amount: 155.00
+  Description: FEE-UNPAID ITEM ##
+  Reference: 
+  Balance: 143.82
+
+Transaction 130:
+  Date: 2025-03-01
+  Type: DEBIT
+  Amount: 1659.39
+  Description: INSURANCE PREMIUM LIBERTY04855856388100ETC01MAR
+  Reference: 04855856388100
+  Balance: 1803.21
+
+Transaction 131:
+  Date: 2025-03-01
+  Type: SERVICE_FEE
+  Amount: 20.00
+  Description: FEE - DEBIT ORDER ##
+  Reference: 
+  Balance: 1823.21
+
+Transaction 132:
+  Date: 2025-03-01
+  Type: CREDIT
+  Amount: 1659.39
+  Description: RTD-NOT PROVIDED FOR LIBERTY04855856388100ETC01MAR
+  Reference: 04855856388100
+  Balance: 163.82
+
+Transaction 133:
+  Date: 2025-03-01
+  Type: SERVICE_FEE
+  Amount: 155.00
+  Description: FEE-UNPAID ITEM ##
+  Reference: 
+  Balance: 318.82
+
+Transaction 134:
+  Date: 2025-03-01
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## EUPHODIA N TAU
+  Reference: 
+  Balance: 319.62
+
+Transaction 135:
+  Date: 2025-03-01
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## MUSAWENKOSI NZUNZA
+  Reference: 
+  Balance: 320.42
+
+Transaction 136:
+  Date: 2025-03-01
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## MAWANDE MJOBO
+  Reference: 
+  Balance: 321.22
+
+Transaction 137:
+  Date: 2025-03-01
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## JORDAN MOYANE
+  Reference: 
+  Balance: 322.02
+
+Transaction 138:
+  Date: 2025-03-01
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## MAFIKA BUTHELEZI
+  Reference: 
+  Balance: 322.82
+
+Transaction 139:
+  Date: 2025-03-01
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## DAN BEN NKUNA
+  Reference: 
+  Balance: 323.62
+
+Transaction 140:
+  Date: 2025-03-01
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## PAUL MASHABA
+  Reference: 
+  Balance: 324.42
+
+Transaction 141:
+  Date: 2025-03-01
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## SEOPO NKADIMENG
+  Reference: 
+  Balance: 325.22
+
+Transaction 142:
+  Date: 2025-03-01
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## PIET MATHEBULA
+  Reference: 
+  Balance: 326.02
+
+Transaction 143:
+  Date: 2025-03-01
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## NYIKO MAPHOSA
+  Reference: 
+  Balance: 326.82
+
+Transaction 144:
+  Date: 2025-03-01
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## MOZAMS MAPHOSA
+  Reference: 
+  Balance: 327.62
+
+Transaction 145:
+  Date: 2025-03-01
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## EBS CAR SALES
+  Reference: 
+  Balance: 328.42
+
+Transaction 146:
+  Date: 2025-03-01
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## TINYIKO UBISI
+  Reference: 
+  Balance: 329.22
+
+Transaction 147:
+  Date: 2025-03-01
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## NTSAKO MAPHOSA
+  Reference: 
+  Balance: 330.02
+
+Transaction 148:
+  Date: 2025-03-01
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## JEFFREY MAPHOSA
+  Reference: 
+  Balance: 330.82
+
+Transaction 149:
+  Date: 2025-03-01
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## STONE JEFFR MAPHOSA
+  Reference: 
+  Balance: 331.62
+
+Transaction 150:
+  Date: 2025-03-01
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## MODDERFONTEIN BIG 3
+  Reference: 
+  Balance: 332.42
+
+Transaction 151:
+  Date: 2025-03-01
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## CHAIRMANS CLUB
+  Reference: 
+  Balance: 333.22
+
+Transaction 152:
+  Date: 2025-03-01
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## NEO ENTLE LABOUR SOL
+  Reference: 
+  Balance: 334.02
+
+Transaction 153:
+  Date: 2025-03-01
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## ELLISPARK STADIUM
+  Reference: 
+  Balance: 334.82
+
+Transaction 154:
+  Date: 2025-03-01
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## MBHONI MIYAMBO
+  Reference: 
+  Balance: 335.62
+
+Transaction 155:
+  Date: 2025-03-01
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## B THEMBA
+  Reference: 
+  Balance: 336.42
+
+Transaction 156:
+  Date: 2025-03-01
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## MABUNDA IP
+  Reference: 
+  Balance: 337.22
+
+Transaction 157:
+  Date: 2025-03-01
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## JEFFREY S MAPHOSA
+  Reference: 
+  Balance: 338.02
+
+Transaction 158:
+  Date: 2025-03-03
+  Type: CREDIT
+  Amount: 1000.00
+  Description: IB TRANSFER FROM *****2689327 10H42 *****1911
+  Reference: 
+  Balance: 661.98
+
+Transaction 159:
+  Date: 2025-03-03
+  Type: DEBIT
+  Amount: 10000.00
+  Description: INSURANCE PREMIUM LIBERTY050 0079446587 54605
+  Reference: 0079446587
+  Balance: 9338.02
+
+Transaction 160:
+  Date: 2025-03-03
+  Type: SERVICE_FEE
+  Amount: 20.00
+  Description: FEE - DEBIT ORDER ##
+  Reference: 
+  Balance: 9358.02
+
+Transaction 161:
+  Date: 2025-03-03
+  Type: CREDIT
+  Amount: 10000.00
+  Description: RTD-NOT PROVIDED FOR LIBERTY050 0079446587 54605
+  Reference: 0079446587
+  Balance: 641.98
+
+Transaction 162:
+  Date: 2025-03-03
+  Type: SERVICE_FEE
+  Amount: 155.00
+  Description: FEE-UNPAID ITEM ##
+  Reference: 
+  Balance: 486.98
+
+Transaction 163:
+  Date: 2025-03-03
+  Type: DEBIT
+  Amount: 14000.00
+  Description: DEBIT TRANSFER STANLIB N43521402C0353255088
+  Reference: 43521402
+  Balance: 13513.02
+
+Transaction 164:
+  Date: 2025-03-03
+  Type: SERVICE_FEE
+  Amount: 20.00
+  Description: FEE - DEBIT ORDER ##
+  Reference: 
+  Balance: 13533.02
+
+Transaction 165:
+  Date: 2025-03-03
+  Type: CREDIT
+  Amount: 14000.00
+  Description: RTD-NOT PROVIDED FOR STANLIB N43521402C0353255088
+  Reference: 43521402
+  Balance: 466.98
+
+Transaction 166:
+  Date: 2025-03-03
+  Type: SERVICE_FEE
+  Amount: 155.00
+  Description: FEE-UNPAID ITEM ##
+  Reference: 
+  Balance: 311.98
+
+Transaction 167:
+  Date: 2025-03-06
+  Type: DEBIT
+  Amount: 200.00
+  Description: IB TRANSFER TO *****2689327 21H27 *****1911
+  Reference: 
+  Balance: 111.98
+
+Transaction 168:
+  Date: 2025-03-11
+  Type: CREDIT
+  Amount: 200000.00
+  Description: IB PAYMENT FROM XINGHIZANA LOAMAP325
+  Reference: 
+  Balance: 200111.98
+
+Transaction 169:
+  Date: 2025-03-11
+  Type: DEBIT
+  Amount: 4500.00
+  Description: AUTOBANK CASH WITHDRAWAL AT 00004465 2025-03-11T16:37:05 42
+  Reference: 00004465
+  Balance: 195611.98
+
+Transaction 170:
+  Date: 2025-03-11
+  Type: DEBIT
+  Amount: 250.00
+  Description: AUTOBANK CASH WITHDRAWAL AT 00004465 2025-03-11T17:26:16 42
+  Reference: 00004465
+  Balance: 195361.98
+
+Transaction 171:
+  Date: 2025-03-11
+  Type: DEBIT
+  Amount: 957.46
+  Description: TELEPHONE ACCOUNT TELKOM SA 329901871512653632
+  Reference: 329901871512653632
+  Balance: 194404.52
+
+Transaction 172:
+  Date: 2025-03-11
+  Type: SERVICE_FEE
+  Amount: 20.00
+  Description: FEE - DEBIT ORDER ##
+  Reference: 
+  Balance: 194384.52
+
+Transaction 173:
+  Date: 2025-03-12
+  Type: DEBIT
+  Amount: 6034.56
+  Description: IB PAYMENT TO KENNETH NEGOVHA XG SALARIES
+  Reference: 
+  Balance: 188349.96
+
+Transaction 174:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 8.90
+  Description: FEE-ELECTRONIC ACCOUNT PAYMENT ## 203163753
+  Reference: 203163753
+  Balance: 188341.06
+
+Transaction 175:
+  Date: 2025-03-12
+  Type: DEBIT
+  Amount: 6034.56
+  Description: IB PAYMENT TO EMMANUEL BIKO XG SALARIES
+  Reference: 
+  Balance: 182306.50
+
+Transaction 176:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 8.90
+  Description: FEE-ELECTRONIC ACCOUNT PAYMENT ## 203163753
+  Reference: 203163753
+  Balance: 182297.60
+
+Transaction 177:
+  Date: 2025-03-12
+  Type: DEBIT
+  Amount: 5866.94
+  Description: IB PAYMENT TO WISISO BALOYI XG SALARIES
+  Reference: 
+  Balance: 176430.66
+
+Transaction 178:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 8.90
+  Description: FEE-ELECTRONIC ACCOUNT PAYMENT ## 203163753
+  Reference: 203163753
+  Balance: 176421.76
+
+Transaction 179:
+  Date: 2025-03-12
+  Type: DEBIT
+  Amount: 6537.45
+  Description: IB PAYMENT TO SIPHO MIYA XG SALARIES
+  Reference: 
+  Balance: 169884.31
+
+Transaction 180:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 8.90
+  Description: FEE-ELECTRONIC ACCOUNT PAYMENT ## 203163753
+  Reference: 203163753
+  Balance: 169875.41
+
+Transaction 181:
+  Date: 2025-03-12
+  Type: DEBIT
+  Amount: 6537.45
+  Description: IB PAYMENT TO INSURANCE CHAUKE XG SALARIES
+  Reference: 
+  Balance: 163337.96
+
+Transaction 182:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 8.90
+  Description: FEE-ELECTRONIC ACCOUNT PAYMENT ## 203163753
+  Reference: 203163753
+  Balance: 163329.06
+
+Transaction 183:
+  Date: 2025-03-12
+  Type: DEBIT
+  Amount: 6872.70
+  Description: IB PAYMENT TO LAWRENCE MATHEBULA XG SALARIES
+  Reference: 
+  Balance: 156456.36
+
+Transaction 184:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 8.90
+  Description: FEE-ELECTRONIC ACCOUNT PAYMENT ## 203163753
+  Reference: 203163753
+  Balance: 156447.46
+
+Transaction 185:
+  Date: 2025-03-12
+  Type: DEBIT
+  Amount: 6034.56
+  Description: IB PAYMENT TO LUNDI DZUNGA XG SALARIES
+  Reference: 
+  Balance: 150412.90
+
+Transaction 186:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 8.90
+  Description: FEE-ELECTRONIC ACCOUNT PAYMENT ## 203163753
+  Reference: 203163753
+  Balance: 150404.00
+
+Transaction 187:
+  Date: 2025-03-12
+  Type: DEBIT
+  Amount: 7543.21
+  Description: IB PAYMENT TO GOODMAN ZUNGA
+  Reference: 
+  Balance: 142860.79
+
+Transaction 188:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 8.90
+  Description: FEE-ELECTRONIC ACCOUNT PAYMENT ## 203163753
+  Reference: 203163753
+  Balance: 142851.89
+
+Transaction 189:
+  Date: 2025-03-12
+  Type: DEBIT
+  Amount: 6034.56
+  Description: IB PAYMENT TO PATRICK TIMBANE XG SALARIES
+  Reference: 
+  Balance: 136817.33
+
+Transaction 190:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 8.90
+  Description: FEE-ELECTRONIC ACCOUNT PAYMENT ## 203163753
+  Reference: 203163753
+  Balance: 136808.43
+
+Transaction 191:
+  Date: 2025-03-12
+  Type: DEBIT
+  Amount: 8046.09
+  Description: IB PAYMENT TO VICENT MHANGANA XG SALARIES
+  Reference: 
+  Balance: 128762.34
+
+Transaction 192:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 8.90
+  Description: FEE-ELECTRONIC ACCOUNT PAYMENT ## 203163753
+  Reference: 203163753
+  Balance: 128753.44
+
+Transaction 193:
+  Date: 2025-03-12
+  Type: DEBIT
+  Amount: 3855.42
+  Description: IB PAYMENT TO GEORGE MGOEPE SALARIES
+  Reference: 
+  Balance: 124898.02
+
+Transaction 194:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 8.90
+  Description: FEE-ELECTRONIC ACCOUNT PAYMENT ## 203163753
+  Reference: 203163753
+  Balance: 124889.12
+
+Transaction 195:
+  Date: 2025-03-12
+  Type: DEBIT
+  Amount: 7040.33
+  Description: IB PAYMENT TO NGHAMULA CHAUKE SALARIES
+  Reference: 
+  Balance: 117848.79
+
+Transaction 196:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 8.90
+  Description: FEE-ELECTRONIC ACCOUNT PAYMENT ## 203163753
+  Reference: 203163753
+  Balance: 117839.89
+
+Transaction 197:
+  Date: 2025-03-12
+  Type: DEBIT
+  Amount: 7543.21
+  Description: IB PAYMENT TO ANTHONY NDOU
+  Reference: 
+  Balance: 110296.68
+
+Transaction 198:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 8.90
+  Description: FEE-ELECTRONIC ACCOUNT PAYMENT ## 203163753
+  Reference: 203163753
+  Balance: 110287.78
+
+Transaction 199:
+  Date: 2025-03-12
+  Type: DEBIT
+  Amount: 5974.46
+  Description: IMMEDIATE PAYMENT 229711786 MUZIKAYISE ZUNGA
+  Reference: 229711786
+  Balance: 104313.32
+
+Transaction 200:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 40.00
+  Description: FEE IMMEDIATE PAYMENT ##
+  Reference: 
+  Balance: 104273.32
+
+Transaction 201:
+  Date: 2025-03-12
+  Type: DEBIT
+  Amount: 6034.56
+  Description: IB PAYMENT TO OWEN MASWANGANYI XG SALARIES
+  Reference: 
+  Balance: 98238.76
+
+Transaction 202:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 8.90
+  Description: FEE-ELECTRONIC ACCOUNT PAYMENT ## 203163753
+  Reference: 203163753
+  Balance: 98229.86
+
+Transaction 203:
+  Date: 2025-03-12
+  Type: DEBIT
+  Amount: 5196.43
+  Description: IB PAYMENT TO SYDWELL SAMBO XG SALARIES
+  Reference: 
+  Balance: 93033.43
+
+Transaction 204:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 8.90
+  Description: FEE-ELECTRONIC ACCOUNT PAYMENT ## 203163753
+  Reference: 203163753
+  Balance: 93024.53
+
+Transaction 205:
+  Date: 2025-03-12
+  Type: DEBIT
+  Amount: 6034.56
+  Description: IB PAYMENT TO HERON NKWINIKA XG SALARIES
+  Reference: 
+  Balance: 86989.97
+
+Transaction 206:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 8.90
+  Description: FEE-ELECTRONIC ACCOUNT PAYMENT ## 203163753
+  Reference: 203163753
+  Balance: 86981.07
+
+Transaction 207:
+  Date: 2025-03-12
+  Type: DEBIT
+  Amount: 5699.31
+  Description: IB PAYMENT TO BENJAMINI NGOMA XG SALARIES
+  Reference: 
+  Balance: 81281.76
+
+Transaction 208:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 8.90
+  Description: FEE-ELECTRONIC ACCOUNT PAYMENT ## 203163753
+  Reference: 203163753
+  Balance: 81272.86
+
+Transaction 209:
+  Date: 2025-03-12
+  Type: DEBIT
+  Amount: 4950.00
+  Description: IB PAYMENT TO NTSAKO MATSHEBELE XG SALARIES
+  Reference: 
+  Balance: 76322.86
+
+Transaction 210:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 8.90
+  Description: FEE-ELECTRONIC ACCOUNT PAYMENT ## 203163753
+  Reference: 203163753
+  Balance: 76313.96
+
+Transaction 211:
+  Date: 2025-03-12
+  Type: DEBIT
+  Amount: 6202.19
+  Description: IB PAYMENT TO VELAPHI MCHUNU XG SALARIES
+  Reference: 
+  Balance: 70111.77
+
+Transaction 212:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 8.90
+  Description: FEE-ELECTRONIC ACCOUNT PAYMENT ## 203163753
+  Reference: 203163753
+  Balance: 70102.87
+
+Transaction 213:
+  Date: 2025-03-12
+  Type: DEBIT
+  Amount: 6537.45
+  Description: IB PAYMENT TO CLEARANCE MONGWE XG SALARIES
+  Reference: 
+  Balance: 63565.42
+
+Transaction 214:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 8.90
+  Description: FEE-ELECTRONIC ACCOUNT PAYMENT ## 203163753
+  Reference: 203163753
+  Balance: 63556.52
+
+Transaction 215:
+  Date: 2025-03-12
+  Type: DEBIT
+  Amount: 5702.19
+  Description: IB PAYMENT TO BONGIMENZI NSIMBI XG SALARIES
+  Reference: 
+  Balance: 57854.33
+
+Transaction 216:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 8.90
+  Description: FEE-ELECTRONIC ACCOUNT PAYMENT ## 203163753
+  Reference: 203163753
+  Balance: 57845.43
+
+Transaction 217:
+  Date: 2025-03-12
+  Type: DEBIT
+  Amount: 4869.82
+  Description: IB PAYMENT TO PRINCE NKUNA XG SALARIES
+  Reference: 
+  Balance: 52975.61
+
+Transaction 218:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 8.90
+  Description: FEE-ELECTRONIC ACCOUNT PAYMENT ## 203163753
+  Reference: 203163753
+  Balance: 52966.71
+
+Transaction 219:
+  Date: 2025-03-12
+  Type: DEBIT
+  Amount: 4869.82
+  Description: IB PAYMENT TO CHARLES CHABALALA XG SALARIES
+  Reference: 
+  Balance: 48096.89
+
+Transaction 220:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 8.90
+  Description: FEE-ELECTRONIC ACCOUNT PAYMENT ## 203163753
+  Reference: 203163753
+  Balance: 48087.99
+
+Transaction 221:
+  Date: 2025-03-12
+  Type: DEBIT
+  Amount: 5540.33
+  Description: IB PAYMENT TO LIZO PATRICK NDUDU XG SALARIES
+  Reference: 
+  Balance: 42547.66
+
+Transaction 222:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 8.90
+  Description: FEE-ELECTRONIC ACCOUNT PAYMENT ## 203163753
+  Reference: 203163753
+  Balance: 42538.76
+
+Transaction 223:
+  Date: 2025-03-12
+  Type: DEBIT
+  Amount: 6707.95
+  Description: IB PAYMENT TO RICHARDS RIKHOTSO XG SALARIES
+  Reference: 
+  Balance: 35830.81
+
+Transaction 224:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 8.90
+  Description: FEE-ELECTRONIC ACCOUNT PAYMENT ## 203163753
+  Reference: 203163753
+  Balance: 35821.91
+
+Transaction 225:
+  Date: 2025-03-12
+  Type: DEBIT
+  Amount: 5869.82
+  Description: IB PAYMENT TO
+  Reference: 
+  Balance: 29952.09
+
+Transaction 226:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 8.90
+  Description: FEE-ELECTRONIC ACCOUNT PAYMENT ## 203163753
+  Reference: 203163753
+  Balance: 29943.19
+
+Transaction 227:
+  Date: 2025-03-12
+  Type: DEBIT
+  Amount: 6423.35
+  Description: IB PAYMENT TO MANKOANE SEBASHE XG SALARIES
+  Reference: 
+  Balance: 23519.84
+
+Transaction 228:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 8.90
+  Description: FEE-ELECTRONIC ACCOUNT PAYMENT ## 203163753
+  Reference: 203163753
+  Balance: 23510.94
+
+Transaction 229:
+  Date: 2025-03-12
+  Type: DEBIT
+  Amount: 6872.70
+  Description: IB PAYMENT TO THEMBA MKHATSHWA XG SALARIES
+  Reference: 
+  Balance: 16638.24
+
+Transaction 230:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 8.90
+  Description: FEE-ELECTRONIC ACCOUNT PAYMENT ## 203163753
+  Reference: 203163753
+  Balance: 16629.34
+
+Transaction 231:
+  Date: 2025-03-12
+  Type: DEBIT
+  Amount: 7543.21
+  Description: IB PAYMENT TO TLOMETSANE MORASWI XG SALARIES
+  Reference: 
+  Balance: 9086.13
+
+Transaction 232:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 8.90
+  Description: FEE-ELECTRONIC ACCOUNT PAYMENT ## 203163753
+  Reference: 203163753
+  Balance: 9077.23
+
+Transaction 233:
+  Date: 2025-03-12
+  Type: DEBIT
+  Amount: 7040.33
+  Description: IB PAYMENT TO WINNERS CHAUKE XG SALARIES
+  Reference: 
+  Balance: 2036.90
+
+Transaction 234:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 8.90
+  Description: FEE-ELECTRONIC ACCOUNT PAYMENT ## 203163753
+  Reference: 203163753
+  Balance: 2028.00
+
+Transaction 235:
+  Date: 2025-03-12
+  Type: DEBIT
+  Amount: 300.00
+  Description: IB PAYMENT TO RAMALUKA HOLDINGS XINGHIZANA G
+  Reference: 
+  Balance: 1728.00
+
+Transaction 236:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 8.90
+  Description: FEE-ELECTRONIC ACCOUNT PAYMENT ## 203163753
+  Reference: 203163753
+  Balance: 1719.10
+
+Transaction 237:
+  Date: 2025-03-12
+  Type: CREDIT
+  Amount: 49000.00
+  Description: REAL TIME TRANSFER FROM COMPANY ASSIST 62016949953
+  Reference: 62016949953
+  Balance: 50719.10
+
+Transaction 238:
+  Date: 2025-03-12
+  Type: DEBIT
+  Amount: 7543.21
+  Description: IB PAYMENT TO LAWRENCE PHOGOLE XG SALARIES
+  Reference: 
+  Balance: 43175.89
+
+Transaction 239:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 8.90
+  Description: FEE-ELECTRONIC ACCOUNT PAYMENT ## 203163753
+  Reference: 203163753
+  Balance: 43166.99
+
+Transaction 240:
+  Date: 2025-03-12
+  Type: DEBIT
+  Amount: 7040.33
+  Description: IB PAYMENT TO MASEMOLA MATAWANEN XG SALARIES
+  Reference: 
+  Balance: 36126.66
+
+Transaction 241:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 8.90
+  Description: FEE-ELECTRONIC ACCOUNT PAYMENT ## 203163753
+  Reference: 203163753
+  Balance: 36117.76
+
+Transaction 242:
+  Date: 2025-03-12
+  Type: DEBIT
+  Amount: 7207.95
+  Description: IB PAYMENT TO SAMUEL MAKHUBELE XG SALARIES
+  Reference: 
+  Balance: 28909.81
+
+Transaction 243:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 8.90
+  Description: FEE-ELECTRONIC ACCOUNT PAYMENT ##
+  Reference: 
+  Balance: 28900.91
+
+Transaction 244:
+  Date: 2025-03-12
+  Type: DEBIT
+  Amount: 7207.95
+  Description: IB PAYMENT TO TINYIKO HLONGWANE XG SALARIES
+  Reference: 
+  Balance: 21692.96
+
+Transaction 245:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 8.90
+  Description: FEE-ELECTRONIC ACCOUNT PAYMENT ## 203163753
+  Reference: 203163753
+  Balance: 21684.06
+
+Transaction 246:
+  Date: 2025-03-12
+  Type: DEBIT
+  Amount: 7342.20
+  Description: IB PAYMENT TO LUCHEDI MAHLODI XG SALARIES
+  Reference: 
+  Balance: 14341.86
+
+Transaction 247:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 8.90
+  Description: FEE-ELECTRONIC ACCOUNT PAYMENT ## 203163753
+  Reference: 203163753
+  Balance: 14332.96
+
+Transaction 248:
+  Date: 2025-03-12
+  Type: DEBIT
+  Amount: 4000.00
+  Description: IB TRANSFER TO *****2689327 10H09 *****1911
+  Reference: 
+  Balance: 10332.96
+
+Transaction 249:
+  Date: 2025-03-12
+  Type: DEBIT
+  Amount: 2000.00
+  Description: IB INSTANT MONEY CASH TO
+  Reference: 
+  Balance: 8332.96
+
+Transaction 250:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 19.00
+  Description: FEE - INSTANT MONEY ##
+  Reference: 
+  Balance: 8313.96
+
+Transaction 251:
+  Date: 2025-03-12
+  Type: DEBIT
+  Amount: 4500.00
+  Description: IB TRANSFER TO *****2689327 10H18 *****1911
+  Reference: 
+  Balance: 3813.96
+
+Transaction 252:
+  Date: 2025-03-12
+  Type: DEBIT
+  Amount: 1500.00
+  Description: AUTOBANK CASH WITHDRAWAL AT 0000H179 2025-03-12T13:26:59 42
+  Reference: 
+  Balance: 2313.96
+
+Transaction 253:
+  Date: 2025-03-12
+  Type: DEBIT
+  Amount: 1200.00
+  Description: AUTOBANK TRANSFER TO ACCOUNT
+  Reference: 
+  Balance: 1113.96
+
+Transaction 254:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## LAWRENCE PHOGOLE
+  Reference: 
+  Balance: 1113.16
+
+Transaction 255:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## MASEMOLA MATAWANENG
+  Reference: 
+  Balance: 1112.36
+
+Transaction 256:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## SAMUEL MAKHUBELE
+  Reference: 
+  Balance: 1111.56
+
+Transaction 257:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## TINYIKO HLONGWANE
+  Reference: 
+  Balance: 1110.76
+
+Transaction 258:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## LUCHEDI MAHLODI
+  Reference: 
+  Balance: 1109.96
+
+Transaction 259:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## KENNETH NEGOVHA
+  Reference: 
+  Balance: 1109.16
+
+Transaction 260:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## EMMANUEL BIKO
+  Reference: 
+  Balance: 1108.36
+
+Transaction 261:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## WISISO BALOYI
+  Reference: 
+  Balance: 1107.56
+
+Transaction 262:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## SIPHO MIYA
+  Reference: 
+  Balance: 1106.76
+
+Transaction 263:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## INSURANCE CHAUKE
+  Reference: 
+  Balance: 1105.96
+
+Transaction 264:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## LAWRENCE MATHEBULA
+  Reference: 
+  Balance: 1105.16
+
+Transaction 265:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## LUNDI DZUNGA
+  Reference: 
+  Balance: 1104.36
+
+Transaction 266:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## VICENT MHANGANA
+  Reference: 
+  Balance: 1103.56
+
+Transaction 267:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## MUZIKAYISE ZUNGA
+  Reference: 
+  Balance: 1102.76
+
+Transaction 268:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## OWEN MASWANGANYI
+  Reference: 
+  Balance: 1101.96
+
+Transaction 269:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## SYDWELL SAMBO
+  Reference: 
+  Balance: 1101.16
+
+Transaction 270:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## HERON NKWINIKA
+  Reference: 
+  Balance: 1100.36
+
+Transaction 271:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## BENJAMINI NGOMA
+  Reference: 
+  Balance: 1099.56
+
+Transaction 272:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## NTSAKO MATSHEBELE
+  Reference: 
+  Balance: 1098.76
+
+Transaction 273:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## VELAPHI MCHUNU
+  Reference: 
+  Balance: 1097.96
+
+Transaction 274:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## CLEARANCE MONGWE
+  Reference: 
+  Balance: 1097.16
+
+Transaction 275:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## BONGIMENZI NSIMBI
+  Reference: 
+  Balance: 1096.36
+
+Transaction 276:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## PRINCE NKUNA
+  Reference: 
+  Balance: 1095.56
+
+Transaction 277:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## CHALES CHABALALA
+  Reference: 
+  Balance: 1094.76
+
+Transaction 278:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## LIZO PATRICK NDUDU
+  Reference: 
+  Balance: 1093.96
+
+Transaction 279:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## RICHARDS RIKHOTSO
+  Reference: 
+  Balance: 1093.16
+
+Transaction 280:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ##
+  Reference: 
+  Balance: 1092.36
+
+Transaction 281:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## MANKOANE SEBASHE
+  Reference: 
+  Balance: 1091.56
+
+Transaction 282:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## THEMBA MKHATSHWA
+  Reference: 
+  Balance: 1090.76
+
+Transaction 283:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## TLOMETSANE MB
+  Reference: 
+  Balance: 1089.96
+
+Transaction 284:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## WINNERS CHAUKE
+  Reference: 
+  Balance: 1089.16
+
+Transaction 285:
+  Date: 2025-03-12
+  Type: SERVICE_FEE
+  Amount: 0.80
+  Description: FEE: PAYMENT CONFIRM - EMAIL ## RAMALUKA HOLDINGS
+  Reference: 
+  Balance: 1088.36
+
+Transaction 286:
+  Date: 2025-03-14
+  Type: DEBIT
+  Amount: 400.00
+  Description: IB TRANSFER TO *****2689327 12H43 *****1911
+  Reference: 
+  Balance: 688.36
+
+Transaction 287:
+  Date: 2025-03-14
+  Type: DEBIT
+  Amount: 550.00
+  Description: AUTOBANK CASH WITHDRAWAL AT 0000D566 2025-03-14T14:49:17 42
+  Reference: 
+  Balance: 138.36
+
