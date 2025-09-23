@@ -9,7 +9,7 @@ public class DatabaseTest {
     
     private static final String DB_URL = "jdbc:postgresql://localhost:5432/drimacc_db";
     private static final String DB_USER = "sthwalonyoni";
-    private static final String DB_PASSWORD = "LeZipho24#";
+    private static final String DB_PASSWORD = System.getenv().getOrDefault("DB_PASSWORD", "password");
     
     public static void main(String[] args) {
         System.out.println("🔍 DATABASE CONNECTION TEST");

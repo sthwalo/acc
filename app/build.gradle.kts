@@ -21,6 +21,9 @@
 plugins {
     // Apply the application plugin to add support for building a CLI application in Java.
     application
+    // Code quality plugins
+    checkstyle
+    id("com.github.spotbugs") version "5.2.5"
 }
 
 repositories {
@@ -63,6 +66,17 @@ dependencies {
     implementation("com.sparkjava:spark-core:2.9.4")
     implementation("com.google.code.gson:gson:2.10.1")
     implementation("org.slf4j:slf4j-simple:2.0.7")
+}
+
+// Code quality configurations
+checkstyle {
+    toolVersion = "10.12.4"
+    configFile = rootProject.file("config/checkstyle/checkstyle.xml")
+}
+
+spotbugs {
+    toolVersion = "4.8.3"
+    excludeFilter = rootProject.file("config/spotbugs/exclude.xml")
 }
 
 // Apply a specific Java toolchain to ease working on different environments.

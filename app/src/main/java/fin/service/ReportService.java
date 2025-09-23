@@ -43,7 +43,7 @@ public class ReportService {
         transactions.sort(Comparator.comparing(BankTransaction::getTransactionDate));
         
         // Format and add transactions to report
-        report.append(String.format("%-12s %-40s %15s %15s %15s\n", 
+        report.append(String.format("%-12s %-40s %15s %15s %15s%n", 
                 "Date", "Description", "Debit", "Credit", "Balance"));
         report.append("-".repeat(100)).append("\n");
         
@@ -61,7 +61,7 @@ public class ReportService {
             String balance = transaction.getBalance() != null ? 
                     String.format("%,.2f", transaction.getBalance()) : "";
             
-            report.append(String.format("%-12s %-40s %15s %15s %15s\n", 
+            report.append(String.format("%-12s %-40s %15s %15s %15s%n", 
                     date, description, debit, credit, balance));
         }
         
@@ -77,7 +77,7 @@ public class ReportService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         
         report.append("-".repeat(100)).append("\n");
-        report.append(String.format("%-53s %15s %15s\n", 
+        report.append(String.format("%-53s %15s %15s%n", 
                 "TOTALS", String.format("%,.2f", totalDebits), String.format("%,.2f", totalCredits)));
         
         return report.toString();
@@ -121,7 +121,7 @@ public class ReportService {
             
             report.append("\nAccount: ").append(accountName).append("\n");
             report.append("-".repeat(80)).append("\n");
-            report.append(String.format("%-12s %-40s %12s %12s\n", 
+            report.append(String.format("%-12s %-40s %12s %12s%n", 
                     "Date", "Description", "Debit", "Credit"));
             report.append("-".repeat(80)).append("\n");
             
@@ -140,7 +140,7 @@ public class ReportService {
                 String credit = txn.getCreditAmount() != null ? 
                         String.format("%,.2f", txn.getCreditAmount()) : "";
                 
-                report.append(String.format("%-12s %-40s %12s %12s\n", 
+                report.append(String.format("%-12s %-40s %12s %12s%n", 
                         date, description, debit, credit));
                 
                 if (txn.getDebitAmount() != null) {
@@ -152,7 +152,7 @@ public class ReportService {
             }
             
             report.append("-".repeat(80)).append("\n");
-            report.append(String.format("%-53s %12s %12s\n", 
+            report.append(String.format("%-53s %12s %12s%n", 
                     "Account Totals", String.format("%,.2f", accountDebitTotal), 
                     String.format("%,.2f", accountCreditTotal)));
             
@@ -161,7 +161,7 @@ public class ReportService {
             String balanceType = accountBalance.compareTo(BigDecimal.ZERO) >= 0 ? "DR" : "CR";
             accountBalance = accountBalance.abs();
             
-            report.append(String.format("%-53s %12s %s\n", 
+            report.append(String.format("%-53s %12s %s%n", 
                     "Account Balance", String.format("%,.2f", accountBalance), balanceType));
             report.append("\n");
         }
@@ -210,7 +210,7 @@ public class ReportService {
         }
         
         // Generate trial balance
-        report.append(String.format("%-40s %15s %15s\n", 
+        report.append(String.format("%-40s %15s %15s%n", 
                 "Account", "Debit", "Credit"));
         report.append("-".repeat(72)).append("\n");
         
@@ -232,12 +232,12 @@ public class ReportService {
                 totalCredits = totalCredits.add(balance.abs());
             }
             
-            report.append(String.format("%-40s %15s %15s\n", 
+            report.append(String.format("%-40s %15s %15s%n", 
                     accountName, debit, credit));
         }
         
         report.append("-".repeat(72)).append("\n");
-        report.append(String.format("%-40s %15s %15s\n", 
+        report.append(String.format("%-40s %15s %15s%n", 
                 "TOTALS", String.format("%,.2f", totalDebits), String.format("%,.2f", totalCredits)));
         
         return report.toString();
@@ -292,13 +292,13 @@ public class ReportService {
         
         BigDecimal totalRevenue = BigDecimal.ZERO;
         for (Map.Entry<String, BigDecimal> entry : revenueAccounts.entrySet()) {
-            report.append(String.format("%-40s %20s\n", 
+            report.append(String.format("%-40s %20s%n", 
                     entry.getKey(), String.format("%,.2f", entry.getValue())));
             totalRevenue = totalRevenue.add(entry.getValue());
         }
         
         report.append("-".repeat(60)).append("\n");
-        report.append(String.format("%-40s %20s\n", 
+        report.append(String.format("%-40s %20s%n", 
                 "Total Revenue", String.format("%,.2f", totalRevenue)));
         report.append("\n");
         
@@ -307,20 +307,20 @@ public class ReportService {
         
         BigDecimal totalExpenses = BigDecimal.ZERO;
         for (Map.Entry<String, BigDecimal> entry : expenseAccounts.entrySet()) {
-            report.append(String.format("%-40s %20s\n", 
+            report.append(String.format("%-40s %20s%n", 
                     entry.getKey(), String.format("%,.2f", entry.getValue())));
             totalExpenses = totalExpenses.add(entry.getValue());
         }
         
         report.append("-".repeat(60)).append("\n");
-        report.append(String.format("%-40s %20s\n", 
+        report.append(String.format("%-40s %20s%n", 
                 "Total Expenses", String.format("%,.2f", totalExpenses)));
         report.append("\n");
         
         // Calculate net income
         BigDecimal netIncome = totalRevenue.subtract(totalExpenses);
         report.append("=".repeat(60)).append("\n");
-        report.append(String.format("%-40s %20s\n", 
+        report.append(String.format("%-40s %20s%n", 
                 "NET INCOME", String.format("%,.2f", netIncome)));
         
         return report.toString();

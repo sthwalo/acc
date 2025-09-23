@@ -492,49 +492,48 @@ public class ComprehensiveExcelGenerator {
                           "GROUP BY a.id, a.account_code, a.account_name " +
                           "ORDER BY a.account_code";
             
-            PreparedStatement stmt = conn.prepareStatement(query);
-            ResultSet rs = stmt.executeQuery();
-            
-            double totalDebits = 0;
-            double totalCredits = 0;
-            
-            while (rs.next()) {
-                Row row = sheet.createRow(rowNum++);
-                row.createCell(1).setCellValue(rs.getString("account_code"));
-                row.createCell(2).setCellValue(rs.getString("account_name"));
+            try (PreparedStatement stmt = conn.prepareStatement(query);
+                 ResultSet rs = stmt.executeQuery()) {
                 
-                double debits = rs.getDouble("total_debits");
-                double credits = rs.getDouble("total_credits");
+                double totalDebits = 0;
+                double totalCredits = 0;
                 
-                totalDebits += debits;
-                totalCredits += credits;
-                
-                if (debits > 0) {
-                    Cell debitCell = row.createCell(3);
-                    debitCell.setCellValue(debits);
-                    debitCell.setCellStyle(currencyStyle);
+                while (rs.next()) {
+                    Row row = sheet.createRow(rowNum++);
+                    row.createCell(1).setCellValue(rs.getString("account_code"));
+                    row.createCell(2).setCellValue(rs.getString("account_name"));
+                    
+                    double debits = rs.getDouble("total_debits");
+                    double credits = rs.getDouble("total_credits");
+                    
+                    totalDebits += debits;
+                    totalCredits += credits;
+                    
+                    if (debits > 0) {
+                        Cell debitCell = row.createCell(3);
+                        debitCell.setCellValue(debits);
+                        debitCell.setCellStyle(currencyStyle);
+                    }
+                    
+                    if (credits > 0) {
+                        Cell creditCell = row.createCell(4);
+                        creditCell.setCellValue(credits);
+                        creditCell.setCellStyle(currencyStyle);
+                    }
                 }
                 
-                if (credits > 0) {
-                    Cell creditCell = row.createCell(4);
-                    creditCell.setCellValue(credits);
-                    creditCell.setCellStyle(currencyStyle);
-                }
+                // Totals
+                Row totalRow = sheet.createRow(rowNum++);
+                totalRow.createCell(2).setCellValue("TOTALS");
+                Cell totalDebitCell = totalRow.createCell(3);
+                totalDebitCell.setCellValue(totalDebits);
+                totalDebitCell.setCellStyle(currencyStyle);
+                
+                Cell totalCreditCell = totalRow.createCell(4);
+                totalCreditCell.setCellValue(totalCredits);
+                totalCreditCell.setCellStyle(currencyStyle);
+                
             }
-            
-            // Totals
-            Row totalRow = sheet.createRow(rowNum++);
-            totalRow.createCell(2).setCellValue("TOTALS");
-            Cell totalDebitCell = totalRow.createCell(3);
-            totalDebitCell.setCellValue(totalDebits);
-            totalDebitCell.setCellStyle(currencyStyle);
-            
-            Cell totalCreditCell = totalRow.createCell(4);
-            totalCreditCell.setCellValue(totalCredits);
-            totalCreditCell.setCellStyle(currencyStyle);
-            
-            rs.close();
-            stmt.close();
             
         } catch (Exception e) {
             System.err.println("Error creating trial balance: " + e.getMessage());
@@ -587,15 +586,13 @@ public class ComprehensiveExcelGenerator {
             countRow.createCell(1).setCellValue("Total Journal Entries:");
             
             String countQuery = "SELECT COUNT(*) as total_entries FROM journal_entries";
-            PreparedStatement stmt = conn.prepareStatement(countQuery);
-            ResultSet rs = stmt.executeQuery();
-            
-            if (rs.next()) {
-                countRow.createCell(3).setCellValue(rs.getInt("total_entries"));
+            try (PreparedStatement stmt = conn.prepareStatement(countQuery);
+                 ResultSet rs = stmt.executeQuery()) {
+                
+                if (rs.next()) {
+                    countRow.createCell(3).setCellValue(rs.getInt("total_entries"));
+                }
             }
-            
-            rs.close();
-            stmt.close();
             
         } catch (Exception e) {
             System.err.println("Error in journal entries: " + e.getMessage());
