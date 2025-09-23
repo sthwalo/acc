@@ -364,14 +364,14 @@ public class InteractiveTransactionClassifier {
                     } else {
                         // Show standard account suggestions
                         System.out.println("   Standard account suggestions:");
-                        System.out.println("   • 8800 - Insurance");
-                        System.out.println("   • 8100 - Employee Costs");
-                        System.out.println("   • 8200 - Rent Expense");
-                        System.out.println("   • 9600 - Bank Charges");
-                        System.out.println("   • 8300 - Utilities");
-                        System.out.println("   • 8500 - Motor Vehicle Expenses");
-                        System.out.println("   • 7000 - Interest Income");
-                        System.out.println("   • 9500 - Interest Expense");
+                        System.out.println("   • Insurance - Risk management expenses");
+                        System.out.println("   • Employee Costs - Personnel expenses");
+                        System.out.println("   • Rent Expense - Property costs");
+                        System.out.println("   • Bank Charges - Financial expenses");
+                        System.out.println("   • Utilities - Operational expenses");
+                        System.out.println("   • Motor Vehicle Expenses - Transportation costs");
+                        System.out.println("   • Interest Income - Financial income");
+                        System.out.println("   • Interest Expense - Financial costs");
                     }
                 }
             }
@@ -550,7 +550,7 @@ public class InteractiveTransactionClassifier {
         public ClassificationRule(String pattern, String[] keywords, String accountCode, 
                                 String accountName, int usageCount) {
             this.pattern = pattern;
-            this.keywords = keywords;
+            this.keywords = keywords != null ? keywords.clone() : new String[0];
             this.accountCode = accountCode;
             this.accountName = accountName;
             this.usageCount = usageCount;
@@ -558,7 +558,7 @@ public class InteractiveTransactionClassifier {
         
         // Getters
         public String getPattern() { return pattern; }
-        public String[] getKeywords() { return keywords; }
+        public String[] getKeywords() { return keywords != null ? keywords.clone() : new String[0]; }
         public String getAccountCode() { return accountCode; }
         public String getAccountName() { return accountName; }
         public int getUsageCount() { return usageCount; }

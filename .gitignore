@@ -30,6 +30,7 @@ license_verification.log
 *.sqlite3
 fin_database.db
 app/fin_database.db
+dev-tools/commands.md
 
 # Bank statements and financial documents (PDFs)
 bank/

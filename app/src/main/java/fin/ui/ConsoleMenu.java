@@ -63,8 +63,9 @@ public class ConsoleMenu {
         System.out.println("5. View Transaction History");
         System.out.println("6. Reset Company Data");
         System.out.println("7. Export to CSV");
-        System.out.println("8. Back to main menu");
-        System.out.print("Enter your choice (1-8): ");
+        System.out.println("8. Initialize Mapping Rules");
+        System.out.println("9. Back to main menu");
+        System.out.print("Enter your choice (1-9): ");
     }
     
     public void displayImportMenu() {

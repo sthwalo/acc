@@ -20,7 +20,9 @@ package fin.config;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 
 /**
  * Database configuration and connection management
@@ -170,10 +172,10 @@ public class DatabaseConfig {
      * Test database connectivity
      */
     public static boolean testConnection() {
-        try (Connection conn = getConnection()) {
-            String sql = usePostgreSQL ? "SELECT 1" : "SELECT 1";
-            var stmt = conn.createStatement();
-            var rs = stmt.executeQuery(sql);
+        try (Connection conn = getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(usePostgreSQL ? "SELECT 1" : "SELECT 1")) {
+            
             boolean success = rs.next() && rs.getInt(1) == 1;
             
             if (success) {

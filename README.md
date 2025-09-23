@@ -18,9 +18,21 @@ FIN is a production-ready financial management system that handles:
 - 7,156+ transactions with real financial data
 - Full ACID compliance and foreign key constraints
 
+### **Modular Service Architecture**
+The system is built using a modular service architecture with 5 core services:
+
+#### **✅ Implemented Services (2/5)**
+- **TransactionMappingService** - Rule-based transaction classification with database persistence
+- **AccountManager** - Account creation, lookup, and category mapping with database persistence
+
+#### **🔄 Planned Services (3/5)**
+- **JournalEntryGenerator** - Automated journal entry creation for classified transactions
+- **RuleMappingService** - Database-driven rule management for transaction classification
+- **TransactionBatchProcessor** - Batch processing orchestration for large transaction volumes
+
 ### **Processing Pipeline:**
 ```
-Bank PDFs → Text Extraction → Transaction Parsing → PostgreSQL → Financial Reports
+Bank PDFs → Text Extraction → Transaction Parsing → Modular Services → PostgreSQL → Financial Reports
 ```
 
 ### **Application Modes:**
@@ -118,12 +130,19 @@ DATABASE_PASSWORD=[YOUR_PASSWORD]
 
 ## 📋 System Status
 
-### **✅ Production Ready**
+### **✅ Production Ready Components**
 - PostgreSQL database with real financial data
 - PDF processing pipeline working
 - API server fully functional  
 - Excel reporting with actual amounts
 - Comprehensive database schema
+- TransactionMappingService (fully implemented)
+- AccountManager service (fully implemented)
+
+### **🔄 In Development - Modular Services**
+- JournalEntryGenerator service (test-driven development in progress)
+- RuleMappingService (test-driven development in progress)
+- TransactionBatchProcessor (test-driven development in progress)
 
 ### **📊 Live Financial Data**
 The system currently contains **real financial data** for Xinghizana Group with proper account structures, journal entries, and calculated balances ready for reporting.

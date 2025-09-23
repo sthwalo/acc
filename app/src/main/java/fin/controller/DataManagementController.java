@@ -59,7 +59,7 @@ public class DataManagementController {
             boolean back = false;
             while (!back) {
                 menu.displayDataManagementMenu();
-                int choice = inputHandler.getInteger("Enter your choice", 1, 8);
+                int choice = inputHandler.getInteger("Enter your choice", 1, 9);
                 
                 switch (choice) {
                     case 1:
@@ -84,6 +84,9 @@ public class DataManagementController {
                         handleExportToCSV();
                         break;
                     case 8:
+                        handleInitializeMappingRules();
+                        break;
+                    case 9:
                         back = true;
                         break;
                     default:
@@ -461,6 +464,33 @@ public class DataManagementController {
         } catch (Exception e) {
             outputFormatter.printError("Error exporting transactions: " + e.getMessage());
         }
+    }
+    
+    private void handleInitializeMappingRules() {
+        outputFormatter.printHeader("Initialize Mapping Rules");
+        
+        try {
+            boolean success = classificationService.initializeTransactionMappingRules(
+                applicationState.getCurrentCompany().getId());
+            
+            if (success) {
+                outputFormatter.printSuccess("Transaction Mapping Rules initialized successfully");
+                
+                // Optionally run classification
+                int classified = classificationService.autoClassifyTransactions(
+                    applicationState.getCurrentCompany().getId(),
+                    applicationState.getCurrentFiscalPeriod().getId());
+                outputFormatter.printSuccess("Auto-classified " + classified + " transactions");
+            } else {
+                outputFormatter.printError("Failed to initialize mapping rules");
+            }
+            
+        } catch (Exception e) {
+            outputFormatter.printError("Failed to initialize mapping rules: " + e.getMessage());
+        }
+        
+        outputFormatter.printInfo("Press Enter to continue...");
+        inputHandler.waitForEnter();
     }
     
     private Long selectAccount() {

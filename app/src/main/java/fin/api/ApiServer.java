@@ -383,7 +383,7 @@ public class ApiServer {
                     int totalTransactions = 0;
                     
                     // Process all PDF files in the input directory
-                    java.io.File inputDir = new java.io.File("/Users/sthwalonyoni/FIN/input");
+                    java.io.File inputDir = new java.io.File("input");
                     System.out.println("🔍 Looking for PDFs in: " + inputDir.getAbsolutePath());
                     
                     if (inputDir.exists() && inputDir.isDirectory()) {

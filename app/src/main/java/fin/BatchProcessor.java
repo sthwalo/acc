@@ -189,6 +189,7 @@ public class BatchProcessor {
     /**
      * Export transactions to CSV file
      */
+    @SuppressWarnings("resource")
     private void exportTransactionsToCSV(List<BankTransaction> transactions, String prefix) {
         try {
             String timestamp = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
@@ -196,18 +197,19 @@ public class BatchProcessor {
             
             try (FileWriter writer = new FileWriter(filename)) {
                 // Write header
-                writer.write("Date,Details,Debit Amount,Credit Amount,Balance,Account Number\n");
+                writer.write(String.format("Date,Details,Debit Amount,Credit Amount,Balance,Account Number%n"));
                 
                 // Write transactions
                 for (BankTransaction tx : transactions) {
-                    writer.write(String.format("%s,\"%s\",%s,%s,%s,%s\n",
+                    String formattedLine = String.format("%s,\"%s\",%s,%s,%s,%s%n",
                         tx.getTransactionDate().format(DateTimeFormatter.ISO_LOCAL_DATE),
                         tx.getDetails() != null ? tx.getDetails().replace("\"", "\"\"") : "",
                         tx.getDebitAmount() != null ? tx.getDebitAmount() : "",
                         tx.getCreditAmount() != null ? tx.getCreditAmount() : "",
                         tx.getBalance() != null ? tx.getBalance() : "",
                         tx.getAccountNumber() != null ? tx.getAccountNumber() : ""
-                    ));
+                    );
+                    writer.write(formattedLine);
                 }
             }
             

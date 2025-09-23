@@ -211,7 +211,7 @@ public class ClassificationIntegrationService {
                 
                 for (int i = start; i < end; i++) {
                     BankTransaction tx = transactions.get(i);
-                    System.out.printf("%d. [%s] %s - %s\n", (i - start + 1),
+                    System.out.printf("%d. [%s] %s - %s%n", (i - start + 1),
                         tx.getTransactionDate(),
                         tx.getDetails().substring(0, Math.min(40, tx.getDetails().length())),
                         tx.getAccountCode() + " - " + tx.getAccountName());

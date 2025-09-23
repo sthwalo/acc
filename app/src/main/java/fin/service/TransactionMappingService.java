@@ -290,11 +290,39 @@ public class TransactionMappingService {
             rulesCreated++;
             createMappingRule(companyId, "WAGE", "8100", "Employee Costs");
             rulesCreated++;
+            createMappingRule(companyId, "XG SALARIES", "8100", "Employee Costs");
+            rulesCreated++;
             
             // Insurance
             createMappingRule(companyId, "INSURANCE", "8800", "Insurance");
             rulesCreated++;
             createMappingRule(companyId, "INSURE", "8800", "Insurance");
+            rulesCreated++;
+            createMappingRule(companyId, "DOTSURE", "8800", "Insurance");
+            rulesCreated++;
+            createMappingRule(companyId, "MIWAY", "8800", "Insurance");
+            rulesCreated++;
+            createMappingRule(companyId, "KINGPRICE", "8800", "Insurance");
+            rulesCreated++;
+            
+            // Insurance reversals and failed debits
+            createMappingRule(companyId, "RTD-NOT PROVIDED FOR", "6000", "Reversals & Adjustments");
+            rulesCreated++;
+            createMappingRule(companyId, "RTD-DEBIT AGAINST PAYERS AUTH", "6000", "Reversals & Adjustments");
+            rulesCreated++;
+            
+            // Interest income
+            createMappingRule(companyId, "INTEREST", "5000", "Other Income");
+            rulesCreated++;
+            createMappingRule(companyId, "EXCESS INTEREST", "5000", "Other Income");
+            rulesCreated++;
+            
+            // Bank transfers
+            createMappingRule(companyId, "IB TRANSFER TO", "1100", "Current Assets");
+            rulesCreated++;
+            createMappingRule(companyId, "IB TRANSFER FROM", "1100", "Current Assets");
+            rulesCreated++;
+            createMappingRule(companyId, "IB INSTANT MONEY CASH TO", "1100", "Current Assets");
             rulesCreated++;
             
             // Rent
@@ -307,18 +335,58 @@ public class TransactionMappingService {
             createMappingRule(companyId, "WATER", "8300", "Utilities");
             rulesCreated++;
             
-            // Telephone
-            createMappingRule(companyId, "TELEPHONE", "8310", "Telephone & Internet");
+            // Telephone - use existing account
+            createMappingRule(companyId, "TELEPHONE", "8310-001", "Mobile Phone Payments");
             rulesCreated++;
-            createMappingRule(companyId, "CELL", "8310", "Telephone & Internet");
+            createMappingRule(companyId, "CELL", "8310-001", "Mobile Phone Payments");
             rulesCreated++;
-            createMappingRule(companyId, "INTERNET", "8310", "Telephone & Internet");
+            createMappingRule(companyId, "MOBILE", "8310-001", "Mobile Phone Payments");
+            rulesCreated++;
+            createMappingRule(companyId, "MTN", "8310-001", "Mobile Phone Payments");
+            rulesCreated++;
+            createMappingRule(companyId, "VOD", "8310-001", "Mobile Phone Payments");
+            rulesCreated++;
+            createMappingRule(companyId, "PRE-PAID PAYMENT TO", "8310-001", "Mobile Phone Payments");
+            rulesCreated++;
+            
+            // Internet
+            createMappingRule(companyId, "INTERNET", "8400", "Communication");
+            rulesCreated++;
+            createMappingRule(companyId, "TELKOM", "8400", "Communication");
             rulesCreated++;
             
             // Office expenses
             createMappingRule(companyId, "STATIONERY", "8400", "Office Expenses");
             rulesCreated++;
             createMappingRule(companyId, "PRINTING", "8400", "Office Expenses");
+            rulesCreated++;
+            createMappingRule(companyId, "OFFICE", "8400", "Office Expenses");
+            rulesCreated++;
+            
+            // Fuel and vehicle expenses
+            createMappingRule(companyId, "FUEL", "8600", "Travel & Entertainment");
+            rulesCreated++;
+            createMappingRule(companyId, "PETROL", "8600", "Travel & Entertainment");
+            rulesCreated++;
+            createMappingRule(companyId, "DIESEL", "8600", "Travel & Entertainment");
+            rulesCreated++;
+            createMappingRule(companyId, "BP", "8600", "Travel & Entertainment");
+            rulesCreated++;
+            createMappingRule(companyId, "SHELL", "8600", "Travel & Entertainment");
+            rulesCreated++;
+            createMappingRule(companyId, "SASOL", "8600", "Travel & Entertainment");
+            rulesCreated++;
+            createMappingRule(companyId, "ENGEN", "8600", "Travel & Entertainment");
+            rulesCreated++;
+            
+            // Vehicle tracking
+            createMappingRule(companyId, "CARTRACK", "8500", "Motor Vehicle Expenses");
+            rulesCreated++;
+            createMappingRule(companyId, "NETSTAR", "8500", "Motor Vehicle Expenses");
+            rulesCreated++;
+            
+            // Balance brought forward
+            createMappingRule(companyId, "BALANCE BROUGHT FORWARD", "9500", "Interest Expense");
             rulesCreated++;
             
             LOGGER.info("Created " + rulesCreated + " standard mapping rules for company ID " + companyId);
@@ -610,7 +678,11 @@ public class TransactionMappingService {
                     return getOrCreateDetailedAccount("6000-003", "Fee Reversals", "6000", "Reversals & Adjustments");
                 }
 
-            // RTD reversals (failed debits) - Enhanced to catch all variations
+                // General reversals
+                return getOrCreateDetailedAccount("6000-999", "General Reversals", "6000", "Reversals & Adjustments");
+            }
+
+            // RTD reversals (failed debits) - Handle separately from general reversals
             if (details.contains("RTD")) {
                 if (details.contains("NOT PROVIDED FOR")) {
                     // Failed debits from insurance companies
@@ -632,8 +704,6 @@ public class TransactionMappingService {
                 }
                 // General RTD reversals
                 return getOrCreateDetailedAccount("6000-008", "RTD Reversals", "6000", "Reversals & Adjustments");
-            }                // General reversals
-                return getOrCreateDetailedAccount("6000-999", "General Reversals", "6000", "Reversals & Adjustments");
             }
 
             // CASH DEPOSITS - Non-operational income
@@ -744,6 +814,11 @@ public class TransactionMappingService {
             // TRUNCATED BANK TRANSFERS - Handle incomplete transfer descriptions
             if (details.equals("IB TRANSFER FROM")) {
                 return getOrCreateDetailedAccount("1100-001", "Bank Transfers", "1100", "Current Assets");
+            }
+
+            // INTEREST EXPENSE - Handle debit interest transactions
+            if (details.contains("EXCESS INTEREST")) {
+                return getOrCreateDetailedAccount("9500-001", "Excess Interest Expense", "9500", "Interest Expense");
             }
 
             // EXCESS INTEREST - Already handled in income section above
@@ -1147,7 +1222,7 @@ public class TransactionMappingService {
         return accountCache.get(accountCode);
     }
     
-    private String getAccountCodeById(Long accountId) {
+    public String getAccountCodeById(Long accountId) {
         String sql = "SELECT account_code FROM accounts WHERE id = ?";
         
         try (Connection conn = DriverManager.getConnection(dbUrl);
@@ -1167,7 +1242,7 @@ public class TransactionMappingService {
         return "UNKNOWN";
     }
     
-    private String getAccountNameById(Long accountId) {
+    public String getAccountNameById(Long accountId) {
         String sql = "SELECT account_name FROM accounts WHERE id = ?";
         
         try (Connection conn = DriverManager.getConnection(dbUrl);

@@ -17,6 +17,16 @@ public class TransactionVerificationService {
     private final CompanyService companyService;
     private final CsvImportService csvImportService;
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    
+    // Constants for CSV field indices
+    @SuppressWarnings("MagicNumber")
+    private static final int MINIMUM_FIELDS_REQUIRED = 4;
+    @SuppressWarnings("MagicNumber")
+    private static final int DEBIT_AMOUNT_FIELD_INDEX = 2;
+    @SuppressWarnings("MagicNumber")
+    private static final int CREDIT_AMOUNT_FIELD_INDEX = 3;
+    @SuppressWarnings("MagicNumber")
+    private static final int BALANCE_FIELD_INDEX = 4;
 
     public TransactionVerificationService(String dbUrl, CompanyService companyService, CsvImportService csvImportService) {
         this.dbUrl = dbUrl;
@@ -48,70 +58,195 @@ public class TransactionVerificationService {
             this.differences = differences;
         }
 
-        public boolean isValid() { return isValid; }
-        public BigDecimal getTotalDebits() { return totalDebits; }
-        public BigDecimal getTotalCredits() { return totalCredits; }
-        public BigDecimal getFinalBalance() { return finalBalance; }
-        public List<String> getDiscrepancies() { return discrepancies; }
-        public List<BankTransaction> getMissingTransactions() { return missingTransactions; }
-        public List<BankTransaction> getExtraTransactions() { return extraTransactions; }
-        public Map<String, BigDecimal> getDifferences() { return differences; }
+        /**
+         * Returns whether the transaction verification is valid.
+         * @return true if verification passed, false otherwise
+         */
+        public boolean isValid() 
+        { 
+            return isValid; 
+        }
+        
+        /**
+         * Returns the total debits from the verification.
+         * @return total debits as BigDecimal
+         */
+        public BigDecimal getTotalDebits() 
+        { 
+            return totalDebits; 
+        }
+        
+        /**
+         * Returns the total credits from the verification.
+         * @return total credits as BigDecimal
+         */
+        public BigDecimal getTotalCredits() 
+        { 
+            return totalCredits; 
+        }
+        
+        /**
+         * Returns the final balance from the verification.
+         * @return final balance as BigDecimal
+         */
+        public BigDecimal getFinalBalance() 
+        { 
+            return finalBalance; 
+        }
+        
+        /**
+         * Returns the list of discrepancies found during verification.
+         * @return list of discrepancy messages
+         */
+        public List<String> getDiscrepancies() 
+        { 
+            return discrepancies; 
+        }
+        
+        /**
+         * Returns transactions that are missing from the CSV but present in bank statement.
+         * @return list of missing transactions
+         */
+        public List<BankTransaction> getMissingTransactions() 
+        { 
+            return missingTransactions; 
+        }
+        
+        /**
+         * Returns transactions that are extra in the CSV but not in bank statement.
+         * @return list of extra transactions
+         */
+        public List<BankTransaction> getExtraTransactions() 
+        { 
+            return extraTransactions; 
+        }
+        
+        /**
+         * Returns the differences found between bank statement and CSV totals.
+         * @return map of difference types to amounts
+         */
+        public Map<String, BigDecimal> getDifferences() 
+        { 
+            return differences; 
+        }
+    }
+
+    private static class TransactionTotals {
+        final BigDecimal totalDebits;
+        final BigDecimal totalCredits;
+
+        TransactionTotals(BigDecimal totalDebits, BigDecimal totalCredits) {
+            this.totalDebits = totalDebits;
+            this.totalCredits = totalCredits;
+        }
+    }
+
+    private static class VerificationData {
+        final List<String> discrepancies;
+        final Map<String, BigDecimal> differences;
+
+        VerificationData(List<String> discrepancies, Map<String, BigDecimal> differences) {
+            this.discrepancies = discrepancies;
+            this.differences = differences;
+        }
+    }
+
+    private static class TransactionComparisonResult {
+        final List<BankTransaction> missingTransactions;
+        final List<BankTransaction> extraTransactions;
+
+        TransactionComparisonResult(List<BankTransaction> missingTransactions, 
+                                  List<BankTransaction> extraTransactions) {
+            this.missingTransactions = missingTransactions;
+            this.extraTransactions = extraTransactions;
+        }
     }
 
     public VerificationResult verifyTransactions(String bankStatementPath, Long companyId, Long fiscalPeriodId) {
         List<BankTransaction> bankStatementTransactions = readBankStatement(bankStatementPath);
         List<BankTransaction> csvTransactions = csvImportService.getTransactions(companyId, fiscalPeriodId);
 
-        // Sort transactions by date and amount for comparison
+        // Sort transactions for comparison
+        sortTransactionsForComparison(bankStatementTransactions, csvTransactions);
+
+        // Calculate totals
+        TransactionTotals bankTotals = calculateTransactionTotals(bankStatementTransactions);
+        TransactionTotals csvTotals = calculateTransactionTotals(csvTransactions);
+
+        // Get final balances
+        BigDecimal bankFinalBalance = getFinalBalance(bankStatementTransactions);
+        BigDecimal csvFinalBalance = getFinalBalance(csvTransactions);
+
+        // Find discrepancies and differences
+        VerificationData verificationData = findTransactionDiscrepancies(
+            bankTotals, csvTotals, bankFinalBalance, csvFinalBalance);
+
+        // Find missing and extra transactions
+        TransactionComparisonResult comparisonResult = compareTransactionLists(
+            bankStatementTransactions, csvTransactions);
+
+        boolean isValid = verificationData.discrepancies.isEmpty() && 
+                         comparisonResult.missingTransactions.isEmpty() && 
+                         comparisonResult.extraTransactions.isEmpty();
+
+        return new VerificationResult(
+            isValid,
+            bankTotals.totalDebits,
+            bankTotals.totalCredits,
+            bankFinalBalance,
+            verificationData.discrepancies,
+            comparisonResult.missingTransactions,
+            comparisonResult.extraTransactions,
+            verificationData.differences
+        );
+    }
+
+    private void sortTransactionsForComparison(List<BankTransaction> bankTransactions, 
+                                            List<BankTransaction> csvTransactions) {
         Comparator<BankTransaction> comparator = Comparator
             .comparing(BankTransaction::getTransactionDate)
             .thenComparing(t -> t.getDebitAmount() != null ? t.getDebitAmount() : BigDecimal.ZERO)
             .thenComparing(t -> t.getCreditAmount() != null ? t.getCreditAmount() : BigDecimal.ZERO);
 
-        bankStatementTransactions.sort(comparator);
+        bankTransactions.sort(comparator);
         csvTransactions.sort(comparator);
+    }
 
-        // Calculate totals from bank statement
-        BigDecimal bankTotalDebits = bankStatementTransactions.stream()
+    private TransactionTotals calculateTransactionTotals(List<BankTransaction> transactions) {
+        BigDecimal totalDebits = transactions.stream()
             .map(t -> t.getDebitAmount() != null ? t.getDebitAmount() : BigDecimal.ZERO)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        BigDecimal bankTotalCredits = bankStatementTransactions.stream()
+        BigDecimal totalCredits = transactions.stream()
             .map(t -> t.getCreditAmount() != null ? t.getCreditAmount() : BigDecimal.ZERO)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        // Calculate totals from CSV
-        BigDecimal csvTotalDebits = csvTransactions.stream()
-            .map(t -> t.getDebitAmount() != null ? t.getDebitAmount() : BigDecimal.ZERO)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        return new TransactionTotals(totalDebits, totalCredits);
+    }
 
-        BigDecimal csvTotalCredits = csvTransactions.stream()
-            .map(t -> t.getCreditAmount() != null ? t.getCreditAmount() : BigDecimal.ZERO)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
+    private BigDecimal getFinalBalance(List<BankTransaction> transactions) {
+        return transactions.isEmpty() 
+            ? BigDecimal.ZERO 
+            : transactions.get(transactions.size() - 1).getBalance();
+    }
 
-        // Get final balances
-        BigDecimal bankFinalBalance = bankStatementTransactions.isEmpty() ? BigDecimal.ZERO :
-            bankStatementTransactions.get(bankStatementTransactions.size() - 1).getBalance();
-        BigDecimal csvFinalBalance = csvTransactions.isEmpty() ? BigDecimal.ZERO :
-            csvTransactions.get(csvTransactions.size() - 1).getBalance();
-
-        // Find missing and extra transactions
-        List<BankTransaction> missingTransactions = new ArrayList<>();
-        List<BankTransaction> extraTransactions = new ArrayList<>();
-        Map<String, BigDecimal> differences = new HashMap<>();
+    private VerificationData findTransactionDiscrepancies(TransactionTotals bankTotals, 
+                                                       TransactionTotals csvTotals,
+                                                       BigDecimal bankFinalBalance, 
+                                                       BigDecimal csvFinalBalance) {
         List<String> discrepancies = new ArrayList<>();
+        Map<String, BigDecimal> differences = new HashMap<>();
 
-        // Track differences
-        if (!bankTotalDebits.equals(csvTotalDebits)) {
-            differences.put("debits", bankTotalDebits.subtract(csvTotalDebits));
+        if (!bankTotals.totalDebits.equals(csvTotals.totalDebits)) {
+            differences.put("debits", bankTotals.totalDebits.subtract(csvTotals.totalDebits));
             discrepancies.add(String.format("Debit totals differ by %s", 
-                bankTotalDebits.subtract(csvTotalDebits).abs().toString()));
+                bankTotals.totalDebits.subtract(csvTotals.totalDebits).abs().toString()));
         }
 
-        if (!bankTotalCredits.equals(csvTotalCredits)) {
-            differences.put("credits", bankTotalCredits.subtract(csvTotalCredits));
+        if (!bankTotals.totalCredits.equals(csvTotals.totalCredits)) {
+            differences.put("credits", bankTotals.totalCredits.subtract(csvTotals.totalCredits));
             discrepancies.add(String.format("Credit totals differ by %s", 
-                bankTotalCredits.subtract(csvTotalCredits).abs().toString()));
+                bankTotals.totalCredits.subtract(csvTotals.totalCredits).abs().toString()));
         }
 
         if (!bankFinalBalance.equals(csvFinalBalance)) {
@@ -120,10 +255,16 @@ public class TransactionVerificationService {
                 bankFinalBalance.subtract(csvFinalBalance).abs().toString()));
         }
 
-        // Find missing and extra transactions by comparing each transaction
+        return new VerificationData(discrepancies, differences);
+    }
+
+    private TransactionComparisonResult compareTransactionLists(List<BankTransaction> bankTransactions,
+                                                             List<BankTransaction> csvTransactions) {
+        List<BankTransaction> missingTransactions = new ArrayList<>();
+        List<BankTransaction> extraTransactions = new ArrayList<>();
         Set<String> processedTransactions = new HashSet<>();
         
-        for (BankTransaction bankTx : bankStatementTransactions) {
+        for (BankTransaction bankTx : bankTransactions) {
             boolean found = false;
             for (BankTransaction csvTx : csvTransactions) {
                 if (transactionsMatch(bankTx, csvTx)) {
@@ -137,25 +278,13 @@ public class TransactionVerificationService {
             }
         }
 
-        // Find extra transactions in CSV
         for (BankTransaction csvTx : csvTransactions) {
             if (!processedTransactions.contains(getTransactionKey(csvTx))) {
                 extraTransactions.add(csvTx);
             }
         }
 
-        boolean isValid = discrepancies.isEmpty() && missingTransactions.isEmpty() && extraTransactions.isEmpty();
-
-        return new VerificationResult(
-            isValid,
-            bankTotalDebits,
-            bankTotalCredits,
-            bankFinalBalance,
-            discrepancies,
-            missingTransactions,
-            extraTransactions,
-            differences
-        );
+        return new TransactionComparisonResult(missingTransactions, extraTransactions);
     }
 
     private boolean transactionsMatch(BankTransaction tx1, BankTransaction tx2) {
@@ -168,9 +297,15 @@ public class TransactionVerificationService {
     private String getTransactionKey(BankTransaction tx) {
         return String.format("%s_%s_%s_%s",
             tx.getTransactionDate(),
-            tx.getDebitAmount() != null ? tx.getDebitAmount() : "0",
-            tx.getCreditAmount() != null ? tx.getCreditAmount() : "0",
-            tx.getBalance() != null ? tx.getBalance() : "0"
+            tx.getDebitAmount() != null 
+                ? tx.getDebitAmount() 
+                : "0",
+            tx.getCreditAmount() != null 
+                ? tx.getCreditAmount() 
+                : "0",
+            tx.getBalance() != null 
+                ? tx.getBalance() 
+                : "0"
         );
     }
 
@@ -188,26 +323,26 @@ public class TransactionVerificationService {
                 }
                 
                 String[] fields = line.split(",");
-                if (fields.length >= 4) {
+                if (fields.length >= MINIMUM_FIELDS_REQUIRED) {
                     BankTransaction transaction = new BankTransaction();
                     transaction.setTransactionDate(LocalDate.parse(fields[0].trim(), DATE_FORMATTER));
                     transaction.setDetails(fields[1].trim());
                     
                     // Parse debit amount
-                    String debitStr = fields[2].trim();
+                    String debitStr = fields[DEBIT_AMOUNT_FIELD_INDEX].trim();
                     if (!debitStr.isEmpty()) {
                         transaction.setDebitAmount(new BigDecimal(debitStr.replace(",", "")));
                     }
                     
                     // Parse credit amount
-                    String creditStr = fields[3].trim();
+                    String creditStr = fields[CREDIT_AMOUNT_FIELD_INDEX].trim();
                     if (!creditStr.isEmpty()) {
                         transaction.setCreditAmount(new BigDecimal(creditStr.replace(",", "")));
                     }
                     
                     // Parse balance if available
-                    if (fields.length > 4 && !fields[4].trim().isEmpty()) {
-                        transaction.setBalance(new BigDecimal(fields[4].trim().replace(",", "")));
+                    if (fields.length > BALANCE_FIELD_INDEX && !fields[BALANCE_FIELD_INDEX].trim().isEmpty()) {
+                        transaction.setBalance(new BigDecimal(fields[BALANCE_FIELD_INDEX].trim().replace(",", "")));
                     }
                     
                     transactions.add(transaction);

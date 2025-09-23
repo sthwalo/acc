@@ -250,21 +250,23 @@ public class ImportController {
         }
     }
     
+    @SuppressWarnings("FS")
     private void exportTransactions(List<BankTransaction> transactions, String outputPath) throws IOException {
         try (FileWriter writer = new FileWriter(outputPath)) {
             // Write header
-            writer.write("Date,Details,Debit Amount,Credit Amount,Balance,Account Number\n");
+            writer.write("Date,Details,Debit Amount,Credit Amount,Balance,Account Number%n");
             
             // Write transactions
             for (BankTransaction tx : transactions) {
-                writer.write(String.format("%s,\"%s\",%s,%s,%s,%s\n",
+                String formattedLine = String.format("%s,\"%s\",%s,%s,%s,%s%n",
                     tx.getTransactionDate().format(DateTimeFormatter.ISO_LOCAL_DATE),
                     tx.getDetails() != null ? tx.getDetails().replace("\"", "\"\"") : "",
                     tx.getDebitAmount() != null ? tx.getDebitAmount() : "",
                     tx.getCreditAmount() != null ? tx.getCreditAmount() : "",
                     tx.getBalance() != null ? tx.getBalance() : "",
                     tx.getAccountNumber() != null ? tx.getAccountNumber() : ""
-                ));
+                );
+                writer.write(formattedLine);
             }
         }
     }

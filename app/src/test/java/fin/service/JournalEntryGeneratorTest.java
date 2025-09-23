@@ -1,0 +1,165 @@
+package fin.service;
+
+import fin.model.BankTransaction;
+import fin.model.ClassificationResult;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+
+import java.math.BigDecimal;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.time.LocalDate;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
+/**
+ * Test-Driven Development for JournalEntryGenerator module
+ * This module handles the creation of journal entries for classified transactions
+ *
+ * STATUS: Service implemented, tests enabled
+ * TODO: Verify integration with AccountManager and classification services
+ */
+public class JournalEntryGeneratorTest {
+
+    @Mock
+    private Connection mockConnection;
+
+    @Mock
+    private PreparedStatement mockPreparedStatement;
+
+    @Mock
+    private ResultSet mockResultSet;
+
+    @Mock
+    private AccountManager mockAccountManager;
+
+    private JournalEntryGenerator journalGenerator;
+
+    @BeforeEach
+    void setUp() throws SQLException {
+        MockitoAnnotations.openMocks(this);
+
+        when(mockConnection.prepareStatement(anyString())).thenReturn(mockPreparedStatement);
+        when(mockConnection.prepareStatement(anyString(), anyInt())).thenReturn(mockPreparedStatement);
+        when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet);
+        when(mockPreparedStatement.getGeneratedKeys()).thenReturn(mockResultSet);
+
+        journalGenerator = new TestableJournalEntryGenerator("jdbc:test:db", mockAccountManager, mockConnection);
+    }
+
+    @Test
+    void testCreateJournalEntryForDebitTransaction() throws SQLException {
+        // Given
+        BankTransaction transaction = createDebitTransaction("INSURANCE PREMIUM PAYMENT", 1500.00);
+        transaction.setId(1001L);
+        transaction.setCompanyId(1L);
+        transaction.setFiscalPeriodId(1L);
+
+        ClassificationResult classificationResult = new ClassificationResult("8800", "Insurance", "INSURANCE PREMIUM");
+
+        when(mockAccountManager.getOrCreateDetailedAccount("8800", "Insurance", "8800", "Expenses")).thenReturn(2001L);
+        when(mockResultSet.next()).thenReturn(true);
+        when(mockResultSet.getLong("id")).thenReturn(3001L); // Bank account ID
+
+        // When
+        boolean success = journalGenerator.createJournalEntryForTransaction(transaction, classificationResult);
+
+        // Then
+        assertTrue(success);
+        verify(mockAccountManager).getOrCreateDetailedAccount("8800", "Insurance", "8800", "Expenses");
+        verify(mockPreparedStatement, times(3)).executeUpdate(); // 1 header + 2 lines
+    }
+
+    @Test
+    void testCreateJournalEntryForCreditTransaction() throws SQLException {
+        // Given
+        BankTransaction transaction = createCreditTransaction("DIRECTOR LOAN PAYMENT", 5000.00);
+        transaction.setId(1002L);
+        transaction.setCompanyId(1L);
+        transaction.setFiscalPeriodId(1L);
+
+        ClassificationResult classificationResult = new ClassificationResult("2000", "Director Loans", "DIRECTOR LOAN");
+
+        when(mockAccountManager.getOrCreateDetailedAccount("2000", "Director Loans", "2000", "Liabilities")).thenReturn(2002L);
+        when(mockResultSet.next()).thenReturn(true);
+        when(mockResultSet.getLong("id")).thenReturn(3001L); // Bank account ID
+
+        // When
+        boolean success = journalGenerator.createJournalEntryForTransaction(transaction, classificationResult);
+
+        // Then
+        assertTrue(success);
+        verify(mockAccountManager).getOrCreateDetailedAccount("2000", "Director Loans", "2000", "Liabilities");
+        verify(mockPreparedStatement, times(3)).executeUpdate(); // 1 header + 2 lines
+    }
+
+    @Test
+    void testCreateJournalEntryForTransaction_Failure() throws SQLException {
+        // Given
+        BankTransaction transaction = createDebitTransaction("TEST TRANSACTION", 100.00);
+        transaction.setId(1003L);
+
+        ClassificationResult classificationResult = new ClassificationResult("1000", "Test Account", "TEST");
+
+        when(mockAccountManager.getOrCreateDetailedAccount(anyString(), anyString(), anyString(), anyString()))
+            .thenThrow(new RuntimeException("Database error"));
+
+        // When
+        boolean success = journalGenerator.createJournalEntryForTransaction(transaction, classificationResult);
+
+        // Then
+        assertFalse(success);
+    }
+
+    @Test
+    void testGenerateJournalEntriesForUnclassifiedTransactions() throws SQLException {
+        // Given - placeholder test for batch processing
+        Long companyId = 1L;
+
+        // When
+        int entriesCreated = journalGenerator.generateJournalEntriesForUnclassifiedTransactions(companyId);
+
+        // Then
+        assertEquals(0, entriesCreated); // Currently returns 0 as batch processing is not implemented
+    }
+
+    // Helper methods
+    private BankTransaction createDebitTransaction(String details, double amount) {
+        BankTransaction transaction = new BankTransaction();
+        transaction.setDetails(details);
+        transaction.setDebitAmount(new BigDecimal(String.valueOf(amount)));
+        transaction.setTransactionDate(LocalDate.now());
+        return transaction;
+    }
+
+    private BankTransaction createCreditTransaction(String details, double amount) {
+        BankTransaction transaction = new BankTransaction();
+        transaction.setDetails(details);
+        transaction.setCreditAmount(new BigDecimal(String.valueOf(amount)));
+        transaction.setTransactionDate(LocalDate.now());
+        return transaction;
+    }
+}
+
+/**
+ * Testable version of JournalEntryGenerator that uses a mock connection
+ */
+class TestableJournalEntryGenerator extends JournalEntryGenerator {
+    private final Connection mockConnection;
+
+    public TestableJournalEntryGenerator(String dbUrl, AccountManager accountManager, Connection mockConnection) {
+        super(dbUrl, accountManager);
+        this.mockConnection = mockConnection;
+    }
+
+    @Override
+    protected Connection getConnection() throws SQLException {
+        return mockConnection;
+    }
+}

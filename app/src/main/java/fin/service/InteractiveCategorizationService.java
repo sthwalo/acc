@@ -34,7 +34,7 @@ public class InteractiveCategorizationService {
     
     // Change tracking
     public static class ChangeRecord {
-        public Long transactionId;
+        private Long transactionId;
         public LocalDate transactionDate;
         public String description;
         public BigDecimal amount;
@@ -51,6 +51,10 @@ public class InteractiveCategorizationService {
             this.oldAccount = oldAccount;
             this.newAccount = newAccount;
             this.timestamp = LocalDateTime.now();
+        }
+        
+        public Long getTransactionId() {
+            return transactionId;
         }
     }
     
@@ -316,7 +320,7 @@ public class InteractiveCategorizationService {
             
             System.out.println("\n📁 " + category.toUpperCase() + ":");
             for (String account : accounts) {
-                System.out.printf("  %2d. %s\n", itemNum, account);
+                System.out.printf("  %2d. %s%n", itemNum, account);
                 menuItems.add(new MenuOption("ACCOUNT", category, account, null));
                 itemNum++;
             }
@@ -324,23 +328,23 @@ public class InteractiveCategorizationService {
         
         // Show actions
         System.out.println("\n🔧 ACTIONS:");
-        System.out.printf("  %2d. Create New Account\n", itemNum);
+        System.out.printf("  %2d. Create New Account%n", itemNum);
         menuItems.add(new MenuOption("ACTION", null, null, "CREATE_NEW"));
         itemNum++;
         
-        System.out.printf("  %2d. Auto-Categorize Similar\n", itemNum);
+        System.out.printf("  %2d. Auto-Categorize Similar%n", itemNum);
         menuItems.add(new MenuOption("ACTION", null, null, "AUTO_CATEGORIZE"));
         itemNum++;
         
-        System.out.printf("  %2d. Skip This Transaction\n", itemNum);
+        System.out.printf("  %2d. Skip This Transaction%n", itemNum);
         menuItems.add(new MenuOption("ACTION", null, null, "SKIP"));
         itemNum++;
         
-        System.out.printf("  %2d. Save & Exit\n", itemNum);
+        System.out.printf("  %2d. Save & Exit%n", itemNum);
         menuItems.add(new MenuOption("ACTION", null, null, "SAVE_EXIT"));
         itemNum++;
         
-        System.out.printf("  %2d. Exit Without Saving\n", itemNum);
+        System.out.printf("  %2d. Exit Without Saving%n", itemNum);
         menuItems.add(new MenuOption("ACTION", null, null, "EXIT"));
         
         return menuItems;
@@ -753,7 +757,7 @@ public class InteractiveCategorizationService {
             pstmt.setLong(2, fiscalPeriodId);
             ResultSet rs = pstmt.executeQuery();
             
-            System.out.printf("%-35s %-12s %8s %15s %15s\n", 
+            System.out.printf("%-35s %-12s %8s %15s %15s%n", 
                             "Account", "Type", "Count", "Debits", "Credits");
             System.out.println("-".repeat(85));
             
@@ -764,7 +768,7 @@ public class InteractiveCategorizationService {
                 BigDecimal debits = rs.getBigDecimal("total_debits");
                 BigDecimal credits = rs.getBigDecimal("total_credits");
                 
-                System.out.printf("%-35s %-12s %8d %15s %15s\n",
+                System.out.printf("%-35s %-12s %8d %15s %15s%n",
                                 accountName.length() > 33 ? accountName.substring(0, 30) + "..." : accountName,
                                 accountType,
                                 count,
