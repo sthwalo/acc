@@ -83,14 +83,14 @@ public class FinancialReportingService {
                 if (!accountKey.equals(currentAccount)) {
                     // Print totals for previous account
                     if (!currentAccount.isEmpty()) {
-                        report.append(String.format("%-80s %15s %15s\n", 
+                        report.append(String.format("%-80s %15s %15s%n", 
                                 "ACCOUNT TOTALS:", 
                                 formatCurrency(accountDebitTotal),
                                 formatCurrency(accountCreditTotal)));
                         
                         BigDecimal balance = accountDebitTotal.subtract(accountCreditTotal);
                         String balanceType = balance.compareTo(BigDecimal.ZERO) >= 0 ? "DR" : "CR";
-                        report.append(String.format("%-80s %15s %s\n\n", 
+                        report.append(String.format("%-80s %15s %s%n%n", 
                                 "BALANCE:", 
                                 formatCurrency(balance.abs()), 
                                 balanceType));
@@ -102,10 +102,10 @@ public class FinancialReportingService {
                     
                     // Account header
                     report.append("=".repeat(120)).append("\n");
-                    report.append(String.format("ACCOUNT: %s (%s)\n", 
+                    report.append(String.format("ACCOUNT: %s (%s)%n", 
                             accountKey, rs.getString("category_name")));
                     report.append("=".repeat(120)).append("\n");
-                    report.append(String.format("%-12s %-30s %-25s %15s %15s\n",
+                    report.append(String.format("%-12s %-30s %-25s %15s %15s%n",
                             "Date", "Reference", "Description", "Debit", "Credit"));
                     report.append("-".repeat(120)).append("\n");
                 }
@@ -126,7 +126,7 @@ public class FinancialReportingService {
                     grandTotalCredits = grandTotalCredits.add(creditAmount);
                 }
                 
-                report.append(String.format("%-12s %-30s %-25s %15s %15s\n",
+                report.append(String.format("%-12s %-30s %-25s %15s %15s%n",
                         entryDate.toLocalDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")),
                         reference != null ? reference : "",
                         description != null && description.length() > 23 ? 
@@ -137,14 +137,14 @@ public class FinancialReportingService {
             
             // Final account totals
             if (!currentAccount.isEmpty()) {
-                report.append(String.format("%-80s %15s %15s\n", 
+                report.append(String.format("%-80s %15s %15s%n", 
                         "ACCOUNT TOTALS:", 
                         formatCurrency(accountDebitTotal),
                         formatCurrency(accountCreditTotal)));
                 
                 BigDecimal balance = accountDebitTotal.subtract(accountCreditTotal);
                 String balanceType = balance.compareTo(BigDecimal.ZERO) >= 0 ? "DR" : "CR";
-                report.append(String.format("%-80s %15s %s\n\n", 
+                report.append(String.format("%-80s %15s %s%n%n", 
                         "BALANCE:", 
                         formatCurrency(balance.abs()), 
                         balanceType));
@@ -152,7 +152,7 @@ public class FinancialReportingService {
             
             // Grand totals
             report.append("=".repeat(120)).append("\n");
-            report.append(String.format("%-80s %15s %15s\n", 
+            report.append(String.format("%-80s %15s %15s%n", 
                     "GRAND TOTALS:", 
                     formatCurrency(grandTotalDebits),
                     formatCurrency(grandTotalCredits)));
@@ -211,7 +211,7 @@ public class FinancialReportingService {
             ResultSet rs = pstmt.executeQuery();
             
             // Headers
-            report.append(String.format("%-10s %-35s %-20s %15s %15s\n",
+            report.append(String.format("%-10s %-35s %-20s %15s %15s%n",
                     "Code", "Account Name", "Category", "Debit", "Credit"));
             report.append("-".repeat(100)).append("\n");
             
@@ -237,7 +237,7 @@ public class FinancialReportingService {
                     grandTotalCredits = grandTotalCredits.add(balance.abs());
                 }
                 
-                report.append(String.format("%-10s %-35s %-20s %15s %15s\n",
+                report.append(String.format("%-10s %-35s %-20s %15s %15s%n",
                         accountCode,
                         accountName.length() > 33 ? accountName.substring(0, 30) + "..." : accountName,
                         categoryName.length() > 18 ? categoryName.substring(0, 15) + "..." : categoryName,
@@ -247,7 +247,7 @@ public class FinancialReportingService {
             
             // Totals
             report.append("-".repeat(100)).append("\n");
-            report.append(String.format("%-66s %15s %15s\n", 
+            report.append(String.format("%-66s %15s %15s%n", 
                     "TOTALS:", 
                     formatCurrency(grandTotalDebits),
                     formatCurrency(grandTotalCredits)));
@@ -296,12 +296,12 @@ public class FinancialReportingService {
         for (Map.Entry<String, BigDecimal> entry : revenueAccounts.entrySet()) {
             BigDecimal amount = entry.getValue();
             totalRevenue = totalRevenue.add(amount);
-            report.append(String.format("%-45s %14s\n", 
+            report.append(String.format("%-45s %14s%n", 
                     entry.getKey(), formatCurrency(amount)));
         }
         
         report.append("-".repeat(60)).append("\n");
-        report.append(String.format("%-45s %14s\n", 
+        report.append(String.format("%-45s %14s%n", 
                 "TOTAL REVENUE", formatCurrency(totalRevenue)));
         report.append("\n");
         
@@ -313,19 +313,19 @@ public class FinancialReportingService {
         for (Map.Entry<String, BigDecimal> entry : expenseAccounts.entrySet()) {
             BigDecimal amount = entry.getValue();
             totalExpenses = totalExpenses.add(amount);
-            report.append(String.format("%-45s %14s\n", 
+            report.append(String.format("%-45s %14s%n", 
                     entry.getKey(), formatCurrency(amount)));
         }
         
         report.append("-".repeat(60)).append("\n");
-        report.append(String.format("%-45s %14s\n", 
+        report.append(String.format("%-45s %14s%n", 
                 "TOTAL EXPENSES", formatCurrency(totalExpenses)));
         report.append("\n");
         
         // Net Income
         BigDecimal netIncome = totalRevenue.subtract(totalExpenses);
         report.append("=".repeat(60)).append("\n");
-        report.append(String.format("%-45s %14s\n", 
+        report.append(String.format("%-45s %14s%n", 
                 "NET INCOME", formatCurrency(netIncome)));
         report.append("=".repeat(60)).append("\n");
         
@@ -360,12 +360,12 @@ public class FinancialReportingService {
         for (Map.Entry<String, BigDecimal> entry : assets.entrySet()) {
             BigDecimal amount = entry.getValue();
             totalAssets = totalAssets.add(amount);
-            report.append(String.format("%-45s %14s\n", 
+            report.append(String.format("%-45s %14s%n", 
                     entry.getKey(), formatCurrency(amount)));
         }
         
         report.append("-".repeat(60)).append("\n");
-        report.append(String.format("%-45s %14s\n", 
+        report.append(String.format("%-45s %14s%n", 
                 "TOTAL ASSETS", formatCurrency(totalAssets)));
         report.append("\n");
         
@@ -377,12 +377,12 @@ public class FinancialReportingService {
         for (Map.Entry<String, BigDecimal> entry : liabilities.entrySet()) {
             BigDecimal amount = entry.getValue();
             totalLiabilities = totalLiabilities.add(amount);
-            report.append(String.format("%-45s %14s\n", 
+            report.append(String.format("%-45s %14s%n", 
                     entry.getKey(), formatCurrency(amount)));
         }
         
         report.append("-".repeat(60)).append("\n");
-        report.append(String.format("%-45s %14s\n", 
+        report.append(String.format("%-45s %14s%n", 
                 "TOTAL LIABILITIES", formatCurrency(totalLiabilities)));
         report.append("\n");
         
@@ -394,19 +394,19 @@ public class FinancialReportingService {
         for (Map.Entry<String, BigDecimal> entry : equity.entrySet()) {
             BigDecimal amount = entry.getValue();
             totalEquity = totalEquity.add(amount);
-            report.append(String.format("%-45s %14s\n", 
+            report.append(String.format("%-45s %14s%n", 
                     entry.getKey(), formatCurrency(amount)));
         }
         
         report.append("-".repeat(60)).append("\n");
-        report.append(String.format("%-45s %14s\n", 
+        report.append(String.format("%-45s %14s%n", 
                 "TOTAL EQUITY", formatCurrency(totalEquity)));
         report.append("\n");
         
         // Balance Check
         BigDecimal totalLiabilitiesAndEquity = totalLiabilities.add(totalEquity);
         report.append("=".repeat(60)).append("\n");
-        report.append(String.format("%-45s %14s\n", 
+        report.append(String.format("%-45s %14s%n", 
                 "TOTAL LIABILITIES & EQUITY", formatCurrency(totalLiabilitiesAndEquity)));
         report.append("=".repeat(60)).append("\n");
         
@@ -440,17 +440,12 @@ public class FinancialReportingService {
             SELECT
                 bt.transaction_date,
                 bt.details,
-                jel.debit_amount as bank_debit,
-                jel.credit_amount as bank_credit,
+                bt.debit_amount,
+                bt.credit_amount,
                 bt.balance,
-                COALESCE(bt.account_name, a.account_name) as account_name,
-                COALESCE(bt.account_code, a.account_code) as account_code
+                COALESCE(bt.account_name, 'Unclassified') as account_name,
+                COALESCE(bt.account_code, '') as account_code
             FROM bank_transactions bt
-            LEFT JOIN journal_entry_lines jel ON bt.id = jel.source_transaction_id 
-                AND jel.account_id = (SELECT id FROM accounts WHERE account_code = '1100' LIMIT 1)
-            LEFT JOIN journal_entry_lines jel2 ON bt.id = jel2.source_transaction_id 
-                AND jel2.account_id != (SELECT id FROM accounts WHERE account_code = '1100' LIMIT 1)
-            LEFT JOIN accounts a ON jel2.account_id = a.id
             WHERE bt.company_id = ? AND bt.fiscal_period_id = ?
             ORDER BY bt.transaction_date, bt.id
             """;
@@ -463,7 +458,7 @@ public class FinancialReportingService {
             ResultSet rs = pstmt.executeQuery();
             
             // Headers
-            report.append(String.format("%-12s %-35s %-20s %15s %15s %15s\n",
+            report.append(String.format("%-12s %-35s %-20s %15s %15s %15s%n",
                     "Date", "Details", "Account", "Debit", "Credit", "Balance"));
             report.append("-".repeat(120)).append("\n");
             
@@ -475,33 +470,30 @@ public class FinancialReportingService {
                 String details = rs.getString("details");
                 String accountName = rs.getString("account_name");
                 String accountCode = rs.getString("account_code");
-                BigDecimal bankDebit = rs.getBigDecimal("bank_debit");
-                BigDecimal bankCredit = rs.getBigDecimal("bank_credit");
+                BigDecimal debitAmount = rs.getBigDecimal("debit_amount");
+                BigDecimal creditAmount = rs.getBigDecimal("credit_amount");
                 BigDecimal balance = rs.getBigDecimal("balance");
                 
-                // Use journal entry amounts for bank account (correct debit/credit)
-                BigDecimal debitAmount = bankDebit;
-                BigDecimal creditAmount = bankCredit;
-                
+                // Use the direct debit/credit amounts from bank_transactions table
                 if (debitAmount != null) totalDebits = totalDebits.add(debitAmount);
                 if (creditAmount != null) totalCredits = totalCredits.add(creditAmount);
                 
-                // Format account display - prefer account_name, fallback to account_code if name is null
-                String accountDisplay = accountName != null ? accountName : 
-                    (accountCode != null ? accountCode : "Unclassified");
+                // Format account display
+                String accountDisplay = accountName != null && !accountName.equals("Unclassified") ? 
+                    accountName : (accountCode != null && !accountCode.isEmpty() ? accountCode : "Unclassified");
                 
-                report.append(String.format("%-12s %-35s %-20s %15s %15s %15s\n",
+                report.append(String.format("%-12s %-35s %-20s %15s %15s %15s%n",
                         transactionDate.toLocalDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")),
                         details != null && details.length() > 33 ? details.substring(0, 30) + "..." : details,
                         accountDisplay.length() > 18 ? accountDisplay.substring(0, 15) + "..." : accountDisplay,
-                        debitAmount != null ? formatCurrency(debitAmount) : "",
-                        creditAmount != null ? formatCurrency(creditAmount) : "",
+                        debitAmount != null && debitAmount.compareTo(BigDecimal.ZERO) != 0 ? formatCurrency(debitAmount) : "",
+                        creditAmount != null && creditAmount.compareTo(BigDecimal.ZERO) != 0 ? formatCurrency(creditAmount) : "",
                         balance != null ? formatCurrency(balance) : ""));
             }
             
             // Totals
             report.append("-".repeat(120)).append("\n");
-            report.append(String.format("%-68s %15s %15s\n", 
+            report.append(String.format("%-68s %15s %15s%n", 
                     "TOTALS:", 
                     formatCurrency(totalDebits),
                     formatCurrency(totalCredits)));
@@ -574,15 +566,15 @@ public class FinancialReportingService {
                     currentEntry = reference;
                     
                     report.append("\n").append("=".repeat(120)).append("\n");
-                    report.append(String.format("ENTRY: %-20s DATE: %-12s CREATED BY: %-20s\n",
+                    report.append(String.format("ENTRY: %-20s DATE: %-12s CREATED BY: %-20s%n",
                             reference,
                             entryDate.toLocalDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")),
                             createdBy != null ? createdBy : "SYSTEM"));
-                    report.append(String.format("DESCRIPTION: %s\n", journalDescription));
-                    report.append(String.format("TIMESTAMP: %s\n", 
+                    report.append(String.format("DESCRIPTION: %s%n", journalDescription));
+                    report.append(String.format("TIMESTAMP: %s%n", 
                             createdAt.toLocalDateTime().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss"))));
                     report.append("-".repeat(120)).append("\n");
-                    report.append(String.format("%-10s %-25s %-30s %15s %15s\n",
+                    report.append(String.format("%-10s %-25s %-30s %15s %15s%n",
                             "Code", "Account", "Description", "Debit", "Credit"));
                     report.append("-".repeat(120)).append("\n");
                 }
@@ -597,7 +589,7 @@ public class FinancialReportingService {
                 if (debitAmount != null) grandTotalDebits = grandTotalDebits.add(debitAmount);
                 if (creditAmount != null) grandTotalCredits = grandTotalCredits.add(creditAmount);
                 
-                report.append(String.format("%-10s %-25s %-30s %15s %15s\n",
+                report.append(String.format("%-10s %-25s %-30s %15s %15s%n",
                         accountCode,
                         accountName.length() > 23 ? accountName.substring(0, 20) + "..." : accountName,
                         lineDescription != null && lineDescription.length() > 28 ? 
@@ -608,7 +600,7 @@ public class FinancialReportingService {
             
             // Grand totals
             report.append("\n").append("=".repeat(120)).append("\n");
-            report.append(String.format("%-71s %15s %15s\n", 
+            report.append(String.format("%-71s %15s %15s%n", 
                     "GRAND TOTALS:", 
                     formatCurrency(grandTotalDebits),
                     formatCurrency(grandTotalCredits)));
@@ -632,19 +624,19 @@ public class FinancialReportingService {
     private String generateReportHeader(String reportTitle, Company company, FiscalPeriod period) {
         StringBuilder header = new StringBuilder();
         header.append("=".repeat(120)).append("\n");
-        header.append(String.format("%s\n", centerText(reportTitle, 120)));
+        header.append(String.format("%s%n", centerText(reportTitle, 120)));
         header.append("=".repeat(120)).append("\n");
         
         if (company != null) {
-            header.append(String.format("Company: %s\n", company.getName()));
+            header.append(String.format("Company: %s%n", company.getName()));
         }
         if (period != null) {
-            header.append(String.format("Fiscal Period: %s (%s to %s)\n", 
+            header.append(String.format("Fiscal Period: %s (%s to %s)%n", 
                     period.getPeriodName(),
                     period.getStartDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")),
                     period.getEndDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))));
         }
-        header.append(String.format("Generated: %s\n", 
+        header.append(String.format("Generated: %s%n", 
                 LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss"))));
         header.append("-".repeat(120)).append("\n\n");
         
