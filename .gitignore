@@ -31,6 +31,7 @@ license_verification.log
 fin_database.db
 app/fin_database.db
 dev-tools/commands.md
+logicrefactor.txt
 
 # Bank statements and financial documents (PDFs)
 bank/

@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <FindBugsFilter>
-    <!-- Exclude test classes from SpotBugs analysis -->
+    <!-- Exclude mutable object exposure issues in model classes -->
+    <Match>
+        <Class name="fin.model.*"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>ses from SpotBugs analysis -->
     <Match>
         <Class name="~.*\.Test.*"/>
     </Match>
@@ -57,9 +61,9 @@
         <Bug pattern="DM_DEFAULT_ENCODING"/>
     </Match>
 
-    <!-- Exclude mutable object exposure issues in model classes -->
+    <!-- Exclude mutable object exposure issues in repository classes -->
     <Match>
-        <Class name="~.*model\..*"/>
+        <Class name="~.*Repository.*"/>
         <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
     </Match>
 

@@ -1444,7 +1444,7 @@ public class InteractiveClassificationService {
                     pstmt.setLong(1, journalEntryId);
                     pstmt.setLong(2, bankAccountId != null ? bankAccountId : accountId);
 
-                    if (transaction.getDebitAmount() != null) {
+                    if (transaction.getDebitAmount() != null && transaction.getDebitAmount().compareTo(BigDecimal.ZERO) > 0) {
                         // Transaction is debit, so credit the bank account
                         pstmt.setBigDecimal(3, null);
                         pstmt.setBigDecimal(4, transaction.getDebitAmount());
@@ -1462,7 +1462,7 @@ public class InteractiveClassificationService {
                     // Categorized account line (same as transaction)
                     pstmt.setLong(2, accountId);
 
-                    if (transaction.getDebitAmount() != null) {
+                    if (transaction.getDebitAmount() != null && transaction.getDebitAmount().compareTo(BigDecimal.ZERO) > 0) {
                         // Transaction is debit, so debit the expense/asset account
                         pstmt.setBigDecimal(3, transaction.getDebitAmount());
                         pstmt.setBigDecimal(4, null);
@@ -1489,6 +1489,63 @@ public class InteractiveClassificationService {
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Error creating journal entry for transaction", e);
             return false;
+        }
+    }
+    
+    /**
+     * Recreates journal entries for all categorized transactions that don't have journal entries
+     */
+    public void recreateJournalEntriesForCategorizedTransactions() {
+        String sql = """
+            SELECT bt.id, bt.company_id, bt.fiscal_period_id, bt.transaction_date, bt.details,
+                   bt.debit_amount, bt.credit_amount, bt.account_code, a.id as account_id
+            FROM bank_transactions bt
+            JOIN accounts a ON bt.account_code = a.account_code
+            WHERE bt.account_code IS NOT NULL 
+              AND bt.classification_date IS NOT NULL
+              AND NOT EXISTS (
+                  SELECT 1 FROM journal_entry_lines jel 
+                  WHERE jel.source_transaction_id = bt.id
+              )
+            ORDER BY bt.transaction_date, bt.id
+            """;
+
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
+
+            int count = 0;
+            while (rs.next()) {
+                Long transactionId = rs.getLong("id");
+                Long companyId = rs.getLong("company_id");
+                Long fiscalPeriodId = rs.getLong("fiscal_period_id");
+                LocalDate transactionDate = rs.getDate("transaction_date").toLocalDate();
+                String details = rs.getString("details");
+                BigDecimal debitAmount = rs.getBigDecimal("debit_amount");
+                BigDecimal creditAmount = rs.getBigDecimal("credit_amount");
+                Long accountId = rs.getLong("account_id");
+
+                // Create BankTransaction object for the method
+                BankTransaction transaction = new BankTransaction();
+                transaction.setId(transactionId);
+                transaction.setCompanyId(companyId);
+                transaction.setFiscalPeriodId(fiscalPeriodId);
+                transaction.setTransactionDate(transactionDate);
+                transaction.setDetails(details);
+                transaction.setDebitAmount(debitAmount);
+                transaction.setCreditAmount(creditAmount);
+
+                // Create journal entry
+                boolean success = createJournalEntryForTransaction(transaction, accountId);
+                if (success) {
+                    count++;
+                }
+            }
+
+            LOGGER.info("Recreated journal entries for " + count + " categorized transactions");
+
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error recreating journal entries", e);
         }
     }
     

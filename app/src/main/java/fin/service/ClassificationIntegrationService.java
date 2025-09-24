@@ -470,4 +470,13 @@ public class ClassificationIntegrationService {
             return 0;
         }
     }
+    
+    /**
+     * Get the interactive classification service
+     * 
+     * @return The InteractiveClassificationService instance
+     */
+    public InteractiveClassificationService getInteractiveClassificationService() {
+        return classificationService;
+    }
 }
