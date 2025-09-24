@@ -49,9 +49,10 @@ public class ConsoleMenu {
         System.out.println("3. Trial Balance Report");
         System.out.println("4. Income Statement");
         System.out.println("5. Balance Sheet");
-        System.out.println("6. Cash Flow Statement");
-        System.out.println("7. Back to main menu");
-        System.out.print("Enter your choice (1-7): ");
+        System.out.println("6. Audit Trail");
+        System.out.println("7. Cash Flow Statement");
+        System.out.println("8. Back to main menu");
+        System.out.print("Enter your choice (1-8): ");
     }
     
     public void displayDataManagementMenu() {

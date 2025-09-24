@@ -40,7 +40,7 @@ public class ReportController {
             boolean back = false;
             while (!back) {
                 menu.displayReportMenu();
-                int choice = inputHandler.getInteger("Enter your choice", 1, 7);
+                int choice = inputHandler.getInteger("Enter your choice", 1, 8);
                 
                 switch (choice) {
                     case 1:
@@ -59,9 +59,12 @@ public class ReportController {
                         generateBalanceSheetReport();
                         break;
                     case 6:
-                        generateCashFlowReport();
+                        generateAuditTrailReport();
                         break;
                     case 7:
+                        generateCashFlowReport();
+                        break;
+                    case 8:
                         back = true;
                         break;
                     default:
@@ -180,8 +183,7 @@ public class ReportController {
             ensureReportsDirectoryExists();
             
             outputFormatter.printProcessing("Generating cash flow statement...");
-            // Using Audit Trail as substitute since FinancialReportingService doesn't have dedicated Cash Flow
-            financialReportingService.generateAuditTrail(
+            financialReportingService.generateCashFlowStatement(
                 applicationState.getCurrentCompany().getId(), 
                 applicationState.getCurrentFiscalPeriod().getId(), 
                 true);
@@ -191,6 +193,26 @@ public class ReportController {
             
         } catch (Exception e) {
             outputFormatter.printError("Error generating Cash Flow Statement: " + e.getMessage());
+        }
+    }
+    
+    public void generateAuditTrailReport() {
+        outputFormatter.printHeader("Generating Audit Trail");
+        
+        try {
+            ensureReportsDirectoryExists();
+            
+            outputFormatter.printProcessing("Generating audit trail...");
+            financialReportingService.generateAuditTrail(
+                applicationState.getCurrentCompany().getId(), 
+                applicationState.getCurrentFiscalPeriod().getId(), 
+                true);
+            
+            outputFormatter.printSuccess("Audit Trail generated successfully");
+            outputFormatter.printFileLocation("Report location", reportsDir);
+            
+        } catch (Exception e) {
+            outputFormatter.printError("Error generating Audit Trail: " + e.getMessage());
         }
     }
     
@@ -209,7 +231,7 @@ public class ReportController {
             
             String[] reportTypes = {
                 "Cashbook", "General Ledger", "Trial Balance", 
-                "Income Statement", "Balance Sheet", "Cash Flow Statement"
+                "Income Statement", "Balance Sheet", "Audit Trail", "Cash Flow Statement"
             };
             
             int successCount = 0;
@@ -235,6 +257,9 @@ public class ReportController {
                                 applicationState.getCurrentCompany().getId(), 
                                 applicationState.getCurrentFiscalPeriod().getId(), true); break;
                         case 5: financialReportingService.generateAuditTrail(
+                                applicationState.getCurrentCompany().getId(), 
+                                applicationState.getCurrentFiscalPeriod().getId(), true); break;
+                        case 6: financialReportingService.generateCashFlowStatement(
                                 applicationState.getCurrentCompany().getId(), 
                                 applicationState.getCurrentFiscalPeriod().getId(), true); break;
                     }

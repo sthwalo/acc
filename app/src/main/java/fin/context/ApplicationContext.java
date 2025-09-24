@@ -72,6 +72,9 @@ public class ApplicationContext {
         ClassificationIntegrationService classificationService = new ClassificationIntegrationService();
         register(ClassificationIntegrationService.class, classificationService);
         
+        InteractiveClassificationService interactiveClassificationService = new InteractiveClassificationService();
+        register(InteractiveClassificationService.class, interactiveClassificationService);
+        
         CsvExportService csvExportService = new CsvExportService(companyService);
         register(CsvExportService.class, csvExportService);
         
@@ -251,6 +254,13 @@ public class ApplicationContext {
      */
     public ApplicationState getApplicationState() {
         return get(ApplicationState.class);
+    }
+    
+    /**
+     * Get the interactive classification service
+     */
+    public InteractiveClassificationService getInteractiveClassificationService() {
+        return get(InteractiveClassificationService.class);
     }
     
     /**
