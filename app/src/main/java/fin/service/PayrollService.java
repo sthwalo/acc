@@ -8,6 +8,7 @@ package fin.service;
 
 import fin.model.*;
 import fin.config.DatabaseConfig;
+import fin.repository.CompanyRepository;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -26,13 +27,30 @@ import java.util.logging.Level;
 public class PayrollService {
     private static final Logger LOGGER = Logger.getLogger(PayrollService.class.getName());
     private final String dbUrl;
+    private final CompanyRepository companyRepository;
+    private final PayslipPdfService pdfService;
+    private final EmailService emailService;
     
     public PayrollService() {
         this.dbUrl = DatabaseConfig.getDatabaseUrl();
+        this.companyRepository = null;
+        this.pdfService = null;
+        this.emailService = null;
     }
     
     public PayrollService(String dbUrl) {
         this.dbUrl = dbUrl;
+        this.companyRepository = null;
+        this.pdfService = null;
+        this.emailService = null;
+    }
+
+    public PayrollService(String dbUrl, CompanyRepository companyRepository, 
+                         PayslipPdfService pdfService, EmailService emailService) {
+        this.dbUrl = dbUrl;
+        this.companyRepository = companyRepository;
+        this.pdfService = pdfService;
+        this.emailService = emailService;
     }
     
     // ===== EMPLOYEE MANAGEMENT =====
@@ -80,6 +98,75 @@ public class PayrollService {
         }
         
         throw new RuntimeException("Failed to create employee");
+    }
+    
+    /**
+     * Update an existing employee
+     */
+    public Employee updateEmployee(Employee employee) {
+        String sql = """
+            UPDATE employees SET 
+                employee_number = ?, first_name = ?, last_name = ?, email = ?, phone = ?, 
+                position = ?, department = ?, hire_date = ?, basic_salary = ?, employment_type = ?, 
+                salary_type = ?, tax_number = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ? AND company_id = ?
+            """;
+        
+        try (Connection conn = DriverManager.getConnection(dbUrl);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, employee.getEmployeeNumber());
+            pstmt.setString(2, employee.getFirstName());
+            pstmt.setString(3, employee.getLastName());
+            pstmt.setString(4, employee.getEmail());
+            pstmt.setString(5, employee.getPhone());
+            pstmt.setString(6, employee.getPosition());
+            pstmt.setString(7, employee.getDepartment());
+            pstmt.setDate(8, java.sql.Date.valueOf(employee.getHireDate()));
+            pstmt.setBigDecimal(9, employee.getBasicSalary());
+            pstmt.setString(10, employee.getEmploymentType().name());
+            pstmt.setString(11, employee.getSalaryType().name());
+            pstmt.setString(12, employee.getTaxNumber());
+            pstmt.setLong(13, employee.getId());
+            pstmt.setLong(14, employee.getCompanyId());
+            
+            int rowsAffected = pstmt.executeUpdate();
+            if (rowsAffected > 0) {
+                LOGGER.info("Updated employee: " + employee.getEmployeeNumber() + " - " + employee.getFullName());
+                return employee;
+            } else {
+                throw new RuntimeException("Employee not found or update failed");
+            }
+            
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error updating employee", e);
+            throw new RuntimeException("Failed to update employee: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Delete an employee (soft delete by setting is_active = false)
+     */
+    public void deleteEmployee(Long employeeId, Long companyId) {
+        String sql = "UPDATE employees SET is_active = FALSE, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND company_id = ?";
+        
+        try (Connection conn = DriverManager.getConnection(dbUrl);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setLong(1, employeeId);
+            pstmt.setLong(2, companyId);
+            
+            int rowsAffected = pstmt.executeUpdate();
+            if (rowsAffected > 0) {
+                LOGGER.info("Deleted employee with ID: " + employeeId);
+            } else {
+                throw new RuntimeException("Employee not found or delete failed");
+            }
+            
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error deleting employee", e);
+            throw new RuntimeException("Failed to delete employee: " + e.getMessage());
+        }
     }
     
     /**

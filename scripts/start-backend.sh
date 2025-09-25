@@ -17,7 +17,7 @@ fi
 # Start the Java backend API server
 echo "📊 Starting Java Backend API Server on port 8080..."
 cd /Users/sthwalonyoni/FIN
-java -Dfin.license.autoconfirm=true -jar app/build/libs/app.jar api &
+java -jar app/build/libs/app.jar api &
 BACKEND_PID=$!
 
 # Wait a moment for backend to start
