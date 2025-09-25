@@ -227,6 +227,33 @@ scripts/rules
 !dev-tools/*.md
 
 # ========================================
+# CURRENT UNTRACKED FILES - KEEP LOCAL
+# ========================================
+
+# Development scripts and tools
+scripts/README.md
+scripts/TransactionAnalysis.txt
+scripts/analyze-transactions.sh
+scripts/classify-transactions.sh
+scripts/cleanup-reports.sh
+scripts/cleanup.sh
+scripts/demo-api.sh
+scripts/direct_process.sh
+scripts/fix-transaction-mapping.sh
+scripts/generate-sample-reports.sh
+scripts/initialize-accounts.sh
+scripts/interactive-test.sh
+scripts/process_via_console.sh
+scripts/show-status.sh
+scripts/start-fullstack.sh
+scripts/test-fullstack.sh
+scripts/test_more_pdfs.sh
+scripts/test_single_pdf.sh
+
+# Reorganized tools directory
+tools/
+
+# ========================================
 # SAMPLE DATA ONLY
 # ========================================
 
