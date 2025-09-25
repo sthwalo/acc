@@ -63,6 +63,37 @@ scripts/*_data_*.sh
 scripts/*_db_*.sh
 scripts/*_credentials_*.sh
 
+# Employee data files (PII - Personal Identifiable Information)
+input/EmployeesData.txt
+scripts/insert_employees.sql
+scripts/populate_birth_dates.sql
+scripts/update_employee_names.sql
+scripts/add_company_logo.sql
+scripts/add_updated_at_column.sql
+scripts/set_limelight_logo.sql
+
+# Payslips containing employee financial data
+payslips/
+exports/test_payslip_java.pdf
+
+# Personal usage logs
+personal_use.log
+usage.log
+license_verification.log
+
+# Reports containing sensitive financial information
+reports/
+dev-tools/scripts/
+
+# Scripts with sensitive data (exclude specific ones)
+scripts/connect_db.sh
+scripts/export_data.sh
+scripts/process_statement.sh
+scripts/frontend-licensing-*.sh
+scripts/*_data_*.sh
+scripts/*_db_*.sh
+scripts/*_credentials_*.sh
+
 
 # ========================================
 # BUILD AND DEVELOPMENT FILES

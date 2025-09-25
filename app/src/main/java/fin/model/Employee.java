@@ -26,7 +26,9 @@ public class Employee {
     private Long id;
     private Long companyId;
     private String employeeNumber;
+    private String title;
     private String firstName;
+    private String secondName;
     private String lastName;
     private String email;
     private String phone;
@@ -119,8 +121,14 @@ public class Employee {
     public String getEmployeeNumber() { return employeeNumber; }
     public void setEmployeeNumber(String employeeNumber) { this.employeeNumber = employeeNumber; }
     
+    public String getTitle() { return title; }
+    public void setTitle(String title) { this.title = title; }
+    
     public String getFirstName() { return firstName; }
     public void setFirstName(String firstName) { this.firstName = firstName; }
+    
+    public String getSecondName() { return secondName; }
+    public void setSecondName(String secondName) { this.secondName = secondName; }
     
     public String getLastName() { return lastName; }
     public void setLastName(String lastName) { this.lastName = lastName; }

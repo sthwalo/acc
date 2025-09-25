@@ -35,6 +35,7 @@ public class Company {
     private String address;
     private String contactEmail;
     private String contactPhone;
+    private String logoPath;
     private LocalDateTime createdAt;
     
     // Constructors, getters, and setters
@@ -66,6 +67,9 @@ public class Company {
     
     public String getContactPhone() { return contactPhone; }
     public void setContactPhone(String contactPhone) { this.contactPhone = contactPhone; }
+    
+    public String getLogoPath() { return logoPath; }
+    public void setLogoPath(String logoPath) { this.logoPath = logoPath; }
     
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
