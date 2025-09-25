@@ -57,6 +57,12 @@ dependencies {
     implementation("org.bouncycastle:bcmail-jdk15on:1.70")
     implementation("com.itextpdf:itextpdf:5.5.13.3")
     
+    // JNA for Libharu PDF library
+    implementation("net.java.dev.jna:jna:5.13.0")
+    
+    // JavaMail API for email functionality
+    implementation("com.sun.mail:javax.mail:1.6.2")
+    
     // Excel processing libraries
     implementation("org.apache.poi:poi:5.2.4")
     implementation("org.apache.poi:poi-ooxml:5.2.4")
