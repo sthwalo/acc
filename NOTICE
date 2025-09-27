@@ -12,9 +12,9 @@ This software contains the following third-party components:
    Copyright 2014 The Apache Software Foundation
    Licensed under the Apache License, Version 2.0
 
-2. SQLite JDBC Driver
-   Copyright Taro L. Saito
-   Licensed under the Apache License, Version 2.0
+2. PostgreSQL JDBC Driver
+   Copyright PostgreSQL Global Development Group
+   Licensed under the PostgreSQL License
 
 3. Spark Java
    Copyright 2011-2015 Per Wendel

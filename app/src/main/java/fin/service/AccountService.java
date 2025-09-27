@@ -30,7 +30,7 @@ public class AccountService {
             return;
         }
         
-        // Database initialization is handled by Flyway migrations for SQLite
+        // Database initialization is handled by Flyway migrations for PostgreSQL
         // This method is kept for any additional initialization
     }
     

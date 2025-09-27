@@ -62,7 +62,7 @@ ORIGINAL VISION ARCHITECTURE                    CURRENT IMPLEMENTATION STATUS
              │                                               │
              ▼                                               ▼
 ┌──────────────────────────┐                    ┌──────────────────────────┐
-│   Financial Data        │ ──────────────────▶ │   SQLite Database        │ ✅ FULLY IMPLEMENTED
+│   Financial Data        │ ──────────────────▶ │   PostgreSQL Database    │ ✅ FULLY IMPLEMENTED
 │   Storage               │                    │   Storage                │
 │   • Secure Storage      │                    │   ┌────────────────────┐ │    Complete Schema:
 │   • Data Versioning     │                    │   │ companies          │ │    • 6 Core Tables
@@ -118,7 +118,7 @@ LEGEND: ✅ Fully Implemented  ⚠️ Partially Implemented  ❌ Not Yet Impleme
 │                     FOUNDATION PHASE                            │
 ├─────────────────────────────────────────────────────────────────┤
 │ ✅ Java 17 Project Setup with Gradle 8.8                       │
-│ ✅ SQLite Database Schema Design & Implementation               │
+│ ✅ PostgreSQL Database Schema Design & Implementation               │
 │ ✅ Core Domain Models (Company, FiscalPeriod, BankTransaction) │
 │ ✅ Repository Pattern with BaseRepository Interface            │
 │ ✅ Basic Console Application Structure                         │
@@ -308,7 +308,7 @@ LEGEND: ✅ Fully Implemented  ⚠️ Partially Implemented  ❌ Not Yet Impleme
 │  │                          DATA LAYER                                         │   │
 │  │                                                                             │   │
 │  │  ┌─────────────────────────────────────────────────────────────────────┐   │   │
-│  │  │                      SQLite Database                                │   │   │
+│  │  │                      PostgreSQL Database                                │   │   │
 │  │  │                                                                     │   │   │
 │  │  │  ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────────┐   │   │   │
 │  │  │  │   companies     │ │ fiscal_periods  │ │  bank_transactions  │   │   │   │
@@ -467,7 +467,7 @@ LEGEND: ✅ Fully Implemented  ⚠️ Partially Implemented  ❌ Not Yet Impleme
 |-----------|------------|----------------------|-------------------|
 | **Application Framework** | Java 17 | ✅ Complete | Main entry point, service coordination |
 | **Build System** | Gradle 8.8 | ✅ Complete | Dependency management, testing, packaging |
-| **Database** | SQLite 3.36 | ✅ Complete | All repositories, data persistence |
+| **Database** | PostgreSQL 12+ | ✅ Complete | All repositories, data persistence |
 | **PDF Processing** | Apache PDFBox 3.0 | ✅ Complete | DocumentTextExtractor, bank statement processing |
 | **PDF Generation** | iText PDF 5.5 | ✅ Complete | Report export functionality |
 | **Testing Framework** | JUnit 5 | ✅ Complete | Unit tests, integration tests |

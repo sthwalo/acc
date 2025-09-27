@@ -85,7 +85,7 @@ tail -f frontend.log   # Frontend logs (if available)
 ### Backend Configuration
 
 - **Port**: 8080
-- **Database**: SQLite (`fin_database.db`)
+- **Database**: PostgreSQL (via environment variables)
 - **CORS**: Enabled for `http://localhost:3000`
 - **API Base**: `/api/v1`
 

@@ -173,7 +173,7 @@ if (!LicenseManager.checkLicenseCompliance()) {
 - **118+ tests** across all services
 - **Test-Driven Development** (TDD) approach
 - **Mockito** for service dependencies
-- **H2 in-memory database** for repository tests
+- **PostgreSQL test database** for repository tests
 
 ### Integration Testing
 ```java

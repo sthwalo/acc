@@ -59,7 +59,7 @@ else
 🔧 Technical Details:
 - Java 17 with Oracle distribution
 - Gradle build system with memory optimization
-- H2 in-memory database for testing
+- PostgreSQL database for testing
 - JUnit Jupiter 5 + Mockito 5.5.0
 - Matrix testing strategy for parallel execution
 - Automated release notes generation
