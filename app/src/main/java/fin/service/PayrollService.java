@@ -308,34 +308,39 @@ public class PayrollService {
     public void processPayroll(Long payrollPeriodId, String processedBy) {
         try (Connection conn = DriverManager.getConnection(dbUrl)) {
             conn.setAutoCommit(false);
-            
+
             try {
                 PayrollPeriod period = getPayrollPeriodById(payrollPeriodId)
                     .orElseThrow(() -> new RuntimeException("Payroll period not found"));
-                
+
+                // Check if payroll has already been processed
+                if (period.getStatus() == PayrollPeriod.PayrollStatus.PROCESSED) {
+                    throw new RuntimeException("Payroll period has already been processed. Use 'Generate Payslip PDFs' to regenerate PDFs for processed payrolls.");
+                }
+
                 if (!period.canBeProcessed()) {
                     throw new RuntimeException("Payroll period cannot be processed. Status: " + period.getStatus());
                 }
-                
+
                 // Get all active employees for the company
                 List<Employee> employees = getActiveEmployees(period.getCompanyId());
-                
+
                 BigDecimal totalGross = BigDecimal.ZERO;
                 BigDecimal totalDeductions = BigDecimal.ZERO;
                 BigDecimal totalNet = BigDecimal.ZERO;
                 int employeeCount = 0;
-                
+
                 // Get company info for PDF generation
                 Company company = companyRepository.findById(period.getCompanyId())
                     .orElseThrow(() -> new RuntimeException("Company not found"));
-                
+
                 List<String> generatedPdfPaths = new ArrayList<>();
-                
+
                 for (Employee employee : employees) {
                     // Calculate and create payslip for each employee
                     Payslip payslip = calculatePayslip(employee, period);
                     savePayslip(conn, payslip);
-                    
+
                     // ✅ ADD THIS: Generate PDF for each payslip
                     if (pdfService != null) {
                         try {
@@ -347,34 +352,34 @@ public class PayrollService {
                             // Don't fail the entire payroll if PDF generation fails
                         }
                     }
-                    
+
                     totalGross = totalGross.add(payslip.getTotalEarnings());
                     totalDeductions = totalDeductions.add(payslip.getTotalDeductions());
                     totalNet = totalNet.add(payslip.getNetPay());
                     employeeCount++;
                 }
-                
+
                 // Update payroll period totals
-                updatePayrollPeriodTotals(conn, payrollPeriodId, totalGross, totalDeductions, 
+                updatePayrollPeriodTotals(conn, payrollPeriodId, totalGross, totalDeductions,
                                         totalNet, employeeCount, processedBy);
-                
+
                 // Generate journal entries for payroll
                 generatePayrollJournalEntries(conn, period, totalGross, totalDeductions, totalNet);
-                
+
                 conn.commit();
-                LOGGER.info("Payroll processed successfully for period: " + period.getPeriodName() + 
+                LOGGER.info("Payroll processed successfully for period: " + period.getPeriodName() +
                            " (" + employeeCount + " employees)");
-                
+
                 // ✅ ADD THIS: Log PDF generation results
                 if (!generatedPdfPaths.isEmpty()) {
                     LOGGER.info("Generated " + generatedPdfPaths.size() + " PDF payslips");
                 }
-                
+
             } catch (Exception e) {
                 conn.rollback();
                 throw e;
             }
-            
+
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Error processing payroll", e);
             throw new RuntimeException("Failed to process payroll: " + e.getMessage());
@@ -679,72 +684,82 @@ public class PayrollService {
     }
     
     private void savePayslip(Connection conn, Payslip payslip) throws SQLException {
-         String sql = """
-             INSERT INTO payslips (
-                 company_id, employee_id, payroll_period_id, payslip_number,
-                 basic_salary, gross_salary, allowances, total_earnings,
-                 payee_tax, uif_employee, uif_employer, total_deductions,
-                 net_pay, status, created_by, created_at
-             ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,now())
-             ON CONFLICT (payslip_number) DO UPDATE SET
-                 company_id = EXCLUDED.company_id,
-                 employee_id = EXCLUDED.employee_id,
-                 payroll_period_id = EXCLUDED.payroll_period_id,
-                 basic_salary = EXCLUDED.basic_salary,
-                 gross_salary = EXCLUDED.gross_salary,
-                 allowances = EXCLUDED.allowances,
-                 total_earnings = EXCLUDED.total_earnings,
-                 payee_tax = EXCLUDED.payee_tax,
-                 uif_employee = EXCLUDED.uif_employee,
-                 uif_employer = EXCLUDED.uif_employer,
-                 total_deductions = EXCLUDED.total_deductions,
-                 net_pay = EXCLUDED.net_pay,
-                 status = EXCLUDED.status,
-                 created_by = EXCLUDED.created_by,
-                 created_at = now()
-             RETURNING id;
-             """;
+        // First check if payslip already exists
+        String checkSql = "SELECT id FROM payslips WHERE payslip_number = ? AND payroll_period_id = ?";
+        Long existingId = null;
 
-         try (PreparedStatement ps = conn.prepareStatement(sql)) {
-             int i = 1;
-             ps.setLong(i++, payslip.getCompanyId());
-             ps.setLong(i++, payslip.getEmployeeId());
-             ps.setLong(i++, payslip.getPayrollPeriodId());
-             ps.setString(i++, payslip.getPayslipNumber());
+        try (PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
+            checkStmt.setString(1, payslip.getPayslipNumber());
+            checkStmt.setLong(2, payslip.getPayrollPeriodId());
+            ResultSet rs = checkStmt.executeQuery();
+            if (rs.next()) {
+                existingId = rs.getLong("id");
+                LOGGER.warning("Payslip already exists: " + payslip.getPayslipNumber() + ", updating instead");
+            }
+        }
 
-             // compute allowances (sum allowance components) instead of using undefined getAllowances()
-             BigDecimal allowances = BigDecimal.ZERO;
-             if (payslip.getHousingAllowance() != null) allowances = allowances.add(payslip.getHousingAllowance());
-             if (payslip.getTransportAllowance() != null) allowances = allowances.add(payslip.getTransportAllowance());
-             if (payslip.getMedicalAllowance() != null) allowances = allowances.add(payslip.getMedicalAllowance());
-             if (payslip.getOtherAllowances() != null) allowances = allowances.add(payslip.getOtherAllowances());
-             if (payslip.getCommission() != null) allowances = allowances.add(payslip.getCommission());
-             if (payslip.getBonus() != null) allowances = allowances.add(payslip.getBonus());
+        if (existingId != null) {
+            // UPDATE existing payslip
+            String updateSql = """
+                UPDATE payslips SET
+                    basic_salary = ?, gross_salary = ?, total_earnings = ?,
+                    payee_tax = ?, uif_employee = ?, uif_employer = ?, total_deductions = ?,
+                    net_pay = ?, status = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+                """;
 
-             // BigDecimal fields - handle nulls via setObject
-             ps.setObject(i++, payslip.getBasicSalary());
-             ps.setObject(i++, payslip.getGrossSalary());
-             ps.setObject(i++, allowances);                      // <- replaced undefined getter
-             ps.setObject(i++, payslip.getTotalEarnings());
-             ps.setObject(i++, payslip.getPayeeTax());
-             ps.setObject(i++, payslip.getUifEmployee());
-             ps.setObject(i++, payslip.getUifEmployer());
-             ps.setObject(i++, payslip.getTotalDeductions());
-             ps.setObject(i++, payslip.getNetPay());
+            try (PreparedStatement pstmt = conn.prepareStatement(updateSql)) {
+                int i = 1;
+                pstmt.setObject(i++, payslip.getBasicSalary());
+                pstmt.setObject(i++, payslip.getGrossSalary());
+                pstmt.setObject(i++, payslip.getTotalEarnings());
+                pstmt.setObject(i++, payslip.getPayeeTax());
+                pstmt.setObject(i++, payslip.getUifEmployee());
+                pstmt.setObject(i++, payslip.getUifEmployer());
+                pstmt.setObject(i++, payslip.getTotalDeductions());
+                pstmt.setObject(i++, payslip.getNetPay());
+                pstmt.setString(i++, payslip.getStatus() != null ? payslip.getStatus().name() : "GENERATED");
+                pstmt.setLong(i, existingId);
 
-             // status is an enum — store its name
-             ps.setString(i++, payslip.getStatus() != null ? payslip.getStatus().name() : null);
-             ps.setString(i++, payslip.getCreatedBy());
+                pstmt.executeUpdate();
+                payslip.setId(existingId);
+            }
+        } else {
+            // INSERT new payslip
+            String insertSql = """
+                INSERT INTO payslips (
+                    company_id, employee_id, payroll_period_id, payslip_number,
+                    basic_salary, gross_salary, total_earnings,
+                    payee_tax, uif_employee, uif_employer, total_deductions,
+                    net_pay, status, created_by, created_at
+                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
+                RETURNING id
+                """;
 
-             try (ResultSet rs = ps.executeQuery()) {
-                 if (rs.next()) {
-                     payslip.setId(rs.getLong("id"));
-                 }
-             }
-         }
-     }
-    
-    private void updatePayrollPeriodTotals(Connection conn, Long periodId, BigDecimal totalGross,
+            try (PreparedStatement pstmt = conn.prepareStatement(insertSql)) {
+                int i = 1;
+                pstmt.setLong(i++, payslip.getCompanyId());
+                pstmt.setLong(i++, payslip.getEmployeeId());
+                pstmt.setLong(i++, payslip.getPayrollPeriodId());
+                pstmt.setString(i++, payslip.getPayslipNumber());
+                pstmt.setObject(i++, payslip.getBasicSalary());
+                pstmt.setObject(i++, payslip.getGrossSalary());
+                pstmt.setObject(i++, payslip.getTotalEarnings());
+                pstmt.setObject(i++, payslip.getPayeeTax());
+                pstmt.setObject(i++, payslip.getUifEmployee());
+                pstmt.setObject(i++, payslip.getUifEmployer());
+                pstmt.setObject(i++, payslip.getTotalDeductions());
+                pstmt.setObject(i++, payslip.getNetPay());
+                pstmt.setString(i++, payslip.getStatus() != null ? payslip.getStatus().name() : "GENERATED");
+                pstmt.setString(i++, payslip.getCreatedBy());
+
+                ResultSet rs = pstmt.executeQuery();
+                if (rs.next()) {
+                    payslip.setId(rs.getLong("id"));
+                }
+            }
+        }
+    }    private void updatePayrollPeriodTotals(Connection conn, Long periodId, BigDecimal totalGross,
                                          BigDecimal totalDeductions, BigDecimal totalNet,
                                          int employeeCount, String processedBy) throws SQLException {
         String sql = """
@@ -829,7 +844,6 @@ public class PayrollService {
         payslip.setEmployeeId(rs.getLong("employee_id"));
         payslip.setPayrollPeriodId(rs.getLong("payroll_period_id"));
         payslip.setPayslipNumber(rs.getString("payslip_number"));
-        payslip.setBasicSalary(rs.getBigDecimal("basic_salary"));
         
         // Debug: Print values from database
         System.out.println("Debug mapResultSetToPayslip: payslip_id=" + rs.getLong("id") + 
@@ -838,49 +852,49 @@ public class PayrollService {
                           ", total_earnings=" + rs.getBigDecimal("total_earnings") +
                           ", net_pay=" + rs.getBigDecimal("net_pay"));
         
-        // Set all allowance fields first
-        payslip.setHousingAllowance(rs.getBigDecimal("housing_allowance") != null ? rs.getBigDecimal("housing_allowance") : BigDecimal.ZERO);
-        payslip.setTransportAllowance(rs.getBigDecimal("transport_allowance") != null ? rs.getBigDecimal("transport_allowance") : BigDecimal.ZERO);
-        payslip.setMedicalAllowance(rs.getBigDecimal("medical_allowance") != null ? rs.getBigDecimal("medical_allowance") : BigDecimal.ZERO);
-        payslip.setOtherAllowances(rs.getBigDecimal("other_allowances") != null ? rs.getBigDecimal("other_allowances") : BigDecimal.ZERO);
-        payslip.setCommission(rs.getBigDecimal("commission") != null ? rs.getBigDecimal("commission") : BigDecimal.ZERO);
-        payslip.setBonus(rs.getBigDecimal("bonus") != null ? rs.getBigDecimal("bonus") : BigDecimal.ZERO);
+        // Set basic salary first
+        BigDecimal basicSalary = rs.getBigDecimal("basic_salary");
+        payslip.setBasicSalary(basicSalary != null ? basicSalary : BigDecimal.ZERO);
+        
+        // Set gross salary directly from database (don't calculate)
+        BigDecimal grossSalary = rs.getBigDecimal("gross_salary");
+        payslip.setGrossSalary(grossSalary != null ? grossSalary : BigDecimal.ZERO);
+        
+        // Set allowances individually (handle nulls)
+        payslip.setHousingAllowance(getBigDecimalOrZero(rs, "housing_allowance"));
+        payslip.setTransportAllowance(getBigDecimalOrZero(rs, "transport_allowance"));
+        payslip.setMedicalAllowance(getBigDecimalOrZero(rs, "medical_allowance"));
+        payslip.setOtherAllowances(getBigDecimalOrZero(rs, "other_allowances"));
+        payslip.setCommission(getBigDecimalOrZero(rs, "commission"));
+        payslip.setBonus(getBigDecimalOrZero(rs, "bonus"));
         
         // Set deductions
-        payslip.setPayeeTax(rs.getBigDecimal("paye_tax") != null ? rs.getBigDecimal("paye_tax") : BigDecimal.ZERO);
-        payslip.setUifEmployee(rs.getBigDecimal("uif_employee") != null ? rs.getBigDecimal("uif_employee") : BigDecimal.ZERO);
-        payslip.setUifEmployer(rs.getBigDecimal("uif_employer") != null ? rs.getBigDecimal("uif_employer") : BigDecimal.ZERO);
-        payslip.setMedicalAid(rs.getBigDecimal("medical_aid") != null ? rs.getBigDecimal("medical_aid") : BigDecimal.ZERO);
-        payslip.setPensionFund(rs.getBigDecimal("pension_fund") != null ? rs.getBigDecimal("pension_fund") : BigDecimal.ZERO);
-        payslip.setLoanDeduction(rs.getBigDecimal("loan_deduction") != null ? rs.getBigDecimal("loan_deduction") : BigDecimal.ZERO);
-        payslip.setOtherDeductions(rs.getBigDecimal("other_deductions") != null ? rs.getBigDecimal("other_deductions") : BigDecimal.ZERO);
+        payslip.setPayeeTax(getBigDecimalOrZero(rs, "paye_tax"));
+        payslip.setUifEmployee(getBigDecimalOrZero(rs, "uif_employee"));
+        payslip.setUifEmployer(getBigDecimalOrZero(rs, "uif_employer"));
+        payslip.setMedicalAid(getBigDecimalOrZero(rs, "medical_aid"));
+        payslip.setPensionFund(getBigDecimalOrZero(rs, "pension_fund"));
+        payslip.setLoanDeduction(getBigDecimalOrZero(rs, "loan_deduction"));
+        payslip.setOtherDeductions(getBigDecimalOrZero(rs, "other_deductions"));
         
-        // Now set gross salary (this will trigger calculateTotals, but all allowances are set)
-        BigDecimal basicSalary = rs.getBigDecimal("basic_salary");
-        BigDecimal grossSalary = (basicSalary != null) ? basicSalary : BigDecimal.ZERO;
-        payslip.setGrossSalary(grossSalary);
+        // Set totals directly from database (don't recalculate)
+        BigDecimal totalEarnings = rs.getBigDecimal("total_earnings");
+        BigDecimal totalDeductions = rs.getBigDecimal("total_deductions");
+        BigDecimal netPay = rs.getBigDecimal("net_pay");
         
-        // Override the calculated totals with the stored values from database, but handle nulls
-        BigDecimal storedTotalEarnings = rs.getBigDecimal("total_earnings");
-        BigDecimal storedTotalDeductions = rs.getBigDecimal("total_deductions");
-        BigDecimal storedNetPay = rs.getBigDecimal("net_pay");
-        
-        if (storedTotalEarnings != null) {
-            payslip.setTotalEarnings(storedTotalEarnings);
-        }
-        if (storedTotalDeductions != null) {
-            payslip.setTotalDeductions(storedTotalDeductions);
-        }
-        if (storedNetPay != null) {
-            payslip.setNetPay(storedNetPay);
-        } else {
-            // If net_pay is null in database, recalculate it
-            payslip.calculateTotals();
-        }
+        payslip.setTotalEarnings(totalEarnings != null ? totalEarnings : BigDecimal.ZERO);
+        payslip.setTotalDeductions(totalDeductions != null ? totalDeductions : BigDecimal.ZERO);
+        payslip.setNetPay(netPay != null ? netPay : BigDecimal.ZERO);
         
         payslip.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
         
         return payslip;
+    }
+
+    // Helper method to handle null BigDecimal values
+    private BigDecimal getBigDecimalOrZero(ResultSet rs, String columnName) throws SQLException {
+        BigDecimal value = rs.getBigDecimal(columnName);
+        return value != null ? value : BigDecimal.ZERO;
     }
     
     /**
