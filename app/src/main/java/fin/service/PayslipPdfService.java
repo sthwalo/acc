@@ -417,7 +417,15 @@ public class PayslipPdfService {
         // For total earnings
         BigDecimal totalEarnings = payslip.getTotalEarnings();
         if (totalEarnings == null) {
-            totalEarnings = payslip.getBasicSalary(); // Fallback to basic salary
+            // Calculate from components if null
+            totalEarnings = payslip.getBasicSalary() != null ? payslip.getBasicSalary() : BigDecimal.ZERO;
+            // Add allowances if they exist
+            if (payslip.getHousingAllowance() != null) totalEarnings = totalEarnings.add(payslip.getHousingAllowance());
+            if (payslip.getTransportAllowance() != null) totalEarnings = totalEarnings.add(payslip.getTransportAllowance());
+            if (payslip.getMedicalAllowance() != null) totalEarnings = totalEarnings.add(payslip.getMedicalAllowance());
+            if (payslip.getOtherAllowances() != null) totalEarnings = totalEarnings.add(payslip.getOtherAllowances());
+            if (payslip.getCommission() != null) totalEarnings = totalEarnings.add(payslip.getCommission());
+            if (payslip.getBonus() != null) totalEarnings = totalEarnings.add(payslip.getBonus());
         }
         Libharu.INSTANCE.HPDF_Page_TextOut(page, leftColumnX + columnWidth - 70, rowY, String.format("R %.2f", totalEarnings));
         Libharu.INSTANCE.HPDF_Page_EndText(page);
@@ -426,7 +434,13 @@ public class PayslipPdfService {
         // For total deductions  
         BigDecimal totalDeductions = payslip.getTotalDeductions();
         if (totalDeductions == null) {
-            totalDeductions = payslip.getPayeeTax().add(payslip.getUifEmployee()).add(payslip.getMedicalAid());
+            totalDeductions = BigDecimal.ZERO;
+            if (payslip.getPayeeTax() != null) totalDeductions = totalDeductions.add(payslip.getPayeeTax());
+            if (payslip.getUifEmployee() != null) totalDeductions = totalDeductions.add(payslip.getUifEmployee());
+            if (payslip.getMedicalAid() != null) totalDeductions = totalDeductions.add(payslip.getMedicalAid());
+            if (payslip.getPensionFund() != null) totalDeductions = totalDeductions.add(payslip.getPensionFund());
+            if (payslip.getLoanDeduction() != null) totalDeductions = totalDeductions.add(payslip.getLoanDeduction());
+            if (payslip.getOtherDeductions() != null) totalDeductions = totalDeductions.add(payslip.getOtherDeductions());
         }
         Libharu.INSTANCE.HPDF_Page_TextOut(page, rightColumnX + columnWidth - 70, rowY, String.format("R %.2f", totalDeductions));
         Libharu.INSTANCE.HPDF_Page_EndText(page);
@@ -501,8 +515,8 @@ public class PayslipPdfService {
         if (payslip == null) {
             throw new IllegalArgumentException("Payslip cannot be null");
         }
-        
-        // Ensure grossSalary is never null
+
+        // Ensure grossSalary is never null - do this FIRST before any calculations
         if (payslip.getGrossSalary() == null) {
             System.err.println("WARNING: Gross salary is null for payslip " + payslip.getPayslipNumber() + ", setting to basic salary");
             if (payslip.getBasicSalary() != null) {
@@ -511,10 +525,10 @@ public class PayslipPdfService {
                 payslip.setGrossSalary(BigDecimal.ZERO);
             }
         }
-        
+
         // Ensure totalEarnings is calculated
         if (payslip.getTotalEarnings() == null) {
-            BigDecimal total = payslip.getGrossSalary()
+            BigDecimal total = payslip.getGrossSalary()  // Now safe to use since we checked above
                 .add(payslip.getHousingAllowance() != null ? payslip.getHousingAllowance() : BigDecimal.ZERO)
                 .add(payslip.getTransportAllowance() != null ? payslip.getTransportAllowance() : BigDecimal.ZERO)
                 .add(payslip.getMedicalAllowance() != null ? payslip.getMedicalAllowance() : BigDecimal.ZERO)
@@ -523,7 +537,7 @@ public class PayslipPdfService {
                 .add(payslip.getBonus() != null ? payslip.getBonus() : BigDecimal.ZERO);
             payslip.setTotalEarnings(total);
         }
-        
+
         // Ensure totalDeductions is calculated
         if (payslip.getTotalDeductions() == null) {
             BigDecimal deductions = BigDecimal.ZERO;
@@ -535,7 +549,7 @@ public class PayslipPdfService {
             if (payslip.getOtherDeductions() != null) deductions = deductions.add(payslip.getOtherDeductions());
             payslip.setTotalDeductions(deductions);
         }
-        
+
         // Ensure netPay is calculated
         if (payslip.getNetPay() == null && payslip.getTotalEarnings() != null && payslip.getTotalDeductions() != null) {
             payslip.setNetPay(payslip.getTotalEarnings().subtract(payslip.getTotalDeductions()));
