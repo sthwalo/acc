@@ -44,8 +44,8 @@ public class CompanyRepository implements BaseRepository<Company, Long> {
     @Override
     public Company save(Company company) {
         String sql = company.getId() == null ?
-            "INSERT INTO companies (name, registration_number, tax_number, address, contact_email, contact_phone) VALUES (?, ?, ?, ?, ?, ?)" :
-            "UPDATE companies SET name = ?, registration_number = ?, tax_number = ?, address = ?, contact_email = ?, contact_phone = ? WHERE id = ?";
+            "INSERT INTO companies (name, registration_number, tax_number, address, contact_email, contact_phone, logo_path) VALUES (?, ?, ?, ?, ?, ?, ?)" :
+            "UPDATE companies SET name = ?, registration_number = ?, tax_number = ?, address = ?, contact_email = ?, contact_phone = ?, logo_path = ? WHERE id = ?";
 
         try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -56,9 +56,10 @@ public class CompanyRepository implements BaseRepository<Company, Long> {
             stmt.setString(4, company.getAddress());
             stmt.setString(5, company.getContactEmail());
             stmt.setString(6, company.getContactPhone());
+            stmt.setString(7, company.getLogoPath());
             
             if (company.getId() != null) {
-                stmt.setLong(7, company.getId());
+                stmt.setLong(8, company.getId());
             }
 
             stmt.executeUpdate();
@@ -159,6 +160,7 @@ public class CompanyRepository implements BaseRepository<Company, Long> {
         company.setAddress(rs.getString("address"));
         company.setContactEmail(rs.getString("contact_email"));
         company.setContactPhone(rs.getString("contact_phone"));
+        company.setLogoPath(rs.getString("logo_path"));
         return company;
     }
 

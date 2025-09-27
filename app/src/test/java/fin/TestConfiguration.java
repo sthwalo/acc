@@ -1,7 +1,7 @@
 package fin;
 
+import fin.config.TestDatabaseConfig;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.Statement;
 import java.sql.SQLException;
 
@@ -10,14 +10,30 @@ import java.sql.SQLException;
  */
 public class TestConfiguration {
     
-    public static final String TEST_DB_URL = "jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL";
+        // Test database configuration - loaded from environment variables only
+    public static final String TEST_DB_URL = System.getenv("TEST_DATABASE_URL");
+    public static final String TEST_DB_USER = System.getenv("TEST_DATABASE_USER");
+    public static final String TEST_DB_PASSWORD = System.getenv("TEST_DATABASE_PASSWORD");
+    
+    static {
+        // Validate that test database configuration is available
+        if (TEST_DB_URL == null || TEST_DB_USER == null || TEST_DB_PASSWORD == null) {
+            throw new RuntimeException("Test database configuration missing. Please set TEST_DATABASE_URL, TEST_DATABASE_USER, and TEST_DATABASE_PASSWORD in .env file.");
+        }
+        System.out.println("🔍 TestConfiguration - TEST_DB_URL: " + TEST_DB_URL);
+        System.out.println("🔍 TestConfiguration - TEST_DB_USER: " + TEST_DB_USER);
+        System.out.println("🔍 TestConfiguration - TEST_DB_PASSWORD: " + (TEST_DB_PASSWORD != null ? "[SET]" : "[NOT SET]"));
+    }
     
     /**
      * Create a test database with all required tables
      */
     public static void setupTestDatabase() throws SQLException {
-        try (Connection conn = DriverManager.getConnection(TEST_DB_URL);
+        try (Connection conn = TestDatabaseConfig.getConnection();
              Statement stmt = conn.createStatement()) {
+            
+            // Drop existing tables in reverse dependency order
+            dropExistingTables(stmt);
             
             // Create companies table
             stmt.executeUpdate("""
@@ -29,6 +45,7 @@ public class TestConfiguration {
                     address TEXT,
                     email VARCHAR(255),
                     phone VARCHAR(50),
+                    logo_path VARCHAR(500),
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
@@ -155,6 +172,32 @@ public class TestConfiguration {
             
             // Insert test data
             insertTestData(stmt);
+            
+            System.out.println("✅ Test database setup completed successfully");
+        }
+    }
+    
+    private static void dropExistingTables(Statement stmt) throws SQLException {
+        // Drop tables in reverse dependency order
+        String[] tables = {
+            "company_classification_rules",
+            "bank_transactions", 
+            "journal_entry_lines",
+            "journal_entries",
+            "accounts",
+            "account_categories", 
+            "account_types",
+            "fiscal_periods",
+            "companies"
+        };
+        
+        for (String table : tables) {
+            try {
+                stmt.executeUpdate("DROP TABLE IF EXISTS " + table + " CASCADE");
+            } catch (SQLException e) {
+                // Ignore errors if table doesn't exist
+                System.out.println("⚠️ Could not drop table " + table + ": " + e.getMessage());
+            }
         }
     }
     
@@ -210,20 +253,30 @@ public class TestConfiguration {
      * Clean up test database
      */
     public static void cleanupTestDatabase() throws SQLException {
-        try (Connection conn = DriverManager.getConnection(TEST_DB_URL);
+        try (Connection conn = TestDatabaseConfig.getConnection();
              Statement stmt = conn.createStatement()) {
             
             // Drop all tables in reverse dependency order
-            stmt.executeUpdate("DROP TABLE IF EXISTS transaction_mapping_rules");
-            stmt.executeUpdate("DROP TABLE IF EXISTS company_classification_rules");
-            stmt.executeUpdate("DROP TABLE IF EXISTS bank_transactions");
-            stmt.executeUpdate("DROP TABLE IF EXISTS journal_entry_lines");
-            stmt.executeUpdate("DROP TABLE IF EXISTS journal_entries");
-            stmt.executeUpdate("DROP TABLE IF EXISTS accounts");
-            stmt.executeUpdate("DROP TABLE IF EXISTS account_categories");
-            stmt.executeUpdate("DROP TABLE IF EXISTS account_types");
-            stmt.executeUpdate("DROP TABLE IF EXISTS fiscal_periods");
-            stmt.executeUpdate("DROP TABLE IF EXISTS companies");
+            String[] tables = {
+                "company_classification_rules",
+                "bank_transactions", 
+                "journal_entry_lines",
+                "journal_entries",
+                "accounts",
+                "account_categories", 
+                "account_types",
+                "fiscal_periods",
+                "companies"
+            };
+            
+            for (String table : tables) {
+                try {
+                    stmt.executeUpdate("DROP TABLE IF EXISTS " + table + " CASCADE");
+                } catch (SQLException e) {
+                    // Ignore errors if table doesn't exist
+                    System.out.println("⚠️ Could not drop table " + table + ": " + e.getMessage());
+                }
+            }
         }
     }
 }

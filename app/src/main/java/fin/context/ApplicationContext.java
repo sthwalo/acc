@@ -22,13 +22,20 @@ public class ApplicationContext {
     private final String dbUrl;
     
     public ApplicationContext() {
-        // Test database connection first
-        if (!DatabaseConfig.testConnection()) {
-            throw new RuntimeException("Failed to connect to database");
+        // Check if we're in test mode and use test database URL
+        String testDbUrl = System.getProperty("fin.database.test.url");
+        if (testDbUrl != null && !testDbUrl.isEmpty()) {
+            this.dbUrl = testDbUrl;
+            System.out.println("🧪 Using test database: " + testDbUrl);
+        } else {
+            // Test database connection first
+            if (!DatabaseConfig.testConnection()) {
+                throw new RuntimeException("Failed to connect to database");
+            }
+            
+            this.dbUrl = DatabaseConfig.getDatabaseUrl();
+            System.out.println("🔌 Application connected to: " + DatabaseConfig.getDatabaseType());
         }
-        
-        this.dbUrl = DatabaseConfig.getDatabaseUrl();
-        System.out.println("🔌 Application connected to: " + DatabaseConfig.getDatabaseType());
         
         initializeServices();
         initializeUIComponents();

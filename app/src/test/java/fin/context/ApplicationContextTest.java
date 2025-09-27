@@ -43,15 +43,16 @@ class ApplicationContextTest {
     
     @BeforeAll
     static void setUpClass() throws Exception {
+        // TestDatabaseConfig will read TEST_DATABASE_* environment variables
         TestConfiguration.setupTestDatabase();
-        // Set test database URL for dependency injection
-        System.setProperty("fin.database.url", TestConfiguration.TEST_DB_URL);
+        // Set test database URL for ApplicationContext dependency injection
+        System.setProperty("fin.database.test.url", TestConfiguration.TEST_DB_URL);
     }
     
     @AfterAll
     static void tearDownClass() throws Exception {
         TestConfiguration.cleanupTestDatabase();
-        System.clearProperty("fin.database.url");
+        System.clearProperty("fin.database.test.url");
     }
     
     @BeforeEach
