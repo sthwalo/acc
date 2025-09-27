@@ -26,13 +26,12 @@ import java.sql.Statement;
 
 /**
  * Database configuration and connection management
- * Supports both PostgreSQL (production) and SQLite (testing)
+ * Supports PostgreSQL database connections
  */
 public class DatabaseConfig {
     private static String databaseUrl;
     private static String databaseUser;
     private static String databasePassword;
-    private static boolean usePostgreSQL = true;
     
     static {
         initializeConfiguration();
@@ -87,16 +86,6 @@ public class DatabaseConfig {
             }
         }
         
-        // Check if we should use SQLite for testing
-        String useSqlite = System.getProperty("test.database", "false");
-        if ("true".equals(useSqlite)) {
-            usePostgreSQL = false;
-            databaseUrl = "jdbc:sqlite:test.db";
-            databaseUser = null;
-            databasePassword = null;
-            return;
-        }
-        
         databaseUrl = dbUrl;
         System.out.println("🔍 Final databaseUrl: " + databaseUrl);
         
@@ -118,25 +107,15 @@ public class DatabaseConfig {
         } catch (Exception e) {
             System.err.println("❌ Failed to connect to PostgreSQL: " + e.getMessage());
             e.printStackTrace();
-            System.err.println("🔄 Falling back to SQLite for development...");
-            
-            usePostgreSQL = false;
-            databaseUrl = "jdbc:sqlite:fin_database.db";
-            databaseUser = null;
-            databasePassword = null;
+            throw new RuntimeException("Database connection failed: " + e.getMessage());
         }
     }
     
     /**
      * Get a database connection
-     * Uses connection pool for PostgreSQL, direct connection for SQLite
      */
     public static Connection getConnection() throws SQLException {
-        if (usePostgreSQL) {
-            return DriverManager.getConnection(databaseUrl, databaseUser, databasePassword);
-        } else {
-            return DriverManager.getConnection(databaseUrl);
-        }
+        return DriverManager.getConnection(databaseUrl, databaseUser, databasePassword);
     }
     
     /**
@@ -150,14 +129,14 @@ public class DatabaseConfig {
      * Check if using PostgreSQL
      */
     public static boolean isUsingPostgreSQL() {
-        return usePostgreSQL;
+        return true;
     }
     
     /**
      * Get database type for SQL syntax adjustments
      */
     public static String getDatabaseType() {
-        return usePostgreSQL ? "postgresql" : "sqlite";
+        return "postgresql";
     }
     
     /**
@@ -174,13 +153,13 @@ public class DatabaseConfig {
     public static boolean testConnection() {
         try (Connection conn = getConnection();
              Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(usePostgreSQL ? "SELECT 1" : "SELECT 1")) {
+             ResultSet rs = stmt.executeQuery("SELECT 1")) {
             
             boolean success = rs.next() && rs.getInt(1) == 1;
             
             if (success) {
                 System.out.println("✅ Database connection test successful");
-                System.out.println("📊 Using: " + (usePostgreSQL ? "PostgreSQL" : "SQLite"));
+                System.out.println("📊 Using: PostgreSQL");
             }
             
             return success;
@@ -195,24 +174,20 @@ public class DatabaseConfig {
      * Get appropriate SQL syntax for auto-increment
      */
     public static String getAutoIncrementSyntax() {
-        return usePostgreSQL ? "SERIAL PRIMARY KEY" : "INTEGER PRIMARY KEY AUTOINCREMENT";
+        return "SERIAL PRIMARY KEY";
     }
     
     /**
      * Get appropriate SQL syntax for boolean values
      */
     public static String getBooleanSyntax(boolean value) {
-        if (usePostgreSQL) {
-            return value ? "TRUE" : "FALSE";
-        } else {
-            return value ? "1" : "0";
-        }
+        return value ? "TRUE" : "FALSE";
     }
     
     /**
      * Get appropriate SQL syntax for current timestamp
      */
     public static String getCurrentTimestampSyntax() {
-        return usePostgreSQL ? "CURRENT_TIMESTAMP" : "datetime('now')";
+        return "CURRENT_TIMESTAMP";
     }
 }

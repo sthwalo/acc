@@ -95,23 +95,24 @@ public class Payslip {
     
     // Business methods
     public void calculateTotals() {
-        // Calculate total earnings
-        this.totalEarnings = grossSalary
-            .add(housingAllowance)
-            .add(transportAllowance)
-            .add(medicalAllowance)
-            .add(otherAllowances)
-            .add(commission)
-            .add(bonus)
-            .add(overtimeAmount);
+        // Calculate total earnings - handle null grossSalary
+        BigDecimal baseSalary = (grossSalary != null) ? grossSalary : BigDecimal.ZERO;
+        this.totalEarnings = baseSalary
+            .add(housingAllowance != null ? housingAllowance : BigDecimal.ZERO)
+            .add(transportAllowance != null ? transportAllowance : BigDecimal.ZERO)
+            .add(medicalAllowance != null ? medicalAllowance : BigDecimal.ZERO)
+            .add(otherAllowances != null ? otherAllowances : BigDecimal.ZERO)
+            .add(commission != null ? commission : BigDecimal.ZERO)
+            .add(bonus != null ? bonus : BigDecimal.ZERO)
+            .add(overtimeAmount != null ? overtimeAmount : BigDecimal.ZERO);
         
         // Calculate total deductions
-        this.totalDeductions = payeeTax
-            .add(uifEmployee)
-            .add(medicalAid)
-            .add(pensionFund)
-            .add(loanDeduction)
-            .add(otherDeductions);
+        this.totalDeductions = (payeeTax != null ? payeeTax : BigDecimal.ZERO)
+            .add(uifEmployee != null ? uifEmployee : BigDecimal.ZERO)
+            .add(medicalAid != null ? medicalAid : BigDecimal.ZERO)
+            .add(pensionFund != null ? pensionFund : BigDecimal.ZERO)
+            .add(loanDeduction != null ? loanDeduction : BigDecimal.ZERO)
+            .add(otherDeductions != null ? otherDeductions : BigDecimal.ZERO);
         
         // Calculate net pay
         this.netPay = totalEarnings.subtract(totalDeductions);

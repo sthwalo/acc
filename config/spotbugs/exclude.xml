@@ -2,11 +2,46 @@
 <FindBugsFilter>
     <!-- Exclude mutable object exposure issues in model classes -->
     <Match>
-        <Class name="fin.model.*"/>
-        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
-    </Match>ses from SpotBugs analysis -->
+        <Class name="fin.model.JournalEntry"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
     <Match>
-        <Class name="~.*\.Test.*"/>
+        <Class name="fin.model.JournalEntry"/>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+    <Match>
+        <Class name="fin.model.Account"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Class name="fin.model.Account"/>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+    <Match>
+        <Class name="fin.model.AccountCategory"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Class name="fin.model.AccountCategory"/>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+    <Match>
+        <Class name="fin.model.TransactionMappingRule"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Class name="fin.model.TransactionMappingRule"/>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+
+    <!-- Exclude test classes from SpotBugs analysis -->
+    <Match>
+        <Class name="~.*Test.*"/>
+        <Bug pattern="OBL_UNSATISFIED_OBLIGATION"/>
+    </Match>
+    <Match>
+        <Class name="~.*Test.*"/>
+        <Bug pattern="ODR_OPEN_DATABASE_RESOURCE"/>
     </Match>
 
     <!-- Exclude generated classes -->

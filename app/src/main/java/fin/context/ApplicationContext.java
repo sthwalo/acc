@@ -2,6 +2,7 @@ package fin.context;
 
 import fin.config.DatabaseConfig;
 import fin.controller.*;
+import fin.repository.CompanyRepository;
 import fin.service.*;
 import fin.state.ApplicationState;
 import fin.ui.ConsoleMenu;
@@ -78,8 +79,15 @@ public class ApplicationContext {
         CsvExportService csvExportService = new CsvExportService(companyService);
         register(CsvExportService.class, csvExportService);
         
+        // Payroll service dependencies
+        CompanyRepository companyRepository = new CompanyRepository(dbUrl);
+        register(CompanyRepository.class, companyRepository);
+        
+        PayslipPdfService payslipPdfService = new PayslipPdfService(companyRepository);
+        register(PayslipPdfService.class, payslipPdfService);
+        
         // Payroll service
-        PayrollService payrollService = new PayrollService(dbUrl);
+        PayrollService payrollService = new PayrollService(dbUrl, companyRepository, payslipPdfService, null);
         register(PayrollService.class, payrollService);
         
         System.out.println("📦 Core services initialized");

@@ -157,11 +157,11 @@ public class JournalEntry {
     }
     
     public List<JournalEntryLine> getLines() {
-        return lines;
+        return new ArrayList<>(lines);
     }
     
     public void setLines(List<JournalEntryLine> lines) {
-        this.lines = lines;
+        this.lines = new ArrayList<>(lines);
     }
     
     @Override

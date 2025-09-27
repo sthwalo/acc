@@ -46,7 +46,6 @@ dependencies {
     // Database drivers
     implementation("org.postgresql:postgresql:42.7.3")  // PostgreSQL driver
     implementation("com.zaxxer:HikariCP:5.0.1")         // Connection pooling
-    implementation("org.xerial:sqlite-jdbc:3.36.0")     // Keep SQLite for testing
     
     // PDF libraries
     implementation("org.apache.pdfbox:pdfbox:3.0.0")  // Latest stable version
@@ -154,6 +153,10 @@ tasks.register<Jar>("fatJar") {
             "Main-Class" to application.mainClass
         ))
     }
-    from(configurations.runtimeClasspath.get().map { if (it.isDirectory) it else zipTree(it) })
+    from(configurations.runtimeClasspath.get().map { if (it.isDirectory) it else zipTree(it) }) {
+        exclude("META-INF/*.SF")
+        exclude("META-INF/*.DSA")
+        exclude("META-INF/*.RSA")
+    }
     with(tasks.jar.get())
 }
