@@ -131,7 +131,7 @@ git ls-tree -r --name-only HEAD | grep -E "\.(pdf|db|csv)$"
    ```
 
 2. **Database Setup:**
-   - Create new SQLite database using migration scripts
+   - Set up PostgreSQL database with migration scripts
    - Import safe sample data for testing
    - Configure local environment variables
 

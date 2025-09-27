@@ -43,68 +43,16 @@ public class CompanyService {
     }
     
     private void initializeDatabase() {
-        // Skip table creation if using PostgreSQL or H2 test database
-        if (DatabaseConfig.isUsingPostgreSQL() || isH2Database()) {
-            System.out.println("📊 Using " + (isH2Database() ? "H2" : "PostgreSQL") + " - schema already exists");
+        // Skip table creation if using PostgreSQL since schema already exists
+        if (DatabaseConfig.isUsingPostgreSQL()) {
+            System.out.println("📊 Using PostgreSQL - schema already exists");
             return;
         }
-        
-        // SQLite table creation (for testing only)
-        try (Connection conn = DriverManager.getConnection(dbUrl);
-             Statement stmt = conn.createStatement()) {
-            
-            // Create companies table
-            stmt.execute("CREATE TABLE IF NOT EXISTS companies (" +
-                    "id INTEGER PRIMARY KEY AUTOINCREMENT," +
-                    "name VARCHAR(255) NOT NULL," +
-                    "registration_number VARCHAR(50)," +
-                    "tax_number VARCHAR(50)," +
-                    "address TEXT," +
-                    "contact_email VARCHAR(255)," +
-                    "contact_phone VARCHAR(50)," +
-                    "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
-                    "updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP" +
-                    ")");
-            
-            // Create fiscal_periods table
-            stmt.execute("CREATE TABLE IF NOT EXISTS fiscal_periods (" +
-                    "id INTEGER PRIMARY KEY AUTOINCREMENT," +
-                    "company_id INTEGER NOT NULL," +
-                    "period_name VARCHAR(100) NOT NULL," +
-                    "start_date DATE NOT NULL," +
-                    "end_date DATE NOT NULL," +
-                    "is_closed BOOLEAN DEFAULT 0," +
-                    "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
-                    "FOREIGN KEY (company_id) REFERENCES companies(id)" +
-                    ")");
-            
-            // Create bank_accounts table
-            stmt.execute("CREATE TABLE IF NOT EXISTS bank_accounts (" +
-                    "id INTEGER PRIMARY KEY AUTOINCREMENT," +
-                    "company_id INTEGER NOT NULL," +
-                    "account_number VARCHAR(50) NOT NULL," +
-                    "account_name VARCHAR(255) NOT NULL," +
-                    "account_type VARCHAR(50)," +
-                    "bank_name VARCHAR(100)," +
-                    "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
-                    "FOREIGN KEY (company_id) REFERENCES companies(id)" +
-                    ")");
-            
-            System.out.println("📊 SQLite tables initialized");
-            
-        } catch (SQLException e) {
-            System.err.println("Error initializing database: " + e.getMessage());
-            throw new RuntimeException("Failed to initialize database", e);
-        }
+
+        // This should not happen since we only use PostgreSQL now
+        throw new RuntimeException("Unsupported database type. Only PostgreSQL is supported.");
     }
-    
-    /**
-     * Check if this service is using an H2 in-memory database
-     */
-    private boolean isH2Database() {
-        return dbUrl != null && (dbUrl.contains("h2") || dbUrl.contains(":mem:"));
-    }
-    
+
     public Company createCompany(Company company) {
         String sql = "INSERT INTO companies (name, registration_number, tax_number, address, " +
                 "contact_email, contact_phone, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)";

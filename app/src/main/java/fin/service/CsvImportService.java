@@ -36,49 +36,9 @@ public class CsvImportService {
             System.out.println("📊 Using PostgreSQL - bank_transactions table already exists");
             return;
         }
-        
-        // SQLite table creation (for testing only)
-        try (Connection connection = DriverManager.getConnection(dbUrl)) {
-            String createTableSQL = "CREATE TABLE IF NOT EXISTS bank_transactions (" +
-                    "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
-                    "company_id INTEGER NOT NULL, " +
-                    "bank_account_id INTEGER, " +
-                    "fiscal_period_id INTEGER NOT NULL, " +
-                    "transaction_date DATE NOT NULL, " +  // Changed to DATE type
-                    "details TEXT, " +
-                    "debit_amount REAL, " +
-                    "credit_amount REAL, " +
-                    "balance REAL, " +
-                    "service_fee INTEGER DEFAULT 0, " +
-                    "account_number TEXT, " +
-                    "statement_period TEXT, " +
-                    "source_file TEXT, " +
-                    "created_at DATETIME DEFAULT (datetime('now')), " +  // Use SQLite datetime function
-                    "FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE ON UPDATE CASCADE, " +
-                    "FOREIGN KEY (fiscal_period_id) REFERENCES fiscal_periods(id) ON DELETE RESTRICT ON UPDATE CASCADE, " +
-                    "FOREIGN KEY (bank_account_id) REFERENCES bank_accounts(id) ON DELETE SET NULL ON UPDATE CASCADE)";
-            
-            try (PreparedStatement statement = connection.prepareStatement(createTableSQL)) {
-                statement.executeUpdate();
-            }
-            
-            // Create indices for better performance
-            String[] indices = {
-                "CREATE INDEX IF NOT EXISTS idx_bank_transactions_company ON bank_transactions(company_id)",
-                "CREATE INDEX IF NOT EXISTS idx_bank_transactions_date ON bank_transactions(transaction_date)",
-                "CREATE INDEX IF NOT EXISTS idx_bank_transactions_fiscal_period ON bank_transactions(fiscal_period_id)"
-            };
-            
-            for (String index : indices) {
-                try (PreparedStatement statement = connection.prepareStatement(index)) {
-                    statement.executeUpdate();
-                }
-            }
-        } catch (SQLException e) {
-            System.err.println("Error initializing database: " + e.getMessage());
-            e.printStackTrace();
-            throw new RuntimeException("Failed to initialize database", e);
-        }
+
+        // This should not happen since we only use PostgreSQL now
+        throw new RuntimeException("Unsupported database type. Only PostgreSQL is supported.");
     }
     
     /**
@@ -108,7 +68,7 @@ public class CsvImportService {
                                 resultSet.getLong("bank_account_id") : null;
                         transaction.setBankAccountId(bankAccountId);
                         
-                        // Parse date from SQLite ISO8601 string
+                        // Parse date from database
                         String dateStr = resultSet.getString("transaction_date");
                         if (dateStr != null) {
                             transaction.setTransactionDate(LocalDate.parse(dateStr));
@@ -375,7 +335,7 @@ public class CsvImportService {
             } else {
                 pstmt.setNull(2, Types.INTEGER);
             }
-            // Store date in SQLite ISO8601 format: YYYY-MM-DD
+            // Store date in ISO format
             pstmt.setString(3, transaction.getTransactionDate().format(DateTimeFormatter.ISO_LOCAL_DATE));
             pstmt.setString(4, transaction.getDetails());
             if (transaction.getDebitAmount() != null) {

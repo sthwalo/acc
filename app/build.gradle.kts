@@ -36,7 +36,6 @@ dependencies {
     testImplementation(libs.junit.jupiter)
     testImplementation("org.mockito:mockito-core:5.5.0")
     testImplementation("org.mockito:mockito-junit-jupiter:5.5.0")
-    testImplementation("com.h2database:h2:2.2.224")  // H2 for testing
 
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 

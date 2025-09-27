@@ -32,79 +32,9 @@ public class DataManagementService {
             LOGGER.info("Using PostgreSQL - skipping table creation (schema already exists)");
             return;
         }
-        
-        // Create tables for SQLite only
-        String sql = 
-            "CREATE TABLE IF NOT EXISTS manual_invoices (" +
-            "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
-            "company_id INTEGER NOT NULL, " +
-            "invoice_number TEXT NOT NULL, " +
-            "invoice_date DATE NOT NULL, " +
-            "description TEXT, " +
-            "amount DECIMAL(15,2) NOT NULL, " +
-            "debit_account_id INTEGER NOT NULL, " +
-            "credit_account_id INTEGER NOT NULL, " +
-            "fiscal_period_id INTEGER NOT NULL, " +
-            "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
-            "updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
-            "UNIQUE(company_id, invoice_number), " +
-            "FOREIGN KEY(company_id) REFERENCES companies(id), " +
-            "FOREIGN KEY(debit_account_id) REFERENCES accounts(id), " +
-            "FOREIGN KEY(credit_account_id) REFERENCES accounts(id), " +
-            "FOREIGN KEY(fiscal_period_id) REFERENCES fiscal_periods(id)" +
-            "); " +
-            
-            "CREATE TABLE IF NOT EXISTS journal_entries (" +
-            "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
-            "company_id INTEGER NOT NULL, " +
-            "entry_number TEXT NOT NULL, " +
-            "entry_date DATE NOT NULL, " +
-            "description TEXT, " +
-            "fiscal_period_id INTEGER NOT NULL, " +
-            "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
-            "updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
-            "UNIQUE(company_id, entry_number), " +
-            "FOREIGN KEY(company_id) REFERENCES companies(id), " +
-            "FOREIGN KEY(fiscal_period_id) REFERENCES fiscal_periods(id)" +
-            "); " +
-            
-            "CREATE TABLE IF NOT EXISTS journal_entry_lines (" +
-            "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
-            "journal_entry_id INTEGER NOT NULL, " +
-            "account_id INTEGER NOT NULL, " +
-            "description TEXT, " +
-            "debit_amount DECIMAL(15,2) DEFAULT 0, " +
-            "credit_amount DECIMAL(15,2) DEFAULT 0, " +
-            "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
-            "FOREIGN KEY(journal_entry_id) REFERENCES journal_entries(id), " +
-            "FOREIGN KEY(account_id) REFERENCES accounts(id)" +
-            "); " +
-            
-            "CREATE TABLE IF NOT EXISTS data_corrections (" +
-            "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
-            "company_id INTEGER NOT NULL, " +
-            "transaction_id INTEGER NOT NULL, " +
-            "original_account_id INTEGER NOT NULL, " +
-            "new_account_id INTEGER NOT NULL, " +
-            "correction_reason TEXT NOT NULL, " +
-            "corrected_by TEXT NOT NULL, " +
-            "corrected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
-            "FOREIGN KEY(company_id) REFERENCES companies(id), " +
-            "FOREIGN KEY(transaction_id) REFERENCES bank_transactions(id), " +
-            "FOREIGN KEY(original_account_id) REFERENCES accounts(id), " +
-            "FOREIGN KEY(new_account_id) REFERENCES accounts(id)" +
-            ");";
 
-        try (Connection conn = DriverManager.getConnection(dbUrl);
-             Statement stmt = conn.createStatement()) {
-            
-            stmt.executeUpdate(sql);
-            LOGGER.info("Data management tables created successfully");
-            
-        } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Error initializing data management tables", e);
-            throw new RuntimeException("Failed to initialize data management tables", e);
-        }
+        // This should not happen since we only use PostgreSQL now
+        throw new RuntimeException("Unsupported database type. Only PostgreSQL is supported.");
     }
 
     /**

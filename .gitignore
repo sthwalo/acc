@@ -26,8 +26,6 @@ license_verification.log
 # Database files containing real financial data
 .env
 *.db
-*.sqlite
-*.sqlite3
 fin_database.db
 app/fin_database.db
 dev-tools/commands.md

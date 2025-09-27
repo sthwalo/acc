@@ -364,7 +364,7 @@ The FIN application represents the **current working implementation** of core co
 ┌─────────────────────────────────────────────────────────────┐
 │                      DATA LAYER                             │
 │  ┌─────────────────────────────────────────────────────┐   │
-│  │              SQLite Database                        │   │
+│  │              PostgreSQL Database                     │   │
 │  │  • companies                                        │   │
 │  │  • fiscal_periods                                   │   │
 │  │  • bank_transactions                                │   │
@@ -448,32 +448,32 @@ public class TransactionParsingContext {
 ```sql
 -- Core business entities
 CREATE TABLE companies (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id BIGSERIAL PRIMARY KEY,
     name TEXT NOT NULL,
     registration_number TEXT,
     tax_number TEXT,
     address TEXT,
     contact_email TEXT,
     contact_phone TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE fiscal_periods (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    company_id INTEGER NOT NULL,
+    id BIGSERIAL PRIMARY KEY,
+    company_id BIGINT NOT NULL,
     period_name TEXT NOT NULL,
-    start_date TEXT NOT NULL,
-    end_date TEXT NOT NULL,
-    is_closed INTEGER DEFAULT 0,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    is_closed BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (company_id) REFERENCES companies(id)
 );
 
 CREATE TABLE bank_transactions (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    company_id INTEGER NOT NULL,
-    fiscal_period_id INTEGER NOT NULL,
-    transaction_date TEXT NOT NULL,
+    id BIGSERIAL PRIMARY KEY,
+    company_id BIGINT NOT NULL,
+    fiscal_period_id BIGINT NOT NULL,
+    transaction_date DATE NOT NULL,
     details TEXT,
     debit_amount DECIMAL(15,2),
     credit_amount DECIMAL(15,2),
@@ -482,38 +482,38 @@ CREATE TABLE bank_transactions (
     account_number TEXT,
     statement_period TEXT,
     source_file TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (company_id) REFERENCES companies(id),
     FOREIGN KEY (fiscal_period_id) REFERENCES fiscal_periods(id)
 );
 
 -- Chart of accounts
 CREATE TABLE accounts (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    company_id INTEGER NOT NULL,
+    id BIGSERIAL PRIMARY KEY,
+    company_id BIGINT NOT NULL,
     account_code TEXT NOT NULL,
     account_name TEXT NOT NULL,
-    account_type_id INTEGER NOT NULL,
-    parent_account_id INTEGER,
+    account_type_id BIGINT NOT NULL,
+    parent_account_id BIGINT,
     balance DECIMAL(15,2) DEFAULT 0.00,
-    is_active INTEGER DEFAULT 1,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (company_id) REFERENCES companies(id),
     FOREIGN KEY (account_type_id) REFERENCES account_types(id)
 );
 
 -- Journal entries for manual accounting
 CREATE TABLE journal_entries (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    company_id INTEGER NOT NULL,
-    fiscal_period_id INTEGER NOT NULL,
+    id BIGSERIAL PRIMARY KEY,
+    company_id BIGINT NOT NULL,
+    fiscal_period_id BIGINT NOT NULL,
     entry_number TEXT NOT NULL,
-    entry_date TEXT NOT NULL,
+    entry_date DATE NOT NULL,
     description TEXT,
     total_debits DECIMAL(15,2) DEFAULT 0.00,
     total_credits DECIMAL(15,2) DEFAULT 0.00,
-    is_balanced INTEGER DEFAULT 0,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    is_balanced BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (company_id) REFERENCES companies(id),
     FOREIGN KEY (fiscal_period_id) REFERENCES fiscal_periods(id)
 );
@@ -702,7 +702,7 @@ app/src/test/java/fin/
 **Core Technologies**:
 - **Java 17** with modern language features
 - **Gradle 8.8** for build management
-- **SQLite** for embedded database
+- **PostgreSQL** for production database
 - **Apache PDFBox 3.0** for PDF processing
 - **JUnit 5** for comprehensive testing
 - **iText PDF** for report generation
@@ -710,7 +710,7 @@ app/src/test/java/fin/
 **Build Configuration**:
 ```gradle
 dependencies {
-    implementation("org.xerial:sqlite-jdbc:3.36.0")
+    implementation("org.postgresql:postgresql:42.7.3")
     implementation("org.apache.pdfbox:pdfbox:3.0.0")
     implementation("com.itextpdf:itextpdf:5.5.13.3")
     testImplementation("org.junit.jupiter:junit-jupiter")
@@ -736,7 +736,6 @@ FIN/
 ├── cash/                         # Cash-related documents  
 ├── reports/                      # Generated reports
 ├── docs/                         # Documentation
-├── fin_database.db               # SQLite database
 └── process_statement.sh          # Automation script
 ```
 
@@ -766,7 +765,7 @@ FIN/
 | **Document Upload Interface** | ✅ Implemented | Console-based file path input, validation |
 | **AI Document Processing** | ⚠️ Partial | PDF text extraction, pattern recognition (no ML) |
 | **Structured Data Review** | ✅ Implemented | Console-based data display and correction |
-| **Financial Data Storage** | ✅ Implemented | SQLite with comprehensive schema |
+| **Financial Data Storage** | ✅ Implemented | PostgreSQL with comprehensive schema |
 | **Automated Accounting** | ✅ Implemented | Categorization, reconciliation, reporting |
 | **Output Generation** | ✅ Implemented | Financial reports, CSV export |
 
