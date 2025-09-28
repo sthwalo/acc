@@ -321,6 +321,164 @@ public class PayrollService {
         return periods;
     }
     
+    /**
+     * Delete a payroll period (only if it's in OPEN status)
+     */
+    public void deletePayrollPeriod(Long periodId, Long companyId) {
+        // First check if the period exists and can be deleted
+        Optional<PayrollPeriod> periodOpt = getPayrollPeriodById(periodId);
+        if (periodOpt.isEmpty()) {
+            throw new RuntimeException("Payroll period not found");
+        }
+        
+        PayrollPeriod period = periodOpt.get();
+        
+        // Verify the period belongs to the company
+        if (!period.getCompanyId().equals(companyId)) {
+            throw new RuntimeException("Payroll period does not belong to this company");
+        }
+        
+        // Only allow deletion of OPEN periods (not processed)
+        if (period.getStatus() != PayrollPeriod.PayrollStatus.OPEN) {
+            throw new RuntimeException("Cannot delete payroll period with status: " + period.getStatus() + 
+                                     ". Only OPEN periods can be deleted.");
+        }
+        
+        String sql = "DELETE FROM payroll_periods WHERE id = ? AND company_id = ?";
+        
+        try (Connection conn = DriverManager.getConnection(dbUrl);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setLong(1, periodId);
+            pstmt.setLong(2, companyId);
+            
+            int rowsAffected = pstmt.executeUpdate();
+            if (rowsAffected == 0) {
+                throw new RuntimeException("Payroll period not found or could not be deleted");
+            }
+            
+            LOGGER.info("Deleted payroll period: " + period.getPeriodName());
+            
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error deleting payroll period", e);
+            throw new RuntimeException("Failed to delete payroll period: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Force delete a payroll period regardless of status (DANGER: This will delete processed periods)
+     */
+    public void forceDeletePayrollPeriod(Long periodId, Long companyId) {
+        // First check if the period exists
+        Optional<PayrollPeriod> periodOpt = getPayrollPeriodById(periodId);
+        if (periodOpt.isEmpty()) {
+            throw new RuntimeException("Payroll period not found");
+        }
+        
+        PayrollPeriod period = periodOpt.get();
+        
+        // Verify the period belongs to the company
+        if (!period.getCompanyId().equals(companyId)) {
+            throw new RuntimeException("Payroll period does not belong to this company");
+        }
+        
+        // WARNING: This will delete the period regardless of status
+        // Also delete associated payslips and journal entries
+        try (Connection conn = DriverManager.getConnection(dbUrl)) {
+            conn.setAutoCommit(false);
+            
+            try {
+                // Delete associated payslips first
+                String deletePayslipsSql = "DELETE FROM payslips WHERE payroll_period_id = ?";
+                try (PreparedStatement pstmt = conn.prepareStatement(deletePayslipsSql)) {
+                    pstmt.setLong(1, periodId);
+                    int payslipsDeleted = pstmt.executeUpdate();
+                    LOGGER.info("Deleted " + payslipsDeleted + " payslips for period: " + period.getPeriodName());
+                }
+                
+                // Delete associated payroll journal entries
+                String deleteJournalSql = "DELETE FROM payroll_journal_entries WHERE payroll_period_id = ?";
+                try (PreparedStatement pstmt = conn.prepareStatement(deleteJournalSql)) {
+                    pstmt.setLong(1, periodId);
+                    int journalEntriesDeleted = pstmt.executeUpdate();
+                    LOGGER.info("Deleted " + journalEntriesDeleted + " journal entries for period: " + period.getPeriodName());
+                }
+                
+                // Delete the payroll period
+                String deletePeriodSql = "DELETE FROM payroll_periods WHERE id = ? AND company_id = ?";
+                try (PreparedStatement pstmt = conn.prepareStatement(deletePeriodSql)) {
+                    pstmt.setLong(1, periodId);
+                    pstmt.setLong(2, companyId);
+                    
+                    int rowsAffected = pstmt.executeUpdate();
+                    if (rowsAffected == 0) {
+                        throw new RuntimeException("Payroll period not found or could not be deleted");
+                    }
+                }
+                
+                conn.commit();
+                LOGGER.warning("FORCE DELETED payroll period: " + period.getPeriodName() + " (Status: " + period.getStatus() + ")");
+                
+            } catch (Exception e) {
+                conn.rollback();
+                throw e;
+            }
+            
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error force deleting payroll period", e);
+            throw new RuntimeException("Failed to force delete payroll period: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Force delete all payroll periods for a specific month and year
+     */
+    public void forceDeleteAllPayrollPeriodsForMonth(Long companyId, int year, int month) {
+        String sql = "SELECT id, period_name, status FROM payroll_periods WHERE company_id = ? AND EXTRACT(YEAR FROM pay_date) = ? AND EXTRACT(MONTH FROM pay_date) = ?";
+        
+        List<PayrollPeriod> periodsToDelete = new ArrayList<>();
+        
+        try (Connection conn = DriverManager.getConnection(dbUrl);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setLong(1, companyId);
+            pstmt.setInt(2, year);
+            pstmt.setInt(3, month);
+            
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                PayrollPeriod period = new PayrollPeriod();
+                period.setId(rs.getLong("id"));
+                period.setPeriodName(rs.getString("period_name"));
+                period.setStatus(PayrollPeriod.PayrollStatus.valueOf(rs.getString("status")));
+                periodsToDelete.add(period);
+            }
+            
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error finding payroll periods for month", e);
+            throw new RuntimeException("Failed to find payroll periods: " + e.getMessage());
+        }
+        
+        if (periodsToDelete.isEmpty()) {
+            LOGGER.info("No payroll periods found for " + year + "-" + String.format("%02d", month));
+            return;
+        }
+        
+        LOGGER.warning("FORCE DELETING " + periodsToDelete.size() + " payroll periods for " + year + "-" + String.format("%02d", month));
+        
+        for (PayrollPeriod period : periodsToDelete) {
+            try {
+                forceDeletePayrollPeriod(period.getId(), companyId);
+                LOGGER.warning("Deleted period: " + period.getPeriodName() + " (Status: " + period.getStatus() + ")");
+            } catch (Exception e) {
+                LOGGER.log(Level.SEVERE, "Failed to delete period " + period.getPeriodName(), e);
+                // Continue with other periods
+            }
+        }
+        
+        LOGGER.warning("Completed force deletion of " + periodsToDelete.size() + " payroll periods for " + year + "-" + String.format("%02d", month));
+    }
+    
     // ===== PAYROLL PROCESSING =====
     
     /**

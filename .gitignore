@@ -60,6 +60,8 @@ scripts/frontend-licensing-*.sh
 scripts/*_data_*.sh
 scripts/*_db_*.sh
 scripts/*_credentials_*.sh
+run.sh
+runfast.sh
 
 # Employee data files (PII - Personal Identifiable Information)
 input/EmployeesData.txt
