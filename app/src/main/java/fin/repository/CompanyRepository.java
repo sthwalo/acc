@@ -84,15 +84,21 @@ public class CompanyRepository implements BaseRepository<Company, Long> {
         try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
+            System.out.println("🔍 CompanyRepository.findById: Looking for company ID " + id + " with URL: " + dbUrl);
             stmt.setLong(1, id);
             ResultSet rs = stmt.executeQuery();
             
             if (rs.next()) {
-                return Optional.of(mapResultSetToCompany(rs));
+                Company company = mapResultSetToCompany(rs);
+                System.out.println("✅ CompanyRepository.findById: Found company: " + company.getName());
+                return Optional.of(company);
             }
             
+            System.out.println("❌ CompanyRepository.findById: No company found with ID " + id);
             return Optional.empty();
         } catch (SQLException e) {
+            System.out.println("💥 CompanyRepository.findById: SQL Exception for ID " + id + ": " + e.getMessage());
+            e.printStackTrace();
             throw new RuntimeException("Error finding company by id", e);
         }
     }
@@ -160,7 +166,15 @@ public class CompanyRepository implements BaseRepository<Company, Long> {
         company.setAddress(rs.getString("address"));
         company.setContactEmail(rs.getString("contact_email"));
         company.setContactPhone(rs.getString("contact_phone"));
-        company.setLogoPath(rs.getString("logo_path"));
+        
+        // Handle optional logo_path column (may not exist in older database schemas)
+        try {
+            company.setLogoPath(rs.getString("logo_path"));
+        } catch (SQLException e) {
+            // Column doesn't exist, set to null
+            company.setLogoPath(null);
+        }
+        
         return company;
     }
 

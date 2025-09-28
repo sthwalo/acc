@@ -100,7 +100,10 @@ application {
 
 // Configure the run task to pass system properties
 tasks.named<JavaExec>("run") {
-    systemProperties = System.getProperties().toMap() as Map<String, Any>
+    systemProperties = System.getProperties()
+        .filter { it.key is String }
+        .mapKeys { it.key as String }
+        .mapValues { it.value as Any }
     // Auto-confirm license for gradle run to avoid NoSuchElementException
     systemProperty("fin.license.autoconfirm", "true")
     
@@ -119,7 +122,36 @@ tasks.register<JavaExec>("runClassificationTest") {
     description = "Run the ClassificationTest"
     classpath = sourceSets["main"].runtimeClasspath + sourceSets["test"].runtimeClasspath
     mainClass.set("fin.service.ClassificationTest")
-    systemProperties = System.getProperties().toMap() as Map<String, Any>
+    systemProperties = System.getProperties()
+        .filter { it.key is String }
+        .mapKeys { it.key as String }
+        .mapValues { it.value as Any }
+    systemProperty("fin.license.autoconfirm", "true")
+}
+
+// Add task for running TestDatabaseSetup
+tasks.register<JavaExec>("runTestDatabaseSetup") {
+    group = "application"
+    description = "Run the TestDatabaseSetup"
+    classpath = sourceSets["main"].runtimeClasspath + sourceSets["test"].runtimeClasspath
+    mainClass.set("fin.TestDatabaseSetup")
+    systemProperties = System.getProperties()
+        .filter { it.key is String }
+        .mapKeys { it.key as String }
+        .mapValues { it.value as Any }
+    systemProperty("fin.license.autoconfirm", "true")
+}
+
+// Add task for running TestConfiguration
+tasks.register<JavaExec>("runTestConfiguration") {
+    group = "application"
+    description = "Run the TestConfiguration main method to test functionality"
+    classpath = sourceSets["main"].runtimeClasspath + sourceSets["test"].runtimeClasspath
+    mainClass.set("fin.TestConfiguration")
+    systemProperties = System.getProperties()
+        .filter { it.key is String }
+        .mapKeys { it.key as String }
+        .mapValues { it.value as Any }
     systemProperty("fin.license.autoconfirm", "true")
 }
 

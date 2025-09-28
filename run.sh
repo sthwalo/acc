@@ -7,6 +7,15 @@ echo "🚀 Starting FIN Financial Management System"
 echo "📊 Console Application"
 echo "==============================================="
 
+# Clean and build the project first
+echo "🔨 Building project..."
+./gradlew clean build -x test
+if [ $? -ne 0 ]; then
+    echo "❌ Build failed. Exiting."
+    exit 1
+fi
+echo "✅ Build successful."
+
 # Set memory options
 JAVA_OPTS="-Xmx1g -XX:MaxMetaspaceSize=256m -Dfin.license.autoconfirm=true"
 

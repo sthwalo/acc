@@ -50,14 +50,14 @@ public class TestDatabaseConfig {
     }
 
     private static void initializeTestConfiguration() {
-        // Read test database configuration from environment variables
-        String dbUrl = System.getenv("TEST_DATABASE_URL");
-        testDatabaseUser = System.getenv("TEST_DATABASE_USER");
-        testDatabasePassword = System.getenv("TEST_DATABASE_PASSWORD");
+        // Read test database configuration from system properties (set by TestConfiguration)
+        String dbUrl = System.getProperty("TEST_DATABASE_URL");
+        testDatabaseUser = System.getProperty("TEST_DATABASE_USER");
+        testDatabasePassword = System.getProperty("TEST_DATABASE_PASSWORD");
 
-        System.out.println("🧪 TestDatabaseConfig - TEST_DATABASE_URL from env: " + dbUrl);
-        System.out.println("🧪 TestDatabaseConfig - TEST_DATABASE_USER from env: " + testDatabaseUser);
-        System.out.println("🧪 TestDatabaseConfig - TEST_DATABASE_PASSWORD from env: " + (testDatabasePassword != null ? "[SET]" : "[NOT SET]"));
+        System.out.println("🧪 TestDatabaseConfig - TEST_DATABASE_URL from system property: " + dbUrl);
+        System.out.println("🧪 TestDatabaseConfig - TEST_DATABASE_USER from system property: " + testDatabaseUser);
+        System.out.println("🧪 TestDatabaseConfig - TEST_DATABASE_PASSWORD from system property: " + (testDatabasePassword != null ? "[SET]" : "[NOT SET]"));
 
         // Require environment variables - no hardcoded defaults
         if (dbUrl == null || testDatabaseUser == null || testDatabasePassword == null) {

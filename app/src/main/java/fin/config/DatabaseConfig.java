@@ -35,12 +35,22 @@ public class DatabaseConfig {
         initializeConfiguration();
     }
     
+    private static void initializeConfiguration() {
+        loadConfiguration();
+    }
+    
     /**
      * Load environment variables from .env file if it exists
      */
     private static void loadEnvironmentVariables() {
         try {
+            // Try current directory first (for production)
             java.io.File envFile = new java.io.File(".env");
+            if (!envFile.exists()) {
+                // Try parent directory (for tests running from app/ subdirectory)
+                envFile = new java.io.File("../.env");
+            }
+            
             if (envFile.exists()) {
                 java.util.Properties envProps = new java.util.Properties();
                 try (java.io.FileInputStream fis = new java.io.FileInputStream(envFile)) {
@@ -64,8 +74,15 @@ public class DatabaseConfig {
         }
     }
     
-    private static void initializeConfiguration() {
-        loadConfiguration();
+    /**
+     * Get configuration value from either system property or environment variable
+     */
+    private static String getConfigValue(String key) {
+        String value = System.getProperty(key);
+        if (value == null) {
+            value = System.getenv(key);
+        }
+        return value;
     }
     
     /**
@@ -77,8 +94,8 @@ public class DatabaseConfig {
         String testDbUrl = System.getProperty("fin.database.test.url");
         if (testDbUrl != null && !testDbUrl.isEmpty()) {
             databaseUrl = testDbUrl;
-            databaseUser = System.getenv("TEST_DATABASE_USER");
-            databasePassword = System.getenv("TEST_DATABASE_PASSWORD");
+            databaseUser = getConfigValue("TEST_DATABASE_USER");
+            databasePassword = getConfigValue("TEST_DATABASE_PASSWORD");
             System.out.println("🧪 DatabaseConfig using test database configuration");
             System.out.println("🔍 Test databaseUrl: " + databaseUrl);
             System.out.println("🔍 Test databaseUser: " + databaseUser);
@@ -86,9 +103,9 @@ public class DatabaseConfig {
         }
         
         // Read production database configuration from environment variables
-        String dbUrl = System.getenv("DATABASE_URL");
-        databaseUser = System.getenv("DATABASE_USER");
-        databasePassword = System.getenv("DATABASE_PASSWORD");
+        String dbUrl = getConfigValue("DATABASE_URL");
+        databaseUser = getConfigValue("DATABASE_USER");
+        databasePassword = getConfigValue("DATABASE_PASSWORD");
         
         System.out.println("🔍 DATABASE_URL from env: " + dbUrl);
         System.out.println("🔍 DATABASE_USER from env: " + databaseUser);
@@ -233,5 +250,13 @@ public class DatabaseConfig {
      */
     public static String getCurrentTimestampSyntax() {
         return "CURRENT_TIMESTAMP";
+    }
+    
+    /**
+     * Get a test database connection with explicit credentials
+     * Used by TestConfiguration to avoid interfering with production DatabaseConfig state
+     */
+    public static Connection getTestConnection(String url, String user, String password) throws SQLException {
+        return DriverManager.getConnection(url, user, password);
     }
 }

@@ -43,16 +43,18 @@ class ApplicationContextTest {
     
     @BeforeAll
     static void setUpClass() throws Exception {
-        // TestDatabaseConfig will read TEST_DATABASE_* environment variables
+        // Set test database properties before initializing ApplicationContext
+        System.setProperty("fin.database.test.url", "jdbc:postgresql://localhost:5432/drimacc_test");
+        System.setProperty("TEST_DATABASE_USER", "sthwalonyoni");
+        System.setProperty("TEST_DATABASE_PASSWORD", "Test1823");
+        
+        // Setup the test database using TestConfiguration
         TestConfiguration.setupTestDatabase();
-        // Set test database URL for ApplicationContext dependency injection
-        System.setProperty("fin.database.test.url", TestConfiguration.TEST_DB_URL);
     }
     
     @AfterAll
     static void tearDownClass() throws Exception {
         TestConfiguration.cleanupTestDatabase();
-        System.clearProperty("fin.database.test.url");
     }
     
     @BeforeEach

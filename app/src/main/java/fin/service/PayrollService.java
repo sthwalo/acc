@@ -19,6 +19,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.logging.Logger;
 import java.util.logging.Level;
+import java.io.*;
 
 /**
  * Comprehensive Payroll Service for FIN Financial Management System
@@ -27,30 +28,49 @@ import java.util.logging.Level;
 public class PayrollService {
     private static final Logger LOGGER = Logger.getLogger(PayrollService.class.getName());
     private final String dbUrl;
+    private final SARSTaxCalculator sarsTaxCalculator;
     private final CompanyRepository companyRepository;
     private final PayslipPdfService pdfService;
     private final EmailService emailService;
     
     public PayrollService() {
         this.dbUrl = DatabaseConfig.getDatabaseUrl();
+        this.sarsTaxCalculator = new SARSTaxCalculator();
         this.companyRepository = null;
         this.pdfService = null;
         this.emailService = null;
+        initializeTaxCalculator();
     }
     
     public PayrollService(String dbUrl) {
         this.dbUrl = dbUrl;
+        this.sarsTaxCalculator = new SARSTaxCalculator();
         this.companyRepository = null;
         this.pdfService = null;
         this.emailService = null;
+        initializeTaxCalculator();
     }
 
     public PayrollService(String dbUrl, CompanyRepository companyRepository, 
                          PayslipPdfService pdfService, EmailService emailService) {
         this.dbUrl = dbUrl;
+        this.sarsTaxCalculator = new SARSTaxCalculator();
         this.companyRepository = companyRepository;
         this.pdfService = pdfService;
         this.emailService = emailService;
+        initializeTaxCalculator();
+    }
+    
+    private void initializeTaxCalculator() {
+        try {
+            // Load tax tables from the PDF text file for accurate SARS 2026 calculations
+            String pdfTextPath = "input/PAYE-GEN-01-G01-A03-2026-Monthly-Tax-Deduction-Tables-External-Annexure.txt";
+            sarsTaxCalculator.loadTaxTablesFromPDFText(pdfTextPath);
+            System.out.println("✅ SARS Tax Calculator initialized with official 2026 tables");
+        } catch (IOException e) {
+            System.err.println("❌ Failed to load SARS tax tables: " + e.getMessage());
+            throw new RuntimeException("Tax calculator initialization failed", e);
+        }
     }
     
     public CompanyRepository getCompanyRepository() {
@@ -259,7 +279,8 @@ public class PayrollService {
             if (rs.next()) {
                 period.setId(rs.getLong("id"));
                 LOGGER.info("Created payroll period: " + period.getPeriodName());
-                return period;
+                // Retrieve the complete period data including fiscal_period_id
+                return getPayrollPeriodById(period.getId()).orElse(period);
             }
             
         } catch (SQLException e) {
@@ -440,7 +461,7 @@ public class PayrollService {
     }
     
     /**
-     * Calculate payslip for an employee
+     * Calculate payslip for an employee using SARSTaxCalculator
      */
     private Payslip calculatePayslip(Employee employee, PayrollPeriod period) {
         String payslipNumber = generatePayslipNumber(employee, period);
@@ -454,13 +475,16 @@ public class PayrollService {
         
         // TODO: Add overtime calculations, allowances, etc.
         
-        // Calculate PAYE tax
-        BigDecimal payeeTax = calculatePayeeTax(grossSalary, employee.getTaxRebateCode());
+        // Calculate PAYE tax using SARSTaxCalculator
+        double grossDouble = grossSalary.doubleValue();
+        double payeDouble = sarsTaxCalculator.findPAYE(grossDouble);
+        BigDecimal payeeTax = BigDecimal.valueOf(payeDouble);
         payslip.setPayeeTax(payeeTax);
         
-        // Calculate UIF
-        BigDecimal uifEmployee = calculateUifEmployee(grossSalary);
-        BigDecimal uifEmployer = calculateUifEmployer(grossSalary);
+        // Calculate UIF using SARSTaxCalculator (same for employee and employer)
+        double uifDouble = sarsTaxCalculator.calculateUIF(grossDouble);
+        BigDecimal uifEmployee = BigDecimal.valueOf(uifDouble);
+        BigDecimal uifEmployer = BigDecimal.valueOf(uifDouble);
         payslip.setUifEmployee(uifEmployee);
         payslip.setUifEmployer(uifEmployer);
         
@@ -470,73 +494,6 @@ public class PayrollService {
         payslip.setCreatedBy(period.getCreatedBy());
         
         return payslip;
-    }
-    
-    // ===== TAX CALCULATIONS =====
-    
-    /**
-     * Calculate PAYE tax for monthly salary
-     */
-    private BigDecimal calculatePayeeTax(BigDecimal monthlySalary, String taxRebateCode) {
-        // Simplified PAYE calculation for South African tax tables 2024
-        BigDecimal annualSalary = monthlySalary.multiply(BigDecimal.valueOf(12));
-        BigDecimal annualTax = BigDecimal.ZERO;
-        
-        // 2024 Tax Brackets
-        if (annualSalary.compareTo(BigDecimal.valueOf(237100)) <= 0) {
-            annualTax = annualSalary.multiply(BigDecimal.valueOf(0.18));
-        } else if (annualSalary.compareTo(BigDecimal.valueOf(370500)) <= 0) {
-            annualTax = BigDecimal.valueOf(42678)
-                .add(annualSalary.subtract(BigDecimal.valueOf(237100))
-                .multiply(BigDecimal.valueOf(0.26)));
-        } else if (annualSalary.compareTo(BigDecimal.valueOf(512800)) <= 0) {
-            annualTax = BigDecimal.valueOf(77362)
-                .add(annualSalary.subtract(BigDecimal.valueOf(370500))
-                .multiply(BigDecimal.valueOf(0.31)));
-        } else if (annualSalary.compareTo(BigDecimal.valueOf(673000)) <= 0) {
-            annualTax = BigDecimal.valueOf(121475)
-                .add(annualSalary.subtract(BigDecimal.valueOf(512800))
-                .multiply(BigDecimal.valueOf(0.36)));
-        } else if (annualSalary.compareTo(BigDecimal.valueOf(857900)) <= 0) {
-            annualTax = BigDecimal.valueOf(179147)
-                .add(annualSalary.subtract(BigDecimal.valueOf(673000))
-                .multiply(BigDecimal.valueOf(0.39)));
-        } else if (annualSalary.compareTo(BigDecimal.valueOf(1817000)) <= 0) {
-            annualTax = BigDecimal.valueOf(251258)
-                .add(annualSalary.subtract(BigDecimal.valueOf(857900))
-                .multiply(BigDecimal.valueOf(0.41)));
-        } else {
-            annualTax = BigDecimal.valueOf(644489)
-                .add(annualSalary.subtract(BigDecimal.valueOf(1817000))
-                .multiply(BigDecimal.valueOf(0.45)));
-        }
-        
-        // Apply primary rebate (simplified - should consider age)
-        BigDecimal primaryRebate = BigDecimal.valueOf(17235);
-        annualTax = annualTax.subtract(primaryRebate);
-        
-        if (annualTax.compareTo(BigDecimal.ZERO) < 0) {
-            annualTax = BigDecimal.ZERO;
-        }
-        
-        return annualTax.divide(BigDecimal.valueOf(12), 2, RoundingMode.HALF_UP);
-    }
-    
-    /**
-     * Calculate UIF employee contribution
-     */
-    private BigDecimal calculateUifEmployee(BigDecimal monthlySalary) {
-        BigDecimal uifMaxEarnings = BigDecimal.valueOf(17712); // 2024 monthly max
-        BigDecimal uifableIncome = monthlySalary.min(uifMaxEarnings);
-        return uifableIncome.multiply(BigDecimal.valueOf(0.01))
-                           .setScale(2, RoundingMode.HALF_UP);
-    }
-    
-    /**
-     * Calculate UIF employer contribution
-     */
-    private BigDecimal calculateUifEmployer(BigDecimal monthlySalary) {
-        return calculateUifEmployee(monthlySalary); // Same as employee contribution
     }
     
     // ===== JOURNAL ENTRY INTEGRATION =====
@@ -644,8 +601,8 @@ public class PayrollService {
     // ===== UTILITY METHODS =====
     
     private String generatePayslipNumber(Employee employee, PayrollPeriod period) {
-        return period.getPayDate().format(DateTimeFormatter.ofPattern("yyyyMM")) + 
-               "-" + employee.getEmployeeNumber();
+        return period.getPayDate().format(DateTimeFormatter.ofPattern("yyyyMM")) +
+               "-" + period.getId() + "-" + employee.getEmployeeNumber();
     }
     
     public Optional<PayrollPeriod> getPayrollPeriodById(Long periodId) {
@@ -759,7 +716,9 @@ public class PayrollService {
                 }
             }
         }
-    }    private void updatePayrollPeriodTotals(Connection conn, Long periodId, BigDecimal totalGross,
+    }
+    
+    private void updatePayrollPeriodTotals(Connection conn, Long periodId, BigDecimal totalGross,
                                          BigDecimal totalDeductions, BigDecimal totalNet,
                                          int employeeCount, String processedBy) throws SQLException {
         String sql = """
@@ -909,32 +868,204 @@ public class PayrollService {
     }
 
     /**
-     * Get payslips for a company
+     * Import employees from a tab-separated TXT file
+     * @param filePath Path to the employee data file
+     * @param companyId Company ID to assign employees to
+     * @return Number of employees imported
      */
-    public List<Payslip> getPayslips(Long companyId) {
-        String sql = """
-            SELECT * FROM payslips 
-            WHERE company_id = ? 
-            ORDER BY created_at DESC
-            """;
+    public int importEmployeesFromFile(String filePath, Long companyId) {
+        int importedCount = 0;
+        int skippedCount = 0;
         
-        List<Payslip> payslips = new ArrayList<>();
+        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+            String line;
+            boolean isFirstLine = true;
+            
+            while ((line = reader.readLine()) != null) {
+                // Skip header line
+                if (isFirstLine) {
+                    isFirstLine = false;
+                    continue;
+                }
+                
+                // Skip empty lines
+                if (line.trim().isEmpty()) {
+                    continue;
+                }
+                
+                try {
+                    Employee employee = parseEmployeeFromLine(line, companyId);
+                    if (employee != null) {
+                        // Check if employee already exists
+                        if (employeeExists(employee.getEmployeeNumber(), companyId)) {
+                            LOGGER.info("Employee already exists, skipping: " + employee.getEmployeeNumber() + " - " + employee.getFullName());
+                            skippedCount++;
+                        } else {
+                            createEmployee(employee);
+                            importedCount++;
+                            LOGGER.info("Imported employee: " + employee.getEmployeeNumber() + " - " + employee.getFullName());
+                        }
+                    }
+                } catch (Exception e) {
+                    LOGGER.warning("Failed to import employee from line: " + line.substring(0, Math.min(100, line.length())));
+                    LOGGER.warning("Error: " + e.getMessage());
+                }
+            }
+            
+            LOGGER.info("Successfully imported " + importedCount + " employees from " + filePath + " (skipped " + skippedCount + " existing)");
+            
+        } catch (IOException e) {
+            LOGGER.severe("Error reading employee file: " + e.getMessage());
+            throw new RuntimeException("Failed to import employees from file", e);
+        }
+        
+        return importedCount;
+    }
+    
+    /**
+     * Check if an employee already exists by employee number and company ID
+     */
+    private boolean employeeExists(String employeeNumber, Long companyId) {
+        String sql = "SELECT COUNT(*) FROM employees WHERE employee_number = ? AND company_id = ?";
         
         try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             
-            pstmt.setLong(1, companyId);
+            pstmt.setString(1, employeeNumber);
+            pstmt.setLong(2, companyId);
+            
             ResultSet rs = pstmt.executeQuery();
             
-            while (rs.next()) {
-                payslips.add(mapResultSetToPayslip(rs));
+            if (rs.next()) {
+                return rs.getInt(1) > 0;
             }
             
         } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Error getting payslips", e);
-            throw new RuntimeException("Failed to get payslips: " + e.getMessage());
+            LOGGER.log(Level.SEVERE, "Error checking if employee exists", e);
         }
         
-        return payslips;
+        return false;
+    }
+    
+    /**
+     * Parse a single line from the employee data file into an Employee object
+     */
+    private Employee parseEmployeeFromLine(String line, Long companyId) {
+        String[] fields = line.split("\t");
+        if (fields.length < 40) {
+            throw new IllegalArgumentException("Line does not have enough fields: " + fields.length);
+        }
+        
+        Employee employee = new Employee();
+        employee.setCompanyId(companyId);
+        employee.setCreatedBy("system");
+        
+        // Basic employee information
+        employee.setEmployeeNumber(fields[0].trim()); // Employee Code
+        employee.setLastName(fields[1].trim()); // Surname
+        
+        // Date of Birth
+        if (!fields[2].trim().isEmpty()) {
+            employee.setHireDate(LocalDate.parse(fields[2].trim())); // We'll use hire date for DOB for now
+        }
+        
+        // Date Engaged (Hire Date)
+        if (!fields[3].trim().isEmpty()) {
+            employee.setHireDate(LocalDate.parse(fields[3].trim()));
+        }
+        
+        employee.setTitle(fields[4].trim()); // Title
+        employee.setFirstName(fields[6].trim()); // First Name
+        employee.setSecondName(fields[7].trim()); // Second Name
+        
+        // Email
+        if (fields[24].trim().length() > 0) {
+            employee.setEmail(fields[24].trim());
+        }
+        
+        // Phone (use cell number)
+        if (fields[22].trim().length() > 0) {
+            employee.setPhone(fields[22].trim());
+        }
+        
+        // Position/Job Title
+        if (fields[28].trim().length() > 0) {
+            employee.setPosition(fields[28].trim());
+        } else {
+            employee.setPosition("Educator"); // Default position
+        }
+        
+        employee.setDepartment("Education"); // Default department
+        
+        // Tax Number (ID Number)
+        if (fields[9].trim().length() > 0) {
+            employee.setTaxNumber(fields[9].trim());
+        }
+        
+        // Basic Salary (Fixed Salary) - convert from string with comma decimal separator
+        if (fields[39].trim().length() > 0) {
+            String salaryStr = fields[39].trim().replace(",", ".");
+            try {
+                BigDecimal salary = new BigDecimal(salaryStr);
+                employee.setBasicSalary(salary);
+            } catch (NumberFormatException e) {
+                LOGGER.warning("Invalid salary format: " + salaryStr + " for employee " + employee.getEmployeeNumber());
+                employee.setBasicSalary(BigDecimal.ZERO);
+            }
+        } else {
+            employee.setBasicSalary(BigDecimal.ZERO);
+        }
+        
+        // Address Information (use residential address)
+        StringBuilder address = new StringBuilder();
+        if (fields[15].trim().length() > 0) address.append(fields[15].trim()).append(" "); // Unit Number
+        if (fields[16].trim().length() > 0) address.append(fields[16].trim()).append(" "); // Complex Name
+        if (fields[17].trim().length() > 0) address.append(fields[17].trim()).append(" "); // Street Number
+        if (fields[18].trim().length() > 0) address.append(fields[18].trim()).append(" "); // Street/Farm Name
+        if (fields[19].trim().length() > 0) address.append(fields[19].trim()).append(" "); // Suburb/District
+        employee.setAddressLine1(address.toString().trim());
+        employee.setCity(fields[20].trim()); // City/Town
+        employee.setPostalCode(fields[21].trim()); // Postal Code
+        employee.setCountry("ZA"); // Default to South Africa
+        
+        return employee;
+    }
+    
+    /**
+     * Clean up all processed payslips and reset payroll periods for testing
+     * WARNING: This will delete all payslip data and reset payroll processing status
+     */
+    public void cleanupAllPayslipsForTesting() {
+        String deletePayslips = "DELETE FROM payslips";
+        String deletePayrollJournalEntries = "DELETE FROM payroll_journal_entries";
+        String resetPayrollPeriods = "UPDATE payroll_periods SET status = 'CREATED', processed_at = NULL, processed_by = NULL, total_gross_pay = NULL, total_deductions = NULL, total_net_pay = NULL, employee_count = NULL";
+        
+        try (Connection conn = DriverManager.getConnection(dbUrl)) {
+            conn.setAutoCommit(false);
+            
+            try (PreparedStatement stmt1 = conn.prepareStatement(deletePayslips);
+                 PreparedStatement stmt2 = conn.prepareStatement(deletePayrollJournalEntries);
+                 PreparedStatement stmt3 = conn.prepareStatement(resetPayrollPeriods)) {
+                
+                int payslipsDeleted = stmt1.executeUpdate();
+                int journalEntriesDeleted = stmt2.executeUpdate();
+                int periodsReset = stmt3.executeUpdate();
+                
+                conn.commit();
+                
+                System.out.println("✅ Cleanup completed:");
+                System.out.println("   - Deleted " + payslipsDeleted + " payslips");
+                System.out.println("   - Deleted " + journalEntriesDeleted + " payroll journal entries");
+                System.out.println("   - Reset " + periodsReset + " payroll periods to CREATED status");
+                
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            }
+            
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error during payslip cleanup", e);
+            throw new RuntimeException("Failed to cleanup payslips: " + e.getMessage());
+        }
     }
 }
