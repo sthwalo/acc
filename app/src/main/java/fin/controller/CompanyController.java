@@ -140,6 +140,8 @@ public class CompanyController {
                     currentCompany.getContactEmail() != null ? currentCompany.getContactEmail() : "");
             String phone = inputHandler.getString("Contact phone", 
                     currentCompany.getContactPhone() != null ? currentCompany.getContactPhone() : "");
+            String logoPath = inputHandler.getString("Logo path (full file path to company logo)", 
+                    currentCompany.getLogoPath() != null ? currentCompany.getLogoPath() : "");
             
             currentCompany.setName(name);
             currentCompany.setRegistrationNumber(regNumber.isEmpty() ? null : regNumber);
@@ -147,6 +149,7 @@ public class CompanyController {
             currentCompany.setAddress(address.isEmpty() ? null : address);
             currentCompany.setContactEmail(email.isEmpty() ? null : email);
             currentCompany.setContactPhone(phone.isEmpty() ? null : phone);
+            currentCompany.setLogoPath(logoPath.isEmpty() ? null : logoPath);
             
             currentCompany = companyService.updateCompany(currentCompany);
             applicationState.setCurrentCompany(currentCompany);

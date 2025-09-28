@@ -1,7 +1,7 @@
 package fin.controller;
 
-import fin.controller.PayrollController;
 import fin.service.PayrollService;
+import fin.service.PayrollReportService;
 import fin.model.Employee;
 import fin.model.PayrollPeriod;
 import fin.ui.InputHandler;
@@ -15,6 +15,7 @@ import static org.mockito.Mockito.*;
 
 class PayrollControllerTest {
     @Mock PayrollService payrollService;
+    @Mock PayrollReportService payrollReportService;
     @Mock InputHandler inputHandler;
     @Mock OutputFormatter outputFormatter;
     @Mock Employee employee;
@@ -24,7 +25,7 @@ class PayrollControllerTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        payrollController = new PayrollController(payrollService, inputHandler, outputFormatter);
+        payrollController = new PayrollController(payrollService, payrollReportService, inputHandler, outputFormatter);
     }
 
     @Test
@@ -56,8 +57,8 @@ class PayrollControllerTest {
         when(period.getEndDate()).thenReturn(java.time.LocalDate.now());
         when(period.canBeProcessed()).thenReturn(true);
 
-        // Mock the menu choice: 4 for "Process Payroll", then 6 for "Back to main menu"
-        when(inputHandler.getInteger(anyString(), eq(1), eq(6))).thenReturn(4).thenReturn(6);
+        // Mock the menu choice: 3 for "Process Payroll", then 6 for "Back to main menu"
+        when(inputHandler.getInteger(anyString(), eq(1), eq(6))).thenReturn(3).thenReturn(6);
         // Mock the period selection: 1 for the first (and only) period
         when(inputHandler.getInteger(anyString(), eq(1), eq(1))).thenReturn(1);
         // Mock waitForEnter to do nothing

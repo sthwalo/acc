@@ -97,6 +97,10 @@ public class ApplicationContext {
         PayrollService payrollService = new PayrollService(dbUrl, companyRepository, payslipPdfService, null);
         register(PayrollService.class, payrollService);
         
+        // Payroll report service
+        PayrollReportService payrollReportService = new PayrollReportService(dbUrl);
+        register(PayrollReportService.class, payrollReportService);
+        
         System.out.println("📦 Core services initialized");
     }
     
@@ -199,6 +203,7 @@ public class ApplicationContext {
         // Payroll controller
         PayrollController payrollController = new PayrollController(
             get(PayrollService.class),
+            get(PayrollReportService.class),  // <-- Add this missing parameter
             inputHandler,
             outputFormatter
         );
@@ -276,6 +281,46 @@ public class ApplicationContext {
      */
     public InteractiveClassificationService getInteractiveClassificationService() {
         return get(InteractiveClassificationService.class);
+    }
+    
+    /**
+     * Get the payroll report service
+     */
+    public PayrollReportService getPayrollReportService() {
+        return new PayrollReportService(DatabaseConfig.getDatabaseUrl());
+    }
+
+    /**
+     * Get the payroll service
+     */
+    public PayrollService getPayrollService() {
+        return get(PayrollService.class);
+    }
+    
+    /**
+     * Get the payroll controller
+     */
+    public PayrollController getPayrollController() {
+        return new PayrollController(
+            getPayrollService(),
+            getPayrollReportService(),
+            getInputHandler(),
+            getOutputFormatter()
+        );
+    }
+    
+    /**
+     * Get the input handler
+     */
+    public InputHandler getInputHandler() {
+        return get(InputHandler.class);
+    }
+
+    /**
+     * Get the output formatter
+     */
+    public OutputFormatter getOutputFormatter() {
+        return get(OutputFormatter.class);
     }
     
     /**

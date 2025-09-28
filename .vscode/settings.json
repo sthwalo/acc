@@ -1,8 +1,19 @@
 {
     "java.configuration.updateBuildConfiguration": "interactive",
     "cSpell.words": [
-        "jdbc"
+        "jdbc",
+        "Libharu",
+        "pdftotext"
     ],
     "java.compile.nullAnalysis.mode": "automatic",
-    "java.debug.settings.onBuildFailureProceed": true
+    "java.debug.settings.onBuildFailureProceed": true,
+
+    // Added to force VS Code Java extension to use JDK 17
+    "java.home": "/Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home",
+    "java.configuration.runtimes": [
+        {
+            "name": "JavaSE-17",
+            "path": "/Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home"
+        }
+    ]
 }
