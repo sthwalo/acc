@@ -306,13 +306,17 @@ public class PayrollService {
      * Process payroll for a specific period
      */
     public void processPayroll(Long payrollPeriodId, String processedBy) {
+        // Get company info BEFORE starting transaction to avoid connection issues
+        PayrollPeriod period = getPayrollPeriodById(payrollPeriodId)
+            .orElseThrow(() -> new RuntimeException("Payroll period not found"));
+
+        Company company = companyRepository.findById(period.getCompanyId())
+            .orElseThrow(() -> new RuntimeException("Company not found"));
+
         try (Connection conn = DriverManager.getConnection(dbUrl)) {
             conn.setAutoCommit(false);
 
             try {
-                PayrollPeriod period = getPayrollPeriodById(payrollPeriodId)
-                    .orElseThrow(() -> new RuntimeException("Payroll period not found"));
-
                 // Check if payroll has already been processed
                 if (period.getStatus() == PayrollPeriod.PayrollStatus.PROCESSED) {
                     throw new RuntimeException("Payroll period has already been processed. Use 'Generate Payslip PDFs' to regenerate PDFs for processed payrolls.");
@@ -329,10 +333,6 @@ public class PayrollService {
                 BigDecimal totalDeductions = BigDecimal.ZERO;
                 BigDecimal totalNet = BigDecimal.ZERO;
                 int employeeCount = 0;
-
-                // Get company info for PDF generation
-                Company company = companyRepository.findById(period.getCompanyId())
-                    .orElseThrow(() -> new RuntimeException("Company not found"));
 
                 List<String> generatedPdfPaths = new ArrayList<>();
 
@@ -730,7 +730,7 @@ public class PayrollService {
                 INSERT INTO payslips (
                     company_id, employee_id, payroll_period_id, payslip_number,
                     basic_salary, gross_salary, total_earnings,
-                    payee_tax, uif_employee, uif_employer, total_deductions,
+                    paye_tax, uif_employee, uif_employer, total_deductions,
                     net_pay, status, created_by, created_at
                 ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
                 RETURNING id
