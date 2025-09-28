@@ -18,8 +18,9 @@ public class ConsoleMenu {
         System.out.println("8. Verify Transactions");
         System.out.println("9. Payroll Management");
         System.out.println("10. Show current time");
-        System.out.println("11. Exit");
-        System.out.print("Enter your choice (1-11): ");
+        System.out.println("11. System Logs");
+        System.out.println("12. Exit");
+        System.out.print("Enter your choice (1-12): ");
     }
 
     public void displayCompanyMenu() {

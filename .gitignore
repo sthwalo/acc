@@ -278,3 +278,34 @@ Thumbs.db
 .env.local
 .env.production
 .env.test
+# Incident reports and deployment docs
+docs/INCIDENT_REPORT_*.md
+docs/MIGRATION_DEPLOYMENT_PROCESS.md
+
+# Database migration files
+app/src/main/resources/db/migration/
+
+# Backup files and directories
+backups/
+test_schema.sql
+
+# Monitoring and deployment scripts
+scripts/backup_database.sh
+scripts/deploy_migrations.sh
+scripts/monitor_logs.sh
+
+# Incident reports and deployment docs
+docs/INCIDENT_REPORT_*.md
+docs/MIGRATION_DEPLOYMENT_PROCESS.md
+
+# Database migration files
+app/src/main/resources/db/migration/
+
+# Backup files and directories
+backups/
+test_schema.sql
+
+# Monitoring and deployment scripts
+scripts/backup_database.sh
+scripts/deploy_migrations.sh
+scripts/monitor_logs.sh
