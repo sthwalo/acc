@@ -47,7 +47,23 @@ source .env
 ./gradlew build          # Full build with tests
 ./gradlew test           # Run 118+ JUnit tests
 ./gradlew fatJar         # Create executable JAR with all dependencies
+
+# ⚠️ REQUIRED: After any code changes (non-test files)
+./gradlew clean build -x test
 ```
+
+### ⚠️ CRITICAL ENFORCEMENT: Code Changes
+**MANDATORY REQUIREMENT**: After ANY changes to non-test code files (.java, .kt, .gradle, etc.), you MUST run:
+```bash
+./gradlew clean build -x test
+```
+This ensures:
+- All code compiles correctly
+- Dependencies are resolved
+- No regressions in existing functionality
+- Build artifacts are up-to-date
+
+**FAILURE TO COMPLY** will result in broken builds and runtime errors. This is enforced for all code changes.
 
 ## 📋 Project-Specific Conventions
 
@@ -241,5 +257,13 @@ System.err.println("❌ Error: " + e.getMessage());
 - **Models**: PascalCase (e.g., `JournalEntry`, `BankTransaction`)
 - **Test Classes**: `*Test` suffix with descriptive method names
 
-Remember: This system processes real financial data with 7,156+ transactions. Always validate operations and maintain data integrity through proper transaction handling and balance verification.</content>
+Remember: This system processes real financial data with 7,156+ transactions. Always validate operations and maintain data integrity through proper transaction handling and balance verification.
+
+## 🩹 Patches & Updates
+
+### Patch 2025-09-28: Employee Management & Document Handling
+- **Employee Field Updates**: Enhanced employee management interface to allow updating all payslip-relevant fields including tax numbers, UIF numbers, medical aid numbers, pension fund numbers, and complete banking information (bank name, account number, branch code, account holder name)
+- **Document Deletion**: Added document management functionality to payroll system allowing users to list and delete payslip PDF documents from both `exports/` and `payslips/` directories with confirmation prompts
+- **Database Field Verification**: Confirmed that employee data fields exist but many are currently empty, requiring population for complete payslip generation
+- **UI Improvements**: Updated payroll menu to include "Document Management" option and enhanced employee update form to display current values and allow comprehensive field editing</content>
 <parameter name="filePath">/Users/sthwalonyoni/FIN/.github/copilot-instructions.md

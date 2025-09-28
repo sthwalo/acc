@@ -116,6 +116,15 @@ public class SARSTaxCalculator {
     }
 
     public double findPAYE(double grossSalary) {
+        // Debug: Print the actual salary value
+        System.out.printf("DEBUG: findPAYE called with grossSalary = %.2f%n", grossSalary);
+        
+        // Handle salaries below the tax threshold (below R5,586 based on loaded brackets)
+        if (grossSalary < 5586.0) {
+            System.out.printf("✓ Salary R%.2f is below tax threshold, no PAYE tax%n", grossSalary);
+            return 0.0;
+        }
+        
         // Check if salary is within our loaded range
         if (grossSalary < MIN_SALARY_RANGE || grossSalary > MAX_SALARY_RANGE) {
             throw new IllegalArgumentException("Salary R" + grossSalary + " is outside the supported range (R5,500-R30,000)");

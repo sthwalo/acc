@@ -31,7 +31,7 @@ public class PayrollController {
         boolean backToMain = false;
         while (!backToMain) {
             displayPayrollMenu();
-            int choice = inputHandler.getInteger("Enter your choice", 1, 6);
+            int choice = inputHandler.getInteger("Enter your choice", 1, 7);
             
             switch (choice) {
                 case 1:
@@ -50,6 +50,9 @@ public class PayrollController {
                     handlePayrollReports(companyId);
                     break;
                 case 6:
+                    handleDocumentManagement(companyId);
+                    break;
+                case 7:
                     backToMain = true;
                     break;
                 default:
@@ -65,7 +68,8 @@ public class PayrollController {
         System.out.println("3. Process Payroll");
         System.out.println("4. Generate Payslips");
         System.out.println("5. Payroll Reports");
-        System.out.println("6. Back to Main Menu");
+        System.out.println("6. Document Management");
+        System.out.println("7. Back to Main Menu");
         outputFormatter.printSeparator();
     }
 
@@ -246,8 +250,15 @@ public class PayrollController {
             outputFormatter.printPlain("Department: " + employee.getDepartment());
             outputFormatter.printPlain("Basic Salary: " + employee.getBasicSalary());
             outputFormatter.printPlain("Email: " + employee.getEmail());
+            outputFormatter.printPlain("Tax Number: " + (employee.getTaxNumber() != null ? employee.getTaxNumber() : "Not set"));
+            outputFormatter.printPlain("UIF Number: " + (employee.getUifNumber() != null ? employee.getUifNumber() : "Not set"));
+            outputFormatter.printPlain("Medical Aid Number: " + (employee.getMedicalAidNumber() != null ? employee.getMedicalAidNumber() : "Not set"));
+            outputFormatter.printPlain("Pension Fund Number: " + (employee.getPensionFundNumber() != null ? employee.getPensionFundNumber() : "Not set"));
+            outputFormatter.printPlain("Bank Name: " + (employee.getBankName() != null ? employee.getBankName() : "Not set"));
+            outputFormatter.printPlain("Account Number: " + (employee.getAccountNumber() != null ? employee.getAccountNumber() : "Not set"));
+            outputFormatter.printPlain("Branch Code: " + (employee.getBranchCode() != null ? employee.getBranchCode() : "Not set"));
 
-            // Update fields
+            // Update basic information
             String updateFirstName = inputHandler.getString("Enter new first name (leave empty to keep current):");
             if (!updateFirstName.trim().isEmpty()) {
                 employee.setFirstName(updateFirstName);
@@ -281,6 +292,48 @@ public class PayrollController {
                 } catch (NumberFormatException e) {
                     outputFormatter.printWarning("Invalid salary format, keeping current salary.");
                 }
+            }
+
+            // Update tax and identification information
+            String updateTaxNumber = inputHandler.getString("Enter new tax number (leave empty to keep current):");
+            if (!updateTaxNumber.trim().isEmpty()) {
+                employee.setTaxNumber(updateTaxNumber);
+            }
+
+            String updateUifNumber = inputHandler.getString("Enter new UIF number (leave empty to keep current):");
+            if (!updateUifNumber.trim().isEmpty()) {
+                employee.setUifNumber(updateUifNumber);
+            }
+
+            String updateMedicalAidNumber = inputHandler.getString("Enter new medical aid number (leave empty to keep current):");
+            if (!updateMedicalAidNumber.trim().isEmpty()) {
+                employee.setMedicalAidNumber(updateMedicalAidNumber);
+            }
+
+            String updatePensionFundNumber = inputHandler.getString("Enter new pension fund number (leave empty to keep current):");
+            if (!updatePensionFundNumber.trim().isEmpty()) {
+                employee.setPensionFundNumber(updatePensionFundNumber);
+            }
+
+            // Update banking information
+            String updateBankName = inputHandler.getString("Enter new bank name (leave empty to keep current):");
+            if (!updateBankName.trim().isEmpty()) {
+                employee.setBankName(updateBankName);
+            }
+
+            String updateAccountNumber = inputHandler.getString("Enter new account number (leave empty to keep current):");
+            if (!updateAccountNumber.trim().isEmpty()) {
+                employee.setAccountNumber(updateAccountNumber);
+            }
+
+            String updateBranchCode = inputHandler.getString("Enter new branch code (leave empty to keep current):");
+            if (!updateBranchCode.trim().isEmpty()) {
+                employee.setBranchCode(updateBranchCode);
+            }
+
+            String updateAccountHolderName = inputHandler.getString("Enter new account holder name (leave empty to keep current):");
+            if (!updateAccountHolderName.trim().isEmpty()) {
+                employee.setAccountHolderName(updateAccountHolderName);
             }
 
             employee.setUpdatedBy("system");
@@ -340,8 +393,10 @@ public class PayrollController {
         while (!back) {
             outputFormatter.printPlain("1. List Payroll Periods");
             outputFormatter.printPlain("2. Create Payroll Period");
-            outputFormatter.printPlain("3. Back to Payroll Management");
-            int choice = inputHandler.getInteger("Enter your choice", 1, 3);
+            outputFormatter.printPlain("3. Delete Payroll Period");
+            outputFormatter.printPlain("4. Force Delete All September 2025 Periods");
+            outputFormatter.printPlain("5. Back to Payroll Management");
+            int choice = inputHandler.getInteger("Enter your choice", 1, 5);
             switch (choice) {
                 case 1:
                     List<PayrollPeriod> periods = payrollService.getPayrollPeriods(companyId);
@@ -355,6 +410,12 @@ public class PayrollController {
                     createPayrollPeriod(companyId);
                     break;
                 case 3:
+                    deletePayrollPeriod(companyId);
+                    break;
+                case 4:
+                    forceDeleteAllSeptember2025Periods(companyId);
+                    break;
+                case 5:
                     back = true;
                     break;
                 default:
@@ -378,18 +439,17 @@ public class PayrollController {
         int endMonth = inputHandler.getInteger("Month", 1, 12);
         int endDay = inputHandler.getInteger("Day", 1, 31);
         
-        outputFormatter.printPlain("Enter pay date:");
-        int payYear = inputHandler.getInteger("Year", 2020, 2030);
-        int payMonth = inputHandler.getInteger("Month", 1, 12);
-        int payDay = inputHandler.getInteger("Day", 1, 31);
-        
         try {
             PayrollPeriod period = new PayrollPeriod();
             period.setCompanyId(companyId);
             period.setPeriodName(periodName);
             period.setStartDate(LocalDate.of(startYear, startMonth, startDay));
             period.setEndDate(LocalDate.of(endYear, endMonth, endDay));
-            period.setPayDate(LocalDate.of(payYear, payMonth, payDay));
+            
+            // Automatically set pay date to the 25th of the month
+            LocalDate payDate = LocalDate.of(endYear, endMonth, 25);
+            period.setPayDate(payDate);
+            
             period.setCreatedBy("system");
             
             PayrollPeriod created = payrollService.createPayrollPeriod(period);
@@ -397,6 +457,94 @@ public class PayrollController {
             
         } catch (Exception e) {
             outputFormatter.printError("Failed to create payroll period: " + e.getMessage());
+        }
+        
+        inputHandler.waitForEnter();
+    }
+
+    private void deletePayrollPeriod(Long companyId) {
+        outputFormatter.printHeader("Delete Payroll Period");
+
+        try {
+            // Get list of payroll periods to choose from
+            List<PayrollPeriod> periods = payrollService.getPayrollPeriods(companyId);
+            if (periods.isEmpty()) {
+                outputFormatter.printWarning("No payroll periods found.");
+                inputHandler.waitForEnter();
+                return;
+            }
+
+            outputFormatter.printPlain("Select payroll period to delete:");
+            for (int i = 0; i < periods.size(); i++) {
+                PayrollPeriod period = periods.get(i);
+                outputFormatter.printPlain((i + 1) + ". " + period.getPeriodName() + 
+                                         " (Status: " + period.getStatus() + ")");
+            }
+
+            int choice = inputHandler.getInteger("Enter period number", 1, periods.size());
+            PayrollPeriod selectedPeriod = periods.get(choice - 1);
+
+            // Check if the period can be deleted
+            if (selectedPeriod.getStatus() != fin.model.PayrollPeriod.PayrollStatus.OPEN) {
+                outputFormatter.printError("Cannot delete payroll period with status: " + selectedPeriod.getStatus());
+                outputFormatter.printError("Only OPEN periods can be deleted.");
+                inputHandler.waitForEnter();
+                return;
+            }
+
+            outputFormatter.printWarning("Are you sure you want to delete payroll period: " + selectedPeriod.getPeriodName() + "?");
+            outputFormatter.printWarning("This will permanently delete the payroll period and cannot be undone.");
+            String confirm = inputHandler.getString("Type 'DELETE' to confirm:");
+
+            if ("DELETE".equals(confirm.toUpperCase())) {
+                payrollService.deletePayrollPeriod(selectedPeriod.getId(), companyId);
+                outputFormatter.printSuccess("Payroll period deleted successfully: " + selectedPeriod.getPeriodName());
+            } else {
+                outputFormatter.printPlain("Delete operation cancelled.");
+            }
+
+        } catch (Exception e) {
+            outputFormatter.printError("Failed to delete payroll period: " + e.getMessage());
+        }
+
+        inputHandler.waitForEnter();
+    }
+
+    private void forceDeleteAllSeptember2025Periods(Long companyId) {
+        outputFormatter.printHeader("Force Delete All September 2025 Payroll Periods");
+        
+        outputFormatter.printWarning("⚠️  DANGER: This will FORCE DELETE all payroll periods for September 2025!");
+        outputFormatter.printWarning("This includes PROCESSED periods and will delete:");
+        outputFormatter.printWarning("- All payroll period records");
+        outputFormatter.printWarning("- All associated payslips");
+        outputFormatter.printWarning("- All associated journal entries");
+        outputFormatter.printWarning("- This action CANNOT be undone!");
+        
+        outputFormatter.printPlain("");
+        outputFormatter.printPlain("This is intended for cleaning up flawed payroll periods.");
+        outputFormatter.printPlain("You should only have ONE payroll period per month.");
+        
+        if (!inputHandler.getBoolean("Are you absolutely sure you want to proceed?")) {
+            outputFormatter.printInfo("Operation cancelled.");
+            inputHandler.waitForEnter();
+            return;
+        }
+        
+        String confirm = inputHandler.getString("Type 'FORCE DELETE SEPTEMBER 2025' to confirm:");
+        
+        if (!"FORCE DELETE SEPTEMBER 2025".equals(confirm.toUpperCase())) {
+            outputFormatter.printInfo("Operation cancelled - confirmation text did not match.");
+            inputHandler.waitForEnter();
+            return;
+        }
+        
+        try {
+            payrollService.forceDeleteAllPayrollPeriodsForMonth(companyId, 2025, 9);
+            outputFormatter.printSuccess("✅ All September 2025 payroll periods have been force deleted!");
+            outputFormatter.printInfo("You can now create a single, correct payroll period for September 2025.");
+            
+        } catch (Exception e) {
+            outputFormatter.printError("❌ Failed to force delete September 2025 periods: " + e.getMessage());
         }
         
         inputHandler.waitForEnter();
@@ -519,18 +667,130 @@ public class PayrollController {
         inputHandler.waitForEnter();
     }
 
-    public void generateSimplePayslipPdf(Long payslipId) {
-        outputFormatter.printHeader("Generate Simple Payslip PDF");
-        
-        try {
-            // Generate simple PDF for the given payslip ID
-            PdfPrintService pdfPrintService = new PdfPrintService();
-            pdfPrintService.generateSimplePayslipPdf(payslipId.intValue());
-            outputFormatter.printSuccess("Simple payslip PDF generated successfully.");
-        } catch (Exception e) {
-            outputFormatter.printError("Failed to generate simple payslip PDF: " + e.getMessage());
+    private void handleDocumentManagement(Long companyId) {
+        outputFormatter.printHeader("Document Management");
+        boolean back = false;
+        while (!back) {
+            outputFormatter.printPlain("1. List Payslip Documents");
+            outputFormatter.printPlain("2. Delete Payslip Document");
+            outputFormatter.printPlain("3. Back to Payroll Management");
+            int choice = inputHandler.getInteger("Enter your choice", 1, 3);
+            switch (choice) {
+                case 1:
+                    listPayslipDocuments();
+                    break;
+                case 2:
+                    deletePayslipDocument();
+                    break;
+                case 3:
+                    back = true;
+                    break;
+                default:
+                    outputFormatter.printError("Invalid choice.");
+            }
         }
-        
+    }
+
+    private void listPayslipDocuments() {
+        outputFormatter.printHeader("Payslip Documents");
+
+        try {
+            // List documents in exports directory
+            java.io.File exportsDir = new java.io.File("exports");
+            if (exportsDir.exists() && exportsDir.isDirectory()) {
+                java.io.File[] exportFiles = exportsDir.listFiles((dir, name) -> name.startsWith("payslip_") && name.endsWith(".pdf"));
+                if (exportFiles != null && exportFiles.length > 0) {
+                    outputFormatter.printSubHeader("Documents in exports/ directory:");
+                    for (int i = 0; i < exportFiles.length; i++) {
+                        outputFormatter.printPlain((i + 1) + ". " + exportFiles[i].getName());
+                    }
+                }
+            }
+
+            // List documents in payslips directory
+            java.io.File payslipsDir = new java.io.File("payslips");
+            if (payslipsDir.exists() && payslipsDir.isDirectory()) {
+                java.io.File[] payslipFiles = payslipsDir.listFiles((dir, name) -> name.startsWith("payslip_") && name.endsWith(".pdf"));
+                if (payslipFiles != null && payslipFiles.length > 0) {
+                    outputFormatter.printSubHeader("Documents in payslips/ directory:");
+                    for (int i = 0; i < payslipFiles.length; i++) {
+                        outputFormatter.printPlain((i + 1) + ". " + payslipFiles[i].getName());
+                    }
+                }
+            }
+
+            if ((!exportsDir.exists() || exportsDir.listFiles((dir, name) -> name.startsWith("payslip_") && name.endsWith(".pdf")).length == 0) &&
+                (!payslipsDir.exists() || payslipsDir.listFiles((dir, name) -> name.startsWith("payslip_") && name.endsWith(".pdf")).length == 0)) {
+                outputFormatter.printInfo("No payslip documents found.");
+            }
+
+        } catch (Exception e) {
+            outputFormatter.printError("Error listing documents: " + e.getMessage());
+        }
+
+        inputHandler.waitForEnter();
+    }
+
+    private void deletePayslipDocument() {
+        outputFormatter.printHeader("Delete Payslip Document");
+
+        try {
+            // Collect all payslip documents
+            java.util.List<java.io.File> allDocuments = new java.util.ArrayList<>();
+
+            // From exports directory
+            java.io.File exportsDir = new java.io.File("exports");
+            if (exportsDir.exists() && exportsDir.isDirectory()) {
+                java.io.File[] exportFiles = exportsDir.listFiles((dir, name) -> name.startsWith("payslip_") && name.endsWith(".pdf"));
+                if (exportFiles != null) {
+                    java.util.Arrays.stream(exportFiles).forEach(allDocuments::add);
+                }
+            }
+
+            // From payslips directory
+            java.io.File payslipsDir = new java.io.File("payslips");
+            if (payslipsDir.exists() && payslipsDir.isDirectory()) {
+                java.io.File[] payslipFiles = payslipsDir.listFiles((dir, name) -> name.startsWith("payslip_") && name.endsWith(".pdf"));
+                if (payslipFiles != null) {
+                    java.util.Arrays.stream(payslipFiles).forEach(allDocuments::add);
+                }
+            }
+
+            if (allDocuments.isEmpty()) {
+                outputFormatter.printWarning("No payslip documents found to delete.");
+                inputHandler.waitForEnter();
+                return;
+            }
+
+            // Display documents for selection
+            outputFormatter.printPlain("Select document to delete:");
+            for (int i = 0; i < allDocuments.size(); i++) {
+                java.io.File doc = allDocuments.get(i);
+                outputFormatter.printPlain((i + 1) + ". " + doc.getName() + " (" + doc.getParent() + ")");
+            }
+
+            int choice = inputHandler.getInteger("Enter document number to delete", 1, allDocuments.size());
+            java.io.File selectedDoc = allDocuments.get(choice - 1);
+
+            // Confirm deletion
+            outputFormatter.printWarning("Are you sure you want to delete: " + selectedDoc.getName() + "?");
+            outputFormatter.printWarning("This action cannot be undone.");
+            String confirm = inputHandler.getString("Type 'DELETE' to confirm:");
+
+            if ("DELETE".equals(confirm.toUpperCase())) {
+                if (selectedDoc.delete()) {
+                    outputFormatter.printSuccess("Document deleted successfully: " + selectedDoc.getName());
+                } else {
+                    outputFormatter.printError("Failed to delete document: " + selectedDoc.getName());
+                }
+            } else {
+                outputFormatter.printPlain("Delete operation cancelled.");
+            }
+
+        } catch (Exception e) {
+            outputFormatter.printError("Error deleting document: " + e.getMessage());
+        }
+
         inputHandler.waitForEnter();
     }
 }
