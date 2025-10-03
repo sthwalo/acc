@@ -3,6 +3,7 @@
  */
 package fin.integration;
 
+import fin.TestConfiguration;
 import fin.service.BankStatementProcessingService;
 import fin.service.CompanyService;
 import fin.model.Company;
@@ -12,16 +13,17 @@ import java.util.List;
 
 public class TestSinglePdf {
     
-    private static final String DB_URL = "jdbc:postgresql://localhost:5432/drimacc_db?user=sthwalonyoni&password=drimPro1823";
-    
     public static void main(String[] args) {
         try {
+            // Setup test database
+            TestConfiguration.setupTestDatabase();
+
             System.out.println("🔍 Single PDF Test");
             System.out.println("==================");
             
             // Initialize services
-            CompanyService companyService = new CompanyService(DB_URL);
-            BankStatementProcessingService bankService = new BankStatementProcessingService(DB_URL);
+            CompanyService companyService = new CompanyService(TestConfiguration.TEST_DB_URL + "?user=" + TestConfiguration.TEST_DB_USER + "&password=" + TestConfiguration.TEST_DB_PASSWORD);
+            BankStatementProcessingService bankService = new BankStatementProcessingService(TestConfiguration.TEST_DB_URL + "?user=" + TestConfiguration.TEST_DB_USER + "&password=" + TestConfiguration.TEST_DB_PASSWORD);
             
             // Get the first company
             List<Company> companies = companyService.getAllCompanies();
@@ -73,6 +75,13 @@ public class TestSinglePdf {
         } catch (Exception e) {
             System.err.println("❌ Test failed: " + e.getMessage());
             e.printStackTrace();
+        }
+
+        // Cleanup test database
+        try {
+            TestConfiguration.cleanupTestDatabase();
+        } catch (Exception e) {
+            System.err.println("Error cleaning up test database: " + e.getMessage());
         }
     }
 }

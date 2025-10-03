@@ -36,7 +36,7 @@ public class ApiApplication {
                 context.get(fin.service.DataManagementService.class),
                 context.get(fin.service.BankStatementProcessingService.class),
                 context.get(fin.service.TransactionVerificationService.class),
-                context.get(fin.service.ClassificationIntegrationService.class),
+                context.get(fin.service.TransactionClassificationService.class),
                 context.get(fin.service.PayrollService.class)
             );
 

@@ -5,7 +5,28 @@ import fin.model.*;
 /**
  * Service for managing chart of accounts initialization.
  * Follows Single Responsibility Principle - handles only chart of accounts setup.
+ * 
+ * @deprecated As of 2025-10-03, replaced by {@link AccountClassificationService}
+ * 
+ * DEPRECATION NOTICE:
+ * This service uses a custom chart of accounts structure (accounts 4000-6999) that
+ * conflicts with standard South African accounting practices. It has been replaced by
+ * AccountClassificationService which provides:
+ * - SARS-compliant account structure (accounts 1000-9999)
+ * - Standard SA business accounting categories
+ * - Comprehensive coverage (50+ accounts vs 25)
+ * - No conflicts with mapping rules
+ * 
+ * MIGRATION PATH:
+ * All existing code should be updated to use AccountClassificationService.
+ * TransactionClassificationService now uses AccountClassificationService exclusively.
+ * 
+ * This class will be removed in a future release after confirming all functionality
+ * works correctly with AccountClassificationService.
+ * 
+ * @see AccountClassificationService
  */
+@Deprecated
 public class ChartOfAccountsService {
 
     private final CategoryManagementService categoryService;
@@ -23,8 +44,14 @@ public class ChartOfAccountsService {
     /**
      * Sets up the initial chart of accounts for a company.
      * This should be called when a new company is created.
+     * 
+     * @deprecated Use AccountClassificationService.initializeChartOfAccounts(Long companyId) instead
      */
+    @Deprecated
     public void initializeChartOfAccounts(Company company) {
+        System.err.println("⚠️  WARNING: ChartOfAccountsService is deprecated!");
+        System.err.println("    Please use AccountClassificationService.initializeChartOfAccounts() instead.");
+        System.err.println("    This service will be removed in a future release.");
         // Create categories
         AccountCategory currentAssets = categoryService.createCategory(
             "Current Assets", "Assets expected to be converted to cash within one year",

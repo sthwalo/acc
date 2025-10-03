@@ -1,5 +1,6 @@
 package fin.app;
 
+import fin.TestConfiguration;
 import java.sql.*;
 
 /**
@@ -7,18 +8,17 @@ import java.sql.*;
  */
 public class DatabaseTest {
     
-    private static final String DB_URL = "jdbc:postgresql://localhost:5432/drimacc_db";
-    private static final String DB_USER = "sthwalonyoni";
-    private static final String DB_PASSWORD = System.getenv().getOrDefault("DB_PASSWORD", "password");
-    
     public static void main(String[] args) {
-        System.out.println("🔍 DATABASE CONNECTION TEST");
-        System.out.println("===========================");
-        
         try {
-            System.out.println("📊 Connecting to database...");
+            // Setup test database
+            TestConfiguration.setupTestDatabase();
+
+            System.out.println("🔍 DATABASE CONNECTION TEST");
+            System.out.println("===========================");
             
-            try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
+            System.out.println("📊 Connecting to test database...");
+            
+            try (Connection conn = DriverManager.getConnection(TestConfiguration.TEST_DB_URL, TestConfiguration.TEST_DB_USER, TestConfiguration.TEST_DB_PASSWORD)) {
                 System.out.println("✅ Database connection successful!");
                 
                 // Test company query
@@ -109,6 +109,13 @@ public class DatabaseTest {
         } catch (Exception e) {
             System.err.println("❌ Database test failed: " + e.getMessage());
             e.printStackTrace();
+        }
+
+        // Cleanup test database
+        try {
+            TestConfiguration.cleanupTestDatabase();
+        } catch (Exception e) {
+            System.err.println("Error cleaning up test database: " + e.getMessage());
         }
     }
 }

@@ -16,10 +16,10 @@ import java.util.logging.Level;
 public class TransactionBatchProcessor {
     private static final Logger LOGGER = Logger.getLogger(TransactionBatchProcessor.class.getName());
 
-    private final RuleMappingService ruleService;
+    private final TransactionMappingRuleService ruleService;
     private final JournalEntryGenerator journalGenerator;
 
-    public TransactionBatchProcessor(RuleMappingService ruleService,
+    public TransactionBatchProcessor(TransactionMappingRuleService ruleService,
                                    JournalEntryGenerator journalGenerator) {
         this.ruleService = ruleService;
         this.journalGenerator = journalGenerator;
@@ -40,25 +40,26 @@ public class TransactionBatchProcessor {
         int classifiedCount = 0;
         int failedCount = 0;
 
-        // Load mapping rules for the company
-        Map<String, RuleMapping> rules = ruleService.loadTransactionMappingRules(companyId);
+        // Load mapping rules for the company using the new service
+        List<TransactionMappingRule> rules = ruleService.getTransactionMappingRules(companyId);
         LOGGER.info("Loaded " + rules.size() + " mapping rules for company: " + companyId);
 
         for (BankTransaction transaction : transactions) {
             try {
                 processedCount++;
 
-                // Try rule-based classification
-                RuleMapping ruleMapping = ruleService.findMatchingRule(transaction.getDetails(), rules);
+                // Try rule-based classification using findMatchingAccount
+                Optional<Account> matchedAccount = ruleService.findMatchingAccount(companyId, transaction.getDetails());
                 ClassificationResult classification = null;
 
-                if (ruleMapping != null) {
+                if (matchedAccount.isPresent()) {
+                    Account account = matchedAccount.get();
                     classification = new ClassificationResult(
-                        ruleMapping.getAccountCode(),
-                        ruleMapping.getAccountName(),
+                        account.getAccountCode(),
+                        account.getAccountName(),
                         "RULE_BASED"
                     );
-                    LOGGER.fine("Transaction classified by rule: " + transaction.getDetails() + " -> " + ruleMapping.getAccountCode());
+                    LOGGER.fine("Transaction classified by rule: " + transaction.getDetails() + " -> " + account.getAccountCode());
                 }
                 // No fallback classification - transactions without matching rules remain unclassified
 

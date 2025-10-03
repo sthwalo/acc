@@ -62,6 +62,8 @@ scripts/*_db_*.sh
 scripts/*_credentials_*.sh
 run.sh
 runfast.sh
+app/src/test/resources/test.env
+app/src/test/resources/test_database.db
 
 # Employee data files (PII - Personal Identifiable Information)
 input/EmployeesData.txt

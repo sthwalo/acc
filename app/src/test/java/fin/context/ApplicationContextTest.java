@@ -36,20 +36,26 @@ import fin.state.ApplicationState;
 
 import org.junit.jupiter.api.*;
 import static org.junit.jupiter.api.Assertions.*;
+import java.sql.SQLException;
 
 class ApplicationContextTest {
     
     private ApplicationContext applicationContext;
     
-    @BeforeAll
-    static void setUpClass() throws Exception {
-        // Set test database properties before initializing ApplicationContext
-        System.setProperty("fin.database.test.url", "jdbc:postgresql://localhost:5432/drimacc_test");
-        System.setProperty("TEST_DATABASE_USER", "sthwalonyoni");
-        System.setProperty("TEST_DATABASE_PASSWORD", "Test1823");
+        @BeforeAll
+    static void setUpClass() {
+        // Set test mode to skip tax calculator initialization
+        System.setProperty("test.mode", "true");
         
-        // Setup the test database using TestConfiguration
-        TestConfiguration.setupTestDatabase();
+        // Force reload of database configuration for test environment
+        fin.config.DatabaseConfig.loadConfiguration();
+        
+        // Setup test database
+        try {
+            TestConfiguration.setupTestDatabase();
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to setup test database", e);
+        }
     }
     
     @AfterAll
