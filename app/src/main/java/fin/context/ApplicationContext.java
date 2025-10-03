@@ -89,6 +89,8 @@ public class ApplicationContext {
         
         // Phase 4: ChartOfAccountsService removed - AccountClassificationService is single source of truth
         // AccountService now uses AccountClassificationService directly
+        AccountClassificationService accountClassificationService = new AccountClassificationService(dbUrl);
+        register(AccountClassificationService.class, accountClassificationService);
         
         TransactionMappingService transactionMappingService = new TransactionMappingService(dbUrl);
         register(TransactionMappingService.class, transactionMappingService);

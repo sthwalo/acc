@@ -25,7 +25,7 @@ public class TestDatabaseConfig {
      */
     private static void loadEnvironmentVariables() {
         try {
-            java.io.File envFile = new java.io.File(".env");
+            java.io.File envFile = new java.io.File("test.env");
             if (envFile.exists()) {
                 java.util.Properties envProps = new java.util.Properties();
                 try (java.io.FileInputStream fis = new java.io.FileInputStream(envFile)) {
