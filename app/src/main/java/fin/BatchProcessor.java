@@ -189,7 +189,6 @@ public class BatchProcessor {
     /**
      * Export transactions to CSV file
      */
-    @SuppressWarnings("resource")
     private void exportTransactionsToCSV(List<BankTransaction> transactions, String prefix) {
         try {
             String timestamp = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));

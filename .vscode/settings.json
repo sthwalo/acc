@@ -6,6 +6,7 @@
         "Libharu",
         "Nyoni",
         "pdftotext",
+        "pstmt",
         "Sthwalo"
     ],
     "java.compile.nullAnalysis.mode": "automatic",
@@ -18,5 +19,11 @@
             "name": "JavaSE-17",
             "path": "/Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home"
         }
-    ]
+    ],
+
+    // Disable MS SQL linter for PostgreSQL files
+    "files.associations": {
+        "*.sql": "postgres"
+    },
+    "mssql.enabled": false
 }
