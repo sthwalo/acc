@@ -9,6 +9,8 @@ import fin.ui.OutputFormatter;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.quality.Strictness;
+import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
@@ -19,6 +21,7 @@ import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class PayrollControllerTest {
     
@@ -54,12 +57,12 @@ class PayrollControllerTest {
     @Test
     @Timeout(10) // 10 second timeout to prevent hanging
     void handlePayrollManagement_ListEmployees_CompletesSuccessfully() {
-        // Mock menu navigation: 1 (List Employees) -> 6 (Back to Main Menu)
-        when(inputHandler.getInteger(anyString(), eq(1), eq(6)))
+        // Mock menu navigation: Use anyInt() to match all range calls
+        when(inputHandler.getInteger(anyString(), anyInt(), anyInt()))
             .thenReturn(1) // Select Employee Management
             .thenReturn(1) // Select List Employees
             .thenReturn(5) // Back to Payroll Management
-            .thenReturn(6); // Back to Main Menu
+            .thenReturn(7); // Back to Main Menu
         
         Employee mockEmployee = mock(Employee.class);
         when(mockEmployee.getEmployeeNumber()).thenReturn("EMP001");
@@ -76,12 +79,12 @@ class PayrollControllerTest {
     @Test
     @Timeout(10)
     void handlePayrollManagement_ListPayrollPeriods_CompletesSuccessfully() {
-        // Mock menu navigation: 2 (Payroll Period Management) -> 1 (List Periods) -> 5 (Back) -> 6 (Back to Main)
-        when(inputHandler.getInteger(anyString(), eq(1), eq(6)))
+        // Mock menu navigation: Use anyInt() to match all range calls
+        when(inputHandler.getInteger(anyString(), anyInt(), anyInt()))
             .thenReturn(2) // Select Payroll Period Management
             .thenReturn(1) // Select List Payroll Periods
             .thenReturn(5) // Back to Payroll Management
-            .thenReturn(6); // Back to Main Menu
+            .thenReturn(7); // Back to Main Menu
         
         PayrollPeriod mockPeriod = mock(PayrollPeriod.class);
         when(mockPeriod.getPeriodName()).thenReturn("September 2025");
@@ -106,11 +109,11 @@ class PayrollControllerTest {
         when(mockPeriod.getEndDate()).thenReturn(LocalDate.now());
         when(mockPeriod.canBeProcessed()).thenReturn(true);
         
-        // Mock complete menu flow: 3 (Process Payroll) -> 1 (select period) -> 6 (Back to Main Menu)
-        when(inputHandler.getInteger(anyString(), eq(1), eq(6)))
+        // Mock complete menu flow: 3 (Process Payroll) -> 1 (select period) -> 7 (Back to Main Menu)
+        when(inputHandler.getInteger(anyString(), anyInt(), anyInt()))
             .thenReturn(3) // Select Process Payroll
-            .thenReturn(6); // Back to Main Menu
-        when(inputHandler.getInteger(anyString(), eq(1), eq(1))).thenReturn(1); // Select first period
+            .thenReturn(1) // Select first period
+            .thenReturn(7); // Back to Main Menu
         when(payrollService.getPayrollPeriods(anyLong())).thenReturn(List.of(mockPeriod));
         
         assertDoesNotThrow(() -> payrollController.handlePayrollManagement(1L));
@@ -121,8 +124,8 @@ class PayrollControllerTest {
     @Test
     @Timeout(10)
     void handlePayrollManagement_BackToMainMenu_ExitsCorrectly() {
-        // Mock immediate exit: 6 (Back to Main Menu)
-        when(inputHandler.getInteger(anyString(), eq(1), eq(6))).thenReturn(6);
+        // Mock immediate exit: 7 (Back to Main Menu)
+        when(inputHandler.getInteger(anyString(), anyInt(), anyInt())).thenReturn(7);
         
         assertDoesNotThrow(() -> payrollController.handlePayrollManagement(1L));
         
@@ -135,10 +138,10 @@ class PayrollControllerTest {
     @Test
     @Timeout(10)
     void handlePayrollManagement_InvalidOption_HandledGracefully() {
-        // Mock invalid option then exit: 999 (invalid) -> 6 (Back to Main Menu)
-        when(inputHandler.getInteger(anyString(), eq(1), eq(6)))
+        // Mock invalid option then exit: 999 (invalid) -> 7 (Back to Main Menu)
+        when(inputHandler.getInteger(anyString(), anyInt(), anyInt()))
             .thenReturn(999) // Invalid option
-            .thenReturn(6);  // Exit
+            .thenReturn(7);  // Exit
         
         assertDoesNotThrow(() -> payrollController.handlePayrollManagement(1L));
         

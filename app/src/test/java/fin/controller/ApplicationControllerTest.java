@@ -85,24 +85,25 @@ class ApplicationControllerTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
         
-        // Setup all controller mocks to prevent infinite loops
+        // Setup mocks
         doNothing().when(mockCompanyController).handleCompanySetup();
         doNothing().when(mockDataManagementController).handleDataManagement();
+        doNothing().when(mockReportController).handleReportGeneration();
+        doNothing().when(mockImportController).handleBankStatementImport();
+        doNothing().when(mockImportController).handleCsvImport();
+        doNothing().when(mockImportController).handleViewImportedData();
+        doNothing().when(mockFiscalPeriodController).handleFiscalPeriods();
         doNothing().when(mockPayrollController).handlePayrollManagement(anyLong());
         
-        // Stub applicationState methods to avoid NPE
-        when(mockApplicationState.hasCurrentCompany()).thenReturn(false);
-        when(mockApplicationState.hasCurrentFiscalPeriod()).thenReturn(false);
-        
         // Create InputHandler with exit command
-        String exitInput = "12\ny\n"; // Exit is option 12, confirm with y
+        String exitInput = "11\ny\n"; // Exit is option 11, confirm with y
         Scanner scanner = new Scanner(new ByteArrayInputStream(exitInput.getBytes()));
         inputHandler = new InputHandler(scanner);
-
+        
         applicationController = new ApplicationController(
-            mockMenu,
-            inputHandler,
-            mockOutputFormatter,
+            mockMenu, 
+            inputHandler, 
+            mockOutputFormatter, 
             mockApplicationState,
             mockCompanyController,
             mockFiscalPeriodController,
@@ -126,7 +127,7 @@ class ApplicationControllerTest {
         doNothing().when(mockCompanyController).handleCompanySetup();
         
         // Setup input for company setup choice then exit
-        String companySetupInput = "1\n12\ny\n";
+        String companySetupInput = "1\n11\ny\n";
         Scanner scanner = new Scanner(new ByteArrayInputStream(companySetupInput.getBytes()));
         InputHandler setupInputHandler = new InputHandler(scanner);
 
@@ -156,7 +157,7 @@ class ApplicationControllerTest {
         doNothing().when(mockDataManagementController).handleDataManagement();
         
         // Setup input for data management choice then exit
-        String dataManagementInput = "7\n12\ny\n";
+        String dataManagementInput = "7\n11\ny\n";
         Scanner scanner = new Scanner(new ByteArrayInputStream(dataManagementInput.getBytes()));
         InputHandler dataInputHandler = new InputHandler(scanner);
 
