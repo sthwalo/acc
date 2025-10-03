@@ -9,7 +9,23 @@ import java.math.BigDecimal;
 
 /**
  * Service for classifying and categorizing accounts based on transaction analysis.
- * Sets up a standard chart of accounts for South African business entities.
+ * Sets up a standard chart of accounts for South African busines        // FINANCE COSTS (9000-9999)
+        Long financeCostsId = categoryIds.get("FINANCE_COSTS");
+        
+        accounts.add(new AccountDefinition("9500", "Interest Expense", "Interest on loans and credit", financeCostsId));
+        // Sub-account for excess interest charges
+        accounts.add(new AccountDefinition("9500-001", "Excess Interest Expense", "Excess interest charges on overdrafts", financeCostsId));
+        
+        accounts.add(new AccountDefinition("9600", "Bank Charges", "Bank fees and transaction costs", financeCostsId));
+        // Sub-accounts for bank-specific fees
+        accounts.add(new AccountDefinition("9600-001", "Standard Bank Fees", "Standard Bank service fees", financeCostsId));
+        accounts.add(new AccountDefinition("9600-002", "Capitec Bank Fees", "Capitec Bank service fees", financeCostsId));
+        accounts.add(new AccountDefinition("9600-003", "ATM Withdrawal Fees", "ATM withdrawal charges", financeCostsId));
+        accounts.add(new AccountDefinition("9600-004", "EFT Transaction Fees", "Electronic funds transfer charges", financeCostsId));
+        accounts.add(new AccountDefinition("9600-005", "Debit Order Fees", "Debit order processing fees", financeCostsId));
+        accounts.add(new AccountDefinition("9600-999", "Other Bank Fees", "Other banking charges", financeCostsId));
+        
+        accounts.add(new AccountDefinition("9700", "Foreign Exchange Loss", "Loss on currency conversion", financeCostsId));ities.
  */
 public class AccountClassificationService {
     
@@ -195,7 +211,15 @@ public class AccountClassificationService {
         // CURRENT ASSETS (1000-1999)
         Long currentAssetsId = categoryIds.get("CURRENT_ASSETS");
         accounts.add(new AccountDefinition("1000", "Petty Cash", "Cash on hand for small expenses", currentAssetsId));
+        // Sub-accounts for loan receivables
+        accounts.add(new AccountDefinition("1000-001", "Loan Receivable - Tau", "Loan receivable from Tau", currentAssetsId));
+        accounts.add(new AccountDefinition("1000-002", "Loan Receivable - Maposa", "Loan receivable from Maposa", currentAssetsId));
+        accounts.add(new AccountDefinition("1000-003", "Loan Receivable - Other", "Other loan receivables", currentAssetsId));
+        
         accounts.add(new AccountDefinition("1100", "Bank - Current Account", "Primary business current account", currentAssetsId));
+        // Sub-account for bank transfers
+        accounts.add(new AccountDefinition("1100-001", "Bank Transfers", "Internal bank transfers", currentAssetsId));
+        
         accounts.add(new AccountDefinition("1101", "Bank - Savings Account", "Business savings account", currentAssetsId));
         accounts.add(new AccountDefinition("1102", "Bank - Foreign Currency", "Foreign currency accounts", currentAssetsId));
         accounts.add(new AccountDefinition("1200", "Accounts Receivable", "Money owed by customers", currentAssetsId));
@@ -206,6 +230,9 @@ public class AccountClassificationService {
         // NON-CURRENT ASSETS (2000-2999)
         Long nonCurrentAssetsId = categoryIds.get("NON_CURRENT_ASSETS");
         accounts.add(new AccountDefinition("2000", "Property, Plant & Equipment", "Fixed assets at cost", nonCurrentAssetsId));
+        // Sub-account for director loans
+        accounts.add(new AccountDefinition("2000-001", "Director Loan - Company Assist", "Loan from director for company assistance", nonCurrentAssetsId));
+        
         accounts.add(new AccountDefinition("2100", "Accumulated Depreciation", "Depreciation of fixed assets", nonCurrentAssetsId));
         accounts.add(new AccountDefinition("2200", "Investments", "Long-term investments", nonCurrentAssetsId));
         
@@ -232,6 +259,9 @@ public class AccountClassificationService {
         Long operatingRevenueId = categoryIds.get("OPERATING_REVENUE");
         accounts.add(new AccountDefinition("6000", "Sales Revenue", "Revenue from sales", operatingRevenueId));
         accounts.add(new AccountDefinition("6100", "Service Revenue", "Revenue from services", operatingRevenueId));
+        // Sub-account for specific service revenue
+        accounts.add(new AccountDefinition("4000-001", "Corobrik Service Revenue", "Service revenue from Corobrik", operatingRevenueId));
+        
         accounts.add(new AccountDefinition("6200", "Other Operating Revenue", "Other operating income", operatingRevenueId));
         
         // OTHER INCOME (7000-7999)
@@ -247,10 +277,32 @@ public class AccountClassificationService {
         accounts.add(new AccountDefinition("8200", "Rent Expense", "Office and facility rent", operatingExpensesId));
         accounts.add(new AccountDefinition("8300", "Utilities", "Electricity, water, gas", operatingExpensesId));
         accounts.add(new AccountDefinition("8400", "Communication", "Telephone, internet, postage", operatingExpensesId));
+        
         accounts.add(new AccountDefinition("8500", "Motor Vehicle Expenses", "Vehicle running costs", operatingExpensesId));
+        // Sub-accounts for vehicle tracking services
+        accounts.add(new AccountDefinition("8500-001", "Cartrack Vehicle Tracking", "Cartrack tracking service fees", operatingExpensesId));
+        accounts.add(new AccountDefinition("8500-002", "Netstar Vehicle Tracking", "Netstar tracking service fees", operatingExpensesId));
+        
         accounts.add(new AccountDefinition("8600", "Travel & Entertainment", "Business travel and entertainment", operatingExpensesId));
+        // Sub-accounts for fuel expenses by station
+        accounts.add(new AccountDefinition("8600-001", "Fuel Expenses - BP Stations", "Fuel purchases at BP", operatingExpensesId));
+        accounts.add(new AccountDefinition("8600-002", "Fuel Expenses - Shell Stations", "Fuel purchases at Shell", operatingExpensesId));
+        accounts.add(new AccountDefinition("8600-003", "Fuel Expenses - Sasol Stations", "Fuel purchases at Sasol", operatingExpensesId));
+        accounts.add(new AccountDefinition("8600-004", "Engen Fuel Expenses", "Fuel purchases at Engen", operatingExpensesId));
+        accounts.add(new AccountDefinition("8600-099", "Fuel Expenses - Other Stations", "Fuel purchases at other stations", operatingExpensesId));
+        
         accounts.add(new AccountDefinition("8700", "Professional Services", "Legal, accounting, consulting", operatingExpensesId));
+        
         accounts.add(new AccountDefinition("8800", "Insurance", "Business insurance premiums", operatingExpensesId));
+        // Sub-accounts for insurance providers
+        accounts.add(new AccountDefinition("8800-001", "King Price Insurance Premiums", "King Price insurance premiums", operatingExpensesId));
+        accounts.add(new AccountDefinition("8800-002", "DOTSURE Insurance Premiums", "DOTSURE insurance premiums", operatingExpensesId));
+        accounts.add(new AccountDefinition("8800-003", "OUTSurance Insurance Premiums", "OUTSurance insurance premiums", operatingExpensesId));
+        accounts.add(new AccountDefinition("8800-004", "MIWAY Insurance Premiums", "MIWAY insurance premiums", operatingExpensesId));
+        accounts.add(new AccountDefinition("8800-005", "Liberty Insurance Premiums", "Liberty insurance premiums", operatingExpensesId));
+        accounts.add(new AccountDefinition("8800-006", "Badger Insurance Premiums", "Badger insurance premiums", operatingExpensesId));
+        accounts.add(new AccountDefinition("8800-999", "Other Insurance Premiums", "Other insurance providers", operatingExpensesId));
+        
         accounts.add(new AccountDefinition("8900", "Repairs & Maintenance", "Equipment and facility maintenance", operatingExpensesId));
         
         // ADMINISTRATIVE EXPENSES (9000-9999)

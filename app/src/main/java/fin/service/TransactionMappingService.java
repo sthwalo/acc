@@ -1184,19 +1184,24 @@ public class TransactionMappingService {
     }
     
     /**
-     * Get or create a detailed account with automatic account creation
-     * This ensures every transaction gets its own detailed account
+     * Get or create a detailed account with automatic account creation.
+     * 
+     * NOTE: This method now primarily finds existing accounts since all sub-accounts
+     * are pre-initialized in AccountClassificationService. The createDetailedAccount()
+     * fallback is kept for backward compatibility but should rarely be used.
      */
     private Long getOrCreateDetailedAccount(String detailedCode, String detailedName,
                                            String rollupCode, String rollupName) {
         try {
-            // First try to get existing account
+            // First try to get existing account (should succeed for all standard sub-accounts)
             Long existingAccountId = getAccountIdByCode(1L, detailedCode); // Use company ID 1 for Xinghizana
             if (existingAccountId != null) {
                 return existingAccountId;
             }
 
-            // Account doesn't exist, create it
+            // Account doesn't exist - this should be rare now that sub-accounts are pre-initialized
+            LOGGER.warning("Account not found in standard chart: " + detailedCode + 
+                         ". Consider adding to AccountClassificationService.");
             return createDetailedAccount(detailedCode, detailedName, rollupCode, rollupName);
 
         } catch (SQLException e) {
@@ -1206,7 +1211,10 @@ public class TransactionMappingService {
     }
 
     /**
-     * Create a new detailed account in the database
+     * Create a new detailed account in the database.
+     * 
+     * NOTE: This method is now a fallback for non-standard accounts only.
+     * All standard sub-accounts should be pre-initialized in AccountClassificationService.
      */
     private Long createDetailedAccount(String accountCode, String accountName,
                                      String rollupCode, String rollupName) throws SQLException {
@@ -1256,7 +1264,7 @@ public class TransactionMappingService {
                 Long newAccountId = rs.getLong("id");
                 // Update cache
                 accountCache.put(accountCode, newAccountId);
-                LOGGER.info("Created new detailed account: " + accountCode + " - " + accountName);
+                LOGGER.warning("Created non-standard account dynamically: " + accountCode + " - " + accountName);
                 return newAccountId;
             }
         }
