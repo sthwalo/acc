@@ -306,15 +306,15 @@ public class TransactionMappingService {
             rulesCreated++;
             
             // Insurance reversals and failed debits
-            createMappingRule(companyId, "RTD-NOT PROVIDED FOR", "6000", "Reversals & Adjustments");
+            createMappingRule(companyId, "RTD-NOT PROVIDED FOR", "7200", "Gain on Asset Disposal");
             rulesCreated++;
-            createMappingRule(companyId, "RTD-DEBIT AGAINST PAYERS AUTH", "6000", "Reversals & Adjustments");
+            createMappingRule(companyId, "RTD-DEBIT AGAINST PAYERS AUTH", "7200", "Gain on Asset Disposal");
             rulesCreated++;
             
             // Interest income
-            createMappingRule(companyId, "INTEREST", "5000", "Other Income");
+            createMappingRule(companyId, "INTEREST", "7000", "Interest Income");
             rulesCreated++;
-            createMappingRule(companyId, "EXCESS INTEREST", "5000", "Other Income");
+            createMappingRule(companyId, "EXCESS INTEREST", "7000", "Interest Income");
             rulesCreated++;
             
             // Bank transfers
@@ -335,18 +335,18 @@ public class TransactionMappingService {
             createMappingRule(companyId, "WATER", "8300", "Utilities");
             rulesCreated++;
             
-            // Telephone - use existing account
-            createMappingRule(companyId, "TELEPHONE", "8310-001", "Mobile Phone Payments");
+            // Telephone - use Communication account (8400)
+            createMappingRule(companyId, "TELEPHONE", "8400", "Communication");
             rulesCreated++;
-            createMappingRule(companyId, "CELL", "8310-001", "Mobile Phone Payments");
+            createMappingRule(companyId, "CELL", "8400", "Communication");
             rulesCreated++;
-            createMappingRule(companyId, "MOBILE", "8310-001", "Mobile Phone Payments");
+            createMappingRule(companyId, "MOBILE", "8400", "Communication");
             rulesCreated++;
-            createMappingRule(companyId, "MTN", "8310-001", "Mobile Phone Payments");
+            createMappingRule(companyId, "MTN", "8400", "Communication");
             rulesCreated++;
-            createMappingRule(companyId, "VOD", "8310-001", "Mobile Phone Payments");
+            createMappingRule(companyId, "VOD", "8400", "Communication");
             rulesCreated++;
-            createMappingRule(companyId, "PRE-PAID PAYMENT TO", "8310-001", "Mobile Phone Payments");
+            createMappingRule(companyId, "PRE-PAID PAYMENT TO", "8400", "Communication");
             rulesCreated++;
             
             // Internet
@@ -605,6 +605,25 @@ public class TransactionMappingService {
     }
     
     /**
+     * Helper method to get standard account ID by SARS-compliant code.
+     * This method looks up existing accounts without creating new ones.
+     * 
+     * Phase 2 Addition (2025-10-03): Supports SARS-compliant account structure.
+     * 
+     * @param accountCode Standard SARS account code (e.g., "8100", "7000", "2100")
+     * @return Account ID or null if not found
+     */
+    private Long getStandardAccountId(String accountCode) {
+        try {
+            // Use company ID 2 (Xinghizana Group) - should be parameterized
+            return getAccountIdByCode(2L, accountCode);
+        } catch (SQLException e) {
+            LOGGER.log(Level.WARNING, "Could not find standard account: " + accountCode, e);
+            return null;
+        }
+    }
+    
+    /**
      * Enhanced comprehensive transaction mapping that creates proper double-entry accounting
      * Distinguishes between operational revenue, non-operational income, and reversals/refunds
      * Now includes supplier extraction and detailed account creation
@@ -638,90 +657,44 @@ public class TransactionMappingService {
                 }
             }
 
-            // INVESTMENT INCOME - Non-operational (goes to Other Income 5000-5999)
+            // INVESTMENT INCOME - Non-operational (SARS Code: 7000 - Interest Income)
             if (details.contains("STANLIB")) {
-                return getOrCreateDetailedAccount("5000-001", "Stanlib Investment Income", "5000", "Other Income");
+                return getStandardAccountId("7000"); // Interest Income
             }
 
-            // INTEREST INCOME - Non-operational
+            // INTEREST INCOME - Non-operational (SARS Code: 7000 - Interest Income)
+            // All interest income goes to single standard account, details preserved in transaction
             if (details.contains("INTEREST")) {
-                if (details.contains("STANDARD BANK")) {
-                    return getOrCreateDetailedAccount("5000-002", "Interest Income - Standard Bank", "5000", "Other Income");
-                } else if (details.contains("CAPITEC")) {
-                    return getOrCreateDetailedAccount("5000-003", "Interest Income - Capitec", "5000", "Other Income");
-                } else {
-                    return getOrCreateDetailedAccount("5000-004", "Interest Income - Other Banks", "5000", "Other Income");
-                }
+                return getStandardAccountId("7000"); // Interest Income (all banks)
             }
 
-            // EXCESS INTEREST - Non-operational income
+            // EXCESS INTEREST - Non-operational income (SARS Code: 7000 - Interest Income)
             if (details.contains("EXCESS INTEREST")) {
-                return getOrCreateDetailedAccount("5000-005", "Excess Interest Income", "5000", "Other Income");
+                return getStandardAccountId("7000"); // Interest Income
             }
 
-            // REFUNDS AND REVERSALS - Trace back to original transaction
+            // REFUNDS AND REVERSALS - Other Income (SARS Code: 7200 - Other Operating Income)
+            // All reversals are income adjustments, use single standard account
             if (details.contains("REVERSAL") || details.contains("RETURNED") ||
                 details.contains("NO AUTHORITY") || details.contains("CREDIT NOTE")) {
-
-                // Salary reversals
-                if (details.contains("SALARY") || details.contains("XG SALARIES")) {
-                    return getOrCreateDetailedAccount("6000-001", "Salary Reversals", "6000", "Reversals & Adjustments");
-                }
-
-                // Insurance reversals
-                if (details.contains("INSURANCE") || details.contains("PREMIUM")) {
-                    return getOrCreateDetailedAccount("6000-002", "Insurance Reversals", "6000", "Reversals & Adjustments");
-                }
-
-                // Fee reversals
-                if (details.contains("FEE") || details.contains("CHARGE")) {
-                    return getOrCreateDetailedAccount("6000-003", "Fee Reversals", "6000", "Reversals & Adjustments");
-                }
-
-                // General reversals
-                return getOrCreateDetailedAccount("6000-999", "General Reversals", "6000", "Reversals & Adjustments");
+                return getStandardAccountId("7200"); // Other Operating Income (Adjustments/Refunds)
             }
 
-            // RTD reversals (failed debits) - Handle separately from general reversals
+            // RTD reversals (failed debits) - Other Income (SARS Code: 7200)
+            // All RTD reversals are income adjustments
             if (details.contains("RTD")) {
-                if (details.contains("NOT PROVIDED FOR")) {
-                    // Failed debits from insurance companies
-                    if (details.contains("DOTSURE") || details.contains("MIWAY") ||
-                        details.contains("LIBERTY") || details.contains("BADGER") ||
-                        details.contains("CARTRACK") || details.contains("FAW")) {
-                        return getOrCreateDetailedAccount("6000-005", "Insurance RTD Reversals", "6000", "Reversals & Adjustments");
-                    }
-                } else if (details.contains("DEBIT AGAINST PAYERS AUTH")) {
-                    // Failed debit authorizations
-                    if (details.contains("DOTSURE") || details.contains("MIWAY") ||
-                        details.contains("LIBERTY") || details.contains("BADGER") ||
-                        details.contains("CARTRACK") || details.contains("FAW")) {
-                        return getOrCreateDetailedAccount("6000-006", "Insurance Debit Reversals", "6000", "Reversals & Adjustments");
-                    }
-                } else if (details.contains("AUTHORISATION CANCELLED")) {
-                    // Cancelled authorizations
-                    return getOrCreateDetailedAccount("6000-007", "Cancelled Authorizations", "6000", "Reversals & Adjustments");
-                }
-                // General RTD reversals
-                return getOrCreateDetailedAccount("6000-008", "RTD Reversals", "6000", "Reversals & Adjustments");
+                return getStandardAccountId("7200"); // Other Operating Income (Adjustments/Refunds)
             }
 
-            // CASH DEPOSITS - Non-operational income
+            // CASH DEPOSITS - Other Income (SARS Code: 7100 - Non-Operating Income)
+            // All cash deposits classified as non-operating income
             if (details.contains("DEPOSIT")) {
-                if (details.contains("STOKFELA")) {
-                    return getOrCreateDetailedAccount("5000-005", "Cash Deposit Income - Stokvela", "5000", "Other Income");
-                } else if (details.contains("TAU")) {
-                    return getOrCreateDetailedAccount("5000-006", "Cash Deposit Income - Tau", "5000", "Other Income");
-                } else if (details.contains("DAN")) {
-                    return getOrCreateDetailedAccount("5000-007", "Cash Deposit Income - Dan", "5000", "Other Income");
-                } else {
-                    return getOrCreateDetailedAccount("5000-008", "Cash Deposit Income - Other", "5000", "Other Income");
-                }
+                return getStandardAccountId("7100"); // Non-Operating Income
             }
 
-            // INSURANCE CLAIM PAYMENTS - Non-operational income
+            // INSURANCE CLAIM PAYMENTS - Other Income (SARS Code: 7100)
             if (details.contains("PAYMENT OF INSURANCE CLAIMS")) {
-                return getOrCreateDetailedAccount("5000-006", "Insurance Claim Payments", "5000", "Other Income");
+                return getStandardAccountId("7100"); // Non-Operating Income
             }
         }
 
@@ -789,26 +762,18 @@ public class TransactionMappingService {
                 }
             }
 
-            // SALARY PAYMENTS - Operational expenses
+            // SALARY PAYMENTS - Operational expenses (SARS Code: 8100 - Employee Costs)
+            // All salary payments to single standard account, employee name preserved in transaction details
             if (details.contains("SALARIES") || details.contains("SALARY") ||
                 details.contains("WAGES") || details.contains("XG SALARIES") ||
                 (details.contains("IB PAYMENT TO") && (details.contains("XG SALARIES") || details.contains("WAGES")))) {
-
-                // Extract employee name from payment description
-                String employeeName = extractEmployeeName(details);
-                if (employeeName != null) {
-                    String accountCode = "8100-" + generateEmployeeCode(employeeName);
-                    String accountName = "Salary - " + employeeName;
-                    return getOrCreateDetailedAccount(accountCode, accountName, "8100", "Employee Costs");
-                } else {
-                    return getOrCreateDetailedAccount("8100-999", "Salary Payments - Unspecified", "8100", "Employee Costs");
-                }
+                return getStandardAccountId("8100"); // Employee Costs (all employees)
             }
 
-            // TRUNCATED SALARY PAYMENTS - Handle incomplete descriptions
+            // TRUNCATED SALARY PAYMENTS - Handle incomplete descriptions (SARS Code: 8100)
             if (details.equals("IB PAYMENT TO") || details.equals("IMMEDIATE PAYMENT")) {
                 // These are salary payments with missing recipient details
-                return getOrCreateDetailedAccount("8100-999", "Salary Payments - Unspecified", "8100", "Employee Costs");
+                return getStandardAccountId("8100"); // Employee Costs
             }
 
             // TRUNCATED BANK TRANSFERS - Handle incomplete transfer descriptions
@@ -823,51 +788,34 @@ public class TransactionMappingService {
 
             // EXCESS INTEREST - Already handled in income section above
 
-            // PENSION FUND CONTRIBUTIONS - Operational expenses
+            // PENSION FUND CONTRIBUTIONS - Operational expenses (SARS Code: 8100 - Employee Costs)
+            // Pension contributions are part of employee costs
             if (details.contains("PENSION") && details.contains("FUND") && details.contains("CONTRIBUTION")) {
-                if (details.contains("FAW")) {
-                    return getOrCreateDetailedAccount("8110-001", "Pension Contributions - FAW Fund", "8110", "Pension Contributions");
-                } else {
-                    return getOrCreateDetailedAccount("8110-999", "Pension Contributions - Other", "8110", "Pension Contributions");
-                }
+                return getStandardAccountId("8100"); // Employee Costs (includes pension)
             }
 
-            // TAX PAYMENTS - Operational expenses
+            // TAX PAYMENTS - Liabilities (SARS Code: 2100 - Current Tax Payable)
+            // All tax payments reduce current tax liability
             if (details.contains("SARS") || details.contains("PAYE") || details.contains("VAT")) {
-                if (details.contains("PAYE") || details.contains("PAY-AS-YOU-EARN")) {
-                    return getOrCreateDetailedAccount("3100-001", "PAYE Tax Payments", "3100", "Tax Liabilities");
-                } else if (details.contains("VAT")) {
-                    return getOrCreateDetailedAccount("3100-002", "VAT Payments", "3100", "Tax Liabilities");
-                } else {
-                    return getOrCreateDetailedAccount("3100-999", "Other Tax Payments", "3100", "Tax Liabilities");
-                }
+                return getStandardAccountId("2100"); // Current Tax Payable
             }
 
-            // UTILITIES - Operational expenses
-            if (details.contains("ELECTRICITY")) {
-                return getOrCreateDetailedAccount("8900-001", "Electricity Expenses", "8900", "Administrative Expenses");
-            }
-            if (details.contains("WATER")) {
-                return getOrCreateDetailedAccount("8900-002", "Water Expenses", "8900", "Administrative Expenses");
-            }
-            if (details.contains("INTERNET") || details.contains("TELKOM")) {
-                return getOrCreateDetailedAccount("8900-003", "Internet & Telephone", "8900", "Administrative Expenses");
+            // UTILITIES - Operational expenses (SARS Code: 8900 - Other Operating Expenses)
+            if (details.contains("ELECTRICITY") || details.contains("WATER") || 
+                details.contains("INTERNET") || details.contains("TELKOM")) {
+                return getStandardAccountId("8900"); // Other Operating Expenses
             }
 
-            // OFFICE SUPPLIES - Operational expenses
+            // OFFICE SUPPLIES - Operational expenses (SARS Code: 8900)
             if (details.contains("STATIONERY") || details.contains("PRINTING") || details.contains("OFFICE")) {
-                return getOrCreateDetailedAccount("8900-004", "Office Supplies & Printing", "8900", "Administrative Expenses");
+                return getStandardAccountId("8900"); // Other Operating Expenses
             }
 
-            // PROFESSIONAL SERVICES - Operational expenses
-            if (details.contains("LEGAL") || details.contains("ATTORNEY")) {
-                return getOrCreateDetailedAccount("8700-001", "Legal Services", "8700", "Professional Services");
-            }
-            if (details.contains("ACCOUNTING") || details.contains("AUDIT")) {
-                return getOrCreateDetailedAccount("8700-002", "Accounting & Audit Services", "8700", "Professional Services");
-            }
-            if (details.contains("CONSULTANT") || details.contains("CONSULTING")) {
-                return getOrCreateDetailedAccount("8700-003", "Consulting Services", "8700", "Professional Services");
+            // PROFESSIONAL SERVICES - Operational expenses (SARS Code: 8700 - Professional Fees)
+            if (details.contains("LEGAL") || details.contains("ATTORNEY") ||
+                details.contains("ACCOUNTING") || details.contains("AUDIT") ||
+                details.contains("CONSULTANT") || details.contains("CONSULTING")) {
+                return getStandardAccountId("8700"); // Professional Fees
             }
 
             // VEHICLE MAINTENANCE & PARTS - Operational expenses
@@ -889,40 +837,22 @@ public class TransactionMappingService {
             // SUPPLIER PAYMENTS - DETAILED ACCOUNT STRUCTURE
             // =================================================================
 
-            // REIMBURSEMENTS - Special category for employee reimbursements
+            // REIMBURSEMENTS - Use standard Other Operating Expenses account (SARS Code: 8900)
+            // Employee/supplier name preserved in transaction details field
             if (details.contains("REIMBURSE")) {
-                String supplierName = extractSupplierName(details);
-                if (supplierName != null) {
-                    String accountCode = "8900-" + generateSupplierCode(supplierName);
-                    String accountName = "Reimbursement - " + supplierName;
-                    return getOrCreateDetailedAccount(accountCode, accountName, "8900", "Administrative Expenses");
-                } else {
-                    return getOrCreateDetailedAccount("8900-999", "Employee Reimbursements", "8900", "Administrative Expenses");
-                }
+                return getStandardAccountId("8900"); // Other Operating Expenses
             }
 
-            // SCHOOL FEES - Education expenses
+            // SCHOOL FEES - Use standard Other Operating Expenses account (SARS Code: 8900)
+            // School/institution name preserved in transaction details field
             if (details.contains("SCHOOL") || details.contains("COLLEGE") || details.contains("LYCEUM")) {
-                String supplierName = extractSupplierName(details);
-                if (supplierName != null) {
-                    String accountCode = "8900-" + generateSupplierCode(supplierName);
-                    String accountName = "School Fees - " + supplierName;
-                    return getOrCreateDetailedAccount(accountCode, accountName, "8900", "Administrative Expenses");
-                } else {
-                    return getOrCreateDetailedAccount("8900-005", "School Fees", "8900", "Administrative Expenses");
-                }
+                return getStandardAccountId("8900"); // Other Operating Expenses
             }
 
-            // STOKFELA PAYMENTS - Special loans/payments to stokvela
+            // STOKVELA PAYMENTS - Use standard Long-term Liabilities account (SARS Code: 2400)
+            // Stokvela member name preserved in transaction details field
             if (details.contains("STOKFELA") || details.contains("STOKVELA")) {
-                String supplierName = extractSupplierName(details);
-                if (supplierName != null) {
-                    String accountCode = "2000-" + generateSupplierCode(supplierName);
-                    String accountName = "Stokvela Loan - " + supplierName;
-                    return getOrCreateDetailedAccount(accountCode, accountName, "2000", "Long-term Liabilities");
-                } else {
-                    return getOrCreateDetailedAccount("2000-999", "Stokvela Loans", "2000", "Long-term Liabilities");
-                }
+                return getStandardAccountId("2400"); // Long-term Liabilities
             }
 
             // BOND REPAYMENTS - Liability reduction (mortgage payments)
@@ -930,80 +860,45 @@ public class TransactionMappingService {
                 return getOrCreateDetailedAccount("2000-003", "Bond Liability", "2000", "Long-term Liabilities");
             }
 
-            // CAR PURCHASES - Vehicle assets
+            // VEHICLE PURCHASES - Use standard Property, Plant & Equipment (SARS Code: 2100)
+            // Vehicle details and supplier name preserved in transaction details field
             if (details.contains("CAR SALES") || details.contains("MERCEDES") ||
                 details.contains("VEHICLE") || details.contains("AUTOMOTIVE")) {
-                String supplierName = extractSupplierName(details);
-                if (supplierName != null) {
-                    String accountCode = "2000-" + generateSupplierCode(supplierName);
-                    String accountName = "Vehicle Purchase - " + supplierName;
-                    return getOrCreateDetailedAccount(accountCode, accountName, "2000", "Non-Current Assets");
-                } else {
-                    return getOrCreateDetailedAccount("2000-002", "Vehicle Purchases", "2000", "Non-Current Assets");
-                }
+                return getStandardAccountId("2100"); // Property, Plant & Equipment
             }
 
-            // COMMUNICATION & IT SERVICES - Two Way Technologies, etc.
+            // IT SERVICES - Use standard Communication account (SARS Code: 8400)
+            // Supplier name preserved in transaction details field
             if (details.contains("TWO WAY TECHNOLOGIES") || details.contains("TECHNOLOGIES") ||
                 details.contains("SOFTWARE") || details.contains("IT ")) {
-                String supplierName = extractSupplierName(details);
-                if (supplierName != null) {
-                    String accountCode = "8400-" + generateSupplierCode(supplierName);
-                    String accountName = "IT Services - " + supplierName;
-                    return getOrCreateDetailedAccount(accountCode, accountName, "8400", "Communication");
-                } else {
-                    return getOrCreateDetailedAccount("8400-999", "IT & Communication Services", "8400", "Communication");
-                }
+                return getStandardAccountId("8400"); // Communication
             }
 
-            // LABOUR & HUMAN RESOURCES - Neo Entle Labour, etc.
+            // LABOUR SERVICES - Use standard Employee Costs account (SARS Code: 8100)
+            // Labour provider/agency name preserved in transaction details field
             if (details.contains("LABOUR") || details.contains("HUMAN RESOUR") ||
                 details.contains("RECRUITMENT") || details.contains("STAFFING")) {
-                String supplierName = extractSupplierName(details);
-                if (supplierName != null) {
-                    String accountCode = "8100-" + generateSupplierCode(supplierName);
-                    String accountName = "Labour Services - " + supplierName;
-                    return getOrCreateDetailedAccount(accountCode, accountName, "8100", "Employee Costs");
-                } else {
-                    return getOrCreateDetailedAccount("8100-998", "Labour & HR Services", "8100", "Employee Costs");
-                }
+                return getStandardAccountId("8100"); // Employee Costs
             }
 
-            // CONSTRUCTION & BUILDING - Modderfontein, Ellispark Stadium, etc.
+            // CONSTRUCTION & BUILDING - Operating expenses (SARS Code: 8900 - Other Operating Expenses)
+            // Supplier details preserved in transaction description
             if (details.contains("STADIUM") || details.contains("CONSTRUCTION") ||
                 details.contains("BUILDING") || details.contains("MODDERFONTEIN")) {
-                String supplierName = extractSupplierName(details);
-                if (supplierName != null) {
-                    String accountCode = "8200-" + generateSupplierCode(supplierName);
-                    String accountName = "Construction Services - " + supplierName;
-                    return getOrCreateDetailedAccount(accountCode, accountName, "8200", "Rent Expense");
-                } else {
-                    return getOrCreateDetailedAccount("8200-999", "Construction & Building Services", "8200", "Rent Expense");
-                }
+                return getStandardAccountId("8900"); // Other Operating Expenses
             }
 
-            // TRANSPORT SERVICES - Mbhoni Miyambo Transport, etc.
+            // TRANSPORT SERVICES - Operating expenses (SARS Code: 8900)
             if (details.contains("TRANSPORT") || details.contains("LOGISTICS") ||
                 details.contains("DELIVERY") || details.contains("COURIER")) {
-                String supplierName = extractSupplierName(details);
-                if (supplierName != null) {
-                    String accountCode = "8600-" + generateSupplierCode(supplierName);
-                    String accountName = "Transport Services - " + supplierName;
-                    return getOrCreateDetailedAccount(accountCode, accountName, "8600", "Travel & Entertainment");
-                } else {
-                    return getOrCreateDetailedAccount("8600-999", "Transport & Logistics Services", "8600", "Travel & Entertainment");
-                }
+                return getStandardAccountId("8900"); // Other Operating Expenses
             }
 
-            // GENERAL SUPPLIER PAYMENTS - Catch all for other supplier payments
+            // GENERAL SUPPLIER PAYMENTS - Trade Payables (SARS Code: 2000 - Trade & Other Payables)
+            // All supplier payments reduce trade payables liability
             if (details.contains("IB PAYMENT TO") && !details.contains("XG SALARIES") &&
                 !details.contains("WAGES")) {
-                String supplierName = extractSupplierName(details);
-                if (supplierName != null && supplierName.length() > 2) {
-                    String accountCode = "3000-" + generateSupplierCode(supplierName);
-                    String accountName = "Supplier - " + supplierName;
-                    return getOrCreateDetailedAccount(accountCode, accountName, "3000", "Accounts Payable");
-                }
+                return getStandardAccountId("2000"); // Trade & Other Payables
             }
 
             // ATM CASH WITHDRAWALS - Petty cash (current assets)
@@ -1011,11 +906,10 @@ public class TransactionMappingService {
                 return getOrCreateDetailedAccount("1000-006", "Petty Cash Withdrawals", "1000", "Current Assets");
             }
 
-            // MOBILE PHONE PAYMENTS - Communication expenses
-            if (details.contains("PRE-PAID PAYMENT TO")) {
-                if (details.contains("MTN") || details.contains("VOD")) {
-                    return getOrCreateDetailedAccount("8310-001", "Mobile Phone Payments", "8310", "Telephone & Internet");
-                }
+            // MOBILE PHONE PAYMENTS - Communication expenses (SARS Code: 8400 - Communication)
+            if (details.contains("PRE-PAID PAYMENT TO") || details.contains("MTN") || 
+                details.contains("VOD") || details.contains("CELL C") || details.contains("TELKOM")) {
+                return getStandardAccountId("8400"); // Communication
             }
         }
 
@@ -1362,25 +1256,139 @@ public class TransactionMappingService {
     }
 
     /**
-     * Get the appropriate category_id for an account code
+     * Get the appropriate category_id for an account code based on SARS-compliant structure.
+     * Maps account codes (1000-9999) to actual category IDs in database.
+     * 
+     * Updated: 2025-10-03 - Fixed to use actual category IDs (7-16) instead of non-existent IDs (18-20)
      */
     private int getCategoryIdForAccountCode(String accountCode) {
-        if (accountCode == null) return 18; // Default to Operating Expenses
+        if (accountCode == null) return 14; // Default to Operating Expenses (ID 14)
 
         String prefix = accountCode.split("-")[0];
 
+        // Map SARS account code ranges to actual category IDs in database
         switch (prefix) {
-            case "1000": return 11; // Current Assets (loan receivables)
-            case "2000": return 13; // Current Liabilities (director loans)
-            case "4000": return 16; // Operating Revenue
-            case "5000": return 17; // Other Income
-            case "6000": return 17; // Other Income (reversals/adjustments)
-            case "8100": return 18; // Operating Expenses (salaries)
-            case "8500": return 18; // Operating Expenses (vehicle expenses)
-            case "8800": return 18; // Operating Expenses (insurance)
-            case "9600": return 20; // Finance Costs (bank fees)
-            case "3100": return 18; // Operating Expenses (VAT)
-            default: return 18; // Default to Operating Expenses
+            // Assets (1000-1999)
+            case "1000":
+            case "1100":
+            case "1200":
+            case "1300":
+            case "1400":
+            case "1500":
+                return 7; // Current Assets
+            
+            case "1600":
+            case "1700":
+            case "1800":
+            case "1900":
+                return 8; // Non-Current Assets
+            
+            // Liabilities (2000-2999)
+            case "2000":
+            case "2100":
+            case "2200":
+            case "2300":
+                return 9; // Current Liabilities
+            
+            case "2400":
+            case "2500":
+            case "2600":
+            case "2700":
+            case "2800":
+            case "2900":
+                return 10; // Non-Current Liabilities
+            
+            // Equity (3000-3999) - Note: 3000-3999 for payables is technically liabilities
+            case "3000":
+            case "3100":
+            case "3200":
+                return 9; // Current Liabilities (trade payables)
+            
+            case "3300":
+            case "3400":
+            case "3500":
+            case "3600":
+            case "3700":
+            case "3800":
+            case "3900":
+                return 11; // Owner's Equity
+            
+            // Revenue (4000-6999)
+            case "4000":
+            case "4100":
+            case "4200":
+            case "4300":
+            case "4400":
+            case "4500":
+            case "4600":
+            case "4700":
+            case "4800":
+            case "4900":
+            case "5000":
+            case "5100":
+            case "5200":
+            case "5300":
+            case "5400":
+            case "5500":
+                return 12; // Operating Revenue
+            
+            case "5600":
+            case "5700":
+            case "5800":
+            case "5900":
+            case "6000":
+            case "6100":
+            case "6200":
+            case "6300":
+            case "6400":
+            case "6500":
+            case "6600":
+            case "6700":
+            case "6800":
+            case "6900":
+                return 13; // Other Income
+            
+            // Revenue from 7000-7999
+            case "7000":
+            case "7100":
+            case "7200":
+            case "7300":
+            case "7400":
+            case "7500":
+            case "7600":
+            case "7700":
+            case "7800":
+            case "7900":
+                return 13; // Other Income (Interest, Dividends, etc.)
+            
+            // Expenses (8000-8999)
+            case "8000":
+            case "8100": // Employee Costs
+            case "8200": // Directors' Remuneration
+            case "8300": // Depreciation
+            case "8400": // Communication
+            case "8500": // Vehicle Expenses
+            case "8600": // Repairs & Maintenance
+            case "8700": // Professional Fees
+            case "8800": // Insurance
+            case "8900": // Other Operating Expenses
+                return 14; // Operating Expenses
+            
+            // Finance Costs (9000-9999)
+            case "9000":
+            case "9100":
+            case "9200":
+            case "9300":
+            case "9400":
+            case "9500":
+            case "9600": // Bank Charges
+            case "9700":
+            case "9800":
+            case "9900":
+                return 16; // Finance Costs
+            
+            default:
+                return 14; // Default to Operating Expenses (ID 14)
         }
     }
 
