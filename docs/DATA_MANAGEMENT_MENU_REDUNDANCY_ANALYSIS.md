@@ -324,6 +324,7 @@ private void displayClassificationMenu() {
 ## 📝 Related Documentation
 
 - [DATA_MANAGEMENT_FLOW_ANALYSIS.md](./DATA_MANAGEMENT_FLOW_ANALYSIS.md) - Service redundancy analysis
+- [SERVICE_REDUNDANCY_DEEP_ANALYSIS.md](./SERVICE_REDUNDANCY_DEEP_ANALYSIS.md) - **NEW**: Deep service layer redundancy analysis (1,598 lines of unused code identified!)
 - [MAPPING_RULES_ANALYSIS.md](./MAPPING_RULES_ANALYSIS.md) - Mapping rules conflicts
 - [CHART_OF_ACCOUNTS_CONFLICT_ANALYSIS.md](./CHART_OF_ACCOUNTS_CONFLICT_ANALYSIS.md) - Account structure conflicts
 
