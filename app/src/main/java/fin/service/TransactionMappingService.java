@@ -881,10 +881,19 @@ public class TransactionMappingService {
                 return getStandardAccountId("8100"); // Employee Costs
             }
 
+            // RENT/LEASE PAYMENTS - Ellispark Stadium (SARS Code: 8600 - Rent Paid)
+            if (details.contains("ELLISPARK STADIUM")) {
+                return getStandardAccountId("8600"); // Rent Paid
+            }
+
+            // DIRECTORS' REMUNERATION - Dan Nkuna (SARS Code: 8200)
+            if (details.contains("MODDERFONTEIN") && details.contains("NKUNA")) {
+                return getStandardAccountId("8200"); // Directors' Remuneration
+            }
+
             // CONSTRUCTION & BUILDING - Operating expenses (SARS Code: 8900 - Other Operating Expenses)
             // Supplier details preserved in transaction description
-            if (details.contains("STADIUM") || details.contains("CONSTRUCTION") ||
-                details.contains("BUILDING") || details.contains("MODDERFONTEIN")) {
+            if (details.contains("CONSTRUCTION") || details.contains("BUILDING")) {
                 return getStandardAccountId("8900"); // Other Operating Expenses
             }
 
