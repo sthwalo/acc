@@ -5,7 +5,13 @@
  * Owner: Immaculate Nyoni
  * Contact: sthwaloe@gmail.com | +27 61 514 6185
  * 
- * This source code is licensed under the Apache License 2.0.
+ * This source code is licensed under th    @Test
+    @Disabled("Phase 4: ChartOfAccountsService deleted - test no longer relevant")
+    void testDeprecatedChartOfAccountsServiceStillAvailable() {
+        // ChartOfAccountsService deleted in Phase 4 (2025-10-03)
+        // AccountClassificationService is now single source of truth
+    }
+}2.0.
  * Commercial use of the APPLICATION requires separate licensing.
  * 
  * Contains proprietary algorithms and business logic.
@@ -117,15 +123,12 @@ class TransactionClassificationServiceTest {
             TransactionMappingService mappingService = applicationContext.get(TransactionMappingService.class);
             InteractiveClassificationService interactiveService = applicationContext.get(InteractiveClassificationService.class);
             
-            // Deprecated service (still registered for backward compatibility)
-            @SuppressWarnings("deprecation")
-            ChartOfAccountsService chartOfAccountsService = applicationContext.get(ChartOfAccountsService.class);
+            // Phase 4: ChartOfAccountsService deleted - AccountClassificationService is single source of truth
             
             assertNotNull(accountClassificationService, "AccountClassificationService should be available (primary)");
             assertNotNull(ruleService, "TransactionMappingRuleService should be available");
             assertNotNull(mappingService, "TransactionMappingService should be available");
             assertNotNull(interactiveService, "InteractiveClassificationService should be available");
-            assertNotNull(chartOfAccountsService, "ChartOfAccountsService should be available (deprecated)");
         }, "All dependency services should be properly registered");
     }
     
@@ -181,10 +184,7 @@ class TransactionClassificationServiceTest {
             AccountClassificationService accountClassificationService = 
                 applicationContext.get(AccountClassificationService.class);
             
-            // Supporting services
-            @SuppressWarnings("deprecation")
-            ChartOfAccountsService chartService = 
-                applicationContext.get(ChartOfAccountsService.class);
+            // Supporting services (Phase 4: ChartOfAccountsService removed)
             TransactionMappingRuleService ruleService = 
                 applicationContext.get(TransactionMappingRuleService.class);
             CategoryManagementService categoryService = 
@@ -194,10 +194,9 @@ class TransactionClassificationServiceTest {
             TransactionMappingService mappingService = 
                 applicationContext.get(TransactionMappingService.class);
             
-            // Verify all are non-null
+            // Verify all are non-null (Phase 4: ChartOfAccountsService removed)
             assertNotNull(unifiedService, "TransactionClassificationService should be registered");
             assertNotNull(accountClassificationService, "AccountClassificationService should be registered (primary)");
-            assertNotNull(chartService, "ChartOfAccountsService should be registered (deprecated)");
             assertNotNull(ruleService, "TransactionMappingRuleService should be registered");
             assertNotNull(categoryService, "CategoryManagementService should be registered");
             assertNotNull(accountService, "AccountManagementService should be registered");
@@ -223,19 +222,9 @@ class TransactionClassificationServiceTest {
     }
     
     @Test
+    @Disabled("Phase 4: ChartOfAccountsService deleted - test no longer relevant")
     void chartOfAccountsService_IsDeprecatedButAvailable() {
-        // ChartOfAccountsService is deprecated as of 2025-10-03 but remains available
-        // for backward compatibility during transition period
-        assertDoesNotThrow(() -> {
-            @SuppressWarnings("deprecation")
-            ChartOfAccountsService deprecatedService = 
-                applicationContext.get(ChartOfAccountsService.class);
-            
-            assertNotNull(deprecatedService, 
-                "ChartOfAccountsService should still be available (deprecated)");
-            
-            // Note: Will be removed after 30 days of successful operation with
-            // AccountClassificationService as single source of truth
-        }, "Deprecated ChartOfAccountsService should still be registered for backward compatibility");
+        // ChartOfAccountsService deleted in Phase 4 (2025-10-03)
+        // AccountClassificationService is now single source of truth
     }
 }
