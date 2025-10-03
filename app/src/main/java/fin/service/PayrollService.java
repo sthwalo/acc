@@ -11,10 +11,8 @@ import fin.config.DatabaseConfig;
 import fin.repository.CompanyRepository;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.sql.*;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.logging.Logger;
@@ -86,7 +84,7 @@ public class PayrollService {
         // Check for test system property or environment variable
         return System.getProperty("test.mode", "false").equals("true") ||
                System.getenv("TEST_MODE") != null ||
-               "true".equals(System.getProperty("java.class.path", "").contains("test"));
+               System.getProperty("java.class.path", "").contains("test");
     }
     
     public CompanyRepository getCompanyRepository() {

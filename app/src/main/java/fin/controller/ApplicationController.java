@@ -1,6 +1,5 @@
 package fin.controller;
 
-import fin.controller.PayrollController;
 import fin.state.ApplicationState;
 import fin.ui.ConsoleMenu;
 import fin.ui.InputHandler;

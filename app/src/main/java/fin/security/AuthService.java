@@ -7,7 +7,6 @@
 package fin.security;
 
 import fin.model.User;
-import fin.model.Company;
 import fin.repository.UserRepository;
 import fin.config.DatabaseConfig;
 
