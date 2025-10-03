@@ -3,6 +3,7 @@ package fin.service;
 import fin.model.BankTransaction;
 import fin.model.JournalEntry;
 import fin.model.ClassificationResult;
+import fin.repository.AccountRepository;
 
 import java.math.BigDecimal;
 import java.sql.*;
@@ -15,7 +16,7 @@ import java.util.logging.Level;
  * JournalEntryGenerator - Creates journal entries for classified transactions
  *
  * This service handles the creation of double-entry journal entries based on
- * transaction classification results. It integrates with AccountManager to
+ * transaction classification results. It integrates with AccountRepository to
  * ensure proper account management and uses ClassificationResult objects
  * from transaction classification services.
  */
@@ -23,11 +24,11 @@ public class JournalEntryGenerator {
     private static final Logger LOGGER = Logger.getLogger(JournalEntryGenerator.class.getName());
 
     private final String dbUrl;
-    private final AccountManager accountManager;
+    private final AccountRepository accountRepository;
 
-    public JournalEntryGenerator(String dbUrl, AccountManager accountManager) {
+    public JournalEntryGenerator(String dbUrl, AccountRepository accountRepository) {
         this.dbUrl = dbUrl;
-        this.accountManager = accountManager;
+        this.accountRepository = accountRepository;
     }
 
     /**
@@ -48,8 +49,8 @@ public class JournalEntryGenerator {
         try (Connection conn = getConnection()) {
             conn.setAutoCommit(false);
 
-            // Get or create the classified account using AccountManager
-            Long classifiedAccountId = accountManager.getOrCreateDetailedAccount(
+            // Get or create the classified account using AccountRepository
+            Long classifiedAccountId = accountRepository.getOrCreateDetailedAccount(
                 classificationResult.getAccountCode(),
                 classificationResult.getAccountName(),
                 getParentAccountCode(classificationResult.getAccountCode()),

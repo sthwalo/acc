@@ -1,18 +1,20 @@
-package fin.service;
+package fin.repository;
 
 import java.sql.*;
 import java.util.logging.Logger;
 
 /**
- * AccountManager - Handles account creation, lookup, and management operations
- * Extracted from TransactionMappingService for better separation of concerns
+ * AccountRepository - Data access layer for account operations
+ * Moved from fin.service.AccountManager for proper separation of concerns
+ * 
+ * Handles account CRUD operations at the repository level.
  */
-public class AccountManager {
-    private static final Logger LOGGER = Logger.getLogger(AccountManager.class.getName());
+public class AccountRepository {
+    private static final Logger LOGGER = Logger.getLogger(AccountRepository.class.getName());
 
     private final String jdbcUrl;
 
-    public AccountManager(String jdbcUrl) {
+    public AccountRepository(String jdbcUrl) {
         this.jdbcUrl = jdbcUrl;
     }
 

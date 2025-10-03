@@ -59,7 +59,7 @@ public class DataManagementController {
             boolean back = false;
             while (!back) {
                 menu.displayDataManagementMenu();
-                int choice = inputHandler.getInteger("Enter your choice", 1, 9);
+                int choice = inputHandler.getInteger("Enter your choice", 1, 7);
                 
                 switch (choice) {
                     case 1:
@@ -72,21 +72,15 @@ public class DataManagementController {
                         handleTransactionClassification();
                         break;
                     case 4:
-                        handleTransactionCorrection();
-                        break;
-                    case 5:
                         handleTransactionHistory();
                         break;
-                    case 6:
+                    case 5:
                         handleDataReset();
                         break;
-                    case 7:
+                    case 6:
                         handleExportToCSV();
                         break;
-                    case 8:
-                        handleInitializeMappingRules();
-                        break;
-                    case 9:
+                    case 7:
                         back = true;
                         break;
                     default:
@@ -208,15 +202,17 @@ public class DataManagementController {
             boolean back = false;
             while (!back) {
                 menu.displayTransactionClassificationMenu();
-                int choice = inputHandler.getInteger("Enter your choice", 1, 5);
+                int choice = inputHandler.getInteger("Enter your choice", 1, 7);
                 
                 switch (choice) {
                     case 1:
+                        // Interactive Classification (new transactions)
                         classificationService.runInteractiveClassification(
                             applicationState.getCurrentCompany().getId(),
                             applicationState.getCurrentFiscalPeriod().getId());
                         break;
                     case 2:
+                        // Auto-Classify Transactions
                         int classifiedCount = classificationService.autoClassifyTransactions(
                             applicationState.getCurrentCompany().getId(),
                             applicationState.getCurrentFiscalPeriod().getId());
@@ -225,17 +221,27 @@ public class DataManagementController {
                         }
                         break;
                     case 3:
-                        handleChartOfAccountsInitialization();
+                        // Re-classify Transactions (fix existing) - moved from top-level Option 4
+                        handleTransactionCorrection();
                         break;
                     case 4:
+                        // Initialize Chart of Accounts
+                        handleChartOfAccountsInitialization();
+                        break;
+                    case 5:
+                        // Initialize Mapping Rules - moved from top-level Option 8
+                        handleInitializeMappingRules();
+                        break;
+                    case 6:
+                        // Generate Journal Entries (renamed from Synchronize)
                         int syncCount = classificationService.synchronizeJournalEntries(
                             applicationState.getCurrentCompany().getId(),
                             applicationState.getCurrentFiscalPeriod().getId());
                         if (syncCount > 0) {
-                            outputFormatter.printSuccess("Synchronized " + syncCount + " journal entries");
+                            outputFormatter.printSuccess("Generated " + syncCount + " journal entries");
                         }
                         break;
-                    case 5:
+                    case 7:
                         back = true;
                         break;
                     default:

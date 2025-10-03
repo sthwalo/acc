@@ -15,12 +15,11 @@ public class ConsoleMenu {
         System.out.println("5. View Imported Data");
         System.out.println("6. Generate Reports");
         System.out.println("7. Data Management");
-        System.out.println("8. Verify Transactions");
-        System.out.println("9. Payroll Management");
-        System.out.println("10. Show current time");
-        System.out.println("11. System Logs");
-        System.out.println("12. Exit");
-        System.out.print("Enter your choice (1-12): ");
+        System.out.println("8. Payroll Management");
+        System.out.println("9. Show current time");
+        System.out.println("10. System Logs");
+        System.out.println("11. Exit");
+        System.out.print("Enter your choice (1-11): ");
     }
 
     public void displayCompanyMenu() {
@@ -59,15 +58,13 @@ public class ConsoleMenu {
     public void displayDataManagementMenu() {
         System.out.println("\n===== Data Management =====");
         System.out.println("1. Create Manual Invoice");
-        System.out.println("2. Create Journal Entry");
+        System.out.println("2. Create Manual Journal Entry");
         System.out.println("3. Transaction Classification");
-        System.out.println("4. Correct Transaction Categorization");
-        System.out.println("5. View Transaction History");
-        System.out.println("6. Reset Company Data");
-        System.out.println("7. Export to CSV");
-        System.out.println("8. Initialize Mapping Rules");
-        System.out.println("9. Back to main menu");
-        System.out.print("Enter your choice (1-9): ");
+        System.out.println("4. View Transaction History");
+        System.out.println("5. Reset Company Data");
+        System.out.println("6. Export to CSV");
+        System.out.println("7. Back to main menu");
+        System.out.print("Enter your choice (1-7): ");
     }
     
     public void displayImportMenu() {
@@ -80,12 +77,14 @@ public class ConsoleMenu {
     
     public void displayTransactionClassificationMenu() {
         System.out.println("\n===== Transaction Classification =====");
-        System.out.println("1. Run Interactive Classification");
+        System.out.println("1. Interactive Classification (new transactions)");
         System.out.println("2. Auto-Classify Transactions");
-        System.out.println("3. Initialize Chart of Accounts");
-        System.out.println("4. Synchronize Journal Entries");
-        System.out.println("5. Back to Data Management");
-        System.out.print("Enter your choice (1-5): ");
+        System.out.println("3. Re-classify Transactions (fix existing)");
+        System.out.println("4. Initialize Chart of Accounts");
+        System.out.println("5. Initialize Mapping Rules");
+        System.out.println("6. Generate Journal Entries");
+        System.out.println("7. Back to Data Management");
+        System.out.print("Enter your choice (1-7): ");
     }
     
     public void displayAccountInitializationMenu() {

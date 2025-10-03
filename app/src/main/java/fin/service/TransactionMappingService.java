@@ -1,6 +1,7 @@
 package fin.service;
 
 import fin.model.BankTransaction;
+import fin.model.ClassificationResult;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -1435,7 +1436,9 @@ public class TransactionMappingService {
                 stmt.setLong(1, companyId);
 
                 try (ResultSet rs = stmt.executeQuery()) {
-                    JournalEntryCreationService journalService = new JournalEntryCreationService(dbUrl);
+                    // Initialize journal entry generator with repository
+                    fin.repository.AccountRepository accountRepo = new fin.repository.AccountRepository(dbUrl);
+                    JournalEntryGenerator journalGenerator = new JournalEntryGenerator(dbUrl, accountRepo);
 
                     while (rs.next()) {
                         // Create BankTransaction object
@@ -1448,13 +1451,14 @@ public class TransactionMappingService {
                         transaction.setAccountCode(rs.getString("account_code"));
                         transaction.setAccountName(rs.getString("account_name"));
 
-                        // Create journal entry
+                        // Create journal entry using classification result
                         try {
-                            journalService.createJournalEntryForTransaction(
-                                transaction,
+                            ClassificationResult result = new ClassificationResult(
                                 transaction.getAccountCode(),
-                                transaction.getAccountName()
+                                transaction.getAccountName(),
+                                "Pre-classified transaction"
                             );
+                            journalGenerator.createJournalEntryForTransaction(transaction, result);
                             journalEntriesCreated++;
 
                             // Log progress every 100 entries
