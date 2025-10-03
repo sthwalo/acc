@@ -91,18 +91,13 @@ public class ApplicationContext {
         TransactionMappingRuleService transactionMappingRuleService = new TransactionMappingRuleService(dbUrl);
         register(TransactionMappingRuleService.class, transactionMappingRuleService);
         
-        ChartOfAccountsService chartOfAccountsService = new ChartOfAccountsService(
-            categoryManagementService,
-            accountManagementService,
-            transactionMappingRuleService
-        );
-        register(ChartOfAccountsService.class, chartOfAccountsService);
+        // Phase 4: ChartOfAccountsService removed - AccountClassificationService is single source of truth
+        // AccountService now uses AccountClassificationService directly
         
         TransactionMappingService transactionMappingService = new TransactionMappingService(dbUrl);
         register(TransactionMappingService.class, transactionMappingService);
         
-        // NOTE: ChartOfAccountsService deprecated - using AccountClassificationService instead
-        // TransactionClassificationService now uses AccountClassificationService as single source of truth
+        // NOTE: TransactionClassificationService uses AccountClassificationService as single source of truth
         TransactionClassificationService transactionClassificationService = new TransactionClassificationService(
             dbUrl,
             transactionMappingRuleService,
