@@ -66,9 +66,6 @@ class ApplicationControllerTest {
     private DataManagementController mockDataManagementController;
     
     @Mock
-    private VerificationController mockVerificationController;
-    
-    @Mock
     private PayrollController mockPayrollController;
     
     private InputHandler inputHandler;
@@ -112,7 +109,6 @@ class ApplicationControllerTest {
             mockImportController,
             mockReportController,
             mockDataManagementController,
-            mockVerificationController,
             mockPayrollController
         );
     }    @Test
@@ -144,7 +140,6 @@ class ApplicationControllerTest {
             mockImportController,
             mockReportController,
             mockDataManagementController,
-            mockVerificationController,
             mockPayrollController
         );
         
@@ -175,7 +170,6 @@ class ApplicationControllerTest {
             mockImportController,
             mockReportController,
             mockDataManagementController,
-            mockVerificationController,
             mockPayrollController
         );
         

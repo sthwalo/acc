@@ -2,6 +2,7 @@ package fin.service;
 
 import fin.model.BankTransaction;
 import fin.model.ClassificationResult;
+import fin.repository.AccountRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -23,7 +24,7 @@ import static org.mockito.Mockito.*;
  * This module handles the creation of journal entries for classified transactions
  *
  * STATUS: Service implemented, tests enabled
- * TODO: Verify integration with AccountManager and classification services
+ * TODO: Verify integration with AccountRepository and classification services
  */
 public class JournalEntryGeneratorTest {
 
@@ -37,7 +38,7 @@ public class JournalEntryGeneratorTest {
     private ResultSet mockResultSet;
 
     @Mock
-    private AccountManager mockAccountManager;
+    private AccountRepository mockAccountRepository;
 
     private JournalEntryGenerator journalGenerator;
 
@@ -50,7 +51,7 @@ public class JournalEntryGeneratorTest {
         when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet);
         when(mockPreparedStatement.getGeneratedKeys()).thenReturn(mockResultSet);
 
-        journalGenerator = new TestableJournalEntryGenerator("jdbc:test:db", mockAccountManager, mockConnection);
+        journalGenerator = new TestableJournalEntryGenerator("jdbc:test:db", mockAccountRepository, mockConnection);
     }
 
     @Test
@@ -63,7 +64,7 @@ public class JournalEntryGeneratorTest {
 
         ClassificationResult classificationResult = new ClassificationResult("8800", "Insurance", "INSURANCE PREMIUM");
 
-        when(mockAccountManager.getOrCreateDetailedAccount("8800", "Insurance", "8800", "Expenses")).thenReturn(2001L);
+        when(mockAccountRepository.getOrCreateDetailedAccount("8800", "Insurance", "8800", "Expenses")).thenReturn(2001L);
         when(mockResultSet.next()).thenReturn(true);
         when(mockResultSet.getLong("id")).thenReturn(3001L); // Bank account ID
 
@@ -72,7 +73,7 @@ public class JournalEntryGeneratorTest {
 
         // Then
         assertTrue(success);
-        verify(mockAccountManager).getOrCreateDetailedAccount("8800", "Insurance", "8800", "Expenses");
+        verify(mockAccountRepository).getOrCreateDetailedAccount("8800", "Insurance", "8800", "Expenses");
         verify(mockPreparedStatement, times(3)).executeUpdate(); // 1 header + 2 lines
     }
 
@@ -86,7 +87,7 @@ public class JournalEntryGeneratorTest {
 
         ClassificationResult classificationResult = new ClassificationResult("2000", "Director Loans", "DIRECTOR LOAN");
 
-        when(mockAccountManager.getOrCreateDetailedAccount("2000", "Director Loans", "2000", "Liabilities")).thenReturn(2002L);
+        when(mockAccountRepository.getOrCreateDetailedAccount("2000", "Director Loans", "2000", "Liabilities")).thenReturn(2002L);
         when(mockResultSet.next()).thenReturn(true);
         when(mockResultSet.getLong("id")).thenReturn(3001L); // Bank account ID
 
@@ -95,7 +96,7 @@ public class JournalEntryGeneratorTest {
 
         // Then
         assertTrue(success);
-        verify(mockAccountManager).getOrCreateDetailedAccount("2000", "Director Loans", "2000", "Liabilities");
+        verify(mockAccountRepository).getOrCreateDetailedAccount("2000", "Director Loans", "2000", "Liabilities");
         verify(mockPreparedStatement, times(3)).executeUpdate(); // 1 header + 2 lines
     }
 
@@ -107,7 +108,7 @@ public class JournalEntryGeneratorTest {
 
         ClassificationResult classificationResult = new ClassificationResult("1000", "Test Account", "TEST");
 
-        when(mockAccountManager.getOrCreateDetailedAccount(anyString(), anyString(), anyString(), anyString()))
+        when(mockAccountRepository.getOrCreateDetailedAccount(anyString(), anyString(), anyString(), anyString()))
             .thenThrow(new RuntimeException("Database error"));
 
         // When
@@ -153,8 +154,8 @@ public class JournalEntryGeneratorTest {
 class TestableJournalEntryGenerator extends JournalEntryGenerator {
     private final Connection mockConnection;
 
-    public TestableJournalEntryGenerator(String dbUrl, AccountManager accountManager, Connection mockConnection) {
-        super(dbUrl, accountManager);
+    public TestableJournalEntryGenerator(String dbUrl, AccountRepository accountRepository, Connection mockConnection) {
+        super(dbUrl, accountRepository);
         this.mockConnection = mockConnection;
     }
 

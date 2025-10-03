@@ -59,7 +59,6 @@ public class ApiServer {
                     ReportService reportService, FinancialReportingService financialReportingService,
                     PdfExportService pdfExportService, DataManagementService dataManagementService,
                     BankStatementProcessingService bankStatementService, 
-                    TransactionVerificationService transactionVerificationService,
                     TransactionClassificationService classificationService,
                     PayrollService payrollService) {
         this.gson = new GsonBuilder()
@@ -89,7 +88,7 @@ public class ApiServer {
     
     // Legacy constructor for backward compatibility
     public ApiServer() {
-        this(null, null, null, null, null, null, null, null, null, null);
+        this(null, null, null, null, null, null, null, null, null);
     }
     
     public void start() {

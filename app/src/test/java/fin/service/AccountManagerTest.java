@@ -1,5 +1,7 @@
 package fin.service;
 
+import fin.repository.AccountRepository;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -15,7 +17,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 /**
- * Test-Driven Development for AccountManager module
+ * Test-Driven Development for AccountRepository module
  * This module handles account creation, lookup, and management
  */
 public class AccountManagerTest {
@@ -29,7 +31,7 @@ public class AccountManagerTest {
     @Mock
     private ResultSet mockResultSet;
 
-    private AccountManager accountManager;
+    private AccountRepository accountRepository;
 
     @BeforeEach
     void setUp() throws SQLException {
@@ -41,8 +43,8 @@ public class AccountManagerTest {
         when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet);
         when(mockPreparedStatement.getGeneratedKeys()).thenReturn(mockResultSet);
 
-        // Create a testable AccountManager that uses the mock connection
-        accountManager = new TestableAccountManager("jdbc:test:db", mockConnection);
+        // Create a testable AccountRepository that uses the mock connection
+        accountRepository = new TestableAccountRepository("jdbc:test:db", mockConnection);
     }
 
     @Test
@@ -52,7 +54,7 @@ public class AccountManagerTest {
         when(mockResultSet.getLong("id")).thenReturn(1001L);
 
         // When
-        Long accountId = accountManager.getOrCreateDetailedAccount(
+        Long accountId = accountRepository.getOrCreateDetailedAccount(
             "2000-001", "Director Loan - Company Assist", "2000", "Long-term Liabilities");
 
         // Then
@@ -69,7 +71,7 @@ public class AccountManagerTest {
         when(mockPreparedStatement.executeUpdate()).thenReturn(1); // Mock successful insert
 
         // When
-        Long accountId = accountManager.getOrCreateDetailedAccount(
+        Long accountId = accountRepository.getOrCreateDetailedAccount(
             "8800-002", "DOTSURE Insurance Premiums", "8800", "Insurance");
 
         // Then
@@ -86,7 +88,7 @@ public class AccountManagerTest {
         when(mockPreparedStatement.executeUpdate()).thenReturn(1); // Mock successful insert
 
         // When
-        Long accountId = accountManager.createDetailedAccount(
+        Long accountId = accountRepository.createDetailedAccount(
             "8100-JOH", "Salary - John Doe", "8100", "Employee Costs");
 
         // Then
@@ -105,7 +107,7 @@ public class AccountManagerTest {
         when(mockResultSet.getLong("id")).thenReturn(1100L);
 
         // When
-        Long accountId = accountManager.getAccountIdByCode(1L, "1100");
+        Long accountId = accountRepository.getAccountIdByCode(1L, "1100");
 
         // Then
         assertEquals(1100L, accountId);
@@ -119,7 +121,7 @@ public class AccountManagerTest {
         when(mockResultSet.next()).thenReturn(false);
 
         // When
-        Long accountId = accountManager.getAccountIdByCode(1L, "9999");
+        Long accountId = accountRepository.getAccountIdByCode(1L, "9999");
 
         // Then
         assertNull(accountId);
@@ -128,7 +130,7 @@ public class AccountManagerTest {
     @Test
     void testGetCategoryIdForAccountCode_CurrentAssets() {
         // When
-        int categoryId = accountManager.getCategoryIdForAccountCode("1000-001");
+        int categoryId = accountRepository.getCategoryIdForAccountCode("1000-001");
 
         // Then
         assertEquals(11, categoryId); // Current Assets
@@ -137,7 +139,7 @@ public class AccountManagerTest {
     @Test
     void testGetCategoryIdForAccountCode_LongTermLiabilities() {
         // When
-        int categoryId = accountManager.getCategoryIdForAccountCode("2000-001");
+        int categoryId = accountRepository.getCategoryIdForAccountCode("2000-001");
 
         // Then
         assertEquals(13, categoryId); // Current Liabilities (mapped to director loans)
@@ -146,7 +148,7 @@ public class AccountManagerTest {
     @Test
     void testGetCategoryIdForAccountCode_OperatingRevenue() {
         // When
-        int categoryId = accountManager.getCategoryIdForAccountCode("4000-001");
+        int categoryId = accountRepository.getCategoryIdForAccountCode("4000-001");
 
         // Then
         assertEquals(16, categoryId); // Operating Revenue
@@ -155,7 +157,7 @@ public class AccountManagerTest {
     @Test
     void testGetCategoryIdForAccountCode_OtherIncome() {
         // When
-        int categoryId = accountManager.getCategoryIdForAccountCode("5000-001");
+        int categoryId = accountRepository.getCategoryIdForAccountCode("5000-001");
 
         // Then
         assertEquals(17, categoryId); // Other Income
@@ -164,7 +166,7 @@ public class AccountManagerTest {
     @Test
     void testGetCategoryIdForAccountCode_OperatingExpenses() {
         // When
-        int categoryId = accountManager.getCategoryIdForAccountCode("8100-JOH");
+        int categoryId = accountRepository.getCategoryIdForAccountCode("8100-JOH");
 
         // Then
         assertEquals(18, categoryId); // Operating Expenses
@@ -173,7 +175,7 @@ public class AccountManagerTest {
     @Test
     void testGetCategoryIdForAccountCode_BankFees() {
         // When
-        int categoryId = accountManager.getCategoryIdForAccountCode("9600-001");
+        int categoryId = accountRepository.getCategoryIdForAccountCode("9600-001");
 
         // Then
         assertEquals(20, categoryId); // Finance Costs
@@ -182,7 +184,7 @@ public class AccountManagerTest {
     @Test
     void testGetCategoryIdForAccountCode_Default() {
         // When
-        int categoryId = accountManager.getCategoryIdForAccountCode("9999-999");
+        int categoryId = accountRepository.getCategoryIdForAccountCode("9999-999");
 
         // Then
         assertEquals(18, categoryId); // Default to Operating Expenses
@@ -191,7 +193,7 @@ public class AccountManagerTest {
     @Test
     void testGetCategoryIdForAccountCode_NullInput() {
         // When
-        int categoryId = accountManager.getCategoryIdForAccountCode(null);
+        int categoryId = accountRepository.getCategoryIdForAccountCode(null);
 
         // Then
         assertEquals(18, categoryId); // Default to Operating Expenses
@@ -199,12 +201,12 @@ public class AccountManagerTest {
 }
 
 /**
- * Testable version of AccountManager that uses a mock connection
+ * Testable version of AccountRepository that uses a mock connection
  */
-class TestableAccountManager extends AccountManager {
+class TestableAccountRepository extends AccountRepository {
     private final Connection mockConnection;
 
-    public TestableAccountManager(String jdbcUrl, Connection mockConnection) {
+    public TestableAccountRepository(String jdbcUrl, Connection mockConnection) {
         super(jdbcUrl);
         this.mockConnection = mockConnection;
     }

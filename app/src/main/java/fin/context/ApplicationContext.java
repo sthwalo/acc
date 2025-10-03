@@ -73,10 +73,6 @@ public class ApplicationContext {
         BankStatementProcessingService bankStatementService = new BankStatementProcessingService(dbUrl);
         register(BankStatementProcessingService.class, bankStatementService);
         
-        TransactionVerificationService verificationService = new TransactionVerificationService(
-            dbUrl, companyService, csvImportService);
-        register(TransactionVerificationService.class, verificationService);
-        
         InteractiveClassificationService interactiveClassificationService = new InteractiveClassificationService();
         register(InteractiveClassificationService.class, interactiveClassificationService);
         
@@ -214,15 +210,6 @@ public class ApplicationContext {
         );
         register(DataManagementController.class, dataManagementController);
         
-        // Verification controller
-        VerificationController verificationController = new VerificationController(
-            get(TransactionVerificationService.class),
-            applicationState,
-            inputHandler,
-            outputFormatter
-        );
-        register(VerificationController.class, verificationController);
-        
         // Payroll controller
         PayrollController payrollController = new PayrollController(
             get(PayrollService.class),
@@ -250,7 +237,6 @@ public class ApplicationContext {
             get(ImportController.class),
             get(ReportController.class),
             get(DataManagementController.class),
-            get(VerificationController.class),
             get(PayrollController.class)
         );
         register(ApplicationController.class, applicationController);

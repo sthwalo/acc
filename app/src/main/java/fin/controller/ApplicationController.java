@@ -25,7 +25,6 @@ public class ApplicationController {
     private final ImportController importController;
     private final ReportController reportController;
     private final DataManagementController dataManagementController;
-    private final VerificationController verificationController;
     private final PayrollController payrollController;
     
     public ApplicationController(
@@ -38,8 +37,7 @@ public class ApplicationController {
         ImportController importController,
         ReportController reportController,
         DataManagementController dataManagementController,
-        VerificationController verificationController,
-        PayrollController payrollController // add this parameter
+        PayrollController payrollController
     ) {
         this.menu = menu;
         this.inputHandler = inputHandler;
@@ -50,8 +48,7 @@ public class ApplicationController {
         this.importController = importController;
         this.reportController = reportController;
         this.dataManagementController = dataManagementController;
-        this.verificationController = verificationController;
-        this.payrollController = payrollController; // initialize field
+        this.payrollController = payrollController;
     }
 
     /**
@@ -71,7 +68,7 @@ public class ApplicationController {
                 displayCurrentContext();
                 menu.displayMainMenu();
                 
-                int choice = inputHandler.getInteger("Enter your choice", 1, 12);
+                int choice = inputHandler.getInteger("Enter your choice", 1, 11);
                 
                 switch (choice) {
                     case 1:
@@ -96,9 +93,6 @@ public class ApplicationController {
                         dataManagementController.handleDataManagement();
                         break;
                     case 8:
-                        verificationController.handleTransactionVerification();
-                        break;
-                    case 9:
                         if (applicationState.hasCurrentCompany()) {
                             payrollController.handlePayrollManagement(applicationState.getCurrentCompany().getId());
                         } else {
@@ -106,13 +100,13 @@ public class ApplicationController {
                             inputHandler.waitForEnter();
                         }
                         break;
-                    case 10:
+                    case 9:
                         displayCurrentTime();
                         break;
-                    case 11:
+                    case 10:
                         handleSystemLogs();
                         break;
-                    case 12:
+                    case 11:
                         exit = handleExit();
                         break;
                     default:
