@@ -13,13 +13,13 @@ public class AccountService {
     private final CategoryManagementService categoryService;
     private final AccountManagementService accountService;
     private final TransactionMappingRuleService ruleService;
-    private final ChartOfAccountsService chartService;
+    private final AccountClassificationService accountClassificationService;
 
     public AccountService(String dbUrl, CompanyService companyService) {
         this.categoryService = new CategoryManagementService(dbUrl);
         this.accountService = new AccountManagementService(dbUrl);
         this.ruleService = new TransactionMappingRuleService(dbUrl);
-        this.chartService = new ChartOfAccountsService(categoryService, accountService, ruleService);
+        this.accountClassificationService = new AccountClassificationService(dbUrl);
         initializeDatabase();
     }
     
@@ -91,8 +91,9 @@ public class AccountService {
     /**
      * Sets up the initial chart of accounts for a company.
      * This should be called when a new company is created.
+     * Uses AccountClassificationService for SARS-compliant accounts.
      */
     public void initializeChartOfAccounts(Company company) {
-        chartService.initializeChartOfAccounts(company);
+        accountClassificationService.initializeChartOfAccounts(company.getId());
     }
 }
