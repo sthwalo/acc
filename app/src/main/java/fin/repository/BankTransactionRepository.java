@@ -144,7 +144,7 @@ public class BankTransactionRepository implements BaseRepository<BankTransaction
         transaction.setDebitAmount(rs.getBigDecimal("debit_amount"));
         transaction.setCreditAmount(rs.getBigDecimal("credit_amount"));
         transaction.setBalance(rs.getBigDecimal("balance"));
-        transaction.setServiceFee(rs.getBoolean("is_service_fee"));
+        transaction.setServiceFee(rs.getBoolean("service_fee"));
         transaction.setAccountNumber(rs.getString("account_number"));
         transaction.setStatementPeriod(rs.getString("statement_period"));
         transaction.setSourceFile(rs.getString("source_file"));

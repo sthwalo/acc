@@ -3,7 +3,7 @@ package fin.controller;
 import fin.model.Account;
 import fin.model.BankTransaction;
 import fin.model.JournalEntryLine;
-import fin.service.ClassificationIntegrationService;
+import fin.service.TransactionClassificationService;
 import fin.service.CsvExportService;
 import fin.service.CsvImportService;
 import fin.service.DataManagementService;
@@ -26,7 +26,7 @@ import java.util.Map;
  */
 public class DataManagementController {
     private final DataManagementService dataManagementService;
-    private final ClassificationIntegrationService classificationService;
+    private final TransactionClassificationService classificationService;
     private final CsvExportService csvExportService;
     private final CsvImportService csvImportService;
     private final ApplicationState applicationState;
@@ -35,7 +35,7 @@ public class DataManagementController {
     private final OutputFormatter outputFormatter;
     
     public DataManagementController(DataManagementService dataManagementService,
-                                  ClassificationIntegrationService classificationService,
+                                  TransactionClassificationService classificationService,
                                   CsvExportService csvExportService,
                                   CsvImportService csvImportService,
                                   ApplicationState applicationState,

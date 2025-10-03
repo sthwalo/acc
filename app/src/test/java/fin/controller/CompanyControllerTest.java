@@ -74,8 +74,8 @@ class CompanyControllerTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
         
-        // Create real InputHandler with test input
-        String testInput = "Test Company\n123456\n98765\nTest Address\ntest@example.com\n+27-11-123-4567\n";
+        // Create real InputHandler with test input for editCompany (7 inputs needed: name, reg, tax, address, email, phone, logo)
+        String testInput = "Test Company\n123456\n98765\nTest Address\ntest@example.com\n+27-11-123-4567\n/logo.png\n";
         Scanner scanner = new Scanner(new ByteArrayInputStream(testInput.getBytes()));
         inputHandler = new InputHandler(scanner);
         

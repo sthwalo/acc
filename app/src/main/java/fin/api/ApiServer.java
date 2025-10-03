@@ -60,7 +60,7 @@ public class ApiServer {
                     PdfExportService pdfExportService, DataManagementService dataManagementService,
                     BankStatementProcessingService bankStatementService, 
                     TransactionVerificationService transactionVerificationService,
-                    ClassificationIntegrationService classificationService,
+                    TransactionClassificationService classificationService,
                     PayrollService payrollService) {
         this.gson = new GsonBuilder()
             .registerTypeAdapter(LocalDateTime.class, new JsonSerializer<LocalDateTime>() {

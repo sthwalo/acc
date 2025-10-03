@@ -98,7 +98,7 @@ class ApplicationControllerTest {
         when(mockApplicationState.hasCurrentFiscalPeriod()).thenReturn(false);
         
         // Create InputHandler with exit command
-        String exitInput = "11\ny\n"; // Exit is option 11, confirm with y
+        String exitInput = "12\ny\n"; // Exit is option 12, confirm with y
         Scanner scanner = new Scanner(new ByteArrayInputStream(exitInput.getBytes()));
         inputHandler = new InputHandler(scanner);
 
@@ -130,7 +130,7 @@ class ApplicationControllerTest {
         doNothing().when(mockCompanyController).handleCompanySetup();
         
         // Setup input for company setup choice then exit
-        String companySetupInput = "1\n11\ny\n";
+        String companySetupInput = "1\n12\ny\n";
         Scanner scanner = new Scanner(new ByteArrayInputStream(companySetupInput.getBytes()));
         InputHandler setupInputHandler = new InputHandler(scanner);
 
@@ -161,7 +161,7 @@ class ApplicationControllerTest {
         doNothing().when(mockDataManagementController).handleDataManagement();
         
         // Setup input for data management choice then exit
-        String dataManagementInput = "7\n11\ny\n";
+        String dataManagementInput = "7\n12\ny\n";
         Scanner scanner = new Scanner(new ByteArrayInputStream(dataManagementInput.getBytes()));
         InputHandler dataInputHandler = new InputHandler(scanner);
 

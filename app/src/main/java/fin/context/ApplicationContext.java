@@ -77,11 +77,39 @@ public class ApplicationContext {
             dbUrl, companyService, csvImportService);
         register(TransactionVerificationService.class, verificationService);
         
-        ClassificationIntegrationService classificationService = new ClassificationIntegrationService();
-        register(ClassificationIntegrationService.class, classificationService);
-        
         InteractiveClassificationService interactiveClassificationService = new InteractiveClassificationService();
         register(InteractiveClassificationService.class, interactiveClassificationService);
+        
+        // Transaction Classification Service (unified entry point)
+        // Create specialized services needed for TransactionClassificationService
+        CategoryManagementService categoryManagementService = new CategoryManagementService(dbUrl);
+        register(CategoryManagementService.class, categoryManagementService);
+        
+        AccountManagementService accountManagementService = new AccountManagementService(dbUrl);
+        register(AccountManagementService.class, accountManagementService);
+        
+        TransactionMappingRuleService transactionMappingRuleService = new TransactionMappingRuleService(dbUrl);
+        register(TransactionMappingRuleService.class, transactionMappingRuleService);
+        
+        ChartOfAccountsService chartOfAccountsService = new ChartOfAccountsService(
+            categoryManagementService,
+            accountManagementService,
+            transactionMappingRuleService
+        );
+        register(ChartOfAccountsService.class, chartOfAccountsService);
+        
+        TransactionMappingService transactionMappingService = new TransactionMappingService(dbUrl);
+        register(TransactionMappingService.class, transactionMappingService);
+        
+        // NOTE: ChartOfAccountsService deprecated - using AccountClassificationService instead
+        // TransactionClassificationService now uses AccountClassificationService as single source of truth
+        TransactionClassificationService transactionClassificationService = new TransactionClassificationService(
+            dbUrl,
+            transactionMappingRuleService,
+            transactionMappingService,
+            interactiveClassificationService
+        );
+        register(TransactionClassificationService.class, transactionClassificationService);
         
         CsvExportService csvExportService = new CsvExportService(companyService);
         register(CsvExportService.class, csvExportService);
@@ -181,7 +209,7 @@ public class ApplicationContext {
         // Data management controller
         DataManagementController dataManagementController = new DataManagementController(
             get(DataManagementService.class),
-            get(ClassificationIntegrationService.class),
+            get(TransactionClassificationService.class),
             get(CsvExportService.class),
             get(CsvImportService.class),
             applicationState,

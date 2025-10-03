@@ -1,26 +1,17 @@
 #!/bin/bash
 
-# FIN Application Runner Script
-# This script runs the FIN application with proper memory settings
+# FIN Application Runner Script (Fast Mode)
+# This script runs the FIN application without building, assuming JAR is already built
 
-echo "🚀 Starting FIN Financial Management System"
+echo "🚀 Starting FIN Financial Management System (Fast Mode)"
 echo "📊 Console Application"
 echo "==============================================="
-
-# Clean and build the project first
-echo "🔨 Building project..."
-./gradlew clean build -x test
-if [ $? -ne 0 ]; then
-    echo "❌ Build failed. Exiting."
-    exit 1
-fi
-echo "✅ Build successful."
 
 # Set memory options
 JAVA_OPTS="-Xmx1g -XX:MaxMetaspaceSize=256m -Dfin.license.autoconfirm=true"
 
-# For beta testing, always use direct JAR execution
-echo "Using direct JAR execution for beta testing..."
+# For fast execution, always use direct JAR execution
+echo "Using direct JAR execution..."
 
 # Use the fat JAR which includes all dependencies (with signature files excluded)
 FAT_JAR="./app/build/libs/app-fat.jar"

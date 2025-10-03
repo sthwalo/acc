@@ -1,5 +1,6 @@
 package fin.service;
 
+import fin.TestConfiguration;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -15,9 +16,12 @@ public class ClassificationTest {
     private static final Logger LOGGER = Logger.getLogger(ClassificationTest.class.getName());
 
     public static void main(String[] args) {
-        String dbUrl = "jdbc:postgresql://localhost:5432/drimacc_db?user=sthwalonyoni&password=";
-
         try {
+            // Setup test database
+            TestConfiguration.setupTestDatabase();
+
+            String dbUrl = TestConfiguration.TEST_DB_URL + "?user=" + TestConfiguration.TEST_DB_USER + "&password=" + TestConfiguration.TEST_DB_PASSWORD;
+
             LOGGER.info("Starting Enhanced Classification Test...");
 
             // Create service instance
@@ -207,6 +211,13 @@ public class ClassificationTest {
             }
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Error showing roll-up demonstration", e);
+        }
+
+        // Cleanup test database
+        try {
+            TestConfiguration.cleanupTestDatabase();
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error cleaning up test database", e);
         }
     }
 }

@@ -1,9 +1,12 @@
 {
     "java.configuration.updateBuildConfiguration": "interactive",
     "cSpell.words": [
+        "gson",
         "jdbc",
         "Libharu",
-        "pdftotext"
+        "Nyoni",
+        "pdftotext",
+        "Sthwalo"
     ],
     "java.compile.nullAnalysis.mode": "automatic",
     "java.debug.settings.onBuildFailureProceed": true,

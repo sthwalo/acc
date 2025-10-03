@@ -33,7 +33,7 @@ public class TestConfiguration {
         
         // Validate that test database configuration is available
         if (TEST_DB_URL == null || TEST_DB_USER == null || TEST_DB_PASSWORD == null) {
-            throw new RuntimeException("Test database configuration missing. Please set TEST_DATABASE_URL, TEST_DATABASE_USER, and TEST_DATABASE_PASSWORD in .env file.");
+            throw new RuntimeException("Test database configuration missing. Please set TEST_DATABASE_URL, TEST_DATABASE_USER, and TEST_DATABASE_PASSWORD environment variables or in test.env file.");
         }
         System.out.println("🔍 TestConfiguration - TEST_DB_URL: " + TEST_DB_URL);
         System.out.println("🔍 TestConfiguration - TEST_DB_USER: " + TEST_DB_USER);
@@ -52,45 +52,36 @@ public class TestConfiguration {
     }
     
     /**
-     * Load environment variables from .env file if it exists
+     * Load environment variables from test.env file only
      */
     private static void loadEnvironmentVariables() {
-        // Try multiple possible .env file locations relative to different working directories
-        Path[] possiblePaths = {
-            Paths.get(".env"),              // Current directory (for root-level execution)
-            Paths.get("../.env"),           // Parent directory (for app/ level execution)  
-            Paths.get("../../.env"),        // Grandparent (for app/src/ level execution)
-            Paths.get("../../../.env"),     // Great-grandparent (for app/src/test/ level execution)
-            Paths.get(System.getProperty("user.home"), ".env")  // Home directory fallback
-        };
-        
-        for (Path envPath : possiblePaths) {
-            if (Files.exists(envPath) && Files.isReadable(envPath)) {
-                System.out.println("🔍 Found .env file at: " + envPath.toAbsolutePath());
-                try {
-                    Properties props = new Properties();
-                    try (var inputStream = Files.newInputStream(envPath)) {
-                        props.load(inputStream);
-                    }
-                    
-                    // Set as system properties
-                    for (String key : props.stringPropertyNames()) {
-                        String value = props.getProperty(key);
-                        System.setProperty(key, value);
-                        System.out.println("🔍 Set system property " + key + " from .env file");
-                    }
-                    
-                    System.out.println("🔍 Environment variables loaded from .env file");
-                    return; // Success, exit
-                    
-                } catch (IOException e) {
-                    System.err.println("❌ Error loading .env file: " + e.getMessage());
+        // Only try to load from test.env in test resources
+        Path testEnvPath = Paths.get("app/src/test/resources/test.env");
+        if (Files.exists(testEnvPath) && Files.isReadable(testEnvPath)) {
+            System.out.println("🔍 Found test.env file at: " + testEnvPath.toAbsolutePath());
+            try {
+                Properties props = new Properties();
+                try (var inputStream = Files.newInputStream(testEnvPath)) {
+                    props.load(inputStream);
                 }
+                
+                // Set as system properties
+                for (String key : props.stringPropertyNames()) {
+                    String value = props.getProperty(key);
+                    System.setProperty(key, value);
+                    System.out.println("🔍 Set system property " + key + " from test.env file");
+                }
+                
+                System.out.println("🔍 Environment variables loaded from test.env file");
+                return; // Success, exit
+                
+            } catch (IOException e) {
+                System.err.println("❌ Error loading test.env file: " + e.getMessage());
             }
         }
         
-        // Fallback to system environment variables
-        System.out.println("🔍 .env file not found in any expected location, using system environment variables only");
+        // If test.env doesn't exist, rely on environment variables or system properties only
+        System.out.println("🔍 test.env file not found, using environment variables and system properties only");
     }
     
     /**

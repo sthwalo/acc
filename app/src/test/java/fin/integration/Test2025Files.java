@@ -1,10 +1,10 @@
 package fin.integration;
 
+import fin.TestConfiguration;
 import fin.service.CompanyService;
 import fin.service.BankStatementProcessingService;
 import fin.model.Company;
 import fin.model.BankTransaction;
-import fin.config.DatabaseConfig;
 import java.io.File;
 import java.util.List;
 
@@ -12,13 +12,10 @@ public class Test2025Files {
     
     public static void main(String[] args) {
         try {
-            // Use DatabaseConfig for consistent connection
-            if (!DatabaseConfig.testConnection()) {
-                System.out.println("❌ Failed to connect to database!");
-                return;
-            }
-            
-            String dbUrl = DatabaseConfig.getDatabaseUrl();
+            // Setup test database
+            TestConfiguration.setupTestDatabase();
+
+            String dbUrl = TestConfiguration.TEST_DB_URL + "?user=" + TestConfiguration.TEST_DB_USER + "&password=" + TestConfiguration.TEST_DB_PASSWORD;
             CompanyService companyService = new CompanyService(dbUrl);
             BankStatementProcessingService processor = new BankStatementProcessingService(dbUrl);
             
@@ -48,6 +45,13 @@ public class Test2025Files {
             
         } catch (Exception e) {
             e.printStackTrace();
+        }
+
+        // Cleanup test database
+        try {
+            TestConfiguration.cleanupTestDatabase();
+        } catch (Exception e) {
+            System.err.println("Error cleaning up test database: " + e.getMessage());
         }
     }
 }

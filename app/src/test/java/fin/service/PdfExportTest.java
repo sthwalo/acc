@@ -1,6 +1,7 @@
 package fin.service;
 
 import com.sun.jna.Pointer;
+import fin.TestConfiguration;
 import fin.model.Company;
 import fin.model.Employee;
 import fin.model.Payslip;
@@ -19,10 +20,13 @@ public class PdfExportTest {
 
     public static void main(String[] args) {
         try {
+            // Setup test database
+            TestConfiguration.setupTestDatabase();
+
             System.out.println("🧪 Testing comprehensive PDF export functionality...");
 
             // Fetch real company data from database
-            CompanyRepository companyRepository = new CompanyRepository("jdbc:postgresql://localhost:5432/drimacc_db?user=sthwalonyoni&password=");
+            CompanyRepository companyRepository = new CompanyRepository(TestConfiguration.TEST_DB_URL + "?user=" + TestConfiguration.TEST_DB_USER + "&password=" + TestConfiguration.TEST_DB_PASSWORD);
             Company company = companyRepository.findAll().stream().findFirst().orElseThrow(() -> new RuntimeException("No company found in database"));
             company.setLogoPath("/Users/sthwalonyoni/FIN/input/logo.png"); // Add absolute logo path
 
@@ -490,5 +494,12 @@ private static void drawFooterSection(Pointer page, float yPosition, float margi
     Libharu.INSTANCE.HPDF_Page_BeginText(page);
     Libharu.INSTANCE.HPDF_Page_TextOut(page, marginLeft + 15, footerY - 40, "Confidential - For employee use only.");
     Libharu.INSTANCE.HPDF_Page_EndText(page);
-}
+
+        // Cleanup test database
+        try {
+            TestConfiguration.cleanupTestDatabase();
+        } catch (Exception e) {
+            System.err.println("Error cleaning up test database: " + e.getMessage());
+        }
+    }
 }
