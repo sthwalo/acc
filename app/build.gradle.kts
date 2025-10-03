@@ -159,6 +159,21 @@ tasks.named<Test>("test") {
     // Use JUnit Platform for unit tests.
     useJUnitPlatform()
     maxHeapSize = "2G"
+    
+    // Pass system properties to tests
+    systemProperties = System.getProperties()
+        .filter { it.key is String }
+        .mapKeys { it.key as String }
+        .mapValues { it.value as Any }
+    
+    // Pass environment variables to tests (especially for CI/CD)
+    environment("TEST_DATABASE_URL", System.getenv("TEST_DATABASE_URL") ?: System.getProperty("TEST_DATABASE_URL") ?: "jdbc:postgresql://localhost:5432/drimacc_test")
+    environment("TEST_DATABASE_USER", System.getenv("TEST_DATABASE_USER") ?: System.getProperty("TEST_DATABASE_USER") ?: "sthwalonyoni")
+    environment("TEST_DATABASE_PASSWORD", System.getenv("TEST_DATABASE_PASSWORD") ?: System.getProperty("TEST_DATABASE_PASSWORD") ?: "Test1823")
+    environment("TEST_MODE", System.getenv("TEST_MODE") ?: "true")
+    
+    // Set working directory to project root so test.env can be found
+    workingDir = rootProject.projectDir
 }
 
 tasks.jar {
