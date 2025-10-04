@@ -362,4 +362,36 @@ public class DatabaseConfig {
     public static Connection getTestConnection(String url, String user, String password) throws SQLException {
         return DriverManager.getConnection(url, user, password);
     }
+    
+    /**
+     * Get a test database connection with credentials embedded in URL
+     * This is a convenience method for test classes
+     */
+    public static Connection getTestConnection(String url) throws SQLException {
+        // If the URL already contains credentials, use it directly
+        if (url.contains("user=") && url.contains("password=")) {
+            return DriverManager.getConnection(url);
+        }
+        
+        // Otherwise, try to get credentials from environment variables
+        String testUser = System.getProperty("TEST_DATABASE_USER");
+        if (testUser == null) {
+            testUser = System.getenv("TEST_DATABASE_USER");
+        }
+        
+        String testPassword = System.getProperty("TEST_DATABASE_PASSWORD");
+        if (testPassword == null) {
+            testPassword = System.getenv("TEST_DATABASE_PASSWORD");
+        }
+        
+        // If we have credentials, add them to the URL
+        if (testUser != null && testPassword != null) {
+            String separator = url.contains("?") ? "&" : "?";
+            String urlWithCreds = url + separator + "user=" + testUser + "&password=" + testPassword;
+            return DriverManager.getConnection(urlWithCreds);
+        }
+        
+        // Otherwise, fall back to using the URL directly (this will likely fail with auth error)
+        return DriverManager.getConnection(url);
+    }
 }

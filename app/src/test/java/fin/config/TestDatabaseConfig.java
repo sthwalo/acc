@@ -123,6 +123,21 @@ public class TestDatabaseConfig {
     public static String getDatabaseUrl() {
         return testDatabaseUrl;
     }
+    
+    /**
+     * Get the test database URL with embedded credentials for legacy code compatibility
+     * This ensures that code using DriverManager.getConnection(url) directly will work
+     * 
+     * @return JDBC URL with user and password parameters embedded
+     */
+    public static String getDatabaseUrlWithCredentials() {
+        if (testDatabaseUrl == null) {
+            return null;
+        }
+        // Add user and password as URL parameters
+        String separator = testDatabaseUrl.contains("?") ? "&" : "?";
+        return testDatabaseUrl + separator + "user=" + testDatabaseUser + "&password=" + testDatabasePassword;
+    }
 
     /**
      * Get the test database user

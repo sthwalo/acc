@@ -20,7 +20,7 @@ public class ClassificationTest {
             // Setup test database
             TestConfiguration.setupTestDatabase();
 
-            String dbUrl = TestConfiguration.TEST_DB_URL + "?user=" + TestConfiguration.TEST_DB_USER + "&password=" + TestConfiguration.TEST_DB_PASSWORD;
+            String dbUrl = TestConfiguration.TEST_DB_URL_WITH_CREDENTIALS;
 
             LOGGER.info("Starting Enhanced Classification Test...");
 

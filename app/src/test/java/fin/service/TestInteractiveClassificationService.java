@@ -53,8 +53,8 @@ public class TestInteractiveClassificationService {
     private class TestableInteractiveClassificationService extends InteractiveClassificationService {
         @Override
         protected Connection getConnection() throws SQLException {
-            // Use PostgreSQL test database instead of H2
-            return DriverManager.getConnection(TestConfiguration.TEST_DB_URL);
+            // Use PostgreSQL test database with embedded credentials
+            return DriverManager.getConnection(TestConfiguration.TEST_DB_URL_WITH_CREDENTIALS);
         }
     }
 }
