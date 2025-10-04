@@ -298,45 +298,102 @@ public class DataManagementController {
         try {
             applicationState.requireFiscalPeriod();
             
-            List<BankTransaction> transactions = csvImportService.getTransactions(
+            List<BankTransaction> allTransactions = csvImportService.getTransactions(
                 applicationState.getCurrentCompany().getId(),
                 applicationState.getCurrentFiscalPeriod().getId());
             
-            if (transactions.isEmpty()) {
+            if (allTransactions.isEmpty()) {
                 outputFormatter.printInfo("No transactions found to correct.");
                 return;
             }
             
-            outputFormatter.printSubHeader("Recent Transactions");
-            for (int i = 0; i < Math.min(transactions.size(), 20); i++) {
-                BankTransaction tx = transactions.get(i);
-                System.out.printf("%d. [%s] %s - Amount: %s%n", i + 1,
-                    tx.getTransactionDate(), 
-                    tx.getDetails().length() > 50 ? tx.getDetails().substring(0, 47) + "..." : tx.getDetails(),
-                    tx.getDebitAmount() != null ? tx.getDebitAmount() : tx.getCreditAmount());
+            // Enhanced: Show filtering options
+            System.out.println("\n📊 Total Transactions: " + allTransactions.size());
+            System.out.println("\nFilter Options:");
+            System.out.println("1. Show All Transactions");
+            System.out.println("2. Show Uncategorized Only");
+            System.out.println("3. Show Categorized Only");
+            System.out.println("4. Back to Data Management");
+            
+            int filterChoice = inputHandler.getInteger("Select filter option", 1, 4);
+            
+            if (filterChoice == 4) {
+                return;
             }
             
-            int txIndex = inputHandler.getInteger("Select transaction number to correct", 1, 
-                Math.min(transactions.size(), 20)) - 1;
+            List<BankTransaction> transactions = filterTransactions(allTransactions, filterChoice);
             
-            BankTransaction tx = transactions.get(txIndex);
+            if (transactions.isEmpty()) {
+                outputFormatter.printInfo("No transactions match the selected filter.");
+                return;
+            }
             
-            outputFormatter.printSubHeader("Select New Account for Categorization");
-            Long newAccountId = selectAccount();
+            // Enhanced: Pagination for all transactions
+            final int TRANSACTIONS_PER_PAGE = 50;
+            int totalPages = (int) Math.ceil((double) transactions.size() / TRANSACTIONS_PER_PAGE);
+            int currentPage = 1;
             
-            if (newAccountId != null) {
-                String reason = inputHandler.getString("Enter reason for correction");
-                String correctedBy = inputHandler.getString("Enter your name");
+            while (true) {
+                outputFormatter.printSubHeader("Transactions (Page " + currentPage + "/" + totalPages + ")");
                 
-                dataManagementService.correctTransactionCategory(
-                    applicationState.getCurrentCompany().getId(),
-                    tx.getId(),
-                    tx.getBankAccountId(),
-                    newAccountId,
-                    reason,
-                    correctedBy);
+                int startIdx = (currentPage - 1) * TRANSACTIONS_PER_PAGE;
+                int endIdx = Math.min(startIdx + TRANSACTIONS_PER_PAGE, transactions.size());
                 
-                outputFormatter.printSuccess("Transaction categorization corrected successfully!");
+                for (int i = startIdx; i < endIdx; i++) {
+                    BankTransaction tx = transactions.get(i);
+                    String status = (tx.getAccountCode() != null && !tx.getAccountCode().isEmpty()) ? "✓" : "⚠️";
+                    System.out.printf("%d. %s [%s] %s - Amount: %s%n", 
+                        i + 1,
+                        status,
+                        tx.getTransactionDate(), 
+                        tx.getDetails().length() > 50 ? tx.getDetails().substring(0, 47) + "..." : tx.getDetails(),
+                        tx.getDebitAmount() != null ? tx.getDebitAmount() : tx.getCreditAmount());
+                }
+                
+                System.out.println("\nNavigation:");
+                System.out.println("0. Go back");
+                if (currentPage > 1) {
+                    System.out.println("P. Previous page");
+                }
+                if (currentPage < totalPages) {
+                    System.out.println("N. Next page");
+                }
+                System.out.println("Or enter transaction number to correct (1-" + transactions.size() + ")");
+                
+                String input = inputHandler.getString("Your choice");
+                
+                if (input.equalsIgnoreCase("0")) {
+                    return;
+                } else if (input.equalsIgnoreCase("P") && currentPage > 1) {
+                    currentPage--;
+                    continue;
+                } else if (input.equalsIgnoreCase("N") && currentPage < totalPages) {
+                    currentPage++;
+                    continue;
+                }
+                
+                try {
+                    int txIndex = Integer.parseInt(input) - 1;
+                    if (txIndex >= 0 && txIndex < transactions.size()) {
+                        correctSingleTransaction(transactions.get(txIndex));
+                        
+                        // Refresh transactions after correction
+                        allTransactions = csvImportService.getTransactions(
+                            applicationState.getCurrentCompany().getId(),
+                            applicationState.getCurrentFiscalPeriod().getId());
+                        transactions = filterTransactions(allTransactions, filterChoice);
+                        totalPages = (int) Math.ceil((double) transactions.size() / TRANSACTIONS_PER_PAGE);
+                        
+                        // Stay on same page if possible
+                        if (currentPage > totalPages) {
+                            currentPage = totalPages > 0 ? totalPages : 1;
+                        }
+                    } else {
+                        outputFormatter.printError("Invalid transaction number");
+                    }
+                } catch (NumberFormatException e) {
+                    outputFormatter.printError("Invalid input. Please enter a number or P/N/0");
+                }
             }
             
         } catch (IllegalStateException e) {
@@ -344,6 +401,167 @@ public class DataManagementController {
         } catch (Exception e) {
             outputFormatter.printError("Error correcting transaction: " + e.getMessage());
         }
+    }
+    
+    private List<BankTransaction> filterTransactions(List<BankTransaction> transactions, int filterChoice) {
+        switch (filterChoice) {
+            case 2: // Uncategorized only
+                return transactions.stream()
+                    .filter(tx -> tx.getAccountCode() == null || tx.getAccountCode().isEmpty())
+                    .collect(java.util.stream.Collectors.toList());
+            case 3: // Categorized only
+                return transactions.stream()
+                    .filter(tx -> tx.getAccountCode() != null && !tx.getAccountCode().isEmpty())
+                    .collect(java.util.stream.Collectors.toList());
+            default: // All transactions
+                return transactions;
+        }
+    }
+    
+    private void correctSingleTransaction(BankTransaction tx) throws Exception {
+        outputFormatter.printSubHeader("Correcting Transaction");
+        System.out.println("Date: " + tx.getTransactionDate());
+        System.out.println("Description: " + tx.getDetails());
+        System.out.println("Amount: " + (tx.getDebitAmount() != null ? tx.getDebitAmount() : tx.getCreditAmount()));
+        if (tx.getAccountCode() != null && !tx.getAccountCode().isEmpty()) {
+            System.out.println("Current Classification: [" + tx.getAccountCode() + "] " + tx.getAccountName());
+        }
+        
+        // Enhanced: Show intelligent suggestions from AccountClassificationService
+        showIntelligentSuggestions(tx);
+        
+        outputFormatter.printSubHeader("Select New Account for Categorization");
+        Long newAccountId = selectAccount();
+        
+        if (newAccountId != null) {
+            String reason = inputHandler.getString("Enter reason for correction");
+            String correctedBy = inputHandler.getString("Enter your name");
+            
+            dataManagementService.correctTransactionCategory(
+                applicationState.getCurrentCompany().getId(),
+                tx.getId(),
+                tx.getBankAccountId(),
+                newAccountId,
+                reason,
+                correctedBy);
+            
+            outputFormatter.printSuccess("Transaction categorization corrected successfully!");
+            
+            // Enhanced: Ask about similar transactions
+            askAboutSimilarTransactions(tx, newAccountId, reason, correctedBy);
+        }
+    }
+    
+    private void showIntelligentSuggestions(BankTransaction tx) {
+        System.out.println("\n💡 Intelligent Suggestions:");
+        
+        try {
+            // Get all accounts via the service
+            List<Account> accounts = csvImportService.getAccountService()
+                .getAccountsByCompany(applicationState.getCurrentCompany().getId());
+            
+            // Simple keyword matching for suggestions
+            String description = tx.getDetails().toLowerCase();
+            List<Account> suggestions = new ArrayList<>();
+            
+            // Match keywords in description with account names
+            for (Account account : accounts) {
+                if (account.getAccountName() != null) {
+                    String accountName = account.getAccountName().toLowerCase();
+                    String[] accountWords = accountName.split(" ");
+                    
+                    for (String word : accountWords) {
+                        if (word.length() > 3 && description.contains(word)) {
+                            suggestions.add(account);
+                            break;
+                        }
+                    }
+                    
+                    if (suggestions.size() >= 5) break;
+                }
+            }
+            
+            if (!suggestions.isEmpty()) {
+                System.out.println("Top matches based on description:");
+                for (int i = 0; i < suggestions.size(); i++) {
+                    Account account = suggestions.get(i);
+                    System.out.printf("  %d. [%s] %s%n", 
+                        i + 1, 
+                        account.getAccountCode(), 
+                        account.getAccountName());
+                }
+            } else {
+                System.out.println("  No automatic suggestions - select from full account list");
+            }
+        } catch (Exception e) {
+            System.out.println("  (Suggestions unavailable: " + e.getMessage() + ")");
+        }
+    }
+    
+    private void askAboutSimilarTransactions(BankTransaction tx, Long newAccountId, String reason, String correctedBy) {
+        try {
+            List<BankTransaction> allTransactions = csvImportService.getTransactions(
+                applicationState.getCurrentCompany().getId(),
+                applicationState.getCurrentFiscalPeriod().getId());
+            
+            // Find similar uncategorized transactions
+            String pattern = extractKeyPattern(tx.getDetails());
+            List<BankTransaction> similarTransactions = allTransactions.stream()
+                .filter(t -> !t.getId().equals(tx.getId()))
+                .filter(t -> t.getAccountCode() == null || t.getAccountCode().isEmpty())
+                .filter(t -> t.getDetails().toLowerCase().contains(pattern.toLowerCase()))
+                .limit(20)
+                .collect(java.util.stream.Collectors.toList());
+            
+            if (!similarTransactions.isEmpty()) {
+                System.out.println("\n📋 Found " + similarTransactions.size() + " similar uncategorized transactions:");
+                for (int i = 0; i < Math.min(5, similarTransactions.size()); i++) {
+                    BankTransaction similar = similarTransactions.get(i);
+                    System.out.printf("  %d. [%s] %s - Amount: %s%n",
+                        i + 1,
+                        similar.getTransactionDate(),
+                        similar.getDetails().length() > 50 ? similar.getDetails().substring(0, 47) + "..." : similar.getDetails(),
+                        similar.getDebitAmount() != null ? similar.getDebitAmount() : similar.getCreditAmount());
+                }
+                
+                String bulkChoice = inputHandler.getString("Apply this classification to all similar transactions? (y/n)");
+                if (bulkChoice.equalsIgnoreCase("y")) {
+                    int count = 0;
+                    for (BankTransaction similar : similarTransactions) {
+                        try {
+                            dataManagementService.correctTransactionCategory(
+                                applicationState.getCurrentCompany().getId(),
+                                similar.getId(),
+                                similar.getBankAccountId(),
+                                newAccountId,
+                                reason + " (Bulk correction)",
+                                correctedBy);
+                            count++;
+                        } catch (Exception e) {
+                            System.out.println("  ⚠️ Failed to correct transaction " + similar.getId() + ": " + e.getMessage());
+                        }
+                    }
+                    outputFormatter.printSuccess("Bulk corrected " + count + " similar transactions!");
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("  (Bulk correction unavailable: " + e.getMessage() + ")");
+        }
+    }
+    
+    private String extractKeyPattern(String description) {
+        // Extract key pattern from transaction description
+        String[] words = description.split("\\s+");
+        if (words.length > 0) {
+            // Return first meaningful word (longer than 3 characters)
+            for (String word : words) {
+                if (word.length() > 3) {
+                    return word;
+                }
+            }
+            return words[0];
+        }
+        return description.length() > 10 ? description.substring(0, 10) : description;
     }
     
     public void handleTransactionHistory() {
