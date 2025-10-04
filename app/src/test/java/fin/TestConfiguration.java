@@ -20,6 +20,7 @@ public class TestConfiguration {
     public static final String TEST_DB_URL;
     public static final String TEST_DB_USER;
     public static final String TEST_DB_PASSWORD;
+    public static final String TEST_DB_URL_WITH_CREDENTIALS; // URL with embedded credentials for direct DriverManager usage
     
     static {
         // Load environment variables from .env file first
@@ -34,9 +35,15 @@ public class TestConfiguration {
         if (TEST_DB_URL == null || TEST_DB_USER == null || TEST_DB_PASSWORD == null) {
             throw new RuntimeException("Test database configuration missing. Please set TEST_DATABASE_URL, TEST_DATABASE_USER, and TEST_DATABASE_PASSWORD environment variables or in test.env file.");
         }
+        
+        // Create URL with embedded credentials for direct DriverManager usage
+        String separator = TEST_DB_URL.contains("?") ? "&" : "?";
+        TEST_DB_URL_WITH_CREDENTIALS = TEST_DB_URL + separator + "user=" + TEST_DB_USER + "&password=" + TEST_DB_PASSWORD;
+        
         System.out.println("🔍 TestConfiguration - TEST_DB_URL: " + TEST_DB_URL);
         System.out.println("🔍 TestConfiguration - TEST_DB_USER: " + TEST_DB_USER);
         System.out.println("🔍 TestConfiguration - TEST_DB_PASSWORD: " + (TEST_DB_PASSWORD != null ? "[SET]" : "[NOT SET]"));
+        System.out.println("🔍 TestConfiguration - TEST_DB_URL_WITH_CREDENTIALS: URL with embedded credentials is available");
     }
     
     /**
