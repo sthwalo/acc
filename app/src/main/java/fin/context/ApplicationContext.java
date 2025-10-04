@@ -33,7 +33,9 @@ public class ApplicationContext {
                 throw new RuntimeException("Failed to connect to database");
             }
             
-            this.dbUrl = DatabaseConfig.getDatabaseUrl();
+            // Use URL with embedded credentials for compatibility with legacy code
+            // that calls DriverManager.getConnection(url) directly
+            this.dbUrl = DatabaseConfig.getDatabaseUrlWithCredentials();
             System.out.println("🔌 Application connected to: " + DatabaseConfig.getDatabaseType());
         }
         
@@ -298,7 +300,7 @@ public class ApplicationContext {
      * Get the payroll report service
      */
     public PayrollReportService getPayrollReportService() {
-        return new PayrollReportService(DatabaseConfig.getDatabaseUrl());
+        return new PayrollReportService(DatabaseConfig.getDatabaseUrlWithCredentials());
     }
 
     /**

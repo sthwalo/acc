@@ -275,6 +275,21 @@ public class DatabaseConfig {
     }
     
     /**
+     * Get the database URL with embedded credentials for legacy code compatibility
+     * This ensures that code using DriverManager.getConnection(url) directly will work
+     * 
+     * @return JDBC URL with user and password parameters embedded
+     */
+    public static String getDatabaseUrlWithCredentials() {
+        if (databaseUrl == null) {
+            return null;
+        }
+        // Add user and password as URL parameters
+        String separator = databaseUrl.contains("?") ? "&" : "?";
+        return databaseUrl + separator + "user=" + databaseUser + "&password=" + databasePassword;
+    }
+    
+    /**
      * Check if using PostgreSQL
      */
     public static boolean isUsingPostgreSQL() {
