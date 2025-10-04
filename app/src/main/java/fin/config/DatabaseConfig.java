@@ -102,6 +102,33 @@ public class DatabaseConfig {
             return;
         }
         
+        // Check for TEST_DATABASE_* environment variables (for CI/CD)
+        String testEnvDbUrl = getConfigValue("TEST_DATABASE_URL");
+        if (testEnvDbUrl != null && !testEnvDbUrl.isEmpty()) {
+            System.out.println("🧪 Test mode detected - using TEST_DATABASE_* environment variables");
+            databaseUrl = testEnvDbUrl;
+            databaseUser = getConfigValue("TEST_DATABASE_USER");
+            databasePassword = getConfigValue("TEST_DATABASE_PASSWORD");
+            
+            if (databaseUser != null && databasePassword != null) {
+                System.out.println("✅ Test database configuration loaded from environment");
+                System.out.println("🔍 Test databaseUrl: " + databaseUrl);
+                System.out.println("🔍 Test databaseUser: " + databaseUser);
+                
+                // Validate test connection
+                try {
+                    Class.forName("org.postgresql.Driver");
+                    try (Connection testConn = DriverManager.getConnection(databaseUrl, databaseUser, databasePassword)) {
+                        System.out.println("✅ Test PostgreSQL connection successful");
+                    }
+                } catch (Exception e) {
+                    System.err.println("⚠️ Test database connection failed: " + e.getMessage());
+                    // Continue anyway - tests might set up database later
+                }
+                return;
+            }
+        }
+        
         // Read production database configuration from environment variables
         String dbUrl = getConfigValue("DATABASE_URL");
         databaseUser = getConfigValue("DATABASE_USER");
