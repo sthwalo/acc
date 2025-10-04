@@ -24,12 +24,16 @@ import java.math.BigDecimal;
 public class TransactionMappingService {
     private static final Logger LOGGER = Logger.getLogger(TransactionMappingService.class.getName());
     private final String dbUrl;
+    private final AccountClassificationService accountClassificationService;
+    private final TransactionMappingRuleService transactionMappingRuleService;
     
     // Cache for account mappings
     private Map<String, Long> accountCache = new HashMap<>();
     
     public TransactionMappingService(String dbUrl) {
         this.dbUrl = dbUrl;
+        this.accountClassificationService = new AccountClassificationService(dbUrl);
+        this.transactionMappingRuleService = new TransactionMappingRuleService(dbUrl);
         loadAccountCache();
     }
     
@@ -268,9 +272,17 @@ public class TransactionMappingService {
      * @param companyId The company ID to create rules for
      * @return Number of rules created
      */
+    /**
+     * Creates standard mapping rules for a company by loading them from
+     * AccountClassificationService (single source of truth) and persisting to database.
+     * 
+     * REFACTORED: Deleted 130+ lines of hardcoded rules.
+     * Now reads from AccountClassificationService.getStandardMappingRules().
+     * 
+     * @param companyId The company ID
+     * @return Number of rules created
+     */
     public int createStandardMappingRules(Long companyId) {
-        int rulesCreated = 0;
-        
         try {
             // Create transaction mapping rules table if it doesn't exist
             createTransactionMappingRulesTable();
@@ -278,125 +290,27 @@ public class TransactionMappingService {
             // Clear existing rules for this company
             clearExistingMappingRules(companyId);
             
-            // Bank fees and charges
-            createMappingRule(companyId, "FEE", "9600", "Bank Charges");
-            rulesCreated++;
-            createMappingRule(companyId, "CHARGE", "9600", "Bank Charges");
-            rulesCreated++;
-            createMappingRule(companyId, "ADMIN FEE", "9600", "Bank Charges");
-            rulesCreated++;
+            // ✅ Get rules from SINGLE SOURCE OF TRUTH (AccountClassificationService)
+            List<fin.model.TransactionMappingRule> rules = 
+                accountClassificationService.getStandardMappingRules();
             
-            // Salaries
-            createMappingRule(companyId, "SALARY", "8100", "Employee Costs");
-            rulesCreated++;
-            createMappingRule(companyId, "WAGE", "8100", "Employee Costs");
-            rulesCreated++;
-            createMappingRule(companyId, "XG SALARIES", "8100", "Employee Costs");
-            rulesCreated++;
+            LOGGER.info(String.format(
+                "Loading %d standard mapping rules from AccountClassificationService for company %d",
+                rules.size(), companyId));
             
-            // Insurance
-            createMappingRule(companyId, "INSURANCE", "8800", "Insurance");
-            rulesCreated++;
-            createMappingRule(companyId, "INSURE", "8800", "Insurance");
-            rulesCreated++;
-            createMappingRule(companyId, "DOTSURE", "8800", "Insurance");
-            rulesCreated++;
-            createMappingRule(companyId, "MIWAY", "8800", "Insurance");
-            rulesCreated++;
-            createMappingRule(companyId, "KINGPRICE", "8800", "Insurance");
-            rulesCreated++;
+            // ✅ Persist to database using helper method
+            transactionMappingRuleService.persistStandardRules(companyId, rules);
             
-            // Insurance reversals and failed debits
-            createMappingRule(companyId, "RTD-NOT PROVIDED FOR", "7200", "Gain on Asset Disposal");
-            rulesCreated++;
-            createMappingRule(companyId, "RTD-DEBIT AGAINST PAYERS AUTH", "7200", "Gain on Asset Disposal");
-            rulesCreated++;
+            LOGGER.info(String.format(
+                "Successfully created %d standard mapping rules for company ID %d", 
+                rules.size(), companyId));
             
-            // Interest income
-            createMappingRule(companyId, "INTEREST", "7000", "Interest Income");
-            rulesCreated++;
-            createMappingRule(companyId, "EXCESS INTEREST", "7000", "Interest Income");
-            rulesCreated++;
+            return rules.size();
             
-            // Bank transfers
-            createMappingRule(companyId, "IB TRANSFER TO", "1100", "Current Assets");
-            rulesCreated++;
-            createMappingRule(companyId, "IB TRANSFER FROM", "1100", "Current Assets");
-            rulesCreated++;
-            createMappingRule(companyId, "IB INSTANT MONEY CASH TO", "1100", "Current Assets");
-            rulesCreated++;
-            
-            // Rent
-            createMappingRule(companyId, "RENT", "8200", "Rent Expense");
-            rulesCreated++;
-            
-            // Utilities
-            createMappingRule(companyId, "ELECTRICITY", "8300", "Utilities");
-            rulesCreated++;
-            createMappingRule(companyId, "WATER", "8300", "Utilities");
-            rulesCreated++;
-            
-            // Telephone - use Communication account (8400)
-            createMappingRule(companyId, "TELEPHONE", "8400", "Communication");
-            rulesCreated++;
-            createMappingRule(companyId, "CELL", "8400", "Communication");
-            rulesCreated++;
-            createMappingRule(companyId, "MOBILE", "8400", "Communication");
-            rulesCreated++;
-            createMappingRule(companyId, "MTN", "8400", "Communication");
-            rulesCreated++;
-            createMappingRule(companyId, "VOD", "8400", "Communication");
-            rulesCreated++;
-            createMappingRule(companyId, "PRE-PAID PAYMENT TO", "8400", "Communication");
-            rulesCreated++;
-            
-            // Internet
-            createMappingRule(companyId, "INTERNET", "8400", "Communication");
-            rulesCreated++;
-            createMappingRule(companyId, "TELKOM", "8400", "Communication");
-            rulesCreated++;
-            
-            // Office expenses
-            createMappingRule(companyId, "STATIONERY", "8400", "Office Expenses");
-            rulesCreated++;
-            createMappingRule(companyId, "PRINTING", "8400", "Office Expenses");
-            rulesCreated++;
-            createMappingRule(companyId, "OFFICE", "8400", "Office Expenses");
-            rulesCreated++;
-            
-            // Fuel and vehicle expenses
-            createMappingRule(companyId, "FUEL", "8600", "Travel & Entertainment");
-            rulesCreated++;
-            createMappingRule(companyId, "PETROL", "8600", "Travel & Entertainment");
-            rulesCreated++;
-            createMappingRule(companyId, "DIESEL", "8600", "Travel & Entertainment");
-            rulesCreated++;
-            createMappingRule(companyId, "BP", "8600", "Travel & Entertainment");
-            rulesCreated++;
-            createMappingRule(companyId, "SHELL", "8600", "Travel & Entertainment");
-            rulesCreated++;
-            createMappingRule(companyId, "SASOL", "8600", "Travel & Entertainment");
-            rulesCreated++;
-            createMappingRule(companyId, "ENGEN", "8600", "Travel & Entertainment");
-            rulesCreated++;
-            
-            // Vehicle tracking
-            createMappingRule(companyId, "CARTRACK", "8500", "Motor Vehicle Expenses");
-            rulesCreated++;
-            createMappingRule(companyId, "NETSTAR", "8500", "Motor Vehicle Expenses");
-            rulesCreated++;
-            
-            // Balance brought forward
-            createMappingRule(companyId, "BALANCE BROUGHT FORWARD", "9500", "Interest Expense");
-            rulesCreated++;
-            
-            LOGGER.info("Created " + rulesCreated + " standard mapping rules for company ID " + companyId);
-            
-        } catch (SQLException e) {
+        } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error creating standard mapping rules", e);
+            return 0;
         }
-        
-        return rulesCreated;
     }
     
     /**
@@ -629,7 +543,137 @@ public class TransactionMappingService {
      * Distinguishes between operational revenue, non-operational income, and reversals/refunds
      * Now includes supplier extraction and detailed account creation
      */
+    /**
+     * Maps a bank transaction to the appropriate account using rules from
+     * AccountClassificationService (single source of truth).
+     * 
+     * REFACTORED: Deleted 300+ lines of hardcoded if-then logic.
+     * Now reads from AccountClassificationService.getStandardMappingRules().
+     * Falls back to database rules if no code-based rule matches.
+     * 
+     * @param transaction The bank transaction to classify
+     * @return Account ID or null if no match found
+     */
     public Long mapTransactionToAccount(BankTransaction transaction) {
+        String details = transaction.getDetails().toUpperCase();
+        
+        // ✅ STEP 1: Try rules from SINGLE SOURCE OF TRUTH (AccountClassificationService)
+        List<fin.model.TransactionMappingRule> codeRules = 
+            accountClassificationService.getStandardMappingRules();
+        
+        // Apply rules in priority order (already sorted descending)
+        for (fin.model.TransactionMappingRule rule : codeRules) {
+            if (rule.matches(details)) {
+                // Extract accountCode from description [AccountCode:XXXX]
+                String accountCode = extractAccountCodeFromDescription(rule.getDescription());
+                if (accountCode != null) {
+                    Long accountId = getAccountByCode(accountCode);
+                    if (accountId != null) {
+                        LOGGER.fine(String.format(
+                            "Matched transaction '%s' to account %s using rule '%s'",
+                            details.substring(0, Math.min(50, details.length())),
+                            accountCode,
+                            rule.getRuleName()));
+                        return accountId;
+                    }
+                }
+            }
+        }
+        
+        // ✅ STEP 2: Fallback to database rules (custom rules added via UI)
+        Long accountIdFromDb = findMatchingAccountFromDatabase(transaction);
+        if (accountIdFromDb != null) {
+            LOGGER.fine(String.format(
+                "Matched transaction '%s' to account using database rule",
+                details.substring(0, Math.min(50, details.length()))));
+            return accountIdFromDb;
+        }
+        
+        // ✅ STEP 3: No match found - leave unclassified for interactive classification
+        LOGGER.info(String.format(
+            "Transaction not classified: %s",
+            details.substring(0, Math.min(100, details.length()))));
+        return null;
+    }
+    
+    /**
+     * Extracts account code from rule description format: [AccountCode:XXXX]
+     */
+    private String extractAccountCodeFromDescription(String description) {
+        if (description == null) {
+            return null;
+        }
+        
+        java.util.regex.Pattern pattern = 
+            java.util.regex.Pattern.compile("\\[AccountCode:(\\d+)\\]");
+        java.util.regex.Matcher matcher = pattern.matcher(description);
+        
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Finds matching account from database rules (fallback for custom rules)
+     */
+    private Long findMatchingAccountFromDatabase(BankTransaction transaction) {
+        if (transaction.getCompanyId() == null) {
+            return null;
+        }
+        
+        // Use TransactionMappingRuleService to find matching account
+        java.util.Optional<fin.model.Account> matchingAccount = 
+            transactionMappingRuleService.findMatchingAccount(
+                transaction.getCompanyId(), 
+                transaction.getDetails());
+        
+        return matchingAccount.map(fin.model.Account::getId).orElse(null);
+    }
+    
+    /**
+     * DEPRECATED: This method contained 300+ lines of hardcoded if-then logic.
+     * Replaced by mapTransactionToAccount() which reads from AccountClassificationService.
+     * Keeping this comment as documentation of the refactoring.
+     * 
+     * OLD APPROACH:
+     * - 300+ lines of if-then statements
+     * - Hardcoded patterns like "INSURANCE CHAUKE", "IB TRANSFER TO", etc.
+     * - Income/expense classification logic
+     * - Supplier-specific rules
+     * 
+     * NEW APPROACH:
+     * - Single source of truth: AccountClassificationService.getStandardMappingRules()
+     * - All rules defined in ONE place with priority ordering
+     * - Fallback to database rules for custom classifications
+     * - Much easier to maintain and test
+     */
+    private void oldMapTransactionToAccountLogic_DELETED() {
+        // This method body was 300+ lines and has been deleted.
+        // See git history for original implementation.
+        // Refactored: October 4, 2025
+    }
+    
+    /* 
+     * ========================================================================
+     * OLD IMPLEMENTATION - DELETED (300+ lines of hardcoded if-then logic)
+     * ========================================================================
+     * This section contained the original mapTransactionToAccount() implementation
+     * with 300+ lines of hardcoded classification patterns.
+     * 
+     * REFACTORED: October 4, 2025
+     * REASON: Violated Single Source of Truth principle
+     * NEW APPROACH: Read from AccountClassificationService.getStandardMappingRules()
+     * 
+     * The old code is commented out below for reference/rollback if needed.
+     * Can be safely deleted after testing confirms new implementation works.
+     * ========================================================================
+     */
+    
+    /* OLD IMPLEMENTATION START - COMMENTED OUT
+    
+    private Long mapTransactionToAccount_OLD_IMPLEMENTATION(BankTransaction transaction) {
         String details = transaction.getDetails().toUpperCase();
 
         // =================================================================
@@ -712,7 +756,17 @@ public class TransactionMappingService {
                 return getOrCreateDetailedAccount("8500-002", "Netstar Vehicle Tracking", "8500", "Motor Vehicle Expenses");
             }
 
+            // SALARY PAYMENTS - Operational expenses (SARS Code: 8100 - Employee Costs)
+            // ⚠️ CRITICAL: Must check BEFORE "INSURANCE" to handle "INSURANCE CHAUKE XG SALARIES"
+            // All salary payments to single standard account, employee name preserved in transaction details
+            if (details.contains("SALARIES") || details.contains("SALARY") ||
+                details.contains("WAGES") || details.contains("XG SALARIES") ||
+                (details.contains("IB PAYMENT TO") && (details.contains("XG SALARIES") || details.contains("WAGES")))) {
+                return getStandardAccountId("8100"); // Employee Costs (all employees)
+            }
+
             // INSURANCE PREMIUMS - Operational expenses
+            // ⚠️ Check AFTER salaries to avoid misclassifying "INSURANCE CHAUKE XG SALARIES"
             if (details.contains("INSURANCE") || details.contains("PREMIUM")) {
                 if (details.contains("KINGPRICE") || details.contains("KING PRICE")) {
                     return getOrCreateDetailedAccount("8800-001", "King Price Insurance Premiums", "8800", "Insurance");
@@ -763,22 +817,17 @@ public class TransactionMappingService {
                 }
             }
 
-            // SALARY PAYMENTS - Operational expenses (SARS Code: 8100 - Employee Costs)
-            // All salary payments to single standard account, employee name preserved in transaction details
-            if (details.contains("SALARIES") || details.contains("SALARY") ||
-                details.contains("WAGES") || details.contains("XG SALARIES") ||
-                (details.contains("IB PAYMENT TO") && (details.contains("XG SALARIES") || details.contains("WAGES")))) {
-                return getStandardAccountId("8100"); // Employee Costs (all employees)
-            }
-
             // TRUNCATED SALARY PAYMENTS - Handle incomplete descriptions (SARS Code: 8100)
             if (details.equals("IB PAYMENT TO") || details.equals("IMMEDIATE PAYMENT")) {
                 // These are salary payments with missing recipient details
                 return getStandardAccountId("8100"); // Employee Costs
             }
 
-            // TRUNCATED BANK TRANSFERS - Handle incomplete transfer descriptions
-            if (details.equals("IB TRANSFER FROM")) {
+            // BANK TRANSFERS - Internal transfers between accounts
+            // Pattern: "IB TRANSFER TO *****2689327" (account numbers masked)
+            if (details.contains("IB TRANSFER TO") || details.contains("IB TRANSFER FROM")) {
+                // These are internal bank transfers (e.g., moving money to/from fuel account)
+                // Use standard Current Assets account to track internal movements
                 return getOrCreateDetailedAccount("1100-001", "Bank Transfers", "1100", "Current Assets");
             }
 
@@ -929,6 +978,8 @@ public class TransactionMappingService {
         LOGGER.info("Transaction not classified: " + details);
         return null;
     }
+    
+    OLD IMPLEMENTATION END - COMMENTED OUT */
     
     /**
      * Analyzes unclassified transactions and provides classification suggestions

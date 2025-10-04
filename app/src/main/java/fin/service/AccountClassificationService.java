@@ -515,6 +515,276 @@ public class AccountClassificationService {
     }
     
     /**
+     * Helper method to create a transaction mapping rule template.
+     * These are lightweight rule definitions without company/account object references.
+     * The account code is embedded in the description for later resolution when persisting.
+     * 
+     * @param ruleName Name of the rule
+     * @param description Human-readable description
+     * @param matchType Type of pattern matching
+     * @param matchValue Pattern to match against transaction details
+     * @param accountCode SARS-compliant account code (e.g., "8100", "1100")
+     * @param priority Rule priority (higher = checked first)
+     * @return TransactionMappingRule template ready for persistence
+     */
+    private TransactionMappingRule createRule(String ruleName, String description, 
+                                             TransactionMappingRule.MatchType matchType,
+                                             String matchValue, String accountCode, int priority) {
+        TransactionMappingRule rule = new TransactionMappingRule();
+        rule.setRuleName(ruleName);
+        // Store account code in description for now (will be extracted when persisting)
+        rule.setDescription(description + " [AccountCode:" + accountCode + "]");
+        rule.setMatchType(matchType);
+        rule.setMatchValue(matchValue);
+        rule.setPriority(priority);
+        rule.setActive(true);
+        return rule;
+    }
+    
+    /**
+     * Get standard transaction mapping rules for South African business.
+     * 
+     * This is the SINGLE SOURCE OF TRUTH for all classification rules.
+     * ALL other services should read from this method, not define their own rules.
+     * 
+     * Rules are ordered by priority (highest first):
+     * - Priority 10: Critical/specific patterns (must match first)
+     * - Priority 9: High-confidence patterns
+     * - Priority 8: Standard business patterns
+     * - Priority 5: Generic/fallback patterns
+     * 
+     * When adding new rules:
+     * 1. Add rule definition here FIRST
+     * 2. Run "Initialize Mapping Rules" to persist to database
+     * 3. Test with "Auto-Classify Transactions"
+     * 
+     * NOTE: Returns TransactionMappingRule objects WITHOUT company/account references.
+     * These are lightweight rule templates that will be enriched when persisted.
+     * 
+     * @return List of standard mapping rules ordered by priority (descending)
+     */
+    public List<TransactionMappingRule> getStandardMappingRules() {
+        List<TransactionMappingRule> rules = new ArrayList<>();
+        
+        // ========================================================================
+        // PRIORITY 10: CRITICAL PATTERNS (Must match before generic patterns)
+        // ========================================================================
+        
+        // HIGH PRIORITY: Salary payments to specific employees
+        // NOTE: "INSURANCE CHAUKE" contains keyword "INSURANCE" but is actually a salary payment
+        // This rule MUST come before generic insurance pattern to avoid misclassification
+        rules.add(createRule(
+            "Insurance Chauke Salaries",
+            "Salary payments to Insurance Chauke - prioritize over insurance pattern",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "INSURANCE CHAUKE",
+            "8100", // Employee Costs
+            10
+        ));
+        
+        // Loan repayments from directors/employees
+        rules.add(createRule(
+            "Jeffrey Maphosa Loan Repayment",
+            "Loan repayments from Jeffrey Maphosa to company loan assist account",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "JEFFREY MAPHOSA LOAN",
+            "4000", // Long-term Loans
+            10
+        ));
+        
+        // Director reimbursements (for personal credit card expenses paid by company)
+        rules.add(createRule(
+            "Stone Jeffrey Maphosa Reimbursement",
+            "Director reimbursements for personal credit card expenses (Company Assist loan)",
+            TransactionMappingRule.MatchType.REGEX,
+            "STONE JEFFR.*MAPHOSA.*(REIMBURSE|REPAYMENT)",
+            "4000", // Long-term Loans
+            10
+        ));
+        
+        // ========================================================================
+        // PRIORITY 9: HIGH-CONFIDENCE PATTERNS
+        // ========================================================================
+        
+        // Professional services (accounting, legal)
+        rules.add(createRule(
+            "Global Hope Financia Accounting",
+            "Accounting services from Global Hope Financia",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "GLOBAL HOPE FINACIA",
+            "8700", // Professional Services
+            9
+        ));
+        
+        // Supplier payments (NOT director remuneration)
+        rules.add(createRule(
+            "Rent A Dog Supplier",
+            "Supplier payments to Rent A Dog (not director remuneration)",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "RENT A DOG",
+            "3000", // Accounts Payable
+            9
+        ));
+        
+        // ========================================================================
+        // PRIORITY 8: STANDARD BUSINESS PATTERNS
+        // ========================================================================
+        
+        // Internal bank transfers (between own accounts)
+        rules.add(createRule(
+            "Bank Transfers - IB TRANSFER TO",
+            "Internal bank transfers to other accounts (e.g., fuel account)",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "IB TRANSFER TO",
+            "1100", // Bank - Current Account
+            8
+        ));
+        
+        rules.add(createRule(
+            "Bank Transfers - IB TRANSFER FROM",
+            "Internal bank transfers from other accounts (e.g., fuel account)",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "IB TRANSFER FROM",
+            "1100", // Bank - Current Account
+            8
+        ));
+        
+        // Supplier payments
+        rules.add(createRule(
+            "DB Projects Supplier",
+            "Supplier payments to DB Projects and Agencies",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "DB PROJECTS",
+            "3000", // Accounts Payable
+            8
+        ));
+        
+        // Employee salaries (specific names)
+        rules.add(createRule(
+            "Anthony Ndou Salary",
+            "Salary payment to Anthony Ndou",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "ANTHONY NDOU",
+            "8100", // Employee Costs
+            8
+        ));
+        
+        rules.add(createRule(
+            "Goodman Zunga Salary",
+            "Salary payment to Goodman Zunga",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "GOODMAN ZUNGA",
+            "8100", // Employee Costs
+            8
+        ));
+        
+        // Education expenses
+        rules.add(createRule(
+            "Lyceum College Education",
+            "School fees and education expenses at Lyceum College",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "LYCEUM COLLEGE",
+            "9300", // Training & Development
+            8
+        ));
+        
+        // Salary payments (generic keywords)
+        rules.add(createRule(
+            "Salary Payments - XG SALARIES",
+            "Standard salary payments with XG SALARIES keyword",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "XG SALARIES",
+            "8100", // Employee Costs
+            8
+        ));
+        
+        rules.add(createRule(
+            "Salary Payments - SALARIES",
+            "Standard salary payments with SALARIES keyword",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "SALARIES",
+            "8100", // Employee Costs
+            8
+        ));
+        
+        rules.add(createRule(
+            "Salary Payments - WAGES",
+            "Wage payments to employees",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "WAGES",
+            "8100", // Employee Costs
+            8
+        ));
+        
+        // ========================================================================
+        // PRIORITY 5: GENERIC/FALLBACK PATTERNS
+        // ========================================================================
+        
+        // Educational institutions (generic)
+        rules.add(createRule(
+            "Education Institutions - Generic",
+            "Generic rule for college, school, and university fees",
+            TransactionMappingRule.MatchType.REGEX,
+            ".*(COLLEGE|SCHOOL|UNIVERSITY).*",
+            "9300", // Training & Development
+            5
+        ));
+        
+        // Insurance premiums (generic - MUST come after "Insurance Chauke" check)
+        rules.add(createRule(
+            "Insurance Premiums - Generic",
+            "Insurance premium payments to providers",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "INSURANCE",
+            "8800", // Insurance
+            5
+        ));
+        
+        rules.add(createRule(
+            "Insurance Premiums - PREMIUM keyword",
+            "Premium payments",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "PREMIUM",
+            "8800", // Insurance
+            5
+        ));
+        
+        // Bank charges and fees
+        rules.add(createRule(
+            "Bank Charges - FEE keyword",
+            "Bank fees and charges",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "FEE:",
+            "9600", // Bank Charges
+            5
+        ));
+        
+        rules.add(createRule(
+            "Bank Charges - SERVICE FEE",
+            "Monthly service fees",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "SERVICE FEE",
+            "9600", // Bank Charges
+            5
+        ));
+        
+        // Loan payments (generic)
+        rules.add(createRule(
+            "Loan Payments - Generic",
+            "Loan payments and repayments",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "LOAN",
+            "4000", // Long-term Loans
+            5
+        ));
+        
+        // Sort by priority (descending) to ensure highest priority rules are checked first
+        rules.sort((r1, r2) -> Integer.compare(r2.getPriority(), r1.getPriority()));
+        
+        return rules;
+    }
+    
+    /**
      * Helper class for account definitions
      */
     private static class AccountDefinition {

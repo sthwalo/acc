@@ -2,6 +2,7 @@ package fin.service;
 
 import fin.model.BankTransaction;
 import fin.model.Company;
+import fin.model.TransactionMappingRule;
 import fin.config.DatabaseConfig;
 
 import java.sql.*;
@@ -30,6 +31,7 @@ public class InteractiveClassificationService {
     private final String dbUrl;
     private final Scanner scanner;
     private final TransactionMappingService mappingService;
+    private final AccountClassificationService accountClassificationService;
     private final Map<Long, Map<String, ClassificationRule>> companyRules;
     private final List<ChangeRecord> changesMade;
     private final Map<String, List<String>> accountCategories;
@@ -159,6 +161,7 @@ public class InteractiveClassificationService {
         this.dbUrl = DatabaseConfig.getDatabaseUrl();
         this.scanner = new Scanner(System.in);
         this.mappingService = createMappingService();
+        this.accountClassificationService = new AccountClassificationService(dbUrl);
         this.companyRules = new HashMap<>();
         this.changesMade = new ArrayList<>();
         this.accountCategories = new LinkedHashMap<>();
@@ -610,27 +613,57 @@ public class InteractiveClassificationService {
     }
     
     /**
-     * Show available account suggestions based on company's chart of accounts and transaction analysis
+     * Show available account suggestions based on company's chart of accounts and transaction analysis.
+     * Now reads from AccountClassificationService (single source of truth) in addition to historical rules.
      */
     private void showAccountSuggestions(Long companyId, BankTransaction transaction) {
         try {
-            // First, try to get intelligent suggestion from TransactionMappingService
+            System.out.println("\n💡 ACCOUNT SUGGESTIONS:");
+            System.out.println("-".repeat(60));
+            
+            // STEP 1: Show intelligent suggestions from AccountClassificationService (code-based rules)
+            System.out.println("📚 From Standard Rules (AccountClassificationService):");
+            List<TransactionMappingRule> standardRules = accountClassificationService.getStandardMappingRules();
+            int suggestionsShown = 0;
+            
+            for (TransactionMappingRule rule : standardRules) {
+                if (rule.matches(transaction.getDetails())) {
+                    // Extract account code from description
+                    String accountCode = extractAccountCodeFromRuleDescription(rule.getDescription());
+                    if (accountCode != null) {
+                        String simplifiedDescription = rule.getDescription().replaceAll("\\s*\\[AccountCode:.*?\\]", "");
+                        System.out.println("   ✓ " + accountCode + " - " + simplifiedDescription);
+                        suggestionsShown++;
+                        if (suggestionsShown >= 3) break; // Show top 3 matches
+                    }
+                }
+            }
+            
+            if (suggestionsShown == 0) {
+                System.out.println("   (No standard rules match this transaction)");
+            }
+            
+            // STEP 2: Try to get intelligent suggestion from TransactionMappingService
+            System.out.println("\n🎯 From Transaction Mapping Service:");
             Long suggestedAccountId = mappingService.mapTransactionToAccount(transaction);
             if (suggestedAccountId != null) {
                 String accountCode = mappingService.getAccountCodeById(suggestedAccountId);
                 String accountName = mappingService.getAccountNameById(suggestedAccountId);
                 if (accountCode != null && accountName != null) {
-                    System.out.println("   🤖 AI Suggestion (based on transaction analysis):");
-                    System.out.printf("   • %s - %s%n", accountCode, accountName);
-                    System.out.println();
+                    System.out.println("   ✓ " + accountCode + " - " + accountName + " (High Confidence)");
                 }
+            } else {
+                System.out.println("   (No database rules match this transaction)");
             }
             
-            // Then show most used accounts from historical rules
+            // STEP 3: Show most used accounts from historical classification rules
+            System.out.println("\n📊 Most Used Accounts (Historical):");
             String sql = """
                 SELECT account_code, account_name, usage_count 
                 FROM company_classification_rules 
                 WHERE company_id = ? 
+                ORDER BY usage_count DESC, account_code ASC
+                LIMIT 5
                 """;
                 
             try (Connection conn = getConnection();
@@ -639,31 +672,42 @@ public class InteractiveClassificationService {
                 stmt.setLong(1, companyId);
                 
                 try (ResultSet rs = stmt.executeQuery()) {
-                    if (rs.next()) {
-                        System.out.println("   📊 Most used accounts (from your classification history):");
-                        do {
-                            System.out.printf("   • %s - %s (used %d times)%n",
-                                rs.getString("account_code"),
-                                rs.getString("account_name"),
-                                rs.getInt("usage_count"));
-                        } while (rs.next());
-                    } else {
-                        // Show common account types as fallback
-                        System.out.println("   📋 Common account types:");
-                        System.out.println("   • 8800 - Insurance");
-                        System.out.println("   • 8100 - Employee Costs");
-                        System.out.println("   • 8200 - Rent Expense");
-                        System.out.println("   • 9600 - Bank Charges");
-                        System.out.println("   • 8300 - Utilities");
-                        System.out.println("   • 8500 - Motor Vehicle Expenses");
-                        System.out.println("   • 5000 - Other Income");
-                        System.out.println("   • 6000 - Reversals & Adjustments");
+                    int historicalCount = 0;
+                    while (rs.next()) {
+                        String accountCode = rs.getString("account_code");
+                        String accountName = rs.getString("account_name");
+                        int usageCount = rs.getInt("usage_count");
+                        System.out.println("   • " + accountCode + " - " + accountName + 
+                                         " (" + usageCount + " uses)");
+                        historicalCount++;
+                    }
+                    
+                    if (historicalCount == 0) {
+                        System.out.println("   (No historical data available yet)");
                     }
                 }
             }
+            
+            System.out.println("-".repeat(60));
+            
         } catch (SQLException e) {
             LOGGER.log(Level.WARNING, "Error loading account suggestions", e);
         }
+    }
+    
+    /**
+     * Extract account code from rule description (format: "[AccountCode:XXXX]")
+     */
+    private String extractAccountCodeFromRuleDescription(String description) {
+        if (description == null) return null;
+        
+        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("\\[AccountCode:(\\d+(?:-\\d+)?)\\]");
+        java.util.regex.Matcher matcher = pattern.matcher(description);
+        
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+        return null;
     }
     
     /**
