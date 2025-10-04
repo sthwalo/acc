@@ -50,6 +50,8 @@ This directory contains comprehensive### For New Developers
 1. **Journal Entry Generation** - Fixed missing database column (was broken)
 2. **Audit Trail Generation** - Now functional (was producing empty results)
 3. **CI/CD Pipeline** - GitHub Actions passing (was failing)
+4. **CI/CD Authentication** - Fixed PostgreSQL "role 'root' does not exist" error by embedding credentials in JDBC URLs
+   - See: [CI_CD_AUTHENTICATION_FIX_2025-10-04.md](./CI_CD_AUTHENTICATION_FIX_2025-10-04.md)
 
 ### Major Enhancements ✅
 1. **Re-classification Menu** - Complete overhaul with:
