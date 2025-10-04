@@ -86,6 +86,62 @@ public class DatabaseConfig {
     }
     
     /**
+     * Detect if we're running in a test context (JUnit, Gradle test task, or CI/CD)
+     * This prevents TEST_DATABASE_* vars from being used during normal application runtime
+     */
+    private static boolean isRunningInTestContext() {
+        // Check 1: JUnit is on the classpath and test classes are being executed
+        try {
+            // Check if JUnit's Test annotation is available
+            Class.forName("org.junit.jupiter.api.Test");
+            
+            // Check the stack trace for test execution indicators
+            StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+            for (StackTraceElement element : stackTrace) {
+                String className = element.getClassName();
+                String methodName = element.getMethodName();
+                
+                // JUnit 5 test runner
+                if (className.startsWith("org.junit.") || 
+                    className.startsWith("org.gradle.api.internal.tasks.testing")) {
+                    return true;
+                }
+                
+                // Gradle test task
+                if (className.contains("GradleWorkerMain") || 
+                    className.contains("TestExecuter")) {
+                    return true;
+                }
+                
+                // Test class being executed (ends with Test)
+                if (className.endsWith("Test") && !methodName.equals("getStackTrace")) {
+                    return true;
+                }
+            }
+        } catch (ClassNotFoundException e) {
+            // JUnit not on classpath - definitely not a test
+            return false;
+        }
+        
+        // Check 2: CI/CD environment variables (GitHub Actions, GitLab CI, etc.)
+        String ciEnv = System.getenv("CI");
+        String githubActions = System.getenv("GITHUB_ACTIONS");
+        if ("true".equalsIgnoreCase(ciEnv) || "true".equalsIgnoreCase(githubActions)) {
+            System.out.println("🔍 CI/CD environment detected (CI=" + ciEnv + ", GITHUB_ACTIONS=" + githubActions + ")");
+            return true;
+        }
+        
+        // Check 3: Gradle test system property
+        String gradleTest = System.getProperty("gradle.test");
+        if ("true".equalsIgnoreCase(gradleTest)) {
+            return true;
+        }
+        
+        // Not in test context
+        return false;
+    }
+    
+    /**
      * Load database configuration from environment variables
      * Called both in static initializer and can be called again to refresh
      */
@@ -102,30 +158,35 @@ public class DatabaseConfig {
             return;
         }
         
-        // Check for TEST_DATABASE_* environment variables (for CI/CD)
-        String testEnvDbUrl = getConfigValue("TEST_DATABASE_URL");
-        if (testEnvDbUrl != null && !testEnvDbUrl.isEmpty()) {
-            System.out.println("🧪 Test mode detected - using TEST_DATABASE_* environment variables");
-            databaseUrl = testEnvDbUrl;
-            databaseUser = getConfigValue("TEST_DATABASE_USER");
-            databasePassword = getConfigValue("TEST_DATABASE_PASSWORD");
-            
-            if (databaseUser != null && databasePassword != null) {
-                System.out.println("✅ Test database configuration loaded from environment");
-                System.out.println("🔍 Test databaseUrl: " + databaseUrl);
-                System.out.println("🔍 Test databaseUser: " + databaseUser);
+        // Check if we're in test execution context (JUnit, Gradle test task, CI/CD)
+        boolean isTestContext = isRunningInTestContext();
+        
+        // If in test context, check for TEST_DATABASE_* environment variables
+        if (isTestContext) {
+            String testEnvDbUrl = getConfigValue("TEST_DATABASE_URL");
+            if (testEnvDbUrl != null && !testEnvDbUrl.isEmpty()) {
+                System.out.println("🧪 Test execution context detected - using TEST_DATABASE_* environment variables");
+                databaseUrl = testEnvDbUrl;
+                databaseUser = getConfigValue("TEST_DATABASE_USER");
+                databasePassword = getConfigValue("TEST_DATABASE_PASSWORD");
                 
-                // Validate test connection
-                try {
-                    Class.forName("org.postgresql.Driver");
-                    try (Connection testConn = DriverManager.getConnection(databaseUrl, databaseUser, databasePassword)) {
-                        System.out.println("✅ Test PostgreSQL connection successful");
+                if (databaseUser != null && databasePassword != null) {
+                    System.out.println("✅ Test database configuration loaded from environment");
+                    System.out.println("🔍 Test databaseUrl: " + databaseUrl);
+                    System.out.println("🔍 Test databaseUser: " + databaseUser);
+                    
+                    // Validate test connection
+                    try {
+                        Class.forName("org.postgresql.Driver");
+                        try (Connection testConn = DriverManager.getConnection(databaseUrl, databaseUser, databasePassword)) {
+                            System.out.println("✅ Test PostgreSQL connection successful");
+                        }
+                    } catch (Exception e) {
+                        System.err.println("⚠️ Test database connection failed: " + e.getMessage());
+                        // Continue anyway - tests might set up database later
                     }
-                } catch (Exception e) {
-                    System.err.println("⚠️ Test database connection failed: " + e.getMessage());
-                    // Continue anyway - tests might set up database later
+                    return;
                 }
-                return;
             }
         }
         
