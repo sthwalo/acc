@@ -2,42 +2,66 @@
 
 This directory contains comprehensive documentation for the FIN Financial Management System.
 
-## Documentation Structure
+## � Quick Links
 
-### 📋 Business Documentation ([business/](business/))
-Business strategy, licensing, and legal documents:
-- [Business Model Options](business/BUSINESS_MODEL_OPTIONS.md) - Revenue and licensing strategies
-- [Commercial License](business/COMMERCIAL_LICENSE.md) - Commercial licensing terms
-- [Licensing Guide](business/LICENSING.md) - License usage and compliance
-- [IP Protection Strategy](business/IP_PROTECTION_STRATEGY.md) - Intellectual property protection
+- **[Development README](development/README.md)** - Start here for development setup and recent progress
+- **[QUICK_TEST_GUIDE.md](QUICK_TEST_GUIDE.md)** - 5-10 minute testing guide (START HERE!)
+- **[CHANGELOG.md](CHANGELOG.md)** - Version history and recent changes
+- **[SYSTEM_ARCHITECTURE_STATUS.md](SYSTEM_ARCHITECTURE_STATUS.md)** - Current system architecture
+
+## 📂 Documentation Structure
 
 ### 🔧 Development Documentation ([development/](development/))
-Development guides, progress reports, and setup instructions:
-- [Clean Application Guide](development/CLEAN_APPLICATION_GUIDE.md) - Application cleanup procedures
-- [Enhanced Parser Completion Report](development/ENHANCED_PARSER_COMPLETION_REPORT.md) - Parser development progress
-- [Frontend Component Placement](development/FRONTEND_COMPONENT_PLACEMENT.md) - UI component organization
-- [Fullstack Development Guide](development/FULLSTACK_DEVELOPMENT.md) - Full-stack development setup
-- [Quick Start Guide](development/QUICK_START.md) - Getting started quickly
+All development-related documents, progress reports, and analysis:
+- **[README.md](development/README.md)** - Main development index (START HERE!)
+- **[QUICK_START.md](development/QUICK_START.md)** - Quick commands and setup
+- **[DEVELOPMENT_STATUS.md](development/DEVELOPMENT_STATUS.md)** - Current system state
+- **[PROGRESS_REPORT_OCT_2_4_2025.md](development/PROGRESS_REPORT_OCT_2_4_2025.md)** - Latest 3-day sprint
+- **Session Summaries** - Detailed daily development logs
+- **Phase Reports** - Refactoring phase completion reports (Phase 2-7)
+- **Analysis Documents** - Deep technical analysis and architecture reviews
+- **Refactoring Reports** - Code cleanup and improvement reports
 
-### ⚙️ Technical Documentation ([technical/](technical/))
-Technical reference and implementation details:
-- [Database Reference](technical/DATABASE_REFERENCE.md) - Database schema and operations
+### 📚 Reference Guides (Root Level)
+Core reference documentation:
+- **[DATABASE_REFERENCE.md](DATABASE_REFERENCE.md)** - Database schema and operations
+- **[SYSTEM_ARCHITECTURE_STATUS.md](SYSTEM_ARCHITECTURE_STATUS.md)** - System architecture overview
+- **[INTERACTIVE_CLASSIFICATION_GUIDE.md](INTERACTIVE_CLASSIFICATION_GUIDE.md)** - Transaction classification
+- **[TRANSACTION_CLASSIFICATION_GUIDE.md](TRANSACTION_CLASSIFICATION_GUIDE.md)** - Classification rules
+- **[PAYROLL_INTEGRATION_GUIDE.md](PAYROLL_INTEGRATION_GUIDE.md)** - Payroll system integration
+- **[USAGE.md](USAGE.md)** - Application usage instructions
 
-### 🏗️ System Architecture ([system_architecture/](system_architecture/))
-Architectural design and system specifications:
-- [System Architecture](system_architecture/SYSTEM_ARCHITECTURE.md) - Overall system design
-- [Implementation Strategy](system_architecture/IMPLEMENTATION_STRATEGY.md) - Development approach
-- [Integration Points](system_architecture/INTEGRATION_POINTS.md) - System integration details
-- [Technical Specifications](system_architecture/TECHNICAL_SPECIFICATIONS.md) - Detailed technical specs
+### 🏗️ Strategy & Planning Documents (Root Level)
+Strategic documents and deployment guides:
+- **[PRODUCTION_DEPLOYMENT_STRATEGY.md](PRODUCTION_DEPLOYMENT_STRATEGY.md)** - Production deployment
+- **[IP_PROTECTION_STRATEGY.md](IP_PROTECTION_STRATEGY.md)** - Intellectual property protection
+- **[TYPESCRIPT_INTEGRATION_STRATEGY.md](TYPESCRIPT_INTEGRATION_STRATEGY.md)** - TypeScript integration
+- **[POSTGRESQL_MIGRATION_GUIDE.md](POSTGRESQL_MIGRATION_GUIDE.md)** - PostgreSQL migration
+- **[MIGRATION_STRATEGY.md](MIGRATION_STRATEGY.md)** - Data migration strategies
+- **[SIMULTANEOUS_DEVELOPMENT_GUIDE.md](SIMULTANEOUS_DEVELOPMENT_GUIDE.md)** - Multi-developer workflow
 
+### 📊 Reports & Incidents (Root Level)
+Verification reports and incident analysis:
+- **[EXPORT_VERIFICATION_REPORT.md](EXPORT_VERIFICATION_REPORT.md)** - Export functionality verification
+- **[INCIDENT_REPORT_2025-09-28.md](INCIDENT_REPORT_2025-09-28.md)** - Critical incident analysis
 
-## Getting Started
+## 🎯 Getting Started
 
-For quick setup and usage instructions, see the [Quick Start Guide](development/QUICK_START.md).
+### For New Developers
+1. Read **[development/README.md](development/README.md)** - Main development index
+2. Follow **[development/QUICK_START.md](development/QUICK_START.md)** - Setup instructions
+3. Run **[QUICK_TEST_GUIDE.md](QUICK_TEST_GUIDE.md)** - Verify your setup (5-10 mins)
+4. Review **[development/DEVELOPMENT_STATUS.md](development/DEVELOPMENT_STATUS.md)** - Current system state
 
-For detailed development information, see [DEVELOPMENT.md](DEVELOPMENT.md).
+### For Understanding Recent Changes
+1. Check **[CHANGELOG.md](CHANGELOG.md)** - Version history
+2. Read **[development/PROGRESS_REPORT_OCT_2_4_2025.md](development/PROGRESS_REPORT_OCT_2_4_2025.md)** - Latest sprint
+3. Review **[development/SESSION_SUMMARY_2025-10-04.md](development/SESSION_SUMMARY_2025-10-04.md)** - Latest session
 
-For application usage instructions, see [USAGE.md](USAGE.md).
+### For System Architecture
+1. See **[SYSTEM_ARCHITECTURE_STATUS.md](SYSTEM_ARCHITECTURE_STATUS.md)** - High-level overview
+2. See **[DATABASE_REFERENCE.md](DATABASE_REFERENCE.md)** - Database schema
+3. See **[development/FULLSTACK_DEVELOPMENT.md](development/FULLSTACK_DEVELOPMENT.md)** - Full-stack guide
 
 ## Project Structure
 
