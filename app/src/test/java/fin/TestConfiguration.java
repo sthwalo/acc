@@ -23,8 +23,8 @@ public class TestConfiguration {
     public static final String TEST_DB_URL_WITH_CREDENTIALS; // URL with embedded credentials for direct DriverManager usage
     
     static {
-        // Load environment variables from .env file first
-        loadEnvironmentVariables();
+        // Load environment variables ONLY if not already set (prioritize CI/CD env vars)
+        loadEnvironmentVariablesIfNeeded();
         
         // Now read the test database configuration (check both env vars and system properties)
         TEST_DB_URL = getConfigValue("TEST_DATABASE_URL");
@@ -58,10 +58,21 @@ public class TestConfiguration {
     }
     
     /**
-     * Load environment variables from test.env file only
+     * Load environment variables from test.env file ONLY if not already set
+     * This ensures CI/CD environment variables take precedence over local test.env file
      */
-    private static void loadEnvironmentVariables() {
-        // Only try to load from test.env in test resources
+    private static void loadEnvironmentVariablesIfNeeded() {
+        // Check if key environment variables are already set
+        boolean envVarsAlreadySet = System.getenv("TEST_DATABASE_URL") != null 
+                && System.getenv("TEST_DATABASE_USER") != null 
+                && System.getenv("TEST_DATABASE_PASSWORD") != null;
+        
+        if (envVarsAlreadySet) {
+            System.out.println("🔍 Using environment variables (CI/CD mode) - skipping test.env file");
+            return;
+        }
+        
+        // Only load from test.env if environment variables are not set
         Path testEnvPath = Paths.get("app/src/test/resources/test.env");
         if (Files.exists(testEnvPath) && Files.isReadable(testEnvPath)) {
             System.out.println("🔍 Found test.env file at: " + testEnvPath.toAbsolutePath());
@@ -78,7 +89,7 @@ public class TestConfiguration {
                     System.out.println("🔍 Set system property " + key + " from test.env file");
                 }
                 
-                System.out.println("🔍 Environment variables loaded from test.env file");
+                System.out.println("🔍 Environment variables loaded from test.env file (local mode)");
                 return; // Success, exit
                 
             } catch (IOException e) {
