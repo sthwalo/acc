@@ -64,7 +64,7 @@ public class TestSinglePdf {
                 System.out.println("\n📊 Sample transactions:");
                 for (int i = 0; i < Math.min(5, transactions.size()); i++) {
                     BankTransaction tx = transactions.get(i);
-                    System.out.printf("  %s | %s | %.2f\n", 
+                    System.out.printf("  %s | %s | %.2f%n", 
                         tx.getTransactionDate(), 
                         tx.getDetails().substring(0, Math.min(50, tx.getDetails().length())),
                         tx.getDebitAmount() != null ? tx.getDebitAmount().doubleValue() : 

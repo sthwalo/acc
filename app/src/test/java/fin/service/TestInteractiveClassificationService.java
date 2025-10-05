@@ -50,7 +50,7 @@ public class TestInteractiveClassificationService {
     /**
      * Testable subclass that overrides database connection methods
      */
-    private class TestableInteractiveClassificationService extends InteractiveClassificationService {
+    private static class TestableInteractiveClassificationService extends InteractiveClassificationService {
         @Override
         protected Connection getConnection() throws SQLException {
             // Use PostgreSQL test database with embedded credentials

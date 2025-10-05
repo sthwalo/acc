@@ -42,7 +42,8 @@ public class TestConfiguration {
         
         System.out.println("🔍 TestConfiguration - TEST_DB_URL: " + TEST_DB_URL);
         System.out.println("🔍 TestConfiguration - TEST_DB_USER: " + TEST_DB_USER);
-        System.out.println("🔍 TestConfiguration - TEST_DB_PASSWORD: " + (TEST_DB_PASSWORD != null ? "[SET]" : "[NOT SET]"));
+        // Password is guaranteed non-null by validation above
+        System.out.println("🔍 TestConfiguration - TEST_DB_PASSWORD: [SET]");
         System.out.println("🔍 TestConfiguration - TEST_DB_URL_WITH_CREDENTIALS: URL with embedded credentials is available");
     }
     
