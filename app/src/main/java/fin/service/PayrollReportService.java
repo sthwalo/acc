@@ -86,6 +86,8 @@ public class PayrollReportService {
         if (company == null) {
             throw new SQLException("Company not found: " + companyId);
         }
+        // Assert company is non-null for SpotBugs
+        assert company != null : "Company should not be null after validation";
 
         // Get summary data
         PayrollSummaryData summaryData = calculatePayrollSummaryData(companyId);
@@ -282,6 +284,8 @@ public class PayrollReportService {
         if (company == null) {
             throw new SQLException("Company not found: " + companyId);
         }
+        // Assert company is non-null for SpotBugs
+        assert company != null : "Company should not be null after validation";
 
         // Get all active employees
         List<Employee> employees = getActiveEmployees(companyId);

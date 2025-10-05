@@ -718,8 +718,11 @@ public class PayrollController {
                 }
             }
 
-            if ((!exportsDir.exists() || exportsDir.listFiles((dir, name) -> name.startsWith("payslip_") && name.endsWith(".pdf")).length == 0) &&
-                (!payslipsDir.exists() || payslipsDir.listFiles((dir, name) -> name.startsWith("payslip_") && name.endsWith(".pdf")).length == 0)) {
+            java.io.File[] exportsPayslips = exportsDir.exists() ? exportsDir.listFiles((dir, name) -> name.startsWith("payslip_") && name.endsWith(".pdf")) : null;
+            java.io.File[] payslipsPayslips = payslipsDir.exists() ? payslipsDir.listFiles((dir, name) -> name.startsWith("payslip_") && name.endsWith(".pdf")) : null;
+            
+            if ((exportsPayslips == null || exportsPayslips.length == 0) &&
+                (payslipsPayslips == null || payslipsPayslips.length == 0)) {
                 outputFormatter.printInfo("No payslip documents found.");
             }
 
