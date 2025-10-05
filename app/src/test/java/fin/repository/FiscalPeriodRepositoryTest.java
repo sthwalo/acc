@@ -58,7 +58,8 @@ class FiscalPeriodRepositoryTest {
             TestConfiguration.TEST_DB_USER,
             TestConfiguration.TEST_DB_PASSWORD
         );
-        repository = new FiscalPeriodRepository(TestConfiguration.TEST_DB_URL);
+        // Use URL with embedded credentials for repository (it uses single-parameter DriverManager.getConnection)
+        repository = new FiscalPeriodRepository(TestConfiguration.TEST_DB_URL_WITH_CREDENTIALS);
 
         // Clean up any existing test data
         try (Statement stmt = connection.createStatement()) {

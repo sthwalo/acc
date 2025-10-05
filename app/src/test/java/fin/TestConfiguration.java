@@ -275,33 +275,51 @@ public class TestConfiguration {
     
     private static void executeSchemaFile(Statement stmt) throws SQLException {
         try {
-            // Try multiple possible locations for the schema file
-            java.nio.file.Path schemaPath = null;
-            java.nio.file.Path[] possiblePaths = {
-                java.nio.file.Paths.get("test_schema.sql"),              // Current directory
-                java.nio.file.Paths.get("../test_schema.sql"),           // Parent directory
-                java.nio.file.Paths.get("../../test_schema.sql"),        // Grandparent
-                java.nio.file.Paths.get("../../../test_schema.sql"),     // Great-grandparent
-                java.nio.file.Paths.get("../../../../test_schema.sql"),  // Great-great-grandparent
-                java.nio.file.Paths.get(System.getProperty("user.dir"), "test_schema.sql"),  // Project root
-                java.nio.file.Paths.get(System.getProperty("user.dir"), "..", "test_schema.sql"),  // Parent of project root
-            };
+            String schemaSql = null;
             
-            for (java.nio.file.Path path : possiblePaths) {
-                if (java.nio.file.Files.exists(path) && java.nio.file.Files.isReadable(path)) {
-                    schemaPath = path;
-                    System.out.println("🔍 Found test_schema.sql at: " + path.toAbsolutePath());
-                    break;
+            // FIRST: Try to load from test resources (classpath) - PROPER WAY
+            // This works in both local and CI/CD environments
+            try {
+                java.io.InputStream resourceStream = TestConfiguration.class.getClassLoader()
+                    .getResourceAsStream("test_schema.sql");
+                
+                if (resourceStream != null) {
+                    schemaSql = new String(resourceStream.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+                    System.out.println("✅ Loaded test_schema.sql from classpath (test resources)");
+                }
+            } catch (Exception e) {
+                System.out.println("⚠️ Could not load from classpath: " + e.getMessage());
+            }
+            
+            // SECOND: Try file system locations (fallback for local development)
+            if (schemaSql == null) {
+                java.nio.file.Path schemaPath = null;
+                java.nio.file.Path[] possiblePaths = {
+                    java.nio.file.Paths.get("test_schema.sql"),              // Current directory
+                    java.nio.file.Paths.get("../test_schema.sql"),           // Parent directory
+                    java.nio.file.Paths.get("../../test_schema.sql"),        // Grandparent
+                    java.nio.file.Paths.get("../../../test_schema.sql"),     // Great-grandparent
+                    java.nio.file.Paths.get("../../../../test_schema.sql"),  // Great-great-grandparent
+                    java.nio.file.Paths.get(System.getProperty("user.dir"), "test_schema.sql"),  // Project root
+                    java.nio.file.Paths.get(System.getProperty("user.dir"), "..", "test_schema.sql"),  // Parent of project root
+                };
+                
+                for (java.nio.file.Path path : possiblePaths) {
+                    if (java.nio.file.Files.exists(path) && java.nio.file.Files.isReadable(path)) {
+                        schemaPath = path;
+                        schemaSql = java.nio.file.Files.readString(schemaPath);
+                        System.out.println("✅ Loaded test_schema.sql from filesystem: " + path.toAbsolutePath());
+                        break;
+                    }
                 }
             }
             
-            if (schemaPath == null) {
-                System.out.println("⚠️ test_schema.sql not found in any expected location - using embedded schema");
+            // THIRD: Use embedded schema as last resort
+            if (schemaSql == null) {
+                System.out.println("⚠️ test_schema.sql not found in classpath or filesystem - using embedded schema");
                 executeEmbeddedSchema(stmt);
                 return;
             }
-            
-            String schemaSql = java.nio.file.Files.readString(schemaPath);
             
             // Split into individual statements properly handling multi-line statements
             List<String> statements = parseSqlStatements(schemaSql);
