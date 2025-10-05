@@ -23,8 +23,8 @@ class BankStatementProcessingServiceTest {
     
     @BeforeEach
     void setUp() {
-        // Use test database for service
-        service = new BankStatementProcessingService(TestConfiguration.TEST_DB_URL);
+        // Use test database URL with embedded credentials for service
+        service = new BankStatementProcessingService(TestConfiguration.TEST_DB_URL_WITH_CREDENTIALS);
     }
     
     @Test
