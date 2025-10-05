@@ -79,7 +79,7 @@ public class TransactionMappingRuleService extends JdbcBaseRepository {
             "JOIN accounts a ON r.account_id = a.id " +
             "JOIN account_categories c ON a.category_id = c.id " +
             "JOIN account_types t ON c.account_type_id = t.id " +
-            "WHERE r.company_id = ? AND r.is_active = 1 " +
+            "WHERE r.company_id = ? AND r.is_active = true " +
             "ORDER BY r.priority DESC, r.rule_name";
 
         try {
