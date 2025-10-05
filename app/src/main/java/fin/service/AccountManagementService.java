@@ -86,7 +86,7 @@ public class AccountManagementService extends JdbcBaseRepository {
             "FROM accounts a " +
             "JOIN account_categories c ON a.category_id = c.id " +
             "JOIN account_types t ON c.account_type_id = t.id " +
-            "WHERE a.company_id = ? AND a.is_active = 1 " +
+            "WHERE a.company_id = ? AND a.is_active = true " +
             "ORDER BY a.account_code";
 
         try {

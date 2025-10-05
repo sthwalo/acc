@@ -83,7 +83,7 @@ public class CategoryManagementService extends JdbcBaseRepository {
                 "SELECT c.*, t.code as type_code, t.name as type_name, t.normal_balance " +
                 "FROM account_categories c " +
                 "JOIN account_types t ON c.account_type_id = t.id " +
-                "WHERE c.company_id = ? AND c.is_active = 1 " +
+                "WHERE c.company_id = ? AND c.is_active = true " +
                 "ORDER BY t.code, c.name";
 
         try {
