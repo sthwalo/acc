@@ -21,43 +21,80 @@ public class TestDatabaseConfig {
     }
 
     /**
-     * Load environment variables from .env file if it exists
+     * Load environment variables from test.env file ONLY if not already set
+     * This ensures CI/CD environment variables take precedence over local test.env file
      */
     private static void loadEnvironmentVariables() {
+        // Check if key environment variables are already set
+        boolean envVarsAlreadySet = System.getenv("TEST_DATABASE_URL") != null 
+                && System.getenv("TEST_DATABASE_USER") != null 
+                && System.getenv("TEST_DATABASE_PASSWORD") != null;
+        
+        if (envVarsAlreadySet) {
+            System.out.println("🧪 Using environment variables (CI/CD mode) - skipping test.env file");
+            return;
+        }
+        
+        // Try multiple possible locations for test.env file
         try {
-            java.io.File envFile = new java.io.File("test.env");
-            if (envFile.exists()) {
+            java.io.File envFile = null;
+            
+            // Location 1: app/src/test/resources/test.env (standard location)
+            java.io.File location1 = new java.io.File("app/src/test/resources/test.env");
+            if (location1.exists() && location1.canRead()) {
+                envFile = location1;
+            }
+            
+            // Location 2: test.env in working directory (fallback)
+            if (envFile == null) {
+                java.io.File location2 = new java.io.File("test.env");
+                if (location2.exists() && location2.canRead()) {
+                    envFile = location2;
+                }
+            }
+            
+            if (envFile != null) {
+                System.out.println("🧪 Found test.env file at: " + envFile.getAbsolutePath());
                 java.util.Properties envProps = new java.util.Properties();
                 try (java.io.FileInputStream fis = new java.io.FileInputStream(envFile)) {
                     envProps.load(fis);
                 }
                 
-                // Set environment variables if not already set
+                // Set as system properties
                 for (String key : envProps.stringPropertyNames()) {
-                    if (System.getenv(key) == null) {
-                        System.setProperty(key, envProps.getProperty(key));
-                        System.out.println("🧪 Loaded " + key + " from .env file");
-                    }
+                    System.setProperty(key, envProps.getProperty(key));
+                    System.out.println("🧪 Loaded " + key + " from test.env file");
                 }
-                System.out.println("🧪 Environment variables loaded from .env file");
+                System.out.println("🧪 Environment variables loaded from test.env file (local mode)");
             } else {
-                System.out.println("🧪 .env file not found, using system environment variables only");
+                System.out.println("🧪 test.env file not found, using environment variables only");
             }
         } catch (Exception e) {
-            System.err.println("🧪 Failed to load .env file: " + e.getMessage());
+            System.err.println("🧪 Failed to load test.env file: " + e.getMessage());
             // Continue with system environment variables
         }
     }
 
     private static void initializeTestConfiguration() {
-        // Read test database configuration from system properties (set by TestConfiguration)
+        // Read test database configuration from system properties OR environment variables
         String dbUrl = System.getProperty("TEST_DATABASE_URL");
+        if (dbUrl == null) {
+            dbUrl = System.getenv("TEST_DATABASE_URL");
+        }
+        
         testDatabaseUser = System.getProperty("TEST_DATABASE_USER");
+        if (testDatabaseUser == null) {
+            testDatabaseUser = System.getenv("TEST_DATABASE_USER");
+        }
+        
         testDatabasePassword = System.getProperty("TEST_DATABASE_PASSWORD");
+        if (testDatabasePassword == null) {
+            testDatabasePassword = System.getenv("TEST_DATABASE_PASSWORD");
+        }
 
-        System.out.println("🧪 TestDatabaseConfig - TEST_DATABASE_URL from system property: " + dbUrl);
-        System.out.println("🧪 TestDatabaseConfig - TEST_DATABASE_USER from system property: " + testDatabaseUser);
-        System.out.println("🧪 TestDatabaseConfig - TEST_DATABASE_PASSWORD from system property: " + (testDatabasePassword != null ? "[SET]" : "[NOT SET]"));
+        System.out.println("🧪 TestDatabaseConfig - TEST_DATABASE_URL: " + dbUrl);
+        System.out.println("🧪 TestDatabaseConfig - TEST_DATABASE_USER: " + testDatabaseUser);
+        System.out.println("🧪 TestDatabaseConfig - TEST_DATABASE_PASSWORD: " + (testDatabasePassword != null ? "[SET]" : "[NOT SET]"));
 
         // Require environment variables - no hardcoded defaults
         if (dbUrl == null || testDatabaseUser == null || testDatabasePassword == null) {
