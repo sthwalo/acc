@@ -39,6 +39,7 @@ public class Payslip {
     private BigDecimal payeeTax = BigDecimal.ZERO;
     private BigDecimal uifEmployee = BigDecimal.ZERO;
     private BigDecimal uifEmployer = BigDecimal.ZERO;
+    private BigDecimal sdlLevy = BigDecimal.ZERO;  // Skills Development Levy (1% of gross for employers)
     
     // Other Deductions
     private BigDecimal medicalAid = BigDecimal.ZERO;
@@ -222,6 +223,9 @@ public class Payslip {
     
     public BigDecimal getUifEmployer() { return uifEmployer; }
     public void setUifEmployer(BigDecimal uifEmployer) { this.uifEmployer = uifEmployer; }
+    
+    public BigDecimal getSdlLevy() { return sdlLevy; }
+    public void setSdlLevy(BigDecimal sdlLevy) { this.sdlLevy = sdlLevy; }
     
     public BigDecimal getMedicalAid() { return medicalAid; }
     public void setMedicalAid(BigDecimal medicalAid) { 

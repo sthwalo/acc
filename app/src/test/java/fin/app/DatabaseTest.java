@@ -3,9 +3,9 @@ package fin.app;
 import fin.TestConfiguration;
 import java.sql.*;
 
-/**
- * Simple Database Test to verify connection and basic queries
- */
+
+ //Simple Database Test to verify connection and basic queries
+ 
 public class DatabaseTest {
     
     public static void main(String[] args) {

@@ -259,7 +259,7 @@ public class AccountClassificationService {
         accounts.add(new AccountDefinition("6000", "Sales Revenue", "Revenue from sales", operatingRevenueId));
         accounts.add(new AccountDefinition("6100", "Service Revenue", "Revenue from services", operatingRevenueId));
         // Sub-account for specific service revenue
-        accounts.add(new AccountDefinition("4000-001", "Corobrik Service Revenue", "Service revenue from Corobrik", operatingRevenueId));
+        accounts.add(new AccountDefinition("6100-001", "Corobrik Service Revenue", "Service revenue from Corobrik", operatingRevenueId));
         
         accounts.add(new AccountDefinition("6200", "Other Operating Revenue", "Other operating income", operatingRevenueId));
         
@@ -273,6 +273,7 @@ public class AccountClassificationService {
         Long operatingExpensesId = categoryIds.get("OPERATING_EXPENSES");
         accounts.add(new AccountDefinition("8000", "Cost of Goods Sold", "Direct costs of products sold", operatingExpensesId));
         accounts.add(new AccountDefinition("8100", "Employee Costs", "Salaries, wages and benefits", operatingExpensesId));
+        accounts.add(new AccountDefinition("8100-001", "Director Remuneration", "Director remuneration", operatingExpensesId));
         accounts.add(new AccountDefinition("8200", "Rent Expense", "Office and facility rent", operatingExpensesId));
         accounts.add(new AccountDefinition("8300", "Utilities", "Electricity, water, gas", operatingExpensesId));
         accounts.add(new AccountDefinition("8400", "Communication", "Telephone, internet, postage", operatingExpensesId));
@@ -317,6 +318,8 @@ public class AccountClassificationService {
         accounts.add(new AccountDefinition("9500", "Interest Expense", "Interest on loans and credit", financeCostsId));
         accounts.add(new AccountDefinition("9600", "Bank Charges", "Bank fees and transaction costs", financeCostsId));
         accounts.add(new AccountDefinition("9700", "Foreign Exchange Loss", "Loss on currency exchange", financeCostsId));
+        accounts.add(new AccountDefinition("9800", "Loan Repayments", "Loan repayment costs", financeCostsId));
+        accounts.add(new AccountDefinition("9900", "Pension Expenses", "Pension-related costs", financeCostsId));
         
         return accounts;
     }
@@ -754,7 +757,7 @@ public class AccountClassificationService {
             "Bank Charges - FEE keyword",
             "Bank fees and charges",
             TransactionMappingRule.MatchType.CONTAINS,
-            "FEE:",
+            "FEE",
             "9600", // Bank Charges
             5
         ));

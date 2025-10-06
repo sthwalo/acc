@@ -1,7 +1,6 @@
 package fin.service;
 
 import fin.model.*;
-import fin.model.ComprehensiveTrialBalanceEntry;
 import fin.repository.FinancialDataRepository;
 import java.math.BigDecimal;
 import java.sql.SQLException;
@@ -26,7 +25,7 @@ public class TrialBalanceService {
     public String generateTrialBalance(int companyId, int fiscalPeriodId) throws SQLException {
         Company company = repository.getCompany(companyId);
         FiscalPeriod fiscalPeriod = repository.getFiscalPeriod(fiscalPeriodId);
-        List<ComprehensiveTrialBalanceEntry> entries = repository.getComprehensiveTrialBalance(companyId, fiscalPeriodId);
+        List<TrialBalanceEntry> entries = repository.getTrialBalanceEntries(companyId, fiscalPeriodId);
 
         StringBuilder report = new StringBuilder();
         report.append(generateReportHeader("TRIAL BALANCE REPORT", company, fiscalPeriod));
@@ -40,21 +39,34 @@ public class TrialBalanceService {
         BigDecimal totalDebits = BigDecimal.ZERO;
         BigDecimal totalCredits = BigDecimal.ZERO;
 
-        for (ComprehensiveTrialBalanceEntry entry : entries) {
+        for (TrialBalanceEntry entry : entries) {
             BigDecimal closingBalance = entry.getClosingBalance();
+            String normalBalance = entry.getNormalBalance(); // 'D' or 'C'
 
-            // For trial balance, show the absolute closing balance in the appropriate column
+            // For trial balance, display based on account type normal balance
             BigDecimal debitAmount = BigDecimal.ZERO;
             BigDecimal creditAmount = BigDecimal.ZERO;
 
-            if (closingBalance.compareTo(BigDecimal.ZERO) > 0) {
-                // Positive balance goes to debit side
-                debitAmount = closingBalance;
-                totalDebits = totalDebits.add(debitAmount);
-            } else if (closingBalance.compareTo(BigDecimal.ZERO) < 0) {
-                // Negative balance goes to credit side (as positive amount)
-                creditAmount = closingBalance.negate();
-                totalCredits = totalCredits.add(creditAmount);
+            if ("D".equals(normalBalance)) {
+                // Debit normal balance accounts (Assets, Expenses)
+                // Positive balance → Debit column, Negative balance → Credit column
+                if (closingBalance.compareTo(BigDecimal.ZERO) > 0) {
+                    debitAmount = closingBalance;
+                    totalDebits = totalDebits.add(debitAmount);
+                } else if (closingBalance.compareTo(BigDecimal.ZERO) < 0) {
+                    creditAmount = closingBalance.negate();
+                    totalCredits = totalCredits.add(creditAmount);
+                }
+            } else {
+                // Credit normal balance accounts (Liabilities, Equity, Revenue)
+                // Positive balance → Credit column, Negative balance → Debit column
+                if (closingBalance.compareTo(BigDecimal.ZERO) > 0) {
+                    creditAmount = closingBalance;
+                    totalCredits = totalCredits.add(creditAmount);
+                } else if (closingBalance.compareTo(BigDecimal.ZERO) < 0) {
+                    debitAmount = closingBalance.negate();
+                    totalDebits = totalDebits.add(debitAmount);
+                }
             }
 
             // Only show accounts with balances

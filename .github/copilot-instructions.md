@@ -94,8 +94,11 @@ ORDER BY transaction_date DESC LIMIT 10;
 ./gradlew test --tests "fin.service.AccountManagerTest"
 ```
 
-### ⚠️ CRITICAL ENFORCEMENT: Code Changes
-**MANDATORY REQUIREMENT**: After ANY changes to non-test code files (.java, .kt, build.gradle.kts, etc.), you MUST run:
+### ⚠️ CRITICAL ENFORCEMENT: Code Changes & Testing Protocol
+
+**MANDATORY REQUIREMENT**: After ANY changes to non-test code files (.java, .kt, build.gradle.kts, etc.):
+
+#### 1. **BUILD VERIFICATION** (Required After Every Code Change)
 ```bash
 ./gradlew clean build -x test
 ```
@@ -105,7 +108,41 @@ This ensures:
 - No regressions in existing functionality
 - Build artifacts (fat JAR) are up-to-date
 
-**FAILURE TO COMPLY** will result in broken builds, runtime errors, and deployment issues. This is STRICTLY enforced for all code changes.
+#### 2. **USER VERIFICATION** (CRITICAL - DO NOT SKIP)
+**🚨 STOP - DO NOT COMMIT OR PUSH UNTIL USER CONFIRMS FIX WORKS 🚨**
+
+After making code changes:
+- ✅ Explain **WHAT** you changed (which files, which methods)
+- ✅ Explain **WHY** you changed it (what problem does it solve)
+- ✅ Explain **HOW** to test the fix (specific steps user should follow)
+- ✅ Wait for user to **RUN THE APPLICATION** and verify the fix works
+- ✅ Wait for user to **EXPLICITLY CONFIRM** "the fix works" or "ready to commit"
+- ❌ **DO NOT** commit changes until user confirms
+- ❌ **DO NOT** assume the fix works just because it compiles
+- ❌ **DO NOT** rush to commit and push
+
+#### 3. **TESTING WORKFLOW** (Required Before Any Commit)
+```bash
+# User must verify the fix by:
+1. Running the application: ./run.sh
+2. Testing the changed functionality interactively
+3. Reviewing generated reports/output
+4. Confirming the fix resolves the original issue
+5. Giving explicit approval: "Yes, this fix works, commit it"
+
+# Only after user confirmation:
+git add <changed-files>
+git commit -m "descriptive message"
+git push origin main
+```
+
+#### 4. **CONSEQUENCES OF VIOLATION**
+- Committing unverified code → production bugs
+- Rushing commits → broken functionality
+- Skipping user confirmation → wasted time on incorrect fixes
+- Not testing thoroughly → financial data corruption
+
+**FAILURE TO COMPLY** will result in broken builds, runtime errors, deployment issues, and financial reporting errors. This protocol is **STRICTLY ENFORCED** for all code changes, especially those affecting financial calculations, database queries, or report generation.
 
 ## 📋 Project-Specific Conventions
 

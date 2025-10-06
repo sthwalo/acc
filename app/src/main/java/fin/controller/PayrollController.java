@@ -554,26 +554,43 @@ public class PayrollController {
         
         try {
             List<PayrollPeriod> allPeriods = payrollService.getPayrollPeriods(companyId);
-            List<PayrollPeriod> processPeriods = allPeriods.stream()
-                .filter(PayrollPeriod::canBeProcessed)
-                .toList();
             
-            if (processPeriods.isEmpty()) {
-                outputFormatter.printWarning("No open payroll periods available for processing.");
-                outputFormatter.printPlain("All existing periods have been processed.");
-                outputFormatter.printPlain("Create a new payroll period to process payroll.");
+            // Show ALL periods (including PROCESSED ones for reprocessing)
+            if (allPeriods.isEmpty()) {
+                outputFormatter.printWarning("No payroll periods found.");
+                outputFormatter.printPlain("Create a payroll period first.");
                 inputHandler.waitForEnter();
                 return;
             }
             
-            outputFormatter.printPlain("Select payroll period to process:");
-            for (int i = 0; i < processPeriods.size(); i++) {
-                outputFormatter.printPlain((i + 1) + ". " + processPeriods.get(i).getPeriodName());
+            outputFormatter.printPlain("Select payroll period to process (or reprocess):");
+            for (int i = 0; i < allPeriods.size(); i++) {
+                PayrollPeriod period = allPeriods.get(i);
+                String statusTag = period.getStatus() == PayrollPeriod.PayrollStatus.PROCESSED ? 
+                    " [PROCESSED - will reprocess]" : "";
+                outputFormatter.printPlain((i + 1) + ". " + period.getPeriodName() + 
+                                         " (" + period.getStatus() + ")" + statusTag);
             }
-            int periodChoice = inputHandler.getInteger("Enter period number", 1, processPeriods.size());
-            PayrollPeriod selectedPeriod = processPeriods.get(periodChoice - 1);
+            int periodChoice = inputHandler.getInteger("Enter period number", 1, allPeriods.size());
+            PayrollPeriod selectedPeriod = allPeriods.get(periodChoice - 1);
+            
+            // Warn user if reprocessing
+            if (selectedPeriod.getStatus() == PayrollPeriod.PayrollStatus.PROCESSED) {
+                outputFormatter.printWarning("⚠️  This period has already been processed.");
+                outputFormatter.printPlain("Reprocessing will:");
+                outputFormatter.printPlain("  • Delete existing payslips");
+                outputFormatter.printPlain("  • Recalculate everything with current data");
+                outputFormatter.printPlain("  • Generate new PDFs");
+                String confirm = inputHandler.getString("Continue with reprocessing? (yes/no)", "no");
+                if (!confirm.equalsIgnoreCase("yes") && !confirm.equalsIgnoreCase("y")) {
+                    outputFormatter.printInfo("Reprocessing cancelled.");
+                    inputHandler.waitForEnter();
+                    return;
+                }
+            }
+            
             payrollService.processPayroll(selectedPeriod.getId(), "system");
-            outputFormatter.printSuccess("Payroll processed for period: " + selectedPeriod.getPeriodName());
+            outputFormatter.printSuccess("✅ Payroll processed successfully for period: " + selectedPeriod.getPeriodName());
             
         } catch (Exception e) {
             outputFormatter.printError("Failed to process payroll: " + e.getMessage());
@@ -622,8 +639,9 @@ public class PayrollController {
         while (!back) {
             outputFormatter.printPlain("1. Generate Payroll Summary Report");
             outputFormatter.printPlain("2. Generate Employee Payroll Report");
-            outputFormatter.printPlain("3. Back to Payroll Management");
-            int choice = inputHandler.getInteger("Enter your choice", 1, 3);
+            outputFormatter.printPlain("3. Generate EMP 201 Report (SARS Tax Submission)");
+            outputFormatter.printPlain("4. Back to Payroll Management");
+            int choice = inputHandler.getInteger("Enter your choice", 1, 4);
             switch (choice) {
                 case 1:
                     try {
@@ -644,6 +662,17 @@ public class PayrollController {
                     inputHandler.waitForEnter();
                     break;
                 case 3:
+                    try {
+                        payrollReportService.generateEMP201Report(companyId);
+                        outputFormatter.printSuccess("EMP 201 report generated and saved as PDF.");
+                        outputFormatter.printInfo("This report contains PAYE, UIF (Employee + Employer), and SDL totals for SARS submission.");
+                    } catch (Exception e) {
+                        outputFormatter.printError("Failed to generate EMP 201 report: " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                    inputHandler.waitForEnter();
+                    break;
+                case 4:
                     back = true;
                     break;
                 default:
