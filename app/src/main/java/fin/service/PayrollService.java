@@ -270,6 +270,17 @@ public class PayrollService {
      * Create a new payroll period
      */
     public PayrollPeriod createPayrollPeriod(PayrollPeriod period) {
+        // Auto-determine fiscal period if not set
+        if (period.getFiscalPeriodId() == null) {
+            Long fiscalPeriodId = findFiscalPeriodForDate(period.getCompanyId(), period.getStartDate());
+            if (fiscalPeriodId != null) {
+                period.setFiscalPeriodId(fiscalPeriodId);
+                LOGGER.info("Auto-assigned fiscal period ID: " + fiscalPeriodId + " for payroll period: " + period.getPeriodName());
+            } else {
+                LOGGER.warning("No fiscal period found for dates " + period.getStartDate() + " to " + period.getEndDate());
+            }
+        }
+        
         String sql = """
             INSERT INTO payroll_periods (company_id, fiscal_period_id, period_name, pay_date, 
                                        start_date, end_date, period_type, created_by)
@@ -303,6 +314,35 @@ public class PayrollService {
         }
         
         throw new RuntimeException("Failed to create payroll period");
+    }
+    
+    /**
+     * Find the fiscal period that contains a given date
+     */
+    private Long findFiscalPeriodForDate(Long companyId, LocalDate date) {
+        String sql = """
+            SELECT id FROM fiscal_periods 
+            WHERE company_id = ? 
+            AND ? BETWEEN start_date AND end_date
+            LIMIT 1
+            """;
+        
+        try (Connection conn = DriverManager.getConnection(dbUrl);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setLong(1, companyId);
+            pstmt.setDate(2, java.sql.Date.valueOf(date));
+            
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return rs.getLong("id");
+            }
+            
+        } catch (SQLException e) {
+            LOGGER.log(Level.WARNING, "Error finding fiscal period for date: " + date, e);
+        }
+        
+        return null;
     }
     
     /**
@@ -510,17 +550,33 @@ public class PayrollService {
             conn.setAutoCommit(false);
 
             try {
-                // Check if payroll has already been processed
+                // Clear existing payslips if reprocessing
+                boolean isReprocessing = false;
                 if (period.getStatus() == PayrollPeriod.PayrollStatus.PROCESSED) {
-                    throw new RuntimeException("Payroll period has already been processed. Use 'Generate Payslip PDFs' to regenerate PDFs for processed payrolls.");
+                    LOGGER.info("Clearing existing payslips for reprocessing of period: " + period.getPeriodName());
+                    clearExistingPayslips(conn, payrollPeriodId);
+                    
+                    // Reset payroll period status to allow reprocessing
+                    resetPayrollPeriodStatus(conn, payrollPeriodId);
+                    LOGGER.info("Payroll period reset to OPEN status for reprocessing");
+                    isReprocessing = true;
+                    
+                    // Update in-memory period status to reflect database change
+                    period.setStatus(PayrollPeriod.PayrollStatus.OPEN);
                 }
 
-                if (!period.canBeProcessed()) {
+                if (!period.canBeProcessed() && !isReprocessing) {
                     throw new RuntimeException("Payroll period cannot be processed. Status: " + period.getStatus());
                 }
 
                 // Get all active employees for the company
                 List<Employee> employees = getActiveEmployees(period.getCompanyId());
+
+                // Calculate total company payroll for SDL determination
+                BigDecimal totalCompanyGross = BigDecimal.ZERO;
+                for (Employee emp : employees) {
+                    totalCompanyGross = totalCompanyGross.add(emp.getBasicSalary() != null ? emp.getBasicSalary() : BigDecimal.ZERO);
+                }
 
                 BigDecimal totalGross = BigDecimal.ZERO;
                 BigDecimal totalDeductions = BigDecimal.ZERO;
@@ -530,8 +586,8 @@ public class PayrollService {
                 List<String> generatedPdfPaths = new ArrayList<>();
 
                 for (Employee employee : employees) {
-                    // Calculate and create payslip for each employee
-                    Payslip payslip = calculatePayslip(employee, period);
+                    // Calculate and create payslip for each employee (pass total company payroll for SDL calculation)
+                    Payslip payslip = calculatePayslip(employee, period, totalCompanyGross);
                     savePayslip(conn, payslip);
 
                     // ✅ ADD THIS: Generate PDF for each payslip
@@ -576,6 +632,42 @@ public class PayrollService {
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Error processing payroll", e);
             throw new RuntimeException("Failed to process payroll: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Clear existing payslips for a payroll period to allow reprocessing
+     * This deletes all payslip records associated with the given payroll period
+     */
+    private void clearExistingPayslips(Connection conn, Long payrollPeriodId) throws SQLException {
+        String deleteSql = "DELETE FROM payslips WHERE payroll_period_id = ?";
+        
+        try (PreparedStatement pstmt = conn.prepareStatement(deleteSql)) {
+            pstmt.setLong(1, payrollPeriodId);
+            int deletedCount = pstmt.executeUpdate();
+            LOGGER.info("Deleted " + deletedCount + " existing payslips for reprocessing");
+        }
+    }
+    
+    /**
+     * Reset payroll period status to OPEN to allow reprocessing
+     */
+    private void resetPayrollPeriodStatus(Connection conn, Long payrollPeriodId) throws SQLException {
+        String updateSql = """
+            UPDATE payroll_periods 
+            SET status = 'OPEN', 
+                total_gross_pay = 0, 
+                total_deductions = 0, 
+                total_net_pay = 0,
+                employee_count = 0,
+                processed_at = NULL,
+                processed_by = NULL
+            WHERE id = ?
+            """;
+        
+        try (PreparedStatement pstmt = conn.prepareStatement(updateSql)) {
+            pstmt.setLong(1, payrollPeriodId);
+            pstmt.executeUpdate();
         }
     }
     
@@ -635,7 +727,7 @@ public class PayrollService {
     /**
      * Calculate payslip for an employee using SARSTaxCalculator
      */
-    private Payslip calculatePayslip(Employee employee, PayrollPeriod period) {
+    private Payslip calculatePayslip(Employee employee, PayrollPeriod period, BigDecimal totalCompanyGross) {
         String payslipNumber = generatePayslipNumber(employee, period);
         
         Payslip payslip = new Payslip(employee.getCompanyId(), employee.getId(), 
@@ -659,6 +751,11 @@ public class PayrollService {
         BigDecimal uifEmployer = BigDecimal.valueOf(uifDouble);
         payslip.setUifEmployee(uifEmployee);
         payslip.setUifEmployer(uifEmployer);
+        
+        // Calculate SDL (Skills Development Levy) - 1% of gross for companies with payroll > R500k/year
+        double sdlDouble = sarsTaxCalculator.calculateSDL(grossDouble, totalCompanyGross.doubleValue());
+        BigDecimal sdlLevy = BigDecimal.valueOf(sdlDouble);
+        payslip.setSdlLevy(sdlLevy);
         
         // TODO: Add other deductions (medical aid, pension fund, etc.)
         
@@ -832,7 +929,7 @@ public class PayrollService {
             String updateSql = """
                 UPDATE payslips SET
                     basic_salary = ?, gross_salary = ?, total_earnings = ?,
-                    payee_tax = ?, uif_employee = ?, uif_employer = ?, total_deductions = ?,
+                    payee_tax = ?, uif_employee = ?, uif_employer = ?, sdl_levy = ?, total_deductions = ?,
                     net_pay = ?, status = ?, updated_at = CURRENT_TIMESTAMP
                 WHERE id = ?
                 """;
@@ -845,6 +942,7 @@ public class PayrollService {
                 pstmt.setObject(i++, payslip.getPayeeTax());
                 pstmt.setObject(i++, payslip.getUifEmployee());
                 pstmt.setObject(i++, payslip.getUifEmployer());
+                pstmt.setObject(i++, payslip.getSdlLevy());
                 pstmt.setObject(i++, payslip.getTotalDeductions());
                 pstmt.setObject(i++, payslip.getNetPay());
                 pstmt.setString(i++, payslip.getStatus() != null ? payslip.getStatus().name() : "GENERATED");
@@ -859,9 +957,9 @@ public class PayrollService {
                 INSERT INTO payslips (
                     company_id, employee_id, payroll_period_id, payslip_number,
                     basic_salary, gross_salary, total_earnings,
-                    paye_tax, uif_employee, uif_employer, total_deductions,
+                    paye_tax, uif_employee, uif_employer, sdl_levy, total_deductions,
                     net_pay, status, created_by, created_at
-                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
+                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
                 RETURNING id
                 """;
 
@@ -877,6 +975,7 @@ public class PayrollService {
                 pstmt.setObject(i++, payslip.getPayeeTax());
                 pstmt.setObject(i++, payslip.getUifEmployee());
                 pstmt.setObject(i++, payslip.getUifEmployer());
+                pstmt.setObject(i++, payslip.getSdlLevy());
                 pstmt.setObject(i++, payslip.getTotalDeductions());
                 pstmt.setObject(i++, payslip.getNetPay());
                 pstmt.setString(i++, payslip.getStatus() != null ? payslip.getStatus().name() : "GENERATED");
@@ -1003,6 +1102,7 @@ public class PayrollService {
         payslip.setPayeeTax(getBigDecimalOrZero(rs, "paye_tax"));
         payslip.setUifEmployee(getBigDecimalOrZero(rs, "uif_employee"));
         payslip.setUifEmployer(getBigDecimalOrZero(rs, "uif_employer"));
+        payslip.setSdlLevy(getBigDecimalOrZero(rs, "sdl_levy"));
         payslip.setMedicalAid(getBigDecimalOrZero(rs, "medical_aid"));
         payslip.setPensionFund(getBigDecimalOrZero(rs, "pension_fund"));
         payslip.setLoanDeduction(getBigDecimalOrZero(rs, "loan_deduction"));

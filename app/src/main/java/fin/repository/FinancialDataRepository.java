@@ -22,14 +22,9 @@ public interface FinancialDataRepository {
     Map<String, BigDecimal> getAccountBalancesByType(int companyId, int fiscalPeriodId, String accountType) throws SQLException;
 
     /**
-     * Get trial balance data from bank transactions
+     * Get trial balance data with opening balances, period movements, and closing balances
      */
     List<TrialBalanceEntry> getTrialBalanceEntries(int companyId, int fiscalPeriodId) throws SQLException;
-
-    /**
-     * Get comprehensive trial balance data with opening and closing balances
-     */
-    List<ComprehensiveTrialBalanceEntry> getComprehensiveTrialBalance(int companyId, int fiscalPeriodId) throws SQLException;
 
     /**
      * Get journal entries for audit trail

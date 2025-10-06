@@ -1,7 +1,6 @@
 package fin.repository;
 
 import fin.model.*;
-import fin.model.ComprehensiveTrialBalanceEntry;
 import java.math.BigDecimal;
 import java.sql.*;
 import java.util.*;
@@ -50,7 +49,7 @@ public class JdbcFinancialDataRepository implements FinancialDataRepository {
 
     @Override
     public Map<String, BigDecimal> getAccountBalancesByType(int companyId, int fiscalPeriodId, String accountType) throws SQLException {
-        // Get balances directly from bank_transactions for accuracy
+        // FIXED: Get balances from journal_entry_lines for proper double-entry accounting
         String sql = """
             SELECT
                 CASE
@@ -61,11 +60,12 @@ public class JdbcFinancialDataRepository implements FinancialDataRepository {
                     WHEN a.account_code LIKE '5%' OR a.account_code LIKE '8%' OR a.account_code LIKE '9%' THEN 'EXPENSES'
                     ELSE 'OTHER'
                 END as account_type,
-                COALESCE(SUM(bt.debit_amount), 0) as total_debits,
-                COALESCE(SUM(bt.credit_amount), 0) as total_credits
+                COALESCE(SUM(jel.debit_amount), 0) as total_debits,
+                COALESCE(SUM(jel.credit_amount), 0) as total_credits
             FROM accounts a
-            LEFT JOIN bank_transactions bt ON a.account_code = bt.account_code
-                AND bt.company_id = ? AND bt.fiscal_period_id = ?
+            LEFT JOIN journal_entry_lines jel ON a.id = jel.account_id
+            LEFT JOIN journal_entries je ON jel.journal_entry_id = je.id
+                AND je.company_id = ? AND je.fiscal_period_id = ?
             WHERE a.company_id = ?
             GROUP BY
                 CASE
@@ -114,47 +114,6 @@ public class JdbcFinancialDataRepository implements FinancialDataRepository {
         }
 
         return balances;
-    }
-
-    @Override
-    public List<TrialBalanceEntry> getTrialBalanceEntries(int companyId, int fiscalPeriodId) throws SQLException {
-        String sql = """
-            SELECT
-                a.account_code,
-                a.account_name,
-                COALESCE(SUM(bt.debit_amount), 0) as total_debits,
-                COALESCE(SUM(bt.credit_amount), 0) as total_credits
-            FROM accounts a
-            LEFT JOIN bank_transactions bt ON a.account_code = bt.account_code
-                AND bt.company_id = ? AND bt.fiscal_period_id = ?
-            WHERE a.company_id = ?
-            GROUP BY a.account_code, a.account_name
-            HAVING COALESCE(SUM(bt.debit_amount), 0) != 0 OR COALESCE(SUM(bt.credit_amount), 0) != 0
-            ORDER BY a.account_code
-            """;
-
-        List<TrialBalanceEntry> entries = new ArrayList<>();
-
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setInt(1, companyId);
-            stmt.setInt(2, fiscalPeriodId);
-            stmt.setInt(3, companyId);
-
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    String accountCode = rs.getString("account_code");
-                    String accountName = rs.getString("account_name");
-                    BigDecimal debits = rs.getBigDecimal("total_debits");
-                    BigDecimal credits = rs.getBigDecimal("total_credits");
-
-                    entries.add(new TrialBalanceEntry(accountCode, accountName, debits, credits));
-                }
-            }
-        }
-
-        return entries;
     }
 
     @Override
@@ -258,11 +217,13 @@ public class JdbcFinancialDataRepository implements FinancialDataRepository {
                     int previousPeriodId = rs.getInt("id");
 
                     // Calculate the closing balance of the previous period
+                    // FIXED: Read from journal_entry_lines for proper double-entry accounting
                     String balanceSql = """
                         SELECT
-                            COALESCE(SUM(credit_amount), 0) - COALESCE(SUM(debit_amount), 0) as closing_balance
-                        FROM bank_transactions
-                        WHERE company_id = ? AND fiscal_period_id = ?
+                            COALESCE(SUM(jel.debit_amount), 0) - COALESCE(SUM(jel.credit_amount), 0) as closing_balance
+                        FROM journal_entry_lines jel
+                        JOIN journal_entries je ON jel.journal_entry_id = je.id
+                        WHERE je.company_id = ? AND je.fiscal_period_id = ?
                         """;
 
                     try (PreparedStatement balanceStmt = conn.prepareStatement(balanceSql)) {
@@ -315,16 +276,18 @@ public class JdbcFinancialDataRepository implements FinancialDataRepository {
     }
 
     @Override
-    public List<ComprehensiveTrialBalanceEntry> getComprehensiveTrialBalance(int companyId, int fiscalPeriodId) throws SQLException {
-        // Get all accounts for the company
+    public List<TrialBalanceEntry> getTrialBalanceEntries(int companyId, int fiscalPeriodId) throws SQLException {
+        // Get all accounts for the company WITH their account type normal balance
         String sql = """
-            SELECT a.account_code, a.account_name
+            SELECT a.account_code, a.account_name, at.normal_balance
             FROM accounts a
+            JOIN account_categories ac ON a.category_id = ac.id
+            JOIN account_types at ON ac.account_type_id = at.id
             WHERE a.company_id = ?
             ORDER BY a.account_code
             """;
 
-        List<ComprehensiveTrialBalanceEntry> entries = new ArrayList<>();
+        List<TrialBalanceEntry> entries = new ArrayList<>();
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -335,6 +298,7 @@ public class JdbcFinancialDataRepository implements FinancialDataRepository {
                 while (rs.next()) {
                     String accountCode = rs.getString("account_code");
                     String accountName = rs.getString("account_name");
+                    String normalBalance = rs.getString("normal_balance"); // 'D' or 'C'
 
                     // Calculate opening balance for this account from previous periods
                     BigDecimal openingBalance = getAccountOpeningBalance(companyId, fiscalPeriodId, accountCode);
@@ -344,16 +308,25 @@ public class JdbcFinancialDataRepository implements FinancialDataRepository {
                     BigDecimal periodDebits = periodMovements[0];
                     BigDecimal periodCredits = periodMovements[1];
 
-                    // Calculate closing balance
-                    BigDecimal closingBalance = openingBalance.add(periodDebits).subtract(periodCredits);
+                    // Calculate closing balance based on account type normal balance
+                    // Assets & Expenses (D): Closing = Opening + Debits - Credits
+                    // Liabilities, Equity & Revenue (C): Closing = Opening + Credits - Debits
+                    BigDecimal closingBalance;
+                    if ("D".equals(normalBalance)) {
+                        // Debit normal balance accounts (Assets, Expenses)
+                        closingBalance = openingBalance.add(periodDebits).subtract(periodCredits);
+                    } else {
+                        // Credit normal balance accounts (Liabilities, Equity, Revenue)
+                        closingBalance = openingBalance.add(periodCredits).subtract(periodDebits);
+                    }
 
                     // Only include accounts with activity
                     if (openingBalance.compareTo(BigDecimal.ZERO) != 0 ||
                         periodDebits.compareTo(BigDecimal.ZERO) != 0 ||
                         periodCredits.compareTo(BigDecimal.ZERO) != 0) {
 
-                        entries.add(new ComprehensiveTrialBalanceEntry(
-                            accountCode, accountName, openingBalance, periodDebits, periodCredits, closingBalance));
+                        entries.add(new TrialBalanceEntry(
+                            accountCode, accountName, normalBalance, openingBalance, periodDebits, periodCredits, closingBalance));
                     }
                 }
             }
@@ -384,11 +357,16 @@ public class JdbcFinancialDataRepository implements FinancialDataRepository {
                     int previousPeriodId = rs.getInt("id");
 
                     // Calculate the closing balance of the previous period for this account
+                    // FIXED: Read from journal_entry_lines for proper double-entry accounting
                     String balanceSql = """
                         SELECT
-                            COALESCE(SUM(credit_amount), 0) - COALESCE(SUM(debit_amount), 0) as closing_balance
-                        FROM bank_transactions
-                        WHERE company_id = ? AND fiscal_period_id = ? AND account_code = ?
+                            COALESCE(SUM(jel.debit_amount), 0) - COALESCE(SUM(jel.credit_amount), 0) as closing_balance
+                        FROM journal_entry_lines jel
+                        JOIN accounts a ON jel.account_id = a.id
+                        JOIN journal_entries je ON jel.journal_entry_id = je.id
+                        WHERE je.company_id = ? 
+                          AND je.fiscal_period_id = ? 
+                          AND a.account_code = ?
                         """;
 
                     try (PreparedStatement balanceStmt = conn.prepareStatement(balanceSql)) {
@@ -444,12 +422,17 @@ public class JdbcFinancialDataRepository implements FinancialDataRepository {
     }
 
     private BigDecimal[] getAccountPeriodMovements(int companyId, int fiscalPeriodId, String accountCode) throws SQLException {
+        // FIXED: Read from journal_entry_lines for proper double-entry accounting
         String sql = """
             SELECT
-                COALESCE(SUM(debit_amount), 0) as total_debits,
-                COALESCE(SUM(credit_amount), 0) as total_credits
-            FROM bank_transactions
-            WHERE company_id = ? AND fiscal_period_id = ? AND account_code = ?
+                COALESCE(SUM(jel.debit_amount), 0) as total_debits,
+                COALESCE(SUM(jel.credit_amount), 0) as total_credits
+            FROM journal_entry_lines jel
+            JOIN accounts a ON jel.account_id = a.id
+            JOIN journal_entries je ON jel.journal_entry_id = je.id
+            WHERE je.company_id = ? 
+              AND je.fiscal_period_id = ? 
+              AND a.account_code = ?
             """;
 
         try (Connection conn = dataSource.getConnection();

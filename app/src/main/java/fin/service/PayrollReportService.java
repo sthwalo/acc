@@ -3,7 +3,7 @@ package fin.service;
 import fin.model.Company;
 import fin.model.Employee;
 import fin.model.Payslip;
-import fin.model.PayrollPeriod;  // <-- Add this missing import
+import fin.model.PayrollPeriod;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
@@ -81,16 +81,36 @@ public class PayrollReportService {
         // Ensure reports directory exists
         Files.createDirectories(reportPath.getParent());
 
-        // Get company information
+        // Get company information with explicit null checking for SpotBugs
         Company company = getCompanyById(companyId);
         if (company == null) {
-            throw new SQLException("Company not found: " + companyId);
+            throw new IllegalArgumentException("Company not found: " + companyId);
         }
-        // Assert company is non-null for SpotBugs
-        assert company != null : "Company should not be null after validation";
-
+        assert company != null; // SpotBugs hint: company is non-null after check
+        
         // Get summary data
         PayrollSummaryData summaryData = calculatePayrollSummaryData(companyId);
+
+        // Display console summary for debugging (temporarily)
+        System.out.println("PAYROLL SUMMARY REPORT");
+        System.out.println("Company: " + company.getName());
+        System.out.println("Report Date: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        System.out.println("Tax Year: 2025");
+        System.out.println();
+        System.out.println("PAYROLL SUMMARY");
+        System.out.println("Total Gross Pay: R" + summaryData.getTotalGrossPay().setScale(2, RoundingMode.HALF_UP));
+        System.out.println("Total PAYE Deducted: R" + summaryData.getTotalPAYE().setScale(2, RoundingMode.HALF_UP));
+        System.out.println("Total UIF Contributions: R" + summaryData.getTotalUIF().setScale(2, RoundingMode.HALF_UP));
+        System.out.println("Total Other Deductions: R" + summaryData.getTotalOtherDeductions().setScale(2, RoundingMode.HALF_UP));
+        System.out.println("Total Net Pay: R" + summaryData.getTotalNetPay().setScale(2, RoundingMode.HALF_UP));
+        System.out.println("Total Employees: " + summaryData.getTotalEmployees());
+        System.out.println("Number of Payroll Periods: " + summaryData.getPeriodCount());
+        System.out.println();
+        System.out.println("TAX FILING INFORMATION");
+        System.out.println("This report summarizes payroll expenses for SARS tax filing purposes.");
+        System.out.println("PAYE amounts should be declared on EMP201 submission.");
+        System.out.println("UIF contributions should be declared separately.");
+        System.out.println("Generated using FIN Financial Management System.");
 
         // Generate PDF
         try (PDDocument document = new PDDocument()) {
@@ -176,6 +196,9 @@ public class PayrollReportService {
     private PayrollSummaryData calculatePayrollSummaryData(Long companyId) throws SQLException {
         // Get all processed payroll periods for the company
         List<PayrollPeriod> processedPeriods = getProcessedPayrollPeriods(companyId);
+        
+        // Debug: Check if we have any processed periods
+        System.out.println("🔍 DEBUG: Found " + processedPeriods.size() + " processed payroll periods for company " + companyId);
 
         // Calculate summary data
         BigDecimal totalGrossPay = BigDecimal.ZERO;
@@ -214,6 +237,11 @@ public class PayrollReportService {
                 BigDecimal totalUIFEmployee = rs.getBigDecimal("total_uif_employee") != null ? rs.getBigDecimal("total_uif_employee") : BigDecimal.ZERO;
                 BigDecimal totalUIFEmployer = rs.getBigDecimal("total_uif_employer") != null ? rs.getBigDecimal("total_uif_employer") : BigDecimal.ZERO;
                 totalUIF = totalUIFEmployee.add(totalUIFEmployer);
+                
+                // Debug: Check payslip data
+                System.out.println("🔍 DEBUG: Payslip totals - PAYE: R" + totalPAYE + ", UIF Employee: R" + totalUIFEmployee + ", UIF Employer: R" + totalUIFEmployer);
+            } else {
+                System.out.println("🔍 DEBUG: No payslip data found for company " + companyId);
             }
         }
 
@@ -279,13 +307,12 @@ public class PayrollReportService {
     public void generateEmployeePayrollReport(Long companyId) throws IOException, SQLException {
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
 
-        // Get company information
+        // Get company information with explicit null checking for SpotBugs
         Company company = getCompanyById(companyId);
         if (company == null) {
-            throw new SQLException("Company not found: " + companyId);
+            throw new IllegalArgumentException("Company not found: " + companyId);
         }
-        // Assert company is non-null for SpotBugs
-        assert company != null : "Company should not be null after validation";
+        assert company != null; // SpotBugs hint: company is non-null after check
 
         // Get all active employees
         List<Employee> employees = getActiveEmployees(companyId);
@@ -472,7 +499,7 @@ public class PayrollReportService {
 
     // Helper methods
     private Company getCompanyById(Long companyId) throws SQLException {
-        String sql = "SELECT id, name FROM companies WHERE id = ?";
+        String sql = "SELECT id, name, registration_number FROM companies WHERE id = ?";
         
         try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -484,10 +511,12 @@ public class PayrollReportService {
                 Company company = new Company();
                 company.setId(rs.getLong("id"));
                 company.setName(rs.getString("name"));
+                company.setRegistrationNumber(rs.getString("registration_number"));
                 return company;
             }
         }
         
+        // Return null if not found - the calling method will handle this
         return null;
     }
 
@@ -562,5 +591,196 @@ public class PayrollReportService {
         }
         
         return payslips;
+    }
+
+    /**
+     * Generate EMP 201 report for SARS tax submission
+     * Shows totals for PAYE, UIF (employee and employer), and SDL
+     */
+    public void generateEMP201Report(Long companyId) throws IOException, SQLException {
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+        String fileName = "emp201_report_" + companyId + "_" + timestamp + ".pdf";
+        Path reportPath = Paths.get("reports", fileName);
+
+        // Ensure reports directory exists
+        Files.createDirectories(reportPath.getParent());
+
+        // Get company information
+        Company company = getCompanyById(companyId);
+        if (company == null) {
+            throw new IllegalArgumentException("Company not found: " + companyId);
+        }
+        assert company != null; // SpotBugs hint: company is non-null after check
+
+        // Calculate EMP 201 totals
+        EMP201Data emp201Data = calculateEMP201Data(companyId);
+
+        // Display console summary for debugging
+        System.out.println("===============================================");
+        System.out.println("EMP 201 REPORT - MONTHLY EMPLOYER DECLARATIONS");
+        System.out.println("===============================================");
+        System.out.println("Company: " + company.getName());
+        System.out.println("Company Registration: " + (company.getRegistrationNumber() != null ? company.getRegistrationNumber() : "Not set"));
+        System.out.println("Report Date: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        System.out.println("-----------------------------------------------");
+        System.out.println("TAX TOTALS FOR REPORTING PERIOD:");
+        System.out.println("PAYE (Pay As You Earn): R" + String.format("%.2f", emp201Data.totalPAYE));
+        System.out.println("UIF Employee Contributions (1%): R" + String.format("%.2f", emp201Data.totalUIFEmployee));
+        System.out.println("UIF Employer Contributions (1%): R" + String.format("%.2f", emp201Data.totalUIFEmployer));
+        System.out.println("Total UIF: R" + String.format("%.2f", emp201Data.totalUIFEmployee + emp201Data.totalUIFEmployer));
+        System.out.println("SDL (Skills Development Levy): R" + String.format("%.2f", emp201Data.totalSDL));
+        System.out.println("-----------------------------------------------");
+        System.out.println("SUMMARY:");
+        System.out.println("Total Employees: " + emp201Data.totalEmployees);
+        System.out.println("Total Payroll Periods: " + emp201Data.totalPeriods);
+        System.out.println("Total Gross Pay: R" + String.format("%.2f", emp201Data.totalGrossPay));
+        System.out.println("Total Tax Liability: R" + String.format("%.2f", 
+            emp201Data.totalPAYE + emp201Data.totalUIFEmployee + emp201Data.totalUIFEmployer + emp201Data.totalSDL));
+        System.out.println("===============================================");
+
+        // Generate PDF report
+        try (PDDocument document = new PDDocument()) {
+            PDPage page = new PDPage();
+            document.addPage(page);
+
+            try (PDPageContentStream contentStream = new PDPageContentStream(document, page)) {
+                // Title
+                contentStream.beginText();
+                contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 16);
+                contentStream.newLineAtOffset(50, 750);
+                contentStream.showText("EMP 201 - MONTHLY EMPLOYER DECLARATIONS");
+                contentStream.endText();
+
+                // Company info
+                contentStream.beginText();
+                contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 12);
+                contentStream.newLineAtOffset(50, 720);
+                contentStream.showText("Company: " + company.getName());
+                contentStream.newLineAtOffset(0, -15);
+                contentStream.showText("Registration: " + (company.getRegistrationNumber() != null ? company.getRegistrationNumber() : "Not set"));
+                contentStream.newLineAtOffset(0, -15);
+                contentStream.showText("Report Date: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+                contentStream.endText();
+
+                // Tax totals section
+                contentStream.beginText();
+                contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 14);
+                contentStream.newLineAtOffset(50, 660);
+                contentStream.showText("TAX TOTALS FOR REPORTING PERIOD");
+                contentStream.endText();
+
+                contentStream.beginText();
+                contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 11);
+                contentStream.newLineAtOffset(50, 630);
+                contentStream.showText("PAYE (Pay As You Earn): R" + String.format("%,.2f", emp201Data.totalPAYE));
+                contentStream.newLineAtOffset(0, -20);
+                contentStream.showText("UIF Employee Contributions (1%): R" + String.format("%,.2f", emp201Data.totalUIFEmployee));
+                contentStream.newLineAtOffset(0, -20);
+                contentStream.showText("UIF Employer Contributions (1%): R" + String.format("%,.2f", emp201Data.totalUIFEmployer));
+                contentStream.newLineAtOffset(0, -20);
+                contentStream.showText("Total UIF: R" + String.format("%,.2f", emp201Data.totalUIFEmployee + emp201Data.totalUIFEmployer));
+                contentStream.newLineAtOffset(0, -20);
+                contentStream.showText("SDL (Skills Development Levy): R" + String.format("%,.2f", emp201Data.totalSDL));
+                contentStream.endText();
+
+                // Summary section
+                contentStream.beginText();
+                contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 14);
+                contentStream.newLineAtOffset(50, 500);
+                contentStream.showText("SUMMARY");
+                contentStream.endText();
+
+                contentStream.beginText();
+                contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 11);
+                contentStream.newLineAtOffset(50, 470);
+                contentStream.showText("Total Employees: " + emp201Data.totalEmployees);
+                contentStream.newLineAtOffset(0, -20);
+                contentStream.showText("Total Payroll Periods: " + emp201Data.totalPeriods);
+                contentStream.newLineAtOffset(0, -20);
+                contentStream.showText("Total Gross Pay: R" + String.format("%,.2f", emp201Data.totalGrossPay));
+                contentStream.newLineAtOffset(0, -20);
+                contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 11);
+                contentStream.showText("Total Tax Liability: R" + String.format("%,.2f", 
+                    emp201Data.totalPAYE + emp201Data.totalUIFEmployee + emp201Data.totalUIFEmployer + emp201Data.totalSDL));
+                contentStream.endText();
+
+                // Footer note
+                contentStream.beginText();
+                contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_OBLIQUE), 9);
+                contentStream.newLineAtOffset(50, 100);
+                contentStream.showText("Note: UIF contributions are calculated at 1% each for employee and employer");
+                contentStream.newLineAtOffset(0, -12);
+                contentStream.showText("SDL is calculated at 1% of total payroll for companies with payroll > R500,000 annually");
+                contentStream.newLineAtOffset(0, -12);
+                contentStream.showText("This report is for informational purposes. Consult your tax advisor for official submissions.");
+                contentStream.endText();
+            }
+
+            document.save(reportPath.toFile());
+        }
+
+        System.out.println("✅ EMP 201 report generated: " + reportPath.toAbsolutePath());
+    }
+
+    /**
+     * Calculate EMP 201 data - totals for PAYE, UIF, SDL
+     */
+    private EMP201Data calculateEMP201Data(Long companyId) throws SQLException {
+        String sql = "SELECT " +
+                "    COUNT(DISTINCT e.id) as total_employees, " +
+                "    COUNT(DISTINCT pp.id) as total_periods, " +
+                "    COALESCE(SUM(p.gross_salary), 0) as total_gross, " +
+                "    COALESCE(SUM(p.paye_tax), 0) as total_paye, " +
+                "    COALESCE(SUM(p.uif_employee), 0) as total_uif_employee, " +
+                "    COALESCE(SUM(p.uif_employer), 0) as total_uif_employer, " +
+                "    COALESCE(SUM(p.sdl_levy), 0) as total_sdl " +
+                "FROM employees e " +
+                "LEFT JOIN payslips p ON e.id = p.employee_id " +
+                "LEFT JOIN payroll_periods pp ON p.payroll_period_id = pp.id " +
+                "WHERE e.company_id = ?";
+
+        System.out.println("🔍 DEBUG: Calculating EMP 201 data for company " + companyId);
+
+        try (Connection conn = DriverManager.getConnection(dbUrl);
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            stmt.setLong(1, companyId);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                EMP201Data data = new EMP201Data();
+                data.totalEmployees = rs.getInt("total_employees");
+                data.totalPeriods = rs.getInt("total_periods");
+                data.totalGrossPay = rs.getBigDecimal("total_gross").doubleValue();
+                data.totalPAYE = rs.getBigDecimal("total_paye").doubleValue();
+                data.totalUIFEmployee = rs.getBigDecimal("total_uif_employee").doubleValue();
+                data.totalUIFEmployer = rs.getBigDecimal("total_uif_employer").doubleValue();
+                data.totalSDL = rs.getBigDecimal("total_sdl").doubleValue();
+
+                System.out.println("🔍 DEBUG: Found " + data.totalEmployees + " employees, " + data.totalPeriods + " periods");
+                System.out.println("🔍 DEBUG: Total gross: R" + String.format("%.2f", data.totalGrossPay));
+                System.out.println("🔍 DEBUG: PAYE: R" + String.format("%.2f", data.totalPAYE));
+                System.out.println("🔍 DEBUG: UIF Employee: R" + String.format("%.2f", data.totalUIFEmployee));
+                System.out.println("🔍 DEBUG: UIF Employer: R" + String.format("%.2f", data.totalUIFEmployer));
+                System.out.println("🔍 DEBUG: SDL: R" + String.format("%.2f", data.totalSDL));
+
+                return data;
+            }
+        }
+
+        return new EMP201Data(); // Return empty data if no results
+    }
+
+    /**
+     * EMP 201 data structure
+     */
+    private static class EMP201Data {
+        double totalPAYE = 0.0;
+        double totalUIFEmployee = 0.0;  // 1% from employee
+        double totalUIFEmployer = 0.0;  // 1% from employer  
+        double totalSDL = 0.0;          // Skills Development Levy
+        double totalGrossPay = 0.0;
+        int totalEmployees = 0;
+        int totalPeriods = 0;
     }
 }

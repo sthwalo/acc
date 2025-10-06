@@ -29,13 +29,14 @@ public class TransactionMappingRuleService extends JdbcBaseRepository {
         String sql =
             "INSERT INTO transaction_mapping_rules " +
             "(company_id, rule_name, description, match_type, match_value, " +
-            "account_id, is_active, priority) " +
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?) " +
+            "pattern_text, account_id, is_active, priority) " +
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) " +
             "ON CONFLICT(id) DO UPDATE SET " +
             "rule_name = excluded.rule_name, " +
             "description = excluded.description, " +
             "match_type = excluded.match_type, " +
             "match_value = excluded.match_value, " +
+            "pattern_text = excluded.pattern_text, " +
             "account_id = excluded.account_id, " +
             "is_active = excluded.is_active, " +
             "priority = excluded.priority, " +
@@ -43,6 +44,9 @@ public class TransactionMappingRuleService extends JdbcBaseRepository {
             "RETURNING id, created_at, updated_at";
 
         try {
+            // Use match_value for pattern_text (they should be the same)
+            String patternText = rule.getMatchValue();
+            
             executeQuery(sql, rs -> {
                 if (rs.next()) {
                     rule.setId(rs.getLong("id"));
@@ -51,8 +55,8 @@ public class TransactionMappingRuleService extends JdbcBaseRepository {
                 }
                 return rule;
             }, rule.getCompany().getId(), rule.getRuleName(), rule.getDescription(),
-               rule.getMatchType().name(), rule.getMatchValue(), rule.getAccount().getId(),
-               rule.isActive(), rule.getPriority());
+               rule.getMatchType().name(), rule.getMatchValue(), patternText, 
+               rule.getAccount().getId(), rule.isActive(), rule.getPriority());
 
             // Clear cache
             mappingRulesByCompany.remove(rule.getCompany().getId());
@@ -260,7 +264,8 @@ public class TransactionMappingRuleService extends JdbcBaseRepository {
                 company.setAddress(rs.getString("address"));
                 company.setContactEmail(rs.getString("contact_email"));
                 company.setContactPhone(rs.getString("contact_phone"));
-                company.setLogoPath(rs.getString("logo_path"));
+                // logo_path column doesn't exist in database, skip it
+                // company.setLogoPath(rs.getString("logo_path"));
                 return company;
             }, companyId);
             

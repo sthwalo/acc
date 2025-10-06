@@ -115,6 +115,23 @@ public class SARSTaxCalculator {
         }
     }
 
+    /**
+     * Calculate SDL (Skills Development Levy)
+     * SDL is 1% of total payroll for companies with annual payroll > R500,000
+     * For monthly payroll, this is calculated per employee but only if total payroll > ~R41,667/month
+     */
+    public double calculateSDL(double grossSalary, double totalCompanyPayroll) {
+        // SDL is only applicable if total company payroll > R500,000 per year
+        // Monthly threshold: R500,000 / 12 = R41,666.67
+        final double MONTHLY_THRESHOLD = 41666.67;
+        final double SDL_RATE = 0.01; // 1%
+        
+        if (totalCompanyPayroll > MONTHLY_THRESHOLD) {
+            return Math.round(grossSalary * SDL_RATE * 100.0) / 100.0;
+        }
+        return 0.0;
+    }
+
     public double findPAYE(double grossSalary) {
         // Debug: Print the actual salary value
         System.out.printf("DEBUG: findPAYE called with grossSalary = %.2f%n", grossSalary);

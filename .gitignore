@@ -60,6 +60,7 @@ scripts/frontend-licensing-*.sh
 scripts/*_data_*.sh
 scripts/*_db_*.sh
 scripts/*_credentials_*.sh
+scripts/verify_sdl_implementation.sh
 run.sh
 runfast.sh
 app/src/test/resources/test.env

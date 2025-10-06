@@ -553,7 +553,8 @@ public class InteractiveClassificationService {
                 AND cr.account_code IS NOT NULL
                 AND (LOWER(bt.details) LIKE ? OR LOWER(cr.pattern) LIKE ?)
                 ORDER BY cr.usage_count DESC
-                LIMIT """ + MAX_SIMILAR_TRANSACTIONS;
+                LIMIT %d
+                """.formatted(MAX_SIMILAR_TRANSACTIONS);
                 
             String[] keywords = extractKeywords(transaction.getDetails());
             String searchPattern = "%" + (keywords.length > 0 ? keywords[0] : "") + "%";
@@ -720,7 +721,8 @@ public class InteractiveClassificationService {
                 FROM company_classification_rules 
                 WHERE company_id = ? 
                 ORDER BY usage_count DESC, account_code ASC
-                LIMIT """ + MAX_ACCOUNT_SUGGESTIONS;
+                LIMIT %d
+                """.formatted(MAX_ACCOUNT_SUGGESTIONS);
                 
             try (Connection conn = getConnection();
                  PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -994,7 +996,8 @@ public class InteractiveClassificationService {
             AND bt.fiscal_period_id = ?
             AND bt.account_code IS NULL
             ORDER BY bt.transaction_date DESC, bt.id
-            LIMIT """ + MAX_UNCATEGORIZED_TRANSACTIONS;
+            LIMIT %d
+            """.formatted(MAX_UNCATEGORIZED_TRANSACTIONS);
         
         try (Connection conn = getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -1046,8 +1049,8 @@ public class InteractiveClassificationService {
             
             System.out.println("🏷️  Status:      UNCATEGORIZED");
             
-            // Show similar transactions for context
-            showSimilarTransactions(transaction, companyId);
+            // Show intelligent account suggestions from AccountClassificationService
+            showAccountSuggestions(companyId, transaction);
             
             // Get user input for classification
             System.out.println("\n🎯 Enter account code and name (e.g., 8800 Insurance)");
@@ -1079,7 +1082,8 @@ public class InteractiveClassificationService {
                 }
                 
                 if (accountCode != null && accountName != null) {
-                    Long accountId = getAccountId(accountName);
+                    // Look up account by code (more reliable than name matching)
+                    Long accountId = getAccountIdByCode(accountCode);
                     if (accountId != null) {
                         // Update the bank transaction with account classification
                         if (updateTransactionClassification(transaction.getId(), accountCode, accountName)) {
@@ -1205,7 +1209,8 @@ public class InteractiveClassificationService {
             AND bt.details ILIKE ?
             AND bt.account_code IS NULL
             ORDER BY bt.transaction_date DESC
-            LIMIT """ + MAX_BATCH_SIMILAR;
+            LIMIT %d
+            """.formatted(MAX_BATCH_SIMILAR);
         
         try (Connection conn = getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -1625,6 +1630,29 @@ public class InteractiveClassificationService {
         return null;
     }
     
+    /**
+     * Get account ID by account code (more reliable for sub-accounts)
+     */
+    private Long getAccountIdByCode(String accountCode) {
+        String sql = "SELECT id FROM accounts WHERE account_code = ? AND is_active = true";
+        
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, accountCode);
+            ResultSet rs = pstmt.executeQuery();
+            
+            if (rs.next()) {
+                return rs.getLong("id");
+            }
+            
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error getting account ID by code", e);
+        }
+        
+        return null;
+    }
+    
     private BankTransaction mapResultSetToBankTransaction(ResultSet rs) throws SQLException {
         BankTransaction transaction = new BankTransaction();
         transaction.setId(rs.getLong("id"));
@@ -1656,7 +1684,8 @@ public class InteractiveClassificationService {
                 WHERE LOWER(cr.pattern) LIKE ?
                 GROUP BY cr.account_code, cr.account_name
                 ORDER BY COUNT(*) DESC
-                LIMIT """ + " " + PATTERN_SUGGESTION_LIMIT;
+                LIMIT %d
+                """.formatted(PATTERN_SUGGESTION_LIMIT);
                 
             try (Connection conn = getConnection();
                  PreparedStatement stmt = conn.prepareStatement(sql)) {

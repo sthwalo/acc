@@ -164,7 +164,13 @@ public class TransactionMappingService {
             
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
-                    String pattern = rs.getString("pattern_text").toUpperCase();
+                    String patternText = rs.getString("pattern_text");
+                    // Skip rules with null pattern_text
+                    if (patternText == null || patternText.trim().isEmpty()) {
+                        continue;
+                    }
+                    
+                    String pattern = patternText.toUpperCase();
                     String accountCode = rs.getString("account_code");
                     String accountName = rs.getString("account_name");
                     
@@ -1079,6 +1085,14 @@ public class TransactionMappingService {
     
     private void createJournalEntryForTransaction(Connection conn, BankTransaction transaction, 
                                                 int entryNumber, Long mappedAccountId, String createdBy) throws SQLException {
+        // CHECK IF THIS IS AN OPENING BALANCE TRANSACTION
+        if (transaction.getDetails() != null && 
+            transaction.getDetails().toUpperCase().contains("BALANCE BROUGHT FORWARD")) {
+            
+            createOpeningBalanceJournalEntry(conn, transaction, createdBy);
+            return;  // Skip normal journal entry creation
+        }
+        
         // Create journal entry header
         String reference = "AUTO-" + String.format("%05d", entryNumber);
         String description = "Auto-generated: " + transaction.getDetails();
@@ -1119,40 +1133,177 @@ public class TransactionMappingService {
             """;
 
         try (PreparedStatement pstmt = conn.prepareStatement(insertLine)) {
-            // CORRECTED LOGIC: Bank account reflects actual bank transaction
+            // DOUBLE-ENTRY ACCOUNTING LOGIC:
+            // Bank statement DEBIT = Money OUT = Expense transaction
+            //   → Journal: DEBIT expense account (increase), CREDIT bank account (decrease)
+            // Bank statement CREDIT = Money IN = Income transaction  
+            //   → Journal: DEBIT bank account (increase), CREDIT income account (increase)
+            
+            BigDecimal amount;
+            boolean isExpenseTransaction;
+            
+            if (transaction.getDebitAmount() != null && transaction.getDebitAmount().compareTo(BigDecimal.ZERO) > 0) {
+                // Bank statement DEBIT = Expense/Payment (money leaving bank)
+                amount = transaction.getDebitAmount();
+                isExpenseTransaction = true;
+            } else if (transaction.getCreditAmount() != null && transaction.getCreditAmount().compareTo(BigDecimal.ZERO) > 0) {
+                // Bank statement CREDIT = Income/Receipt (money entering bank)
+                amount = transaction.getCreditAmount();
+                isExpenseTransaction = false;
+            } else {
+                throw new SQLException("Transaction has no debit or credit amount");
+            }
+            
+            if (isExpenseTransaction) {
+                // EXPENSE TRANSACTION (Bank statement shows DEBIT - money out)
+                // Line 1: DEBIT the expense/payment account (account increases)
+                pstmt.setLong(1, journalEntryId);
+                pstmt.setLong(2, mappedAccountId);
+                pstmt.setBigDecimal(3, amount);  // DEBIT expense account
+                pstmt.setBigDecimal(4, null);
+                pstmt.setString(5, getAccountNameById(mappedAccountId));
+                pstmt.setString(6, reference + "-01");
+                pstmt.setLong(7, transaction.getId());
+                pstmt.executeUpdate();
+                
+                // Line 2: CREDIT the bank account (asset decreases)
+                pstmt.setLong(1, journalEntryId);
+                pstmt.setLong(2, bankAccountId);
+                pstmt.setBigDecimal(3, null);
+                pstmt.setBigDecimal(4, amount);  // CREDIT bank account
+                pstmt.setString(5, "Bank Account");
+                pstmt.setString(6, reference + "-02");
+                pstmt.setLong(7, transaction.getId());
+                pstmt.executeUpdate();
+                
+            } else {
+                // INCOME TRANSACTION (Bank statement shows CREDIT - money in)
+                // Line 1: DEBIT the bank account (asset increases)
+                pstmt.setLong(1, journalEntryId);
+                pstmt.setLong(2, bankAccountId);
+                pstmt.setBigDecimal(3, amount);  // DEBIT bank account
+                pstmt.setBigDecimal(4, null);
+                pstmt.setString(5, "Bank Account");
+                pstmt.setString(6, reference + "-01");
+                pstmt.setLong(7, transaction.getId());
+                pstmt.executeUpdate();
+                
+                // Line 2: CREDIT the income account (revenue increases)
+                pstmt.setLong(1, journalEntryId);
+                pstmt.setLong(2, mappedAccountId);
+                pstmt.setBigDecimal(3, null);
+                pstmt.setBigDecimal(4, amount);  // CREDIT income account
+                pstmt.setString(5, getAccountNameById(mappedAccountId));
+                pstmt.setString(6, reference + "-02");
+                pstmt.setLong(7, transaction.getId());
+                pstmt.executeUpdate();
+            }
+        }
+    }
+    
+    /**
+     * Creates a special journal entry for opening balance transactions.
+     * Opening balance: DEBIT Bank Account, CREDIT Opening Balance Equity
+     */
+    private void createOpeningBalanceJournalEntry(Connection conn, BankTransaction transaction, String createdBy) throws SQLException {
+        String reference = "OB-FY" + transaction.getTransactionDate().getYear();
+        String description = "Opening Balance - FY" + transaction.getTransactionDate().getYear() + "-" + (transaction.getTransactionDate().getYear() + 1);
+        
+        String insertJournalEntry = """
+            INSERT INTO journal_entries (reference, entry_date, description, fiscal_period_id,
+                                       company_id, created_by, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            RETURNING id
+            """;
+        
+        Long journalEntryId;
+        try (PreparedStatement pstmt = conn.prepareStatement(insertJournalEntry)) {
+            pstmt.setString(1, reference);
+            pstmt.setDate(2, java.sql.Date.valueOf(transaction.getTransactionDate()));
+            pstmt.setString(3, description);
+            pstmt.setLong(4, transaction.getFiscalPeriodId());
+            pstmt.setLong(5, transaction.getCompanyId());
+            pstmt.setString(6, createdBy);
+            
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                journalEntryId = rs.getLong("id");
+            } else {
+                throw new SQLException("Failed to create opening balance journal entry");
+            }
+        }
+        
+        Long bankAccountId = getAccountByCode("1100");  // Bank - Current Account
+        Long equityAccountId = getEquityAccountForOpeningBalance(conn, transaction.getCompanyId());
+        
+        // Opening balance amount is in the credit_amount field or balance field
+        BigDecimal openingBalance = transaction.getCreditAmount() != null && 
+                                   transaction.getCreditAmount().compareTo(BigDecimal.ZERO) > 0 ? 
+                                   transaction.getCreditAmount() : 
+                                   (transaction.getBalance() != null ? transaction.getBalance() : BigDecimal.ZERO);
+        
+        String insertLine = """
+            INSERT INTO journal_entry_lines (journal_entry_id, account_id, debit_amount,
+                                           credit_amount, description, reference,
+                                           source_transaction_id, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            """;
+        
+        try (PreparedStatement pstmt = conn.prepareStatement(insertLine)) {
+            // Line 1: DEBIT Bank Account (asset increases)
             pstmt.setLong(1, journalEntryId);
             pstmt.setLong(2, bankAccountId);
-            if (transaction.getDebitAmount() != null) {
-                // Bank debit = money going out of bank account
-                pstmt.setBigDecimal(3, transaction.getDebitAmount());
-                pstmt.setBigDecimal(4, null);
-            } else {
-                // Bank credit = money coming into bank account
-                pstmt.setBigDecimal(3, null);
-                pstmt.setBigDecimal(4, transaction.getCreditAmount());
-            }
-            pstmt.setString(5, "Bank Account");
+            pstmt.setBigDecimal(3, openingBalance);  // DEBIT
+            pstmt.setBigDecimal(4, null);
+            pstmt.setString(5, "Bank - Current Account");
             pstmt.setString(6, reference + "-01");
             pstmt.setLong(7, transaction.getId());
             pstmt.executeUpdate();
-
-            // Second line: Mapped account (opposite of bank transaction for double-entry)
+            
+            // Line 2: CREDIT Equity Account (opening balance equity)
             pstmt.setLong(1, journalEntryId);
-            pstmt.setLong(2, mappedAccountId);
-            if (transaction.getDebitAmount() != null) {
-                // Bank debit (expense) = credit the expense account (increase expense)
-                pstmt.setBigDecimal(3, null);
-                pstmt.setBigDecimal(4, transaction.getDebitAmount());
-            } else {
-                // Bank credit (income) = credit the income account (increase income)
-                pstmt.setBigDecimal(3, null);
-                pstmt.setBigDecimal(4, transaction.getCreditAmount());
-            }
-            pstmt.setString(5, getAccountNameById(mappedAccountId));
+            pstmt.setLong(2, equityAccountId);
+            pstmt.setBigDecimal(3, null);
+            pstmt.setBigDecimal(4, openingBalance);  // CREDIT
+            pstmt.setString(5, "Opening Balance Equity");
             pstmt.setString(6, reference + "-02");
             pstmt.setLong(7, transaction.getId());
             pstmt.executeUpdate();
         }
+        
+        LOGGER.info("Created opening balance journal entry: " + reference + " for amount: " + openingBalance);
+    }
+    
+    /**
+     * Gets the equity account to use for opening balance journal entries.
+     * Prefers account 3100 (Retained Earnings), falls back to any equity account.
+     */
+    private Long getEquityAccountForOpeningBalance(Connection conn, Long companyId) throws SQLException {
+        // First try to find existing Retained Earnings account (3100)
+        Long equityAccountId = getAccountByCode("3100");
+        
+        if (equityAccountId != null) {
+            return equityAccountId;
+        }
+        
+        // If not found, find any equity account
+        String sql = """
+            SELECT a.id FROM accounts a
+            INNER JOIN account_categories ac ON a.category_id = ac.id
+            INNER JOIN account_types at ON ac.account_type_id = at.id
+            WHERE a.company_id = ? AND at.name = 'Equity' AND a.is_active = true
+            LIMIT 1
+            """;
+        
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setLong(1, companyId);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return rs.getLong("id");
+            }
+        }
+        
+        throw new SQLException("No equity account found for opening balance. Please create account 3100 (Retained Earnings)");
     }
     
     private void loadAccountCache() {

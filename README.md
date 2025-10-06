@@ -1,8 +1,52 @@
-# FIN Financial Management System
+# FI## 🎉 Recent Updates (October 6, 2025)
+
+### ✅ SDL (Skills Development Levy) Implementation - COMPLETED
+- Automatic SDL calculation (1% of payroll for companies > R500k/year)
+- Integrated into payroll processing and database schema
+- SARS compliant tax reporting (included in EMP 201)
+- Tested with 13 employees: R1,701.00 SDL on R170,100 payroll
+- See: `/docs/SDL_IMPLEMENTATION_2025-10-06.md`
+
+### ✅ Payroll Reprocessing Enhancement - COMPLETED
+- Can now reprocess payroll periods without errors or duplicates
+- Automatic clearing of existing payslips with user confirmation
+- Transaction-safe recalculation (ACID compliant)
+- In-memory status synchronization with database
+- Tested successfully with September 2025 payroll (13 employees)
+- See: `/docs/PAYROLL_REPROCESSING_2025-10-06.md`
+
+### ✅ EMP 201 Report Enhancement - COMPLETED
+- Fixed database column name mismatches
+- Added SDL totals to SARS tax submission report
+- Debug output shows all statutory amounts
+- Report generates successfully as PDF
+- See: `/docs/SDL_AND_REPROCESSING_IMPLEMENTATION_2025-10-06.md` (Complete Report)
+
+**Quick Reference:** See `/docs/QUICK_REFERENCE_2025-10-06.md` for testing instructions  
+**Complete Implementation Report:** `/docs/SDL_AND_REPROCESSING_IMPLEMENTATION_2025-10-06.md`gement System
 
 A comprehensive Java-based financial management system with PostgreSQL database, PDF processing, Excel reporting, and REST API capabilities.
 
-## 🏢 System Overview
+## � Recent Updates (October 6, 2025)
+
+### ✅ SDL (Skills Development Levy) Implementation
+- Automatic SDL calculation (1% of payroll for companies > R500k/year)
+- Integrated into payroll processing and database
+- SARS compliant tax reporting
+- See: `/docs/SDL_IMPLEMENTATION_2025-10-06.md`
+
+### ✅ Payroll Reprocessing Enhancement
+- Can now reprocess payroll periods without errors
+- Automatic clearing of existing payslips
+- No need to create duplicate periods
+- Transaction-safe recalculation
+- See: `/docs/PAYROLL_REPROCESSING_2025-10-06.md`
+
+**Quick Reference:** See `/docs/QUICK_REFERENCE_2025-10-06.md` for testing instructions
+
+---
+
+## �🏢 System Overview
 
 FIN is a production-ready financial management system that handles:
 - **Bank Statement Processing** - Automated PDF text extraction and transaction parsing
