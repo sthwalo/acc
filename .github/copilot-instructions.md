@@ -1,15 +1,21 @@
 # AI Coding Agent Instructions for FIN Financial Management System
 
+**Last Updated:** October 11, 2025  
+**System Status:** ✅ Production Ready | **Database:** PostgreSQL 12+ | **Java:** 17+ | **Test Coverage:** 32 test classes
+
 ## 🏢 System Architecture Overview
 
-FIN is a production-ready Java 17+ financial management system with PostgreSQL database, featuring a modular service architecture with dependency injection and three execution modes.
+FIN is a production-ready Java 17+ financial management system processing **7,156+ real transactions** with PostgreSQL database, featuring modular service architecture with dependency injection and three execution modes.
 
 ### Core Architecture Pattern
 - **Dependency Injection**: All services managed via `ApplicationContext` (see `fin.context.ApplicationContext`)
+  - Services registered in `HashMap<Class<?>, Object>` during initialization
+  - Services retrieved via `context.get(ServiceClass.class)` - NEVER manual instantiation
+  - Automatic database connection testing and credential injection from `.env`
 - **Repository Pattern**: Data access layer (`fin.repository.*`) with JDBC-based implementation
 - **Service Layer**: Business logic (`fin.service.*`) with 15+ services for different domains
 - **Controller Layer**: Application flow coordination (`fin.controller.*`) for different feature areas
-- **Model Layer**: Immutable data classes (`fin.model.*`) representing domain entities
+- **Model Layer**: Mutable POJOs (`fin.model.*`) with getters/setters representing domain entities
 
 ### Database Schema (PostgreSQL)
 - **companies**: Multi-tenant company management with fiscal period tracking
@@ -18,41 +24,50 @@ FIN is a production-ready Java 17+ financial management system with PostgreSQL d
 - **bank_transactions**: Raw bank data with classification fields (account_code, account_name)
 - **journal_entries** + **journal_entry_lines**: Double-entry accounting entries
 - **transaction_mapping_rules**: Pattern-based classification rules (e.g., "XG SALARIES" → 8100)
-- **employees**, **payroll_periods**: Payroll management with PAYE/UIF calculations
+- **employees**, **payroll_periods**, **payslips**: Payroll with PAYE/UIF/SDL calculations
+  - **payslips.sdl_levy**: Skills Development Levy (1% of gross, added Oct 2025)
 
 ### Processing Pipeline
 ```
-Bank PDFs → DocumentTextExtractor → BankStatementProcessingService → 
-  → TransactionClassifier (pattern matching) → 
-  → JournalEntryGenerator (double-entry) → 
+Bank PDFs → DocumentTextExtractor (PDFBox 3.0.0) → BankStatementProcessingService → 
+  → TransactionClassificationService (pattern matching + interactive fallback) → 
+  → JournalEntryGenerator (double-entry validation) → 
   → PostgreSQL → Financial Reports (Console/Excel/PDF)
 ```
 
 ### Application Modes
 1. **API Server** (Production): `./gradlew run --args="api"` - REST API at http://localhost:8080/api/v1/ (CORS enabled for localhost:3000)
-2. **Console Application**: `./gradlew run` or `./run.sh` - Interactive terminal with menu system
+2. **Console Application**: `./gradlew run` or `./run.sh` - Interactive terminal with menu system  
 3. **Batch Processing**: `./gradlew run --args="--batch [command]"` - Automated background processing
+
+**Entry Points:**
+- `fin.ApiApplication.main()` → REST API mode
+- `fin.ConsoleApplication.main()` → Interactive console mode
+- `fin.AppTransition.main()` → Legacy/migration entry point
 
 ## 🔧 Critical Developer Workflows
 
 ### Environment Setup
 ```bash
 # 1. Ensure PostgreSQL 12+ is running
-# 2. Create .env file with database credentials:
+# 2. Create .env file in project root with database credentials:
 #    DATABASE_URL=jdbc:postgresql://localhost:5432/drimacc_db
 #    DATABASE_USER=your_username
 #    DATABASE_PASSWORD=your_password
+# 3. DatabaseConfig.java automatically loads .env and falls back to system env vars
 
-source .env              # Load environment variables
-./gradlew build          # Initial build with tests (118+ JUnit tests)
-./gradlew test           # Run all tests
+source .env              # Load environment variables (optional, DatabaseConfig handles this)
+./gradlew build          # Initial build with all 32 test classes
+./gradlew test           # Run all tests (maxHeapSize=2G configured)
 ```
 
 ### Running the Application
 ```bash
 # API Server (production mode - recommended for frontend integration)
 ./gradlew run --args="api"
+# OR: java -jar app/build/libs/app-fat.jar api
 # Accessible at http://localhost:8080/api/v1/
+# CORS enabled for http://localhost:3000
 
 # Console Application (interactive menu)
 ./gradlew run
@@ -61,37 +76,60 @@ source .env              # Load environment variables
 
 # Batch Processing (automated tasks)
 ./gradlew run --args="--batch process-transactions"
+
+# Specialized test runners (see build.gradle.kts)
+./gradlew runClassificationTest      # Test transaction classification
+./gradlew runTestDatabaseSetup       # Initialize test database
+./gradlew runTestConfiguration       # Validate configuration
 ```
 
 ### Database Operations
 ```bash
 # Connect to database
 psql -U sthwalonyoni -d drimacc_db -h localhost
-# OR use script:
-./scripts/connect_db.sh
 
-# Check transaction count
+# Check transaction count (should be 7,156+)
 SELECT COUNT(*) FROM bank_transactions;
 
-# View recent transactions
-SELECT transaction_date, details, debit_amount, credit_amount 
+# View recent classified transactions
+SELECT transaction_date, details, debit_amount, credit_amount, account_code, account_name
 FROM bank_transactions 
 ORDER BY transaction_date DESC LIMIT 10;
+
+# Check payroll SDL implementation (Oct 2025)
+SELECT payslip_number, gross_salary, sdl_levy 
+FROM payslips 
+WHERE payroll_period_id = 10;  -- September 2025
+
+# Verify chart of accounts
+SELECT code, name, category FROM accounts ORDER BY code;
 ```
 
 ### Build & Test Workflow
 ```bash
-# Standard build
-./gradlew build                    # Full build with all tests
+# Standard build with tests
+./gradlew build                    # Full build (21s typical)
 
-# Fast build (skip tests)
+# Fast build (REQUIRED after code changes - skip tests for speed)
 ./gradlew clean build -x test      # Compile and package only
 
-# Create deployable artifact
-./gradlew fatJar                   # Creates app/build/libs/app-fat.jar with all dependencies
+# Create deployable artifact (fat JAR with all dependencies)
+./gradlew fatJar                   # Creates app/build/libs/app-fat.jar
 
 # Run specific test class
 ./gradlew test --tests "fin.service.AccountManagerTest"
+
+# Run specific test method
+./gradlew test --tests "fin.service.PayrollServiceTest.testSDLCalculation"
+```
+
+### Useful Scripts (in `/scripts/`)
+```bash
+./scripts/backup_database.sh           # Backup PostgreSQL to backups/
+./scripts/cleanup-reports.sh           # Delete old reports from exports/
+./scripts/show-status.sh               # Display system status
+./scripts/demo-api.sh                  # Test API endpoints
+./scripts/verify_sdl_implementation.sh # Verify SDL calculations
 ```
 
 ### ⚠️ CRITICAL ENFORCEMENT: Code Changes & Testing Protocol
@@ -233,7 +271,7 @@ if (!entry.isBalanced()) {
 
 ### Testing Patterns
 ```java
-// Use Mockito for unit tests (118+ tests across codebase)
+// Use Mockito for unit tests (32 test classes covering all services)
 @Mock private RuleMappingService mockRuleService;
 @Mock private JournalEntryGenerator mockJournalGenerator;
 @Mock private Connection mockConnection;
@@ -257,6 +295,17 @@ void testTransactionClassification() {
     // Assert
     assertEquals("8100", result.getAccountCode());
     assertEquals("Employee Costs", result.getAccountName());
+}
+
+@Test
+void testSDLCalculation() {
+    // SDL added October 2025 - 1% of gross when payroll > R41,667/month
+    BigDecimal grossSalary = new BigDecimal("170100.00");
+    BigDecimal expectedSDL = new BigDecimal("1701.00");
+    
+    BigDecimal actualSDL = SARSTaxCalculator.calculateSDL(grossSalary);
+    
+    assertEquals(expectedSDL, actualSDL);
 }
 ```
 
@@ -356,6 +405,29 @@ public class ApiServer {
 
 ## ⚖️ Business Rules & Validation
 
+### Accounting Hierarchy (CRITICAL - Rewritten Oct 2025)
+```java
+// CORRECT FLOW: Journal Entries → General Ledger → Trial Balance → Financial Statements
+
+// 1. Journal Entries (Source of Truth)
+// All transactions MUST be recorded in journal_entries and journal_entry_lines tables
+// Enforced at database level with foreign key constraints
+
+// 2. General Ledger (Posted from Journals)
+// ✅ CORRECT: GeneralLedgerService reads from journal_entries
+List<AccountInfo> accounts = repository.getActiveAccountsFromJournals(companyId, fiscalPeriodId);
+// ❌ WRONG: Never read from Trial Balance or bank_transactions for GL
+
+// 3. Trial Balance (Summarized from GL)
+// Should verify against GL totals (Phase 2 - pending)
+// Must validate: Total Debits = Total Credits
+
+// 4. Financial Statements (Compiled from TB)
+// Income Statement: Revenue (6000-7999) and Expense (8000-9999) accounts
+// Balance Sheet: Assets (1000-2999), Liabilities (3000-4999), Equity (5000-5999)
+// Verify: Assets = Liabilities + Equity
+```
+
 ### Double-Entry Accounting
 ```java
 // Debit = Credit validation for journal entries
@@ -364,6 +436,21 @@ BigDecimal totalCredit = entries.stream().map(JournalEntryLine::getCreditAmount)
 if (totalDebit.compareTo(totalCredit) != 0) {
     throw new ValidationException("Debit and credit amounts must balance");
 }
+```
+
+### Normal Balance Types
+```java
+// Account types and their normal balances (for GL calculations)
+// Assets (1000-2999): DEBIT normal balance
+//   Closing = Opening + Period Debits - Period Credits
+// Liabilities (3000-4999): CREDIT normal balance
+//   Closing = Opening + Period Credits - Period Debits
+// Equity (5000-5999): CREDIT normal balance
+//   Closing = Opening + Period Credits - Period Debits
+// Revenue (6000-7999): CREDIT normal balance
+//   Closing = Period Credits - Period Debits (no opening balance)
+// Expenses (8000-9999): DEBIT normal balance
+//   Closing = Period Debits - Period Credits (no opening balance)
 ```
 
 ### Transaction Classification
@@ -387,10 +474,11 @@ if (!LicenseManager.checkLicenseCompliance()) {
 ## 🧪 Testing Strategy
 
 ### Unit Test Coverage
-- **118+ tests** across all services
-- **Test-Driven Development** (TDD) approach
-- **Mockito** for service dependencies
-- **PostgreSQL test database** for repository tests
+- **32 test classes** covering all critical services
+- **Mockito 5.5.0** for mocking dependencies (Connection, PreparedStatement, etc.)
+- **JUnit Jupiter** platform with `maxHeapSize=2G` for memory-intensive tests
+- **Test database** isolation via `TEST_DATABASE_URL` env var
+- **Test working directory** set to project root for `.env` loading
 
 ### Integration Testing
 ```java
@@ -399,7 +487,23 @@ if (!LicenseManager.checkLicenseCompliance()) {
 void testTransactionBatchProcessorIntegration() {
     // Setup real services with test database
     TransactionBatchProcessor processor = new TransactionBatchProcessor(realRuleService, realJournalGenerator);
-    // Execute integration test
+    // Execute integration test with actual database queries
+}
+
+// Test payroll reprocessing (Oct 2025 feature)
+@Test
+void testPayrollReprocessing() throws SQLException {
+    // Test that reprocessing clears old payslips and recalculates
+    Long payrollPeriodId = 10L; // September 2025
+    payrollService.processPayroll(payrollPeriodId);
+    
+    // Verify SDL calculated correctly
+    List<Payslip> payslips = payrollService.getPayslips(payrollPeriodId);
+    BigDecimal totalSDL = payslips.stream()
+        .map(Payslip::getSdlLevy)
+        .reduce(BigDecimal.ZERO, BigDecimal::add);
+    
+    assertTrue(totalSDL.compareTo(BigDecimal.ZERO) > 0);
 }
 ```
 
@@ -588,17 +692,94 @@ Remember: This system processes real financial data with 7,156+ transactions. Al
 - When creating mapping rules: Use `TransactionMappingRuleService` (newer, better structure)
 - When initializing accounts: Use `ChartOfAccountsService.initializeChartOfAccounts()`
 - **DO NOT** create new classification services or mapping rules in new code
-- See `/docs/DATA_MANAGEMENT_FLOW_ANALYSIS.md` for complete analysis and refactoring plan
+- See `/docs/development/DATA_MANAGEMENT_FLOW_ANALYSIS.md` for complete analysis and refactoring plan
 
 **Status:** Under review for consolidation into single `TransactionClassificationService`
 
 ---
 
-## 🩹 Patches & Updates
+### 🚨 CRITICAL: General Ledger Calculation Errors (Identified 2025-10-11)
 
-### Patch 2025-09-28: Employee Management & Document Handling
-- **Employee Field Updates**: Enhanced employee management interface to allow updating all payslip-relevant fields including tax numbers, UIF numbers, medical aid numbers, pension fund numbers, and complete banking information (bank name, account number, branch code, account holder name)
-- **Document Deletion**: Added document management functionality to payroll system allowing users to list and delete payslip PDF documents from both `exports/` and `payslips/` directories with confirmation prompts
-- **Database Field Verification**: Confirmed that employee data fields exist but many are currently empty, requiring population for complete payslip generation
-- **UI Improvements**: Updated payroll menu to include "Document Management" option and enhanced employee update form to display current values and allow comprehensive field editing</content>
+**Problem:** General Ledger shows incorrect balances and wrong signs (CREDIT instead of DEBIT for asset accounts).
+
+**Impact:** 
+- Bank account shows R32,283.77 **CREDIT** (impossible - assets should be DEBIT)
+- Expected closing: R24,109.81 **DEBIT** (per bank statement)
+- Discrepancy: R8,173.96 + wrong sign
+- **Root causes identified:**
+  1. **33 missing journal entries** (R493,178.42 total, including R275,000 deposit)
+  2. **GL calculation doesn't account for normal balance types** (DR vs CR accounts)
+  3. **Missing deposit journal entries** causing underreported debits
+
+**Current State (October 11, 2025):**
+```
+Expected:  R24,109.81 DR (bank statement)
+Journal:   -R32,283.77 CR (missing R275k deposit + wrong calculation)
+GL Report: R32,283.77 CR (displays wrong sign!)
+```
+
+**Resolution Required:**
+1. **Generate missing journal entries** (33 transactions via Data Management menu)
+2. **Fix GL calculation logic** in `GeneralLedgerService.java`:
+   - Add normal balance type handling (DR for assets, CR for liabilities/equity)
+   - Correct formula: `Closing = Opening + Debits - Credits` (for DR accounts)
+   - Fix balance side display (shouldn't show CR for asset accounts)
+3. **Add R275,000 deposit** to journal entries (DEBIT bank, CREDIT loan account)
+
+**Code Changes Needed:**
+- `GeneralLedgerService.java`: Fix closing balance calculation with normal balance logic
+- `JdbcFinancialDataRepository.java`: Add `getAccountNormalBalance()` method
+- `AccountInfo.java`: Add `normalBalance` field
+
+**Documentation:** See `/docs/GENERAL_LEDGER_DISCREPANCY_ANALYSIS_2025-10-11.md` for complete database-level analysis
+
+---
+
+### ⏳ IN PROGRESS: General Ledger Data Source Fix (Started 2025-10-10)
+
+**Achievement:** GL now reads from journal_entries table (not Trial Balance) ✅
+
+**Remaining Issues:**
+- Balance calculation logic incomplete (doesn't handle normal balance types)
+- Missing journal entries causing incorrect totals
+- Phase 1 technically complete (correct data source) but calculations still wrong
+
+**CODE FIX APPLIED (2025-10-11):**
+Fixed critical bug in `TransactionMappingService` that prevented journal entry generation:
+- `getAccountByCode()` was using company-agnostic cache causing lookup failures
+- Changed line 1346 from `getAccountByCode("1100")` to `getAccountIdFromCode("1100", transaction.getCompanyId())`
+- Added null checks with descriptive exceptions for bank/equity account lookups
+- Also fixed `createOpeningBalanceJournalEntry()` at line 1463 and `getEquityAccountForOpeningBalance()` at line 1513
+- **Status:** Code compiles ✅, ready for user testing
+
+---
+
+## 🩹 Recent Updates & Features
+
+### October 2025: SDL & Payroll Reprocessing
+**SDL (Skills Development Levy) - COMPLETED ✅**
+- Automatic 1% SDL calculation on payroll > R500k/year (R41,667/month threshold)
+- Added `payslips.sdl_levy` database column with migration
+- Integrated into `SARSTaxCalculator.calculateSDL()` method
+- SARS-compliant reporting in EMP 201 tax submission forms
+- Tested with September 2025 payroll: R1,701.00 SDL on R170,100 gross
+
+**Payroll Reprocessing Enhancement - COMPLETED ✅**
+- Can now reprocess payroll periods without "already processed" errors
+- Automatic deletion of existing payslips with transaction safety (ACID)
+- Period status reset from CLOSED → OPEN → recalculate → CLOSED
+- Use case: Correcting employee data, applying new features (SDL), testing scenarios
+- Methods: `clearExistingPayslips()`, `resetPayrollPeriodStatus()` in `PayrollService`
+- In-memory state synchronization prevents stale `ApplicationState` data
+
+**Documentation:**
+- `/docs/SDL_IMPLEMENTATION_2025-10-06.md` - Complete SDL implementation details
+- `/docs/PAYROLL_REPROCESSING_2025-10-06.md` - Reprocessing workflow and transaction safety
+- `/docs/QUICK_REFERENCE_2025-10-06.md` - Quick testing guide for SDL verification
+- `/docs/CHANGES_SUMMARY_2025-10-06.md` - Combined implementation report
+
+### September 2025: Employee Management & Document Handling
+- **Employee Field Updates**: Enhanced employee management for payslip-relevant fields (tax numbers, UIF, medical aid, pension, complete banking details)
+- **Document Management**: List and delete payslip PDFs from `exports/` and `payslips/` with confirmation prompts
+- **UI Improvements**: Added "Document Management" menu option, enhanced employee update forms with current values</content>
 <parameter name="filePath">/Users/sthwalonyoni/FIN/.github/copilot-instructions.md
