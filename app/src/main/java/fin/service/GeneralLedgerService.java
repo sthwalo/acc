@@ -8,7 +8,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.LinkedHashMap;
-import java.util.ArrayList;
 
 /**
  * Service for generating general ledger reports.
@@ -59,6 +58,65 @@ public class GeneralLedgerService {
         }
 
         return report.toString();
+    }
+
+    /**
+     * Get account closing balances for Trial Balance posting.
+     * 
+     * CORRECT ACCOUNTING FLOW:
+     * This method provides GL closing balances to Trial Balance Service.
+     * Implements: Journal Entries → General Ledger → Trial Balance → Financial Statements
+     */
+    public Map<String, AccountBalance> getAccountClosingBalances(int companyId, int fiscalPeriodId) throws SQLException {
+        List<AccountInfo> accounts = repository.getActiveAccountsFromJournals(companyId, fiscalPeriodId);
+        
+        Map<String, AccountBalance> accountBalances = new LinkedHashMap<>();
+        
+        for (AccountInfo account : accounts) {
+            // Get account journal entry lines 
+            List<JournalEntryLineDetail> ledgerLines = repository.getJournalEntryLinesForAccount(
+                companyId, fiscalPeriodId, account.getAccountCode());
+            
+            // Get opening balance
+            BigDecimal openingBalance = repository.getAccountOpeningBalanceForLedger(companyId, fiscalPeriodId, account.getAccountCode());
+            
+            // Calculate totals and closing balance
+            BigDecimal totalDebits = BigDecimal.ZERO;
+            BigDecimal totalCredits = BigDecimal.ZERO;
+            BigDecimal runningBalance = openingBalance;
+            
+            for (JournalEntryLineDetail line : ledgerLines) {
+                BigDecimal debit = line.getDebitAmount() != null ? line.getDebitAmount() : BigDecimal.ZERO;
+                BigDecimal credit = line.getCreditAmount() != null ? line.getCreditAmount() : BigDecimal.ZERO;
+                
+                totalDebits = totalDebits.add(debit);
+                totalCredits = totalCredits.add(credit);
+                
+                // Update running balance based on account type
+                if ("D".equals(account.getNormalBalance())) {
+                    // DEBIT normal balance (Assets, Expenses): increase on debit, decrease on credit
+                    runningBalance = runningBalance.add(debit).subtract(credit);
+                } else {
+                    // CREDIT normal balance (Liabilities, Equity, Revenue): increase on credit, decrease on debit
+                    runningBalance = runningBalance.add(credit).subtract(debit);
+                }
+            }
+            
+            // Create account balance entry
+            AccountBalance balance = new AccountBalance(
+                account.getAccountCode(),
+                account.getAccountName(), 
+                account.getNormalBalance(),
+                openingBalance,
+                totalDebits,
+                totalCredits,
+                runningBalance
+            );
+            
+            accountBalances.put(account.getAccountCode(), balance);
+        }
+        
+        return accountBalances;
     }
 
     /**
