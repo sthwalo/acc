@@ -254,6 +254,46 @@ public class TransactionClassificationService {
     }
     
     /**
+     * Reclassify ALL transactions (including already classified) with updated mapping rules.
+     * This is useful after updating mapping rules to reapply them to existing data.
+     * 
+     * @param companyId The company to reclassify transactions for
+     * @param fiscalPeriodId The fiscal period to reclassify (not currently used, for future filtering)
+     * @return Number of transactions reclassified
+     */
+    public int reclassifyAllTransactions(Long companyId, Long fiscalPeriodId) {
+        try {
+            System.out.println("\n" + "=".repeat(80));
+            System.out.println("🔄 RECLASSIFY ALL TRANSACTIONS WITH UPDATED RULES");
+            System.out.println("=".repeat(80));
+            System.out.println("⚠️  This will reapply mapping rules to ALL transactions");
+            System.out.println("   (including those already classified)");
+            System.out.println();
+            
+            // Run reclassification
+            int reclassifiedCount = mappingService.reclassifyAllTransactions(
+                companyId, "RECLASSIFY-ALL");
+            
+            if (reclassifiedCount > 0) {
+                System.out.println();
+                System.out.println("✅ Reclassification complete!");
+                System.out.println("📊 " + reclassifiedCount + " transactions updated with new classifications");
+            } else {
+                System.out.println();
+                System.out.println("ℹ️  No transactions needed reclassification");
+                System.out.println("   All transactions already match current rules");
+            }
+            
+            return reclassifiedCount;
+            
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error reclassifying transactions", e);
+            System.err.println("❌ Error: " + e.getMessage());
+            return 0;
+        }
+    }
+    
+    /**
      * Synchronize journal entries with classified transactions
      * Ensures all classified transactions have corresponding journal entries
      * 
@@ -287,6 +327,108 @@ public class TransactionClassificationService {
             System.err.println("❌ Error: " + e.getMessage());
             return 0;
         }
+    }
+    
+    /**
+     * Regenerate ALL journal entries for classified transactions
+     * This DELETES existing journal entries and creates new ones based on current classifications
+     * Use this after reclassifying transactions to update the accounting records
+     * 
+     * @param companyId The company to regenerate journal entries for
+     * @param fiscalPeriodId The fiscal period to regenerate journal entries for
+     * @return Number of journal entries regenerated
+     */
+    public int regenerateAllJournalEntries(Long companyId, Long fiscalPeriodId) {
+        try {
+            System.out.println("\n" + "=".repeat(80));
+            System.out.println("🔄 REGENERATING ALL JOURNAL ENTRIES");
+            System.out.println("=".repeat(80));
+            System.out.println("⚠️  This will DELETE all existing journal entries and create new ones");
+            System.out.println("    based on current transaction classifications");
+            System.out.println();
+            
+            // Step 1: Delete existing journal entries (except opening balances)
+            int deletedCount = deleteJournalEntriesExceptOpeningBalances(companyId, fiscalPeriodId);
+            System.out.println("🗑️  Deleted " + deletedCount + " existing journal entries");
+            
+            // Step 2: Count classified transactions
+            int classifiedCount = countClassifiedTransactions(companyId, fiscalPeriodId);
+            System.out.println("📊 Found " + classifiedCount + " classified transactions");
+            
+            if (classifiedCount == 0) {
+                System.out.println("⚠️  No classified transactions to generate journal entries for");
+                return 0;
+            }
+            
+            // Step 3: Generate new journal entries from ALL classified transactions
+            int generatedCount = mappingService.generateJournalEntriesForClassifiedTransactions(companyId, "REGENERATE");
+            
+            System.out.println("✅ Successfully regenerated " + generatedCount + " journal entries");
+            System.out.println("📊 Journal entries now reflect current transaction classifications");
+            
+            return generatedCount;
+            
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error regenerating journal entries", e);
+            System.err.println("❌ Error: " + e.getMessage());
+            return 0;
+        }
+    }
+    
+    /**
+     * Delete all journal entries except opening balances
+     */
+    private int deleteJournalEntriesExceptOpeningBalances(Long companyId, Long fiscalPeriodId) {
+        String sql = """
+            DELETE FROM journal_entries 
+            WHERE company_id = ? 
+            AND fiscal_period_id = ?
+            AND NOT (LOWER(description) LIKE '%opening%balance%' OR reference LIKE 'OB-%')
+            """;
+            
+        try (Connection conn = DriverManager.getConnection(dbUrl);
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            stmt.setLong(1, companyId);
+            stmt.setLong(2, fiscalPeriodId);
+            
+            return stmt.executeUpdate();
+            
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error deleting journal entries", e);
+            throw new RuntimeException("Failed to delete journal entries", e);
+        }
+    }
+    
+    /**
+     * Count classified transactions (account_code IS NOT NULL)
+     */
+    private int countClassifiedTransactions(Long companyId, Long fiscalPeriodId) {
+        String sql = """
+            SELECT COUNT(*) 
+            FROM bank_transactions 
+            WHERE company_id = ? 
+            AND fiscal_period_id = ? 
+            AND account_code IS NOT NULL
+            """;
+            
+        try (Connection conn = DriverManager.getConnection(dbUrl);
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            stmt.setLong(1, companyId);
+            stmt.setLong(2, fiscalPeriodId);
+            
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+            
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error counting classified transactions", e);
+        }
+        
+        return 0;
     }
     
     // ============================================================================

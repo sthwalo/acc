@@ -253,6 +253,7 @@ public class AccountClassificationService {
         accounts.add(new AccountDefinition("5000", "Share Capital", "Issued share capital", equityId));
         accounts.add(new AccountDefinition("5100", "Retained Earnings", "Accumulated profits", equityId));
         accounts.add(new AccountDefinition("5200", "Current Year Earnings", "Current year profit/loss", equityId));
+        accounts.add(new AccountDefinition("5300", "Opening Balance Equity", "Temporary equity account for opening balances - Cash Flow Statement only", equityId));
         
         // OPERATING REVENUE (6000-6999)
         Long operatingRevenueId = categoryIds.get("OPERATING_REVENUE");
@@ -292,6 +293,9 @@ public class AccountClassificationService {
         accounts.add(new AccountDefinition("8600-099", "Fuel Expenses - Other Stations", "Fuel purchases at other stations", operatingExpensesId));
         
         accounts.add(new AccountDefinition("8700", "Professional Services", "Legal, accounting, consulting", operatingExpensesId));
+        accounts.add(new AccountDefinition("8710", "Suppliers Expense", "Payments to suppliers and vendors", operatingExpensesId));
+        accounts.add(new AccountDefinition("8720", "HR Management Expense", "Human resources management and recruitment", operatingExpensesId));
+        accounts.add(new AccountDefinition("8730", "Education & Training", "Education fees and training costs", operatingExpensesId));
         
         accounts.add(new AccountDefinition("8800", "Insurance", "Business insurance premiums", operatingExpensesId));
         // Sub-accounts for insurance providers
@@ -619,13 +623,13 @@ public class AccountClassificationService {
             9
         ));
         
-        // Supplier payments (NOT director remuneration)
+        // Fuel purchases (specific account identifier)
         rules.add(createRule(
-            "Rent A Dog Supplier",
-            "Supplier payments to Rent A Dog (not director remuneration)",
+            "Fuel Purchase - Account 2689327",
+            "Fuel purchases to supplier account 2689327 [AccountCode:8600-099]",
             TransactionMappingRule.MatchType.CONTAINS,
-            "RENT A DOG",
-            "3000", // Accounts Payable
+            "2689327",
+            "8600-099", // Fuel Expenses - Other Stations
             9
         ));
         
@@ -652,14 +656,83 @@ public class AccountClassificationService {
             8
         ));
         
+        // Rent payments
+        rules.add(createRule(
+            "Ellis Park Stadium Rent",
+            "Rent payments to Ellis Park Stadium",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "ELLISPARK STADIUM",
+            "8200", // Rent Expense
+            9
+        ));
+        
+        // Vehicle purchases (capital expenditure)
+        rules.add(createRule(
+            "EBS Car Sales Vehicle Purchase",
+            "Vehicle purchase from EBS Car Sales Mercedes",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "EBS CAR SALES",
+            "2000", // Property, Plant & Equipment
+            9
+        ));
+        
         // Supplier payments
         rules.add(createRule(
-            "DB Projects Supplier",
-            "Supplier payments to DB Projects and Agencies",
+            "Two Way Technologies Supplier",
+            "Supplier payments to Two Way Technologies",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "TWO WAY TECHNOLOGIES",
+            "8710", // Suppliers Expense
+            9
+        ));
+        
+        rules.add(createRule(
+            "Rent A Dog Supplier",
+            "Supplier payments to Rent A Dog",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "RENT A DOG",
+            "8710", // Suppliers Expense
+            9
+        ));
+        
+        // HR Management expenses
+        rules.add(createRule(
+            "Neo Entle Labour Hire",
+            "HR management and labour hire from Neo Entle Labour Hire",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "NEO ENTLE LABOUR",
+            "8720", // HR Management Expense
+            9
+        ));
+        
+        // Investment transactions
+        rules.add(createRule(
+            "Stanlib Investment",
+            "Investment transactions with Stanlib",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "STANLIB",
+            "2200", // Investments
+            9
+        ));
+        
+        // Cost of Goods Sold
+        rules.add(createRule(
+            "DB Projects COGS",
+            "Cost of goods sold - DB Projects and Agencies",
             TransactionMappingRule.MatchType.CONTAINS,
             "DB PROJECTS",
-            "3000", // Accounts Payable
-            8
+            "8000", // Cost of Goods Sold
+            9
+        ));
+        
+        // Education/Training expenses
+        rules.add(createRule(
+            "Lyceum College School Fees",
+            "School fees at Lyceum College",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "LYCEUM COLLEGE",
+            "8730", // Education & Training
+            9
         ));
         
         // Employee salaries (specific names)
@@ -678,16 +751,6 @@ public class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "GOODMAN ZUNGA",
             "8100", // Employee Costs
-            8
-        ));
-        
-        // Education expenses
-        rules.add(createRule(
-            "Lyceum College Education",
-            "School fees and education expenses at Lyceum College",
-            TransactionMappingRule.MatchType.CONTAINS,
-            "LYCEUM COLLEGE",
-            "9300", // Training & Development
             8
         ));
         
@@ -752,14 +815,14 @@ public class AccountClassificationService {
             5
         ));
         
-        // Bank charges and fees
+        // Bank charges and fees - HIGHEST PRIORITY to override ALL other classifications
         rules.add(createRule(
             "Bank Charges - FEE keyword",
             "Bank fees and charges",
             TransactionMappingRule.MatchType.CONTAINS,
             "FEE",
             "9600", // Bank Charges
-            5
+            20  // HIGHEST priority - overrides ALL other rules
         ));
         
         rules.add(createRule(
@@ -768,7 +831,16 @@ public class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "SERVICE FEE",
             "9600", // Bank Charges
-            5
+            20  // HIGHEST priority - overrides ALL other rules
+        ));
+        
+        rules.add(createRule(
+            "Bank Charges - CHARGE keyword",
+            "Bank charges and fees",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "CHARGE",
+            "9600", // Bank Charges
+            20  // HIGHEST priority - overrides ALL other rules
         ));
         
         // Loan payments (generic)
