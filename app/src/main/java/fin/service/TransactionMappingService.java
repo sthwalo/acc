@@ -132,6 +132,146 @@ public class TransactionMappingService {
     }
     
     /**
+     * Reclassify ALL transactions (including already classified ones) based on current mapping rules.
+     * This is useful when mapping rules have been updated and you want to reapply them to existing data.
+     * 
+     * @param companyId The company ID
+     * @param username The username for audit purposes
+     * @return The number of transactions reclassified
+     */
+    public int reclassifyAllTransactions(Long companyId, String username) {
+        int reclassifiedCount = 0;
+        
+        try {
+            System.out.println("\n🔄 RECLASSIFYING ALL TRANSACTIONS WITH UPDATED RULES");
+            System.out.println("=" .repeat(80));
+            
+            // Get ALL transactions (not just unclassified)
+            List<BankTransaction> allTransactions = getAllTransactions(companyId);
+            
+            if (allTransactions.isEmpty()) {
+                LOGGER.info("No transactions found for company ID: " + companyId);
+                System.out.println("⚠️  No transactions found to reclassify");
+                return 0;
+            }
+            
+            System.out.println("📊 Found " + allTransactions.size() + " total transactions");
+            
+            // Ensure transaction mapping rules table exists and is properly migrated
+            createTransactionMappingRulesTable();
+            
+            // Load transaction mapping rules
+            Map<String, RuleMapping> rules = loadTransactionMappingRules(companyId);
+            System.out.println("📋 Loaded " + rules.size() + " transaction mapping rules");
+            
+            if (rules.isEmpty()) {
+                System.out.println("⚠️  No mapping rules found! Please initialize mapping rules first.");
+                return 0;
+            }
+            
+            // Apply classification rules
+            try (Connection conn = DriverManager.getConnection(dbUrl)) {
+                conn.setAutoCommit(false);
+                
+                try {
+                    String updateSql = """
+                        UPDATE bank_transactions
+                        SET account_code = ?, account_name = ?, classification_date = CURRENT_TIMESTAMP, classified_by = ?
+                        WHERE id = ?
+                        """;
+                    
+                    try (PreparedStatement updateStmt = conn.prepareStatement(updateSql)) {
+                        for (BankTransaction transaction : allTransactions) {
+                            String details = transaction.getDetails().toUpperCase();
+                            
+                            // First try direct rule matching
+                            RuleMapping matchedRule = findMatchingRule(details, rules);
+                            
+                            // If no rule matched, try built-in logic
+                            if (matchedRule == null) {
+                                Long accountId = mapTransactionToAccount(transaction);
+                                if (accountId != null) {
+                                    String accountCode = getAccountCodeById(accountId);
+                                    String accountName = getAccountNameById(accountId);
+                                    
+                                    matchedRule = new RuleMapping(accountCode, accountName);
+                                }
+                            }
+                            
+                            // Apply rule if found AND if it's different from current classification
+                            if (matchedRule != null) {
+                                boolean needsUpdate = transaction.getAccountCode() == null || 
+                                                     !matchedRule.accountCode.equals(transaction.getAccountCode());
+                                
+                                if (needsUpdate) {
+                                    updateStmt.setString(1, matchedRule.accountCode);
+                                    updateStmt.setString(2, matchedRule.accountName);
+                                    updateStmt.setString(3, username);
+                                    updateStmt.setLong(4, transaction.getId());
+                                    updateStmt.addBatch();
+                                    reclassifiedCount++;
+                                    
+                                    // Log for every 100 transactions
+                                    if (reclassifiedCount % 100 == 0) {
+                                        System.out.println("⏳ Reclassified " + reclassifiedCount + " transactions so far...");
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // Execute batch update
+                        updateStmt.executeBatch();
+                    }
+                    
+                    conn.commit();
+                    System.out.println("✅ Successfully reclassified " + reclassifiedCount + " transactions");
+                    System.out.println("📊 Total transactions processed: " + allTransactions.size());
+                    System.out.println("📊 Unchanged transactions: " + (allTransactions.size() - reclassifiedCount));
+                    
+                } catch (SQLException e) {
+                    conn.rollback();
+                    throw e;
+                }
+            }
+            
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error reclassifying transactions", e);
+            throw new RuntimeException("Failed to reclassify transactions", e);
+        }
+        
+        return reclassifiedCount;
+    }
+    
+    /**
+     * Get ALL bank transactions for a company (including already classified ones)
+     */
+    private List<BankTransaction> getAllTransactions(Long companyId) throws SQLException {
+        List<BankTransaction> transactions = new ArrayList<>();
+        
+        String sql = """
+            SELECT *
+            FROM bank_transactions
+            WHERE company_id = ?
+            ORDER BY transaction_date
+            """;
+        
+        try (Connection conn = DriverManager.getConnection(dbUrl);
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            stmt.setLong(1, companyId);
+            
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    BankTransaction transaction = mapResultSetToBankTransaction(rs);
+                    transactions.add(transaction);
+                }
+            }
+        }
+        
+        return transactions;
+    }
+    
+    /**
      * Find a matching rule for transaction details
      */
     private RuleMapping findMatchingRule(String details, Map<String, RuleMapping> rules) {
@@ -610,8 +750,9 @@ public class TransactionMappingService {
             return null;
         }
         
+        // Updated pattern to support account codes with dashes (e.g., 8600-099)
         java.util.regex.Pattern pattern = 
-            java.util.regex.Pattern.compile("\\[AccountCode:(\\d+)\\]");
+            java.util.regex.Pattern.compile("\\[AccountCode:([\\d-]+)\\]");
         java.util.regex.Matcher matcher = pattern.matcher(description);
         
         if (matcher.find()) {
@@ -1059,8 +1200,18 @@ public class TransactionMappingService {
                 while (rs.next()) {
                     BankTransaction transaction = mapResultSetToBankTransaction(rs);
                     
-                    // Skip transactions that can't be classified
-                    Long mappedAccountId = mapTransactionToAccount(transaction);
+                    // Try to get account ID from existing classification first
+                    Long mappedAccountId = null;
+                    if (transaction.getAccountCode() != null && !transaction.getAccountCode().trim().isEmpty()) {
+                        mappedAccountId = getAccountIdFromCode(transaction.getAccountCode(), transaction.getCompanyId());
+                    }
+                    
+                    // If no existing classification, try to classify using rules
+                    if (mappedAccountId == null) {
+                        mappedAccountId = mapTransactionToAccount(transaction);
+                    }
+                    
+                    // Skip transactions that can't be classified at all
                     if (mappedAccountId == null) {
                         continue;
                     }
@@ -1081,6 +1232,87 @@ public class TransactionMappingService {
             LOGGER.log(Level.SEVERE, "Error generating journal entries", e);
             throw new RuntimeException("Failed to generate journal entries", e);
         }
+    }
+    
+    /**
+     * Generate journal entries for ALL classified transactions (not just unclassified)
+     * Used when regenerating journal entries after reclassification
+     * 
+     * @param companyId The company ID
+     * @param createdBy The username for audit purposes
+     * @return Number of journal entries created
+     */
+    public int generateJournalEntriesForClassifiedTransactions(Long companyId, String createdBy) {
+        // Get ALL classified transactions (account_code IS NOT NULL)
+        String sql = """
+            SELECT bt.* FROM bank_transactions bt
+            WHERE bt.company_id = ?
+            AND bt.account_code IS NOT NULL
+            ORDER BY bt.transaction_date
+            """;
+        
+        int generatedCount = 0;
+        
+        try (Connection conn = DriverManager.getConnection(dbUrl)) {
+            conn.setAutoCommit(false);
+            
+            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                pstmt.setLong(1, companyId);
+                ResultSet rs = pstmt.executeQuery();
+                
+                int entryCount = 1;
+                while (rs.next()) {
+                    BankTransaction transaction = mapResultSetToBankTransaction(rs);
+                    
+                    // Get account ID from account_code
+                    Long accountId = getAccountIdFromCode(transaction.getAccountCode(), transaction.getCompanyId());
+                    
+                    if (accountId != null) {
+                        createJournalEntryForTransaction(conn, transaction, entryCount, accountId, createdBy);
+                        entryCount++;
+                        generatedCount++;
+                    }
+                }
+                
+                conn.commit();
+                LOGGER.info("Generated " + generatedCount + " journal entries for classified transactions");
+                
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            }
+            
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error generating journal entries for classified transactions", e);
+            throw new RuntimeException("Failed to generate journal entries", e);
+        }
+        
+        return generatedCount;
+    }
+    
+    /**
+     * Get account ID from account code
+     */
+    private Long getAccountIdFromCode(String accountCode, Long companyId) {
+        String sql = "SELECT id FROM accounts WHERE account_code = ? AND company_id = ?";
+        
+        try (Connection conn = DriverManager.getConnection(dbUrl);
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            stmt.setString(1, accountCode);
+            stmt.setLong(2, companyId);
+            
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getLong("id");
+                }
+            }
+            
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error getting account ID from code", e);
+        }
+        
+        return null;
     }
     
     private void createJournalEntryForTransaction(Connection conn, BankTransaction transaction, 
@@ -1122,7 +1354,11 @@ public class TransactionMappingService {
         }
 
         // Get the mapped account (passed as parameter)
-        Long bankAccountId = getAccountByCode("1100"); // Bank - Current Account
+        Long bankAccountId = getAccountIdFromCode("1100", transaction.getCompanyId()); // Bank - Current Account
+        
+        if (bankAccountId == null) {
+            throw new SQLException("Bank account (1100) not found for company " + transaction.getCompanyId());
+        }
 
         // Create journal entry lines - CORRECT DOUBLE-ENTRY ACCOUNTING
         String insertLine = """
@@ -1233,8 +1469,15 @@ public class TransactionMappingService {
             }
         }
         
-        Long bankAccountId = getAccountByCode("1100");  // Bank - Current Account
+        Long bankAccountId = getAccountIdFromCode("1100", transaction.getCompanyId());  // Bank - Current Account
         Long equityAccountId = getEquityAccountForOpeningBalance(conn, transaction.getCompanyId());
+        
+        if (bankAccountId == null) {
+            throw new SQLException("Bank account (1100) not found for company " + transaction.getCompanyId());
+        }
+        if (equityAccountId == null) {
+            throw new SQLException("Equity account (3100 or similar) not found for company " + transaction.getCompanyId());
+        }
         
         // Opening balance amount is in the credit_amount field or balance field
         BigDecimal openingBalance = transaction.getCreditAmount() != null && 
@@ -1280,7 +1523,7 @@ public class TransactionMappingService {
      */
     private Long getEquityAccountForOpeningBalance(Connection conn, Long companyId) throws SQLException {
         // First try to find existing Retained Earnings account (3100)
-        Long equityAccountId = getAccountByCode("3100");
+        Long equityAccountId = getAccountIdFromCode("3100", companyId);
         
         if (equityAccountId != null) {
             return equityAccountId;
@@ -1383,6 +1626,11 @@ public class TransactionMappingService {
         transaction.setAccountNumber(rs.getString("account_number"));
         transaction.setStatementPeriod(rs.getString("statement_period"));
         transaction.setSourceFile(rs.getString("source_file"));
+        
+        // Include classification fields if present in database
+        transaction.setAccountCode(rs.getString("account_code"));
+        transaction.setAccountName(rs.getString("account_name"));
+        
         return transaction;
     }
     
