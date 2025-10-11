@@ -500,14 +500,25 @@ public class JdbcFinancialDataRepository implements FinancialDataRepository {
     public BigDecimal getAccountOpeningBalanceForLedger(int companyId, int fiscalPeriodId, String accountCode) throws SQLException {
         String sql = """
             SELECT 
-                COALESCE(SUM(jel.debit_amount), 0) - COALESCE(SUM(jel.credit_amount), 0) as opening_balance
+                a.account_code,
+                at.normal_balance,
+                COALESCE(SUM(jel.debit_amount), 0) as total_debits,
+                COALESCE(SUM(jel.credit_amount), 0) as total_credits,
+                CASE 
+                    WHEN at.normal_balance = 'D' THEN COALESCE(SUM(jel.debit_amount), 0) - COALESCE(SUM(jel.credit_amount), 0)
+                    WHEN at.normal_balance = 'C' THEN COALESCE(SUM(jel.credit_amount), 0) - COALESCE(SUM(jel.debit_amount), 0)
+                    ELSE 0
+                END as opening_balance
             FROM journal_entry_lines jel
             JOIN accounts a ON jel.account_id = a.id
+            JOIN account_categories ac ON a.category_id = ac.id
+            JOIN account_types at ON ac.account_type_id = at.id
             JOIN journal_entries je ON jel.journal_entry_id = je.id
             WHERE je.company_id = ?
               AND je.fiscal_period_id = ?
               AND a.account_code = ?
               AND (LOWER(je.description) LIKE '%opening%balance%' OR je.reference LIKE 'OB-%')
+            GROUP BY a.account_code, at.normal_balance
             """;
 
         try (Connection conn = dataSource.getConnection();

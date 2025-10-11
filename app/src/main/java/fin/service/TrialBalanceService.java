@@ -5,7 +5,7 @@ import fin.repository.FinancialDataRepository;
 import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
+import java.util.Map;
 
 /**
  * Service for generating trial balance reports.
@@ -14,21 +14,32 @@ import java.util.List;
 public class TrialBalanceService {
 
     private final FinancialDataRepository repository;
+    private final GeneralLedgerService generalLedgerService;
 
-    public TrialBalanceService(FinancialDataRepository repository) {
+    public TrialBalanceService(FinancialDataRepository repository, GeneralLedgerService generalLedgerService) {
         this.repository = repository;
+        this.generalLedgerService = generalLedgerService;
     }
 
     /**
      * Generate trial balance report content
+     * 
+     * CORRECT ACCOUNTING FLOW:
+     * This method reads closing balances FROM General Ledger Service.
+     * Implements: Journal Entries → General Ledger → Trial Balance → Financial Statements
      */
     public String generateTrialBalance(int companyId, int fiscalPeriodId) throws SQLException {
         Company company = repository.getCompany(companyId);
         FiscalPeriod fiscalPeriod = repository.getFiscalPeriod(fiscalPeriodId);
-        List<TrialBalanceEntry> entries = repository.getTrialBalanceEntries(companyId, fiscalPeriodId);
+        
+        // ✅ CORRECT FLOW: Get closing balances FROM General Ledger (not directly from journal entries)
+        Map<String, AccountBalance> accountBalances = generalLedgerService.getAccountClosingBalances(companyId, fiscalPeriodId);
 
         StringBuilder report = new StringBuilder();
         report.append(generateReportHeader("TRIAL BALANCE REPORT", company, fiscalPeriod));
+        report.append("\n");
+        report.append("Source: General Ledger Account Balances (Double-Entry Bookkeeping)\n");
+        report.append("Hierarchy: Journal Entries → General Ledger → Trial Balance → Financial Statements\n");
         report.append("\n");
 
         // Column headers for traditional trial balance
@@ -39,41 +50,21 @@ public class TrialBalanceService {
         BigDecimal totalDebits = BigDecimal.ZERO;
         BigDecimal totalCredits = BigDecimal.ZERO;
 
-        for (TrialBalanceEntry entry : entries) {
-            BigDecimal closingBalance = entry.getClosingBalance();
-            String normalBalance = entry.getNormalBalance(); // 'D' or 'C'
+        // Process each account balance from General Ledger
+        for (AccountBalance balance : accountBalances.values()) {
+            // Use the AccountBalance methods to get proper TB debit/credit amounts
+            BigDecimal debitAmount = balance.getTrialBalanceDebit();
+            BigDecimal creditAmount = balance.getTrialBalanceCredit();
 
-            // For trial balance, display based on account type normal balance
-            BigDecimal debitAmount = BigDecimal.ZERO;
-            BigDecimal creditAmount = BigDecimal.ZERO;
-
-            if ("D".equals(normalBalance)) {
-                // Debit normal balance accounts (Assets, Expenses)
-                // Positive balance → Debit column, Negative balance → Credit column
-                if (closingBalance.compareTo(BigDecimal.ZERO) > 0) {
-                    debitAmount = closingBalance;
-                    totalDebits = totalDebits.add(debitAmount);
-                } else if (closingBalance.compareTo(BigDecimal.ZERO) < 0) {
-                    creditAmount = closingBalance.negate();
-                    totalCredits = totalCredits.add(creditAmount);
-                }
-            } else {
-                // Credit normal balance accounts (Liabilities, Equity, Revenue)
-                // Positive balance → Credit column, Negative balance → Debit column
-                if (closingBalance.compareTo(BigDecimal.ZERO) > 0) {
-                    creditAmount = closingBalance;
-                    totalCredits = totalCredits.add(creditAmount);
-                } else if (closingBalance.compareTo(BigDecimal.ZERO) < 0) {
-                    debitAmount = closingBalance.negate();
-                    totalDebits = totalDebits.add(debitAmount);
-                }
-            }
+            // Add to totals
+            totalDebits = totalDebits.add(debitAmount);
+            totalCredits = totalCredits.add(creditAmount);
 
             // Only show accounts with balances
             if (debitAmount.compareTo(BigDecimal.ZERO) != 0 || creditAmount.compareTo(BigDecimal.ZERO) != 0) {
                 report.append(String.format("%-15s %-50s %-20s %-20s%n",
-                        entry.getAccountCode(),
-                        truncateString(entry.getAccountName(), 48),
+                        balance.getAccountCode(),
+                        truncateString(balance.getAccountName(), 48),
                         formatCurrency(debitAmount),
                         formatCurrency(creditAmount)));
             }
