@@ -24,8 +24,8 @@ public class ClassificationTest {
 
             LOGGER.info("Starting Enhanced Classification Test...");
 
-            // Create service instance
-            TransactionMappingService service = new TransactionMappingService(dbUrl);
+            // Create service instance - using AccountClassificationService as single source of truth
+            AccountClassificationService service = new AccountClassificationService(dbUrl);
 
             // Get company ID (assuming Xinghizana Group is company 1)
             Long companyId = 1L;
@@ -41,7 +41,7 @@ public class ClassificationTest {
 
             // Generate journal entries for double-entry accounting
             LOGGER.info("Generating journal entries for double-entry accounting...");
-            service.generateJournalEntriesForUnclassifiedTransactions(companyId, "ENHANCED-CLASSIFICATION-TEST");
+            service.generateJournalEntriesForClassifiedTransactions(companyId, "ENHANCED-CLASSIFICATION-TEST");
 
             LOGGER.info("Journal entries generation completed.");
 

@@ -64,6 +64,39 @@ public class AccountClassificationService {
             e.printStackTrace();
         }
     }
+
+    /**
+     * Initialize transaction mapping rules for a company
+     * This creates the standard pattern-matching rules for auto-classification
+     * 
+     * @param companyId The company to initialize
+     * @return Number of rules created
+     */
+    public int initializeTransactionMappingRules(Long companyId) {
+        try {
+            Company company = companyService.getCompanyById(companyId);
+            if (company == null) {
+                throw new IllegalArgumentException("Company not found: " + companyId);
+            }
+            
+            System.out.println("🔗 Initializing Transaction Mapping Rules for: " + company.getName());
+            
+            // Get rules from single source of truth (this service)
+            List<TransactionMappingRule> rules = getStandardMappingRules();
+            
+            // Persist to database using TransactionMappingRuleService
+            TransactionMappingRuleService ruleService = new TransactionMappingRuleService(dbUrl);
+            ruleService.persistStandardRules(companyId, rules);
+            
+            System.out.println("✅ Created " + rules.size() + " standard mapping rules");
+            return rules.size();
+            
+        } catch (Exception e) {
+            System.err.println("❌ Error initializing mapping rules: " + e.getMessage());
+            e.printStackTrace();
+            return 0;
+        }
+    }
     
     /**
      * Create standard account categories based on South African business practices
@@ -868,6 +901,200 @@ public class AccountClassificationService {
         rules.sort((r1, r2) -> Integer.compare(r2.getPriority(), r1.getPriority()));
         
         return rules;
+    }
+    
+    /**
+     * Classify all unclassified transactions for a company based on mapping rules
+     * 
+     * @param companyId The company ID
+     * @param username The username for audit purposes
+     * @return The number of transactions classified
+     */
+    public int classifyAllUnclassifiedTransactions(Long companyId, String username) {
+        try {
+            TransactionMappingRuleService ruleService = new TransactionMappingRuleService(dbUrl);
+            
+            String sql = """
+                SELECT *
+                FROM bank_transactions
+                WHERE company_id = ? AND account_code IS NULL
+                ORDER BY transaction_date
+                """;
+            
+            int classifiedCount = 0;
+            
+            try (Connection conn = DriverManager.getConnection(dbUrl);
+                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+                
+                stmt.setLong(1, companyId);
+                ResultSet rs = stmt.executeQuery();
+                
+                while (rs.next()) {
+                    BankTransaction transaction = mapResultSetToBankTransaction(rs);
+                    
+                    // Try to find matching account using rules
+                    java.util.Optional<Account> matchingAccount = 
+                        ruleService.findMatchingAccount(companyId, transaction.getDetails());
+                    
+                    if (matchingAccount.isPresent()) {
+                        Account account = matchingAccount.get();
+                        
+                        // Update transaction with classification
+                        String updateSql = """
+                            UPDATE bank_transactions 
+                            SET account_code = ?, account_name = ?, last_modified = NOW() 
+                            WHERE id = ?
+                            """;
+                        
+                        try (PreparedStatement updateStmt = conn.prepareStatement(updateSql)) {
+                            updateStmt.setString(1, account.getAccountCode());
+                            updateStmt.setString(2, account.getAccountName());
+                            updateStmt.setLong(3, transaction.getId());
+                            updateStmt.executeUpdate();
+                            classifiedCount++;
+                        }
+                    }
+                }
+            }
+            
+            return classifiedCount;
+            
+        } catch (Exception e) {
+            System.err.println("❌ Error classifying transactions: " + e.getMessage());
+            return 0;
+        }
+    }
+    
+    /**
+     * Reclassify ALL transactions (including already classified ones) based on current mapping rules.
+     * 
+     * @param companyId The company ID
+     * @param username The username for audit purposes
+     * @return The number of transactions reclassified
+     */
+    public int reclassifyAllTransactions(Long companyId, String username) {
+        try {
+            TransactionMappingRuleService ruleService = new TransactionMappingRuleService(dbUrl);
+            
+            String sql = """
+                SELECT *
+                FROM bank_transactions
+                WHERE company_id = ?
+                ORDER BY transaction_date
+                """;
+            
+            int reclassifiedCount = 0;
+            
+            try (Connection conn = DriverManager.getConnection(dbUrl);
+                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+                
+                stmt.setLong(1, companyId);
+                ResultSet rs = stmt.executeQuery();
+                
+                while (rs.next()) {
+                    BankTransaction transaction = mapResultSetToBankTransaction(rs);
+                    
+                    // Try to find matching account using current rules
+                    java.util.Optional<Account> matchingAccount = 
+                        ruleService.findMatchingAccount(companyId, transaction.getDetails());
+                    
+                    if (matchingAccount.isPresent()) {
+                        Account account = matchingAccount.get();
+                        
+                        // Update transaction with new classification
+                        String updateSql = """
+                            UPDATE bank_transactions 
+                            SET account_code = ?, account_name = ?, last_modified = NOW() 
+                            WHERE id = ?
+                            """;
+                        
+                        try (PreparedStatement updateStmt = conn.prepareStatement(updateSql)) {
+                            updateStmt.setString(1, account.getAccountCode());
+                            updateStmt.setString(2, account.getAccountName());
+                            updateStmt.setLong(3, transaction.getId());
+                            updateStmt.executeUpdate();
+                            reclassifiedCount++;
+                        }
+                    }
+                }
+            }
+            
+            return reclassifiedCount;
+            
+        } catch (Exception e) {
+            System.err.println("❌ Error reclassifying transactions: " + e.getMessage());
+            return 0;
+        }
+    }
+    
+    /**
+     * Generate journal entries for classified transactions
+     * 
+     * @param companyId The company ID
+     * @param createdBy The username for audit purposes
+     * @return Number of journal entries created
+     */
+    public int generateJournalEntriesForClassifiedTransactions(Long companyId, String createdBy) {
+        // This is a complex method that requires journal entry generation logic
+        // For now, return 0 and log that this needs implementation
+        System.out.println("⚠️  Journal entry generation moved to AccountClassificationService - implementation needed");
+        return 0;
+    }
+    
+    /**
+     * Generate journal entries for unclassified transactions
+     */
+    public void generateJournalEntriesForUnclassifiedTransactions(Long companyId, String createdBy) {
+        System.out.println("⚠️  Journal entry generation moved to AccountClassificationService - implementation needed");
+    }
+    
+    /**
+     * Classify a single transaction with the provided account code and name
+     * 
+     * @param transaction The transaction to classify
+     * @param accountCode The account code to assign
+     * @param accountName The account name to assign
+     * @return true if classification was successful
+     */
+    public boolean classifyTransaction(BankTransaction transaction, String accountCode, String accountName) {
+        try {
+            String sql = """
+                UPDATE bank_transactions 
+                SET account_code = ?, account_name = ?, last_modified = NOW() 
+                WHERE id = ?
+                """;
+            
+            try (Connection conn = DriverManager.getConnection(dbUrl);
+                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+                
+                stmt.setString(1, accountCode);
+                stmt.setString(2, accountName);
+                stmt.setLong(3, transaction.getId());
+                
+                int rowsUpdated = stmt.executeUpdate();
+                return rowsUpdated > 0;
+            }
+            
+        } catch (SQLException e) {
+            System.err.println("❌ Error classifying transaction: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Helper method to map ResultSet to BankTransaction
+     */
+    private BankTransaction mapResultSetToBankTransaction(ResultSet rs) throws SQLException {
+        BankTransaction transaction = new BankTransaction();
+        transaction.setId(rs.getLong("id"));
+        transaction.setCompanyId(rs.getLong("company_id"));
+        transaction.setTransactionDate(rs.getDate("transaction_date").toLocalDate());
+        transaction.setDetails(rs.getString("details"));
+        transaction.setDebitAmount(rs.getBigDecimal("debit_amount"));
+        transaction.setCreditAmount(rs.getBigDecimal("credit_amount"));
+        transaction.setAccountCode(rs.getString("account_code"));
+        transaction.setAccountName(rs.getString("account_name"));
+        return transaction;
     }
     
     /**

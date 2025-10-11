@@ -86,22 +86,22 @@ public class ApplicationContext {
         AccountManagementService accountManagementService = new AccountManagementService(dbUrl);
         register(AccountManagementService.class, accountManagementService);
         
-        TransactionMappingRuleService transactionMappingRuleService = new TransactionMappingRuleService(dbUrl);
-        register(TransactionMappingRuleService.class, transactionMappingRuleService);
+        // CONSOLIDATION: Replace TransactionMappingRuleService with ClassificationRuleManager
+        // ClassificationRuleManager handles both standard and company-specific learned rules
+        ClassificationRuleManager classificationRuleManager = new ClassificationRuleManager();
+        register(ClassificationRuleManager.class, classificationRuleManager);
         
         // Phase 4: ChartOfAccountsService removed - AccountClassificationService is single source of truth
         // AccountService now uses AccountClassificationService directly
         AccountClassificationService accountClassificationService = new AccountClassificationService(dbUrl);
         register(AccountClassificationService.class, accountClassificationService);
         
-        TransactionMappingService transactionMappingService = new TransactionMappingService(dbUrl);
-        register(TransactionMappingService.class, transactionMappingService);
+        // REMOVED: TransactionMappingService - consolidated into AccountClassificationService
         
         // NOTE: TransactionClassificationService uses AccountClassificationService as single source of truth
         TransactionClassificationService transactionClassificationService = new TransactionClassificationService(
             dbUrl,
-            transactionMappingRuleService,
-            transactionMappingService,
+            classificationRuleManager,  // Updated to use ClassificationRuleManager instead of TransactionMappingRuleService
             interactiveClassificationService
         );
         register(TransactionClassificationService.class, transactionClassificationService);

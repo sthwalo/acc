@@ -120,14 +120,14 @@ class TransactionClassificationServiceTest {
             
             // Supporting services
             TransactionMappingRuleService ruleService = applicationContext.get(TransactionMappingRuleService.class);
-            TransactionMappingService mappingService = applicationContext.get(TransactionMappingService.class);
+            // NOTE: TransactionMappingService eliminated 2025-10-11 - AccountClassificationService is single source of truth
             InteractiveClassificationService interactiveService = applicationContext.get(InteractiveClassificationService.class);
             
             // Phase 4: ChartOfAccountsService deleted - AccountClassificationService is single source of truth
             
             assertNotNull(accountClassificationService, "AccountClassificationService should be available (primary)");
             assertNotNull(ruleService, "TransactionMappingRuleService should be available");
-            assertNotNull(mappingService, "TransactionMappingService should be available");
+            // TransactionMappingService eliminated - functionality consolidated into AccountClassificationService
             assertNotNull(interactiveService, "InteractiveClassificationService should be available");
         }, "All dependency services should be properly registered");
     }
@@ -191,16 +191,15 @@ class TransactionClassificationServiceTest {
                 applicationContext.get(CategoryManagementService.class);
             AccountManagementService accountService = 
                 applicationContext.get(AccountManagementService.class);
-            TransactionMappingService mappingService = 
-                applicationContext.get(TransactionMappingService.class);
+            // NOTE: TransactionMappingService eliminated 2025-10-11 - consolidated into AccountClassificationService
             
-            // Verify all are non-null (Phase 4: ChartOfAccountsService removed)
+            // Verify all are non-null (Phase 4: ChartOfAccountsService removed, TransactionMappingService eliminated)
             assertNotNull(unifiedService, "TransactionClassificationService should be registered");
             assertNotNull(accountClassificationService, "AccountClassificationService should be registered (primary)");
             assertNotNull(ruleService, "TransactionMappingRuleService should be registered");
             assertNotNull(categoryService, "CategoryManagementService should be registered");
             assertNotNull(accountService, "AccountManagementService should be registered");
-            assertNotNull(mappingService, "TransactionMappingService should be registered");
+            // TransactionMappingService eliminated - functionality now in AccountClassificationService
         }, "Phase 1 refactoring: all services should be properly registered and accessible");
     }
     

@@ -60,11 +60,12 @@ public class ConsoleMenu {
         System.out.println("1. Create Manual Invoice");
         System.out.println("2. Create Manual Journal Entry");
         System.out.println("3. Transaction Classification");
-        System.out.println("4. View Transaction History");
-        System.out.println("5. Reset Company Data");
-        System.out.println("6. Export to CSV");
-        System.out.println("7. Back to main menu");
-        System.out.print("Enter your choice (1-7): ");
+        System.out.println("4. Correct Transaction Categories");
+        System.out.println("5. View Transaction History");
+        System.out.println("6. Reset Company Data");
+        System.out.println("7. Export to CSV");
+        System.out.println("8. Back to main menu");
+        System.out.print("Enter your choice (1-8): ");
     }
     
     public void displayImportMenu() {
@@ -80,13 +81,11 @@ public class ConsoleMenu {
         System.out.println("1. Interactive Classification (new transactions)");
         System.out.println("2. Auto-Classify Unclassified Transactions");
         System.out.println("3. Reclassify ALL Transactions (apply updated rules)");
-        System.out.println("4. Re-classify Transactions (fix existing manually)");
-        System.out.println("5. Initialize Chart of Accounts");
-        System.out.println("6. Initialize Mapping Rules");
-        System.out.println("7. Sync Journal Entries (new transactions only)");
-        System.out.println("8. Regenerate ALL Journal Entries (after reclassification)");
-        System.out.println("9. Back to Data Management");
-        System.out.print("Enter your choice (1-9): ");
+        System.out.println("4. Initialize Chart of Accounts & Mapping Rules");
+        System.out.println("5. Sync Journal Entries (new transactions only)");
+        System.out.println("6. Regenerate ALL Journal Entries (after reclassification)");
+        System.out.println("7. Back to Data Management");
+        System.out.print("Enter your choice (1-7): ");
     }
     
     public void displayAccountInitializationMenu() {

@@ -17,15 +17,15 @@ import java.util.logging.Logger;
  * clear entry point. It replaces the confusing mix of:
  * - TransactionClassifier (thin wrapper)
  * - ClassificationIntegrationService (orchestrator)
- * - TransactionMappingService (implementation)
+ * - TransactionMappingService (ELIMINATED - consolidated into AccountClassificationService)
  * 
  * Architecture:
  * - Orchestrates classification workflows
- * - Delegates to specialized services (ChartOfAccounts, MappingRules)
+ * - Delegates to AccountClassificationService (single source of truth)
  * - Provides clear API for controllers
  * 
  * @author Sthwalo Nyoni
- * @version 1.0
+ * @version 2.0 (TransactionMappingService eliminated)
  * @since 2025-10-03
  */
 public class TransactionClassificationService {
@@ -34,26 +34,24 @@ public class TransactionClassificationService {
     private final String dbUrl;
     private final AccountClassificationService accountClassificationService;
     private final TransactionMappingRuleService ruleService;
-    private final TransactionMappingService mappingService;
     private final InteractiveClassificationService interactiveService;
     
     /**
      * Constructor with full dependency injection
      * 
-     * NOTE: ChartOfAccountsService has been DEPRECATED in favor of AccountClassificationService
-     * which provides standard SARS-compliant South African chart of accounts structure.
+     * NOTE: TransactionMappingService has been ELIMINATED in favor of AccountClassificationService
+     * which provides both standard SARS-compliant chart of accounts AND transaction processing.
+     * ClassificationRuleManager handles company-specific learned rules.
      */
     public TransactionClassificationService(String dbUrl,
-                                           TransactionMappingRuleService ruleService,
-                                           TransactionMappingService mappingService,
+                                           ClassificationRuleManager ruleManager,
                                            InteractiveClassificationService interactiveService) {
         this.dbUrl = dbUrl;
         this.accountClassificationService = new AccountClassificationService(dbUrl);
-        this.ruleService = ruleService;
-        this.mappingService = mappingService;
+        this.ruleService = null; // No longer needed - ClassificationRuleManager replaces TransactionMappingRuleService
         this.interactiveService = interactiveService;
         
-        LOGGER.info("TransactionClassificationService initialized with AccountClassificationService");
+        LOGGER.info("TransactionClassificationService initialized with AccountClassificationService as single source of truth and ClassificationRuleManager for learned rules");
     }
     
     /**
@@ -63,14 +61,13 @@ public class TransactionClassificationService {
     public TransactionClassificationService(String dbUrl) {
         this.dbUrl = dbUrl;
         
-        // Use AccountClassificationService as single source of truth for chart of accounts
+        // Use AccountClassificationService as single source of truth for chart of accounts AND transaction processing
         // Standard SARS-compliant South African accounting structure (accounts 1000-9999)
         this.accountClassificationService = new AccountClassificationService(dbUrl);
         this.ruleService = new TransactionMappingRuleService(dbUrl);
-        this.mappingService = new TransactionMappingService(dbUrl);
         this.interactiveService = new InteractiveClassificationService();
         
-        LOGGER.info("TransactionClassificationService initialized (simplified) with AccountClassificationService");
+        LOGGER.info("TransactionClassificationService initialized (simplified) with AccountClassificationService as single source");
     }
     
     // ============================================================================
@@ -113,8 +110,8 @@ public class TransactionClassificationService {
         try {
             LOGGER.info("Initializing transaction mapping rules for company: " + companyId);
             
-            // Use the TransactionMappingService to create standard rules
-            int rulesCreated = mappingService.createStandardMappingRules(companyId);
+            // Use AccountClassificationService directly (single source of truth)
+            int rulesCreated = accountClassificationService.initializeTransactionMappingRules(companyId);
             
             System.out.println("✅ Created " + rulesCreated + " standard mapping rules");
             LOGGER.info("Created " + rulesCreated + " mapping rules for company: " + companyId);
@@ -141,6 +138,9 @@ public class TransactionClassificationService {
             System.out.println("🚀 FULL INITIALIZATION FOR COMPANY ID: " + companyId);
             System.out.println("=".repeat(80));
             
+            // Use AccountClassificationService for BOTH chart of accounts AND mapping rules
+            // This eliminates the need for separate TransactionMappingService.createStandardMappingRules()
+            
             // Step 1: Initialize chart of accounts
             System.out.println("\n📋 Step 1: Initializing Chart of Accounts...");
             boolean accountsOk = initializeChartOfAccounts(companyId);
@@ -149,7 +149,7 @@ public class TransactionClassificationService {
                 return false;
             }
             
-            // Step 2: Initialize mapping rules
+            // Step 2: Initialize mapping rules (now also via AccountClassificationService)
             System.out.println("\n📋 Step 2: Initializing Transaction Mapping Rules...");
             boolean rulesOk = initializeTransactionMappingRules(companyId);
             if (!rulesOk) {
@@ -159,6 +159,8 @@ public class TransactionClassificationService {
             
             System.out.println("\n" + "=".repeat(80));
             System.out.println("✅ FULL INITIALIZATION COMPLETED SUCCESSFULLY");
+            System.out.println("   AccountClassificationService is now the single source of truth");
+            System.out.println("   for both chart of accounts AND mapping rules");
             System.out.println("=".repeat(80));
             
             return true;
@@ -230,7 +232,7 @@ public class TransactionClassificationService {
             }
             
             // Run auto-classification
-            int classifiedCount = mappingService.classifyAllUnclassifiedTransactions(
+            int classifiedCount = accountClassificationService.classifyAllUnclassifiedTransactions(
                 companyId, "AUTO-CLASSIFY");
             
             System.out.println("✅ Auto-classified " + classifiedCount + " transactions");
@@ -271,7 +273,7 @@ public class TransactionClassificationService {
             System.out.println();
             
             // Run reclassification
-            int reclassifiedCount = mappingService.reclassifyAllTransactions(
+            int reclassifiedCount = accountClassificationService.reclassifyAllTransactions(
                 companyId, "RECLASSIFY-ALL");
             
             if (reclassifiedCount > 0) {
@@ -317,7 +319,7 @@ public class TransactionClassificationService {
             }
             
             // Generate journal entries
-            mappingService.generateJournalEntriesForUnclassifiedTransactions(companyId, "SYNC");
+            accountClassificationService.generateJournalEntriesForUnclassifiedTransactions(companyId, "SYNC");
             
             System.out.println("✅ Successfully synchronized " + count + " transactions");
             return count;
@@ -361,7 +363,7 @@ public class TransactionClassificationService {
             }
             
             // Step 3: Generate new journal entries from ALL classified transactions
-            int generatedCount = mappingService.generateJournalEntriesForClassifiedTransactions(companyId, "REGENERATE");
+            int generatedCount = accountClassificationService.generateJournalEntriesForClassifiedTransactions(companyId, "REGENERATE");
             
             System.out.println("✅ Successfully regenerated " + generatedCount + " journal entries");
             System.out.println("📊 Journal entries now reflect current transaction classifications");

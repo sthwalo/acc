@@ -30,7 +30,6 @@ public class InteractiveClassificationService {
     private static final Logger LOGGER = Logger.getLogger(InteractiveClassificationService.class.getName());
     private final String dbUrl;
     private final Scanner scanner;
-    private final TransactionMappingService mappingService;
     private final AccountClassificationService accountClassificationService;
     private final Map<Long, Map<String, ClassificationRule>> companyRules;
     private final List<ChangeRecord> changesMade;
@@ -64,10 +63,6 @@ public class InteractiveClassificationService {
     @SuppressWarnings("MagicNumber")
     private static final int MAX_SIMILAR_TRANSACTIONS = 5;
     @SuppressWarnings("MagicNumber")
-    private static final int MAX_ACCOUNT_SUGGESTIONS = 8;
-    @SuppressWarnings("MagicNumber")
-    private static final int MAX_ACCOUNT_SUGGESTIONS_ALT = 10;
-    @SuppressWarnings("MagicNumber")
     private static final int MAX_BATCH_SIMILAR = 20;
     @SuppressWarnings("MagicNumber")
     private static final int MAX_UNCATEGORIZED_TRANSACTIONS = 100;
@@ -76,11 +71,7 @@ public class InteractiveClassificationService {
     @SuppressWarnings("MagicNumber")
     private static final int DESCRIPTION_DISPLAY_LENGTH = 50;
     @SuppressWarnings("MagicNumber")
-    private static final int PATTERN_SUGGESTION_LIMIT = 5;
-    @SuppressWarnings("MagicNumber")
     private static final int SIMILAR_TRANSACTION_DESC_LENGTH = 50;
-    @SuppressWarnings("MagicNumber")
-    private static final int PATTERN_DISPLAY_LENGTH = 40;
     
     // Change tracking
     public static class ChangeRecord {
@@ -160,21 +151,12 @@ public class InteractiveClassificationService {
     public InteractiveClassificationService() {
         this.dbUrl = DatabaseConfig.getDatabaseUrl();
         this.scanner = new Scanner(System.in);
-        this.mappingService = createMappingService();
         this.accountClassificationService = new AccountClassificationService(dbUrl);
         this.companyRules = new HashMap<>();
         this.changesMade = new ArrayList<>();
         this.accountCategories = new LinkedHashMap<>();
         
         initializeService();
-    }
-    
-    /**
-     * Create the TransactionMappingService
-     * This method can be overridden in tests to provide a mock service
-     */
-    protected TransactionMappingService createMappingService() {
-        return new TransactionMappingService(dbUrl);
     }
     
     /**
@@ -272,35 +254,86 @@ public class InteractiveClassificationService {
     }
     
     /**
-     * Load account categories from database
+     * Load account categories from AccountClassificationService (single source of truth)
+     * REFACTORED: No longer reads from database directly, uses AccountClassificationService
      */
     private void loadAccountCategories() {
-        String sql = """
-            SELECT 
-                ac.name as category_name,
-                at.name as account_type,
-                a.account_name
-            FROM accounts a
-            JOIN account_categories ac ON a.category_id = ac.id
-            JOIN account_types at ON ac.account_type_id = at.id
-            WHERE a.is_active = true
-            ORDER BY at.name, ac.name, a.account_code
-            """;
+        // Clear existing categories
+        accountCategories.clear();
         
-        try (Connection conn = getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        try {
+            // Use AccountClassificationService as single source of truth
+            // Get standard account definitions using reflection (since method is private)
+            java.lang.reflect.Method getStandardAccountsMethod = 
+                accountClassificationService.getClass().getDeclaredMethod("getStandardAccountDefinitions", Map.class);
+            getStandardAccountsMethod.setAccessible(true);
             
-            ResultSet rs = pstmt.executeQuery();
+            // Create dummy category IDs map (not used for display purposes)
+            Map<String, Long> dummyCategoryIds = new HashMap<>();
             
-            while (rs.next()) {
-                String accountType = rs.getString("account_type");
-                String accountName = rs.getString("account_name");
-                
-                accountCategories.computeIfAbsent(accountType, k -> new ArrayList<>()).add(accountName);
+            @SuppressWarnings("unchecked")
+            List<Object> accounts = (List<Object>) getStandardAccountsMethod.invoke(accountClassificationService, dummyCategoryIds);
+            
+            // Group accounts by category for display
+            for (Object accountObj : accounts) {
+                try {
+                    // Use reflection to access AccountDefinition fields
+                    java.lang.reflect.Field codeField = accountObj.getClass().getDeclaredField("code");
+                    java.lang.reflect.Field nameField = accountObj.getClass().getDeclaredField("name");
+                    codeField.setAccessible(true);
+                    nameField.setAccessible(true);
+                    
+                    String code = (String) codeField.get(accountObj);
+                    String name = (String) nameField.get(accountObj);
+                    
+                    // Determine category based on account code (SARS standard)
+                    String categoryName = getCategoryFromAccountCode(code);
+                    String accountInfo = code + " - " + name;
+                    
+                    accountCategories.computeIfAbsent(categoryName, k -> new ArrayList<>()).add(accountInfo);
+                } catch (Exception e) {
+                    LOGGER.log(Level.WARNING, "Error processing account definition", e);
+                }
             }
             
-        } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Error loading account categories", e);
+            LOGGER.info("Loaded " + accountCategories.size() + " account categories from AccountClassificationService");
+            
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error loading account categories from AccountClassificationService, falling back to empty", e);
+            // Fallback to empty categories
+            accountCategories.clear();
+        }
+    }
+    
+    /**
+     * Get category name from account code - delegated to AccountClassificationService (single source of truth)
+     * REFACTORED: No more hardcoded categories - uses standard mapping rules
+     */
+    private String getCategoryFromAccountCode(String accountCode) {
+        if (accountCode == null || accountCode.length() < 1) {
+            return "Other";
+        }
+        
+        // Delegate to AccountClassificationService for ALL category determination
+        List<TransactionMappingRule> standardRules = accountClassificationService.getStandardMappingRules();
+        
+        // Find matching standard rule for this account code
+        for (TransactionMappingRule rule : standardRules) {
+            String ruleAccountCode = extractAccountCodeFromRuleDescription(rule.getDescription());
+            if (accountCode.equals(ruleAccountCode)) {
+                return rule.getMatchValue(); // Use match value as category indicator
+            }
+        }
+        
+        // If not found in standard rules, return based on account code prefix (minimal fallback)
+        String prefix = accountCode.substring(0, 1);
+        switch (prefix) {
+            case "1": return "Assets";
+            case "2": return "Liabilities"; 
+            case "3": return "Equity";
+            case "4": case "6": case "7": return "Revenue";
+            case "5": case "8": case "9": return "Expenses";
+            default: return "Other";
         }
     }
     
@@ -336,7 +369,7 @@ public class InteractiveClassificationService {
             incrementRuleUsage(existingRule, company.getId());
             
             // Use mapping service to apply the rule
-            mappingService.classifyTransaction(transaction, existingRule.getAccountCode(), existingRule.getAccountName());
+            accountClassificationService.classifyTransaction(transaction, existingRule.getAccountCode(), existingRule.getAccountName());
             
             return new ClassifiedTransaction(transaction, existingRule.getAccountCode(), existingRule.getAccountName());
         }
@@ -445,70 +478,47 @@ public class InteractiveClassificationService {
     }
     
     /**
-     * Enhanced pattern matching for transaction types
+     * Pattern matching delegated to AccountClassificationService (single source of truth)
+     * REFACTORED: No more hardcoded patterns - uses standard mapping rules
      */
     private boolean isPatternMatch(String details, String keyword) {
-        // Insurance patterns
-        if (keyword.equals("insurance") && 
-            (details.contains("premium") || details.contains("policy") || 
-             details.contains("cover") || details.contains("santam") || 
-             details.contains("outsurance") || details.contains("discovery"))) {
-            return true;
-        }
+        // Delegate to AccountClassificationService for ALL pattern matching
+        List<TransactionMappingRule> standardRules = accountClassificationService.getStandardMappingRules();
         
-        // Salary patterns  
-        if (keyword.equals("salary") && 
-            (details.contains("payment to") || details.contains("salaries") || 
-             details.contains("wage") || details.contains("employee"))) {
-            return true;
-        }
+        String lowerDetails = details.toLowerCase();
+        String lowerKeyword = keyword.toLowerCase();
         
-        // Bank fee patterns
-        if (keyword.equals("fee") && 
-            (details.contains("confirm") || details.contains("electronic") || 
-             details.contains("immediate") || details.contains("charge"))) {
-            return true;
-        }
-        
-        // Rent/supplier patterns
-        if (keyword.equals("rent") && 
-            (details.contains("payment to") || details.contains("building") || 
-             details.contains("property") || details.contains("stadium") || 
-             details.contains("ellispark") || details.contains("johannesburg"))) {
-            return true;
+        // Check if any standard rule matches this pattern
+        for (TransactionMappingRule rule : standardRules) {
+            String matchValue = rule.getMatchValue().toLowerCase();
+            if (matchValue.contains(lowerKeyword) && lowerDetails.contains(matchValue)) {
+                return true;
+            }
         }
         
         return false;
     }
     
     /**
-     * Detect supplier/company patterns for better classification
+     * Supplier pattern detection delegated to AccountClassificationService (single source of truth)
+     * REFACTORED: No more hardcoded supplier patterns - uses standard mapping rules
      */
     private boolean detectSupplierPattern(String details, ClassificationRule rule) {
-        String accountName = rule.getAccountName().toLowerCase();
+        // Delegate to AccountClassificationService for ALL supplier pattern detection
+        List<TransactionMappingRule> standardRules = accountClassificationService.getStandardMappingRules();
         
-        // Known suppliers/patterns
-        if (accountName.contains("rent") && 
-            (details.contains("rent a dog") || details.contains("ellispark") || 
-             details.contains("stadium") || details.contains("johannesburg"))) {
-            return true;
-        }
+        String lowerDetails = details.toLowerCase();
+        String ruleAccountCode = rule.getAccountCode();
         
-        if (accountName.contains("insurance") && 
-            (details.contains("outsurance") || details.contains("santam") || 
-             details.contains("premium") || details.contains("discovery"))) {
-            return true;
-        }
-        
-        if (accountName.contains("salary") && 
-            (details.contains("john smith") || details.contains("jane doe") || 
-             details.contains("sibongile") || details.contains("siyabulela"))) {
-            return true;
-        }
-        
-        // Customer patterns (for revenue classification)
-        if (details.contains("corobrick") || details.contains("customer payment")) {
-            return accountName.contains("revenue") || accountName.contains("sales");
+        // Find matching standard rules for this account code
+        for (TransactionMappingRule standardRule : standardRules) {
+            String standardAccountCode = extractAccountCodeFromRuleDescription(standardRule.getDescription());
+            if (ruleAccountCode.equals(standardAccountCode)) {
+                String matchValue = standardRule.getMatchValue().toLowerCase();
+                if (lowerDetails.contains(matchValue)) {
+                    return true;
+                }
+            }
         }
         
         return false;
@@ -614,16 +624,16 @@ public class InteractiveClassificationService {
     }
     
     /**
-     * Show available account suggestions based on company's chart of accounts and transaction analysis.
-     * Now reads from AccountClassificationService (single source of truth) in addition to historical rules.
+     * Show available account suggestions based on AccountClassificationService (single source of truth)
+     * REFACTORED: Simplified to only use AccountClassificationService, removed mixed database queries
      */
     private void showAccountSuggestions(Long companyId, BankTransaction transaction) {
         try {
             System.out.println("\n💡 ACCOUNT SUGGESTIONS:");
             System.out.println("-".repeat(60));
             
-            // STEP 1: Show intelligent suggestions from AccountClassificationService (code-based rules)
-            System.out.println("📚 From Standard Rules (AccountClassificationService):");
+            // Get intelligent suggestions from AccountClassificationService (single source of truth)
+            System.out.println("📚 From Standard Classification Rules:");
             List<TransactionMappingRule> standardRules = accountClassificationService.getStandardMappingRules();
             int suggestionsShown = 0;
             
@@ -635,64 +645,30 @@ public class InteractiveClassificationService {
                         String simplifiedDescription = rule.getDescription().replaceAll("\\s*\\[AccountCode:.*?\\]", "");
                         System.out.println("   ✓ " + accountCode + " - " + simplifiedDescription);
                         suggestionsShown++;
-                        if (suggestionsShown >= 3) break; // Show top 3 matches
+                        if (suggestionsShown >= 5) break; // Show top 5 matches
                     }
                 }
             }
             
             if (suggestionsShown == 0) {
                 System.out.println("   (No standard rules match this transaction)");
-            }
-            
-            // STEP 2: Try to get intelligent suggestion from TransactionMappingService
-            System.out.println("\n🎯 From Transaction Mapping Service:");
-            Long suggestedAccountId = mappingService.mapTransactionToAccount(transaction);
-            if (suggestedAccountId != null) {
-                String accountCode = mappingService.getAccountCodeById(suggestedAccountId);
-                String accountName = mappingService.getAccountNameById(suggestedAccountId);
-                if (accountCode != null && accountName != null) {
-                    System.out.println("   ✓ " + accountCode + " - " + accountName + " (High Confidence)");
-                }
-            } else {
-                System.out.println("   (No database rules match this transaction)");
-            }
-            
-            // STEP 3: Show most used accounts from historical classification rules
-            System.out.println("\n📊 Most Used Accounts (Historical):");
-            String sql = """
-                SELECT account_code, account_name, usage_count 
-                FROM company_classification_rules 
-                WHERE company_id = ? 
-                ORDER BY usage_count DESC, account_code ASC
-                LIMIT 5
-                """;
                 
-            try (Connection conn = getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(sql)) {
-                
-                stmt.setLong(1, companyId);
-                
-                try (ResultSet rs = stmt.executeQuery()) {
-                    int historicalCount = 0;
-                    while (rs.next()) {
-                        String accountCode = rs.getString("account_code");
-                        String accountName = rs.getString("account_name");
-                        int usageCount = rs.getInt("usage_count");
-                        System.out.println("   • " + accountCode + " - " + accountName + 
-                                         " (" + usageCount + " uses)");
-                        historicalCount++;
-                    }
-                    
-                    if (historicalCount == 0) {
-                        System.out.println("   (No historical data available yet)");
-                    }
+                // Show general account categories from AccountClassificationService
+                System.out.println("\n📋 Available Account Categories:");
+                for (Map.Entry<String, List<String>> category : accountCategories.entrySet()) {
+                    System.out.println("   " + category.getKey() + ":");
+                    category.getValue().stream()
+                        .limit(3) // Show top 3 per category
+                        .forEach(account -> System.out.println("     • " + account));
                 }
             }
             
             System.out.println("-".repeat(60));
+            System.out.println("💡 TIP: Use account codes like 8100 (Employee Costs), 9600 (Bank Charges), etc.");
             
-        } catch (SQLException e) {
-            LOGGER.log(Level.WARNING, "Error loading account suggestions", e);
+        } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "Error loading account suggestions from AccountClassificationService", e);
+            System.out.println("   (Error loading suggestions - please enter account code manually)");
         }
     }
     
@@ -712,50 +688,6 @@ public class InteractiveClassificationService {
     }
     
     /**
-     * Show available account suggestions based on company's chart of accounts
-     */
-    private void showAccountSuggestions(Long companyId) {
-        try {
-            String sql = """
-                SELECT account_code, account_name, usage_count 
-                FROM company_classification_rules 
-                WHERE company_id = ? 
-                ORDER BY usage_count DESC, account_code ASC
-                LIMIT %d
-                """.formatted(MAX_ACCOUNT_SUGGESTIONS);
-                
-            try (Connection conn = getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(sql)) {
-                
-                stmt.setLong(1, companyId);
-                
-                try (ResultSet rs = stmt.executeQuery()) {
-                    if (rs.next()) {
-                        System.out.println("   Most used accounts:");
-                        do {
-                            System.out.printf("   • %s - %s (used %d times)%n",
-                                rs.getString("account_code"),
-                                rs.getString("account_name"),
-                                rs.getInt("usage_count"));
-                        } while (rs.next());
-                    } else {
-                        // Show standard account suggestions
-                        System.out.println("   Standard account suggestions:");
-                        System.out.println("   • 8800 - Insurance");
-                        System.out.println("   • 8100 - Employee Costs");
-                        System.out.println("   • 8200 - Rent Expense");
-                        System.out.println("   • 9600 - Bank Charges");
-                        System.out.println("   • 8300 - Utilities");
-                        System.out.println("   • 8500 - Motor Vehicle Expenses");
-                    }
-                }
-            }
-        } catch (SQLException e) {
-            LOGGER.log(Level.WARNING, "Error loading account suggestions", e);
-        }
-    }
-    
-    /**
      * Extract keywords from transaction description for pattern matching
      */
     private String[] extractKeywords(String description) {
@@ -765,11 +697,24 @@ public class InteractiveClassificationService {
         String[] commonWords = {"the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with", "by"};
         Set<String> commonWordsSet = Set.of(commonWords);
         
-        return Arrays.stream(description.toLowerCase().split("\\W+"))
-                .filter(word -> word.length() > 2)
-                .filter(word -> !commonWordsSet.contains(word))
-                .limit(MAX_KEYWORDS) // Take top 5 keywords
+        // Delegate to AccountClassificationService for keyword extraction consistency
+        // NO hardcoded keyword patterns - use standard mapping rule insights
+        String[] keywords = accountClassificationService.getStandardMappingRules().stream()
+                .map(rule -> rule.getMatchValue().toLowerCase())
+                .filter(matchValue -> description.toLowerCase().contains(matchValue))
+                .limit(MAX_KEYWORDS)
                 .toArray(String[]::new);
+        
+        // If no standard keywords found, fall back to minimal extraction
+        if (keywords.length == 0) {
+            return Arrays.stream(description.toLowerCase().split("\\W+"))
+                    .filter(word -> word.length() > 2)
+                    .filter(word -> !commonWordsSet.contains(word))
+                    .limit(MAX_KEYWORDS) // Take top 5 keywords
+                    .toArray(String[]::new);
+        }
+        
+        return keywords;
     }
     
     /**
@@ -1342,7 +1287,7 @@ public class InteractiveClassificationService {
         
         if (changesMade.size() > 0) {
             System.out.println("\nLast 5 changes:");
-            int start = Math.max(0, changesMade.size() - PATTERN_SUGGESTION_LIMIT);
+            int start = Math.max(0, changesMade.size() - 5);
             for (int i = start; i < changesMade.size(); i++) {
                 ChangeRecord change = changesMade.get(i);
                 System.out.println("  • " + change.transactionDate.format(DateTimeFormatter.ofPattern("MM-dd")) + 
@@ -1685,7 +1630,7 @@ public class InteractiveClassificationService {
                 GROUP BY cr.account_code, cr.account_name
                 ORDER BY COUNT(*) DESC
                 LIMIT %d
-                """.formatted(PATTERN_SUGGESTION_LIMIT);
+                """.formatted(5);
                 
             try (Connection conn = getConnection();
                  PreparedStatement stmt = conn.prepareStatement(sql)) {
