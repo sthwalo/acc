@@ -61,8 +61,8 @@ public class FinancialReportingService {
         this.cashbookService = new CashbookService(repository);
         this.generalLedgerService = new GeneralLedgerService(repository);
         this.trialBalanceService = new TrialBalanceService(repository, generalLedgerService);
-        this.incomeStatementService = new IncomeStatementService(repository);
-        this.balanceSheetService = new BalanceSheetService(repository);
+        this.incomeStatementService = new IncomeStatementService(repository, generalLedgerService);
+        this.balanceSheetService = new BalanceSheetService(repository, generalLedgerService);
         this.cashFlowService = new CashFlowService(repository);
     }
     

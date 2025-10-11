@@ -322,7 +322,8 @@ public class AccountClassificationService {
         accounts.add(new AccountDefinition("9500", "Interest Expense", "Interest on loans and credit", financeCostsId));
         accounts.add(new AccountDefinition("9600", "Bank Charges", "Bank fees and transaction costs", financeCostsId));
         accounts.add(new AccountDefinition("9700", "Foreign Exchange Loss", "Loss on currency exchange", financeCostsId));
-        accounts.add(new AccountDefinition("9800", "Loan Repayments", "Loan repayment costs", financeCostsId));
+        accounts.add(new AccountDefinition("9800", "VAT Payments to SARS", "VAT payments made to South African Revenue Service", financeCostsId));
+        accounts.add(new AccountDefinition("9810", "Loan Repayments", "Loan repayment costs", financeCostsId));
         accounts.add(new AccountDefinition("9900", "Pension Expenses", "Pension-related costs", financeCostsId));
         
         return accounts;
@@ -612,6 +613,16 @@ public class AccountClassificationService {
         // ========================================================================
         // PRIORITY 9: HIGH-CONFIDENCE PATTERNS
         // ========================================================================
+        
+        // SARS VAT payments (CRITICAL: Must be expense, not liability adjustment)
+        rules.add(createRule(
+            "SARS VAT Payments",
+            "VAT payments made to South African Revenue Service",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "PAYMENT TO SARS-VAT",
+            "9800", // VAT Payments to SARS (Expense)
+            9
+        ));
         
         // Professional services (accounting, legal)
         rules.add(createRule(
