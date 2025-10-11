@@ -991,12 +991,6 @@ public class TransactionMappingService {
                 return getStandardAccountId("8100"); // Employee Costs (includes pension)
             }
 
-            // TAX PAYMENTS - Liabilities (SARS Code: 2100 - Current Tax Payable)
-            // All tax payments reduce current tax liability
-            if (details.contains("SARS") || details.contains("PAYE") || details.contains("VAT")) {
-                return getStandardAccountId("2100"); // Current Tax Payable
-            }
-
             // UTILITIES - Operational expenses (SARS Code: 8900 - Other Operating Expenses)
             if (details.contains("ELECTRICITY") || details.contains("WATER") || 
                 details.contains("INTERNET") || details.contains("TELKOM")) {

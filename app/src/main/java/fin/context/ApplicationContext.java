@@ -128,6 +128,33 @@ public class ApplicationContext {
         OpeningBalanceService openingBalanceService = new OpeningBalanceService(dbUrl);
         register(OpeningBalanceService.class, openingBalanceService);
         
+        // Financial Data Repository (needed by GL and TB services)
+        // Create DataSource for repository (same pattern as FinancialReportingService)
+        com.zaxxer.hikari.HikariConfig config = new com.zaxxer.hikari.HikariConfig();
+        config.setJdbcUrl(dbUrl);
+        config.setMaximumPoolSize(5);
+        config.setMinimumIdle(2);
+        com.zaxxer.hikari.HikariDataSource repositoryDataSource = new com.zaxxer.hikari.HikariDataSource(config);
+        
+        fin.repository.FinancialDataRepository financialDataRepository = new fin.repository.JdbcFinancialDataRepository(repositoryDataSource);
+        register(fin.repository.FinancialDataRepository.class, financialDataRepository);
+        
+        // General Ledger Service
+        GeneralLedgerService generalLedgerService = new GeneralLedgerService(financialDataRepository);
+        register(GeneralLedgerService.class, generalLedgerService);
+        
+        // Trial Balance Service (depends on General Ledger)
+        TrialBalanceService trialBalanceService = new TrialBalanceService(financialDataRepository, generalLedgerService);
+        register(TrialBalanceService.class, trialBalanceService);
+        
+        // Income Statement Service (depends on General Ledger for TB data)
+        IncomeStatementService incomeStatementService = new IncomeStatementService(financialDataRepository, generalLedgerService);
+        register(IncomeStatementService.class, incomeStatementService);
+        
+        // Balance Sheet Service (depends on General Ledger for TB data)
+        BalanceSheetService balanceSheetService = new BalanceSheetService(financialDataRepository, generalLedgerService);
+        register(BalanceSheetService.class, balanceSheetService);
+        
         System.out.println("📦 Core services initialized");
     }
     
