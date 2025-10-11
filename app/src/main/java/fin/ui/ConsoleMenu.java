@@ -78,13 +78,15 @@ public class ConsoleMenu {
     public void displayTransactionClassificationMenu() {
         System.out.println("\n===== Transaction Classification =====");
         System.out.println("1. Interactive Classification (new transactions)");
-        System.out.println("2. Auto-Classify Transactions");
-        System.out.println("3. Re-classify Transactions (fix existing)");
-        System.out.println("4. Initialize Chart of Accounts");
-        System.out.println("5. Initialize Mapping Rules");
-        System.out.println("6. Generate Journal Entries");
-        System.out.println("7. Back to Data Management");
-        System.out.print("Enter your choice (1-7): ");
+        System.out.println("2. Auto-Classify Unclassified Transactions");
+        System.out.println("3. Reclassify ALL Transactions (apply updated rules)");
+        System.out.println("4. Re-classify Transactions (fix existing manually)");
+        System.out.println("5. Initialize Chart of Accounts");
+        System.out.println("6. Initialize Mapping Rules");
+        System.out.println("7. Sync Journal Entries (new transactions only)");
+        System.out.println("8. Regenerate ALL Journal Entries (after reclassification)");
+        System.out.println("9. Back to Data Management");
+        System.out.print("Enter your choice (1-9): ");
     }
     
     public void displayAccountInitializationMenu() {

@@ -202,7 +202,7 @@ public class DataManagementController {
             boolean back = false;
             while (!back) {
                 menu.displayTransactionClassificationMenu();
-                int choice = inputHandler.getInteger("Enter your choice", 1, 7);
+                int choice = inputHandler.getInteger("Enter your choice", 1, 9);
                 
                 switch (choice) {
                     case 1:
@@ -212,7 +212,7 @@ public class DataManagementController {
                             applicationState.getCurrentFiscalPeriod().getId());
                         break;
                     case 2:
-                        // Auto-Classify Transactions
+                        // Auto-Classify Unclassified Transactions
                         int classifiedCount = classificationService.autoClassifyTransactions(
                             applicationState.getCurrentCompany().getId(),
                             applicationState.getCurrentFiscalPeriod().getId());
@@ -221,19 +221,28 @@ public class DataManagementController {
                         }
                         break;
                     case 3:
-                        // Re-classify Transactions (fix existing) - moved from top-level Option 4
-                        handleTransactionCorrection();
+                        // Reclassify ALL Transactions (apply updated rules)
+                        int reclassifiedCount = classificationService.reclassifyAllTransactions(
+                            applicationState.getCurrentCompany().getId(),
+                            applicationState.getCurrentFiscalPeriod().getId());
+                        if (reclassifiedCount > 0) {
+                            outputFormatter.printSuccess("Reclassified " + reclassifiedCount + " transactions with updated rules");
+                        }
                         break;
                     case 4:
+                        // Re-classify Transactions (fix existing manually) - moved from top-level Option 4
+                        handleTransactionCorrection();
+                        break;
+                    case 5:
                         // Initialize Chart of Accounts
                         handleChartOfAccountsInitialization();
                         break;
-                    case 5:
+                    case 6:
                         // Initialize Mapping Rules - moved from top-level Option 8
                         handleInitializeMappingRules();
                         break;
-                    case 6:
-                        // Generate Journal Entries (renamed from Synchronize)
+                    case 7:
+                        // Sync Journal Entries (new transactions only)
                         int syncCount = classificationService.synchronizeJournalEntries(
                             applicationState.getCurrentCompany().getId(),
                             applicationState.getCurrentFiscalPeriod().getId());
@@ -241,7 +250,24 @@ public class DataManagementController {
                             outputFormatter.printSuccess("Generated " + syncCount + " journal entries");
                         }
                         break;
-                    case 7:
+                    case 8:
+                        // Regenerate ALL Journal Entries (after reclassification)
+                        System.out.println("\n⚠️  WARNING: This will delete and regenerate ALL journal entries!");
+                        System.out.print("Are you sure? (yes/no): ");
+                        String confirm = inputHandler.getString("Confirm");
+                        if (confirm.equalsIgnoreCase("yes")) {
+                            int regeneratedCount = classificationService.regenerateAllJournalEntries(
+                                applicationState.getCurrentCompany().getId(),
+                                applicationState.getCurrentFiscalPeriod().getId());
+                            if (regeneratedCount > 0) {
+                                outputFormatter.printSuccess("Regenerated " + regeneratedCount + " journal entries");
+                                outputFormatter.printInfo("Journal entries now reflect current transaction classifications");
+                            }
+                        } else {
+                            outputFormatter.printInfo("Operation cancelled");
+                        }
+                        break;
+                    case 9:
                         back = true;
                         break;
                     default:
