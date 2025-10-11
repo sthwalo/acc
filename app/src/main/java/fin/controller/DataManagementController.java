@@ -59,7 +59,7 @@ public class DataManagementController {
             boolean back = false;
             while (!back) {
                 menu.displayDataManagementMenu();
-                int choice = inputHandler.getInteger("Enter your choice", 1, 7);
+                int choice = inputHandler.getInteger("Enter your choice", 1, 8);
                 
                 switch (choice) {
                     case 1:
@@ -72,15 +72,18 @@ public class DataManagementController {
                         handleTransactionClassification();
                         break;
                     case 4:
-                        handleTransactionHistory();
+                        handleTransactionCorrection();
                         break;
                     case 5:
-                        handleDataReset();
+                        handleTransactionHistory();
                         break;
                     case 6:
-                        handleExportToCSV();
+                        handleDataReset();
                         break;
                     case 7:
+                        handleExportToCSV();
+                        break;
+                    case 8:
                         back = true;
                         break;
                     default:
@@ -202,7 +205,7 @@ public class DataManagementController {
             boolean back = false;
             while (!back) {
                 menu.displayTransactionClassificationMenu();
-                int choice = inputHandler.getInteger("Enter your choice", 1, 9);
+                int choice = inputHandler.getInteger("Enter your choice", 1, 7);
                 
                 switch (choice) {
                     case 1:
@@ -230,18 +233,10 @@ public class DataManagementController {
                         }
                         break;
                     case 4:
-                        // Re-classify Transactions (fix existing manually) - moved from top-level Option 4
-                        handleTransactionCorrection();
-                        break;
-                    case 5:
-                        // Initialize Chart of Accounts
+                        // Initialize Chart of Accounts & Mapping Rules (consolidated)
                         handleChartOfAccountsInitialization();
                         break;
-                    case 6:
-                        // Initialize Mapping Rules - moved from top-level Option 8
-                        handleInitializeMappingRules();
-                        break;
-                    case 7:
+                    case 5:
                         // Sync Journal Entries (new transactions only)
                         int syncCount = classificationService.synchronizeJournalEntries(
                             applicationState.getCurrentCompany().getId(),
@@ -250,7 +245,7 @@ public class DataManagementController {
                             outputFormatter.printSuccess("Generated " + syncCount + " journal entries");
                         }
                         break;
-                    case 8:
+                    case 6:
                         // Regenerate ALL Journal Entries (after reclassification)
                         System.out.println("\n⚠️  WARNING: This will delete and regenerate ALL journal entries!");
                         System.out.print("Are you sure? (yes/no): ");
@@ -267,7 +262,7 @@ public class DataManagementController {
                             outputFormatter.printInfo("Operation cancelled");
                         }
                         break;
-                    case 9:
+                    case 7:
                         back = true;
                         break;
                     default:
@@ -714,33 +709,6 @@ public class DataManagementController {
         } catch (Exception e) {
             outputFormatter.printError("Error exporting transactions: " + e.getMessage());
         }
-    }
-    
-    private void handleInitializeMappingRules() {
-        outputFormatter.printHeader("Initialize Mapping Rules");
-        
-        try {
-            boolean success = classificationService.initializeTransactionMappingRules(
-                applicationState.getCurrentCompany().getId());
-            
-            if (success) {
-                outputFormatter.printSuccess("Transaction Mapping Rules initialized successfully");
-                
-                // Optionally run classification
-                int classified = classificationService.autoClassifyTransactions(
-                    applicationState.getCurrentCompany().getId(),
-                    applicationState.getCurrentFiscalPeriod().getId());
-                outputFormatter.printSuccess("Auto-classified " + classified + " transactions");
-            } else {
-                outputFormatter.printError("Failed to initialize mapping rules");
-            }
-            
-        } catch (Exception e) {
-            outputFormatter.printError("Failed to initialize mapping rules: " + e.getMessage());
-        }
-        
-        outputFormatter.printInfo("Press Enter to continue...");
-        inputHandler.waitForEnter();
     }
     
     private Long selectAccount() {

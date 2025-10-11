@@ -16,12 +16,12 @@ import java.util.logging.Level;
 public class TransactionBatchProcessor {
     private static final Logger LOGGER = Logger.getLogger(TransactionBatchProcessor.class.getName());
 
-    private final TransactionMappingRuleService ruleService;
+    private final ClassificationRuleManager ruleManager;
     private final JournalEntryGenerator journalGenerator;
 
-    public TransactionBatchProcessor(TransactionMappingRuleService ruleService,
+    public TransactionBatchProcessor(ClassificationRuleManager ruleManager,
                                    JournalEntryGenerator journalGenerator) {
-        this.ruleService = ruleService;
+        this.ruleManager = ruleManager;
         this.journalGenerator = journalGenerator;
     }
 
@@ -40,26 +40,25 @@ public class TransactionBatchProcessor {
         int classifiedCount = 0;
         int failedCount = 0;
 
-        // Load mapping rules for the company using the new service
-        List<TransactionMappingRule> rules = ruleService.getTransactionMappingRules(companyId);
+        // Load mapping rules for the company using ClassificationRuleManager
+        List<ClassificationRuleManager.ClassificationRule> rules = ruleManager.getRulesByCompany(companyId);
         LOGGER.info("Loaded " + rules.size() + " mapping rules for company: " + companyId);
 
         for (BankTransaction transaction : transactions) {
             try {
                 processedCount++;
 
-                // Try rule-based classification using findMatchingAccount
-                Optional<Account> matchedAccount = ruleService.findMatchingAccount(companyId, transaction.getDetails());
+                // Try rule-based classification using ClassificationRuleManager
+                ClassificationRuleManager.ClassificationRule matchedRule = findMatchingRule(transaction.getDetails(), rules);
                 ClassificationResult classification = null;
 
-                if (matchedAccount.isPresent()) {
-                    Account account = matchedAccount.get();
+                if (matchedRule != null) {
                     classification = new ClassificationResult(
-                        account.getAccountCode(),
-                        account.getAccountName(),
+                        matchedRule.getAccountCode(),
+                        matchedRule.getAccountName(),
                         "RULE_BASED"
                     );
-                    LOGGER.fine("Transaction classified by rule: " + transaction.getDetails() + " -> " + account.getAccountCode());
+                    LOGGER.fine("Transaction classified by rule: " + transaction.getDetails() + " -> " + matchedRule.getAccountCode());
                 }
                 // No fallback classification - transactions without matching rules remain unclassified
 
@@ -161,5 +160,24 @@ public class TransactionBatchProcessor {
         }
 
         return processBatch(transactions, companyId);
+    }
+
+    /**
+     * Find a matching classification rule for the given transaction details
+     */
+    private ClassificationRuleManager.ClassificationRule findMatchingRule(String details, List<ClassificationRuleManager.ClassificationRule> rules) {
+        if (details == null || rules == null) return null;
+        
+        String normalizedDetails = details.toLowerCase();
+        
+        for (ClassificationRuleManager.ClassificationRule rule : rules) {
+            String pattern = rule.getPattern().toLowerCase();
+            
+            // Simple pattern matching - check if pattern is contained in details
+            if (normalizedDetails.contains(pattern)) {
+                return rule;
+            }
+        }
+        return null;
     }
 }
