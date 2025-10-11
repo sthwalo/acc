@@ -1126,8 +1126,6 @@ public class TransactionMappingService {
         return null;
     }
     
-    OLD IMPLEMENTATION END - COMMENTED OUT */
-    
     /**
      * Analyzes unclassified transactions and provides classification suggestions
      */
@@ -1325,8 +1323,24 @@ public class TransactionMappingService {
             return;  // Skip normal journal entry creation
         }
         
-        // Create journal entry header
+        // ✅ DUPLICATE PREVENTION: Check if journal entry already exists for this transaction
         String reference = "AUTO-" + String.format("%05d", entryNumber);
+        String checkExistingSql = """
+            SELECT COUNT(*) FROM journal_entries 
+            WHERE reference = ? AND company_id = ?
+            """;
+
+        try (PreparedStatement checkStmt = conn.prepareStatement(checkExistingSql)) {
+            checkStmt.setString(1, reference);
+            checkStmt.setLong(2, transaction.getCompanyId());
+            ResultSet rs = checkStmt.executeQuery();
+            if (rs.next() && rs.getInt(1) > 0) {
+                System.out.println("⚠️  Journal entry already exists: " + reference + " for company " + transaction.getCompanyId());
+                return; // Skip creation - already exists
+            }
+        }
+
+        // Create journal entry header
         String description = "Auto-generated: " + transaction.getDetails();
 
         String insertJournalEntry = """
@@ -1445,6 +1459,22 @@ public class TransactionMappingService {
         String reference = "OB-FY" + transaction.getTransactionDate().getYear();
         String description = "Opening Balance - FY" + transaction.getTransactionDate().getYear() + "-" + (transaction.getTransactionDate().getYear() + 1);
         
+        // ✅ DUPLICATE PREVENTION: Check if opening balance journal entry already exists
+        String checkExistingSql = """
+            SELECT COUNT(*) FROM journal_entries 
+            WHERE reference = ? AND company_id = ?
+            """;
+
+        try (PreparedStatement checkStmt = conn.prepareStatement(checkExistingSql)) {
+            checkStmt.setString(1, reference);
+            checkStmt.setLong(2, transaction.getCompanyId());
+            ResultSet rs = checkStmt.executeQuery();
+            if (rs.next() && rs.getInt(1) > 0) {
+                System.out.println("⚠️  Opening balance journal entry already exists: " + reference + " for company " + transaction.getCompanyId());
+                return; // Skip creation - already exists
+            }
+        }
+
         String insertJournalEntry = """
             INSERT INTO journal_entries (reference, entry_date, description, fiscal_period_id,
                                        company_id, created_by, created_at, updated_at)
