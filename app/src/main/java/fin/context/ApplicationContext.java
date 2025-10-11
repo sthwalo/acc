@@ -124,6 +124,10 @@ public class ApplicationContext {
         PayrollReportService payrollReportService = new PayrollReportService(dbUrl);
         register(PayrollReportService.class, payrollReportService);
         
+        // Opening Balance service
+        OpeningBalanceService openingBalanceService = new OpeningBalanceService(dbUrl);
+        register(OpeningBalanceService.class, openingBalanceService);
+        
         System.out.println("📦 Core services initialized");
     }
     
