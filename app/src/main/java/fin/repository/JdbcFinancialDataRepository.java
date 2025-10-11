@@ -423,6 +423,7 @@ public class JdbcFinancialDataRepository implements FinancialDataRepository {
 
     private BigDecimal[] getAccountPeriodMovements(int companyId, int fiscalPeriodId, String accountCode) throws SQLException {
         // FIXED: Read from journal_entry_lines for proper double-entry accounting
+        // EXCLUDE opening balance entries to avoid double-counting
         String sql = """
             SELECT
                 COALESCE(SUM(jel.debit_amount), 0) as total_debits,
@@ -433,6 +434,7 @@ public class JdbcFinancialDataRepository implements FinancialDataRepository {
             WHERE je.company_id = ? 
               AND je.fiscal_period_id = ? 
               AND a.account_code = ?
+              AND NOT (LOWER(je.description) LIKE '%opening%balance%' OR je.reference LIKE 'OB-%')
             """;
 
         try (Connection conn = dataSource.getConnection();
@@ -452,6 +454,128 @@ public class JdbcFinancialDataRepository implements FinancialDataRepository {
         }
 
         return new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO};
+    }
+
+    @Override
+    public List<AccountInfo> getActiveAccountsFromJournals(int companyId, int fiscalPeriodId) throws SQLException {
+        String sql = """
+            SELECT DISTINCT
+                a.account_code,
+                a.account_name,
+                at.normal_balance,
+                at.name as account_type
+            FROM journal_entry_lines jel
+            JOIN accounts a ON jel.account_id = a.id
+            JOIN account_categories ac ON a.category_id = ac.id
+            JOIN account_types at ON ac.account_type_id = at.id
+            JOIN journal_entries je ON jel.journal_entry_id = je.id
+            WHERE je.company_id = ?
+              AND je.fiscal_period_id = ?
+            ORDER BY a.account_code
+            """;
+
+        List<AccountInfo> accounts = new ArrayList<>();
+        
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            stmt.setInt(1, companyId);
+            stmt.setInt(2, fiscalPeriodId);
+            
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                AccountInfo account = new AccountInfo();
+                account.setAccountCode(rs.getString("account_code"));
+                account.setAccountName(rs.getString("account_name"));
+                account.setNormalBalance(rs.getString("normal_balance"));
+                account.setAccountType(rs.getString("account_type"));
+                accounts.add(account);
+            }
+        }
+        
+        return accounts;
+    }
+
+    @Override
+    public BigDecimal getAccountOpeningBalanceForLedger(int companyId, int fiscalPeriodId, String accountCode) throws SQLException {
+        String sql = """
+            SELECT 
+                COALESCE(SUM(jel.debit_amount), 0) - COALESCE(SUM(jel.credit_amount), 0) as opening_balance
+            FROM journal_entry_lines jel
+            JOIN accounts a ON jel.account_id = a.id
+            JOIN journal_entries je ON jel.journal_entry_id = je.id
+            WHERE je.company_id = ?
+              AND je.fiscal_period_id = ?
+              AND a.account_code = ?
+              AND (LOWER(je.description) LIKE '%opening%balance%' OR je.reference LIKE 'OB-%')
+            """;
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            stmt.setInt(1, companyId);
+            stmt.setInt(2, fiscalPeriodId);
+            stmt.setString(3, accountCode);
+            
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getBigDecimal("opening_balance");
+            }
+            return BigDecimal.ZERO;
+        }
+    }
+
+    @Override
+    public List<JournalEntryLineDetail> getJournalEntryLinesForAccount(int companyId, int fiscalPeriodId, String accountCode) throws SQLException {
+        String sql = """
+            SELECT 
+                jel.id as line_id,
+                je.id as journal_entry_id,
+                je.entry_date,
+                je.reference,
+                je.description,
+                a.id as account_id,
+                a.account_code,
+                a.account_name,
+                jel.debit_amount,
+                jel.credit_amount
+            FROM journal_entry_lines jel
+            JOIN accounts a ON jel.account_id = a.id
+            JOIN journal_entries je ON jel.journal_entry_id = je.id
+            WHERE je.company_id = ?
+              AND je.fiscal_period_id = ?
+              AND a.account_code = ?
+              AND NOT (LOWER(je.description) LIKE '%opening%balance%' OR je.reference LIKE 'OB-%')
+            ORDER BY je.entry_date, je.id, jel.id
+            """;
+
+        List<JournalEntryLineDetail> lines = new ArrayList<>();
+        
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            stmt.setInt(1, companyId);
+            stmt.setInt(2, fiscalPeriodId);
+            stmt.setString(3, accountCode);
+            
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                JournalEntryLineDetail line = new JournalEntryLineDetail();
+                line.setLineId(rs.getLong("line_id"));
+                line.setJournalEntryId(rs.getLong("journal_entry_id"));
+                line.setEntryDate(rs.getDate("entry_date").toLocalDate());
+                line.setReference(rs.getString("reference"));
+                line.setDescription(rs.getString("description"));
+                line.setAccountId(rs.getLong("account_id"));
+                line.setAccountCode(rs.getString("account_code"));
+                line.setAccountName(rs.getString("account_name"));
+                line.setDebitAmount(rs.getBigDecimal("debit_amount"));
+                line.setCreditAmount(rs.getBigDecimal("credit_amount"));
+                lines.add(line);
+            }
+        }
+        
+        return lines;
     }
 
     private BankTransaction mapToBankTransaction(ResultSet rs) throws SQLException {

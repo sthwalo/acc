@@ -45,4 +45,26 @@ public interface FinancialDataRepository {
      * Calculate opening balance (Balance Brought Forward) from previous fiscal period
      */
     BigDecimal getOpeningBalance(int companyId, int fiscalPeriodId) throws SQLException;
+
+    /**
+     * Get all accounts that have journal entry activity in a fiscal period.
+     * This is the PRIMARY method for General Ledger - reads directly from journal entries.
+     * Returns account metadata including code, name, and normal balance type.
+     */
+    List<AccountInfo> getActiveAccountsFromJournals(int companyId, int fiscalPeriodId) throws SQLException;
+
+    /**
+     * Get opening balance for a specific account in the general ledger.
+     * For balance sheet accounts (assets, liabilities, equity), this is the previous period's closing balance.
+     * For income statement accounts (revenue, expenses), this is always 0.
+     * For the first fiscal period, checks for opening balance journal entries (OB-* reference).
+     */
+    BigDecimal getAccountOpeningBalanceForLedger(int companyId, int fiscalPeriodId, String accountCode) throws SQLException;
+
+    /**
+     * Get all journal entry lines for a specific account with entry details.
+     * Returns lines in chronological order with parent journal entry information.
+     * Excludes opening balance entries (reference pattern 'OB-%') to avoid duplication.
+     */
+    List<JournalEntryLineDetail> getJournalEntryLinesForAccount(int companyId, int fiscalPeriodId, String accountCode) throws SQLException;
 }
