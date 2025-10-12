@@ -48,6 +48,12 @@ public class JournalEntryGenerator {
     public boolean createJournalEntryForTransaction(BankTransaction transaction, ClassificationResult classificationResult) {
         try (Connection conn = getConnection()) {
             conn.setAutoCommit(false);
+            
+            // Check if journal entry already exists for this transaction
+            if (journalEntryExistsForTransaction(conn, transaction)) {
+                LOGGER.info("Journal entry already exists for transaction: " + transaction.getId() + " - skipping");
+                return true;  // Return true as the entry already exists
+            }
 
             // Get or create the classified account using AccountRepository
             Long classifiedAccountId = accountRepository.getOrCreateDetailedAccount(
@@ -215,5 +221,35 @@ public class JournalEntryGenerator {
                 stmt.executeUpdate();
             }
         }
+    }
+
+    /**
+     * Check if a journal entry already exists for this transaction
+     */
+    private boolean journalEntryExistsForTransaction(Connection conn, BankTransaction transaction) throws SQLException {
+        String sql = """
+            SELECT COUNT(*) FROM journal_entries 
+            WHERE company_id = ? 
+            AND entry_date = ? 
+            AND description = ?
+            AND (reference LIKE ? OR reference LIKE ?)
+            """;
+            
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, transaction.getCompanyId());
+            stmt.setDate(2, java.sql.Date.valueOf(transaction.getTransactionDate()));
+            stmt.setString(3, transaction.getDetails());
+            // Check for existing reference patterns
+            String txRef = transaction.getReference() != null ? transaction.getReference() : "";
+            stmt.setString(4, "%" + txRef + "%");
+            stmt.setString(5, "JE-" + transaction.getId() + "-%"); 
+            
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+            }
+        }
+        return false;
     }
 }

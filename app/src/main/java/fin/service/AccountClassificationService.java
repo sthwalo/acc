@@ -681,24 +681,24 @@ public class AccountClassificationService {
         // PRIORITY 8: STANDARD BUSINESS PATTERNS
         // ========================================================================
         
-        // Internal bank transfers (between own accounts)
+   /*      // Internal bank transfers (between own accounts) - Lower priority to allow specific account rules
         rules.add(createRule(
             "Bank Transfers - IB TRANSFER TO",
-            "Internal bank transfers to other accounts (e.g., fuel account)",
+            "Internal bank transfers to other accounts (general case)",
             TransactionMappingRule.MatchType.CONTAINS,
             "IB TRANSFER TO",
             "1100", // Bank - Current Account
-            8
+            7  // Lower priority so specific account patterns (like 2689327 for fuel) take precedence
         ));
         
         rules.add(createRule(
             "Bank Transfers - IB TRANSFER FROM",
-            "Internal bank transfers from other accounts (e.g., fuel account)",
+            "Internal bank transfers from other accounts (general case)", 
             TransactionMappingRule.MatchType.CONTAINS,
             "IB TRANSFER FROM",
             "1100", // Bank - Current Account
-            8
-        ));
+            7  // Lower priority so specific account patterns take precedence
+        )); */
         
         // Rent payments
         rules.add(createRule(
@@ -1004,14 +1004,15 @@ public class AccountClassificationService {
                         // Update transaction with new classification
                         String updateSql = """
                             UPDATE bank_transactions 
-                            SET account_code = ?, account_name = ?, last_modified = NOW() 
+                            SET account_code = ?, account_name = ?, classification_date = CURRENT_TIMESTAMP, classified_by = ?
                             WHERE id = ?
                             """;
                         
                         try (PreparedStatement updateStmt = conn.prepareStatement(updateSql)) {
                             updateStmt.setString(1, account.getAccountCode());
                             updateStmt.setString(2, account.getAccountName());
-                            updateStmt.setLong(3, transaction.getId());
+                            updateStmt.setString(3, username);
+                            updateStmt.setLong(4, transaction.getId());
                             updateStmt.executeUpdate();
                             reclassifiedCount++;
                         }
@@ -1035,17 +1036,18 @@ public class AccountClassificationService {
      * @return Number of journal entries created
      */
     public int generateJournalEntriesForClassifiedTransactions(Long companyId, String createdBy) {
-        // This is a complex method that requires journal entry generation logic
-        // For now, return 0 and log that this needs implementation
-        System.out.println("⚠️  Journal entry generation moved to AccountClassificationService - implementation needed");
-        return 0;
+        // Delegate to TransactionProcessingService for journal entry generation
+        TransactionProcessingService processingService = new TransactionProcessingService(dbUrl);
+        return processingService.generateJournalEntriesForClassifiedTransactions(companyId, createdBy);
     }
     
     /**
      * Generate journal entries for unclassified transactions
      */
     public void generateJournalEntriesForUnclassifiedTransactions(Long companyId, String createdBy) {
-        System.out.println("⚠️  Journal entry generation moved to AccountClassificationService - implementation needed");
+        // Delegate to TransactionProcessingService for journal entry generation
+        TransactionProcessingService processingService = new TransactionProcessingService(dbUrl);
+        processingService.generateJournalEntriesForUnclassifiedTransactions(companyId, createdBy);
     }
     
     /**

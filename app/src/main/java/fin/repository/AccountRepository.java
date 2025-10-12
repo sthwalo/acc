@@ -20,6 +20,7 @@ public class AccountRepository {
 
     /**
      * Get or create a detailed account with full information
+     * Uses PostgreSQL UPSERT (INSERT ... ON CONFLICT) for thread-safe operation
      *
      * @param accountCode The account code (e.g., "2000-001")
      * @param accountName The account name
@@ -29,24 +30,80 @@ public class AccountRepository {
      */
     public Long getOrCreateDetailedAccount(String accountCode, String accountName,
                                           String parentCode, String categoryName) {
-        try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(
-                 "SELECT id FROM accounts WHERE company_id = ? AND account_code = ?")) {
+        Long companyId = 2L; // Use company 2 which has full category set
+        
+        try (Connection conn = getConnection()) {
+            // First try to get existing account
+            try (PreparedStatement selectStmt = conn.prepareStatement(
+                     "SELECT id FROM accounts WHERE company_id = ? AND account_code = ?")) {
 
-            stmt.setLong(1, 1L); // Assuming company_id = 1 for now
-            stmt.setString(2, accountCode);
+                selectStmt.setLong(1, companyId);
+                selectStmt.setString(2, accountCode);
 
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getLong("id");
+                try (ResultSet rs = selectStmt.executeQuery()) {
+                    if (rs.next()) {
+                        LOGGER.fine("Found existing account: " + accountCode + " with ID: " + rs.getLong("id"));
+                        return rs.getLong("id");
+                    }
                 }
             }
 
-            // Account doesn't exist, create it
-            return createDetailedAccount(accountCode, accountName, parentCode, categoryName);
+            // Account doesn't exist, use UPSERT to handle race conditions
+            int categoryId = getCategoryIdForAccountCode(accountCode, companyId);
+            
+            // Look up parent account ID from parent code if provided
+            Long parentAccountId = null;
+            if (parentCode != null && !parentCode.isEmpty()) {
+                parentAccountId = getAccountIdByCode(companyId, parentCode);
+            }
+
+            try (PreparedStatement upsertStmt = conn.prepareStatement(
+                     "INSERT INTO accounts (company_id, account_code, account_name, " +
+                     "parent_account_id, category_id, is_active, created_at) " +
+                     "VALUES (?, ?, ?, ?, ?, true, CURRENT_TIMESTAMP) " +
+                     "ON CONFLICT (company_id, account_code) DO NOTHING " +
+                     "RETURNING id")) {
+
+                upsertStmt.setLong(1, companyId);
+                upsertStmt.setString(2, accountCode);
+                upsertStmt.setString(3, accountName);
+                if (parentAccountId != null) {
+                    upsertStmt.setLong(4, parentAccountId);
+                } else {
+                    upsertStmt.setNull(4, java.sql.Types.INTEGER);
+                }
+                upsertStmt.setInt(5, categoryId);
+
+                try (ResultSet rs = upsertStmt.executeQuery()) {
+                    if (rs.next()) {
+                        // Successfully inserted new account
+                        Long newId = rs.getLong("id");
+                        LOGGER.info("Created new account: " + accountCode + " with ID: " + newId);
+                        return newId;
+                    }
+                }
+            }
+
+            // If we get here, the INSERT was skipped due to conflict, so get the existing account
+            try (PreparedStatement selectStmt = conn.prepareStatement(
+                     "SELECT id FROM accounts WHERE company_id = ? AND account_code = ?")) {
+
+                selectStmt.setLong(1, companyId);
+                selectStmt.setString(2, accountCode);
+
+                try (ResultSet rs = selectStmt.executeQuery()) {
+                    if (rs.next()) {
+                        Long existingId = rs.getLong("id");
+                        LOGGER.info("Retrieved existing account after conflict: " + accountCode + " with ID: " + existingId);
+                        return existingId;
+                    }
+                }
+            }
+
+            throw new RuntimeException("Failed to get or create account: " + accountCode);
 
         } catch (SQLException e) {
-            LOGGER.severe("Error getting or creating account: " + e.getMessage());
+            LOGGER.severe("Error getting or creating account " + accountCode + ": " + e.getMessage());
             throw new RuntimeException("Database error", e);
         }
     }
@@ -63,19 +120,44 @@ public class AccountRepository {
     public Long createDetailedAccount(String accountCode, String accountName,
                                     String parentCode, String categoryName) {
         try (Connection conn = getConnection()) {
-            int categoryId = getCategoryIdForAccountCode(accountCode);
+            Long companyId = 2L; // Use company 2 which has full category set
+            
+            // First check if account already exists to prevent duplicate key violation
+            try (PreparedStatement checkStmt = conn.prepareStatement(
+                     "SELECT id FROM accounts WHERE company_id = ? AND account_code = ?")) {
+                checkStmt.setLong(1, companyId);
+                checkStmt.setString(2, accountCode);
+                try (ResultSet rs = checkStmt.executeQuery()) {
+                    if (rs.next()) {
+                        LOGGER.info("Account " + accountCode + " already exists, returning existing ID");
+                        return rs.getLong("id");
+                    }
+                }
+            }
+            
+            int categoryId = getCategoryIdForAccountCode(accountCode, companyId);
+            
+            // Look up parent account ID from parent code if provided
+            Long parentAccountId = null;
+            if (parentCode != null && !parentCode.isEmpty()) {
+                parentAccountId = getAccountIdByCode(companyId, parentCode);
+            }
 
             try (PreparedStatement stmt = conn.prepareStatement(
                      "INSERT INTO accounts (company_id, account_code, account_name, " +
-                     "parent_account_code, category_id, is_active, created_at) " +
+                     "parent_account_id, category_id, is_active, created_at) " +
                      "VALUES (?, ?, ?, ?, ?, true, CURRENT_TIMESTAMP) " +
                      "RETURNING id",
                      Statement.RETURN_GENERATED_KEYS)) {
 
-                stmt.setLong(1, 1L); // company_id
+                stmt.setLong(1, companyId); // Use company 2
                 stmt.setString(2, accountCode);
                 stmt.setString(3, accountName);
-                stmt.setString(4, parentCode);
+                if (parentAccountId != null) {
+                    stmt.setLong(4, parentAccountId);
+                } else {
+                    stmt.setNull(4, java.sql.Types.INTEGER);
+                }
                 stmt.setInt(5, categoryId);
 
                 stmt.executeUpdate();
@@ -90,6 +172,23 @@ public class AccountRepository {
             throw new RuntimeException("Failed to create account, no ID returned");
 
         } catch (SQLException e) {
+            // If it's a duplicate key error, try to get the existing account
+            if (e.getMessage().contains("duplicate key value violates unique constraint")) {
+                LOGGER.warning("Duplicate account detected for " + accountCode + ", attempting to retrieve existing");
+                try (Connection conn = getConnection();
+                     PreparedStatement stmt = conn.prepareStatement(
+                         "SELECT id FROM accounts WHERE company_id = ? AND account_code = ?")) {
+                    stmt.setLong(1, 2L);
+                    stmt.setString(2, accountCode);
+                    try (ResultSet rs = stmt.executeQuery()) {
+                        if (rs.next()) {
+                            return rs.getLong("id");
+                        }
+                    }
+                } catch (SQLException ex) {
+                    LOGGER.severe("Failed to retrieve existing account after duplicate error: " + ex.getMessage());
+                }
+            }
             LOGGER.severe("Error creating account: " + e.getMessage());
             throw new RuntimeException("Database error", e);
         }
@@ -125,55 +224,89 @@ public class AccountRepository {
     }
 
     /**
-     * Map account code to category ID based on the first digits
+     * Map account code to category ID based on South African Chart of Accounts
+     * 1000-1999: Current Assets
+     * 2000-2999: Non-Current Assets (Property, Equipment)  
+     * 3000-3999: Current Liabilities
+     * 4000-4999: Non-Current Liabilities
+     * 5000-5999: Owner's Equity
+     * 6000-6999: Operating Revenue
+     * 7000-7999: Other Income
+     * 8000-8999: Operating Expenses
+     * 9000-9999: Finance Costs
      *
      * @param accountCode The account code (e.g., "1000-001")
      * @return The category ID
      */
     public int getCategoryIdForAccountCode(String accountCode) {
-        if (accountCode == null || accountCode.length() < 4) {
-            return 18; // Default to Operating Expenses
+        return getCategoryIdForAccountCode(accountCode, 2L); // Default to company 2 (has full categories)
+    }
+    
+    public int getCategoryIdForAccountCode(String accountCode, Long companyId) {
+        if (accountCode == null || accountCode.length() < 1) {
+            return getOperatingExpensesCategoryId(companyId);
         }
 
-        String prefix = accountCode.substring(0, 4);
-
-        // Current Assets (1000-1999)
-        if (prefix.startsWith("1")) {
-            return 11; // Current Assets
+        char firstDigit = accountCode.charAt(0);
+        
+        switch (firstDigit) {
+            case '1': // 1000-1999: Current Assets
+                return getCurrentAssetsCategoryId(companyId);
+            case '2': // 2000-2999: Non-Current Assets  
+                return getNonCurrentAssetsCategoryId(companyId);
+            case '3': // 3000-3999: Current Liabilities
+                return getCurrentLiabilitiesCategoryId(companyId);
+            case '4': // 4000-4999: Non-Current Liabilities
+                return getNonCurrentLiabilitiesCategoryId(companyId);
+            case '5': // 5000-5999: Owner's Equity
+                return getEquityCategoryId(companyId);
+            case '6': // 6000-6999: Operating Revenue
+                return getOperatingRevenueCategoryId(companyId);
+            case '7': // 7000-7999: Other Income
+                return getOtherIncomeCategoryId(companyId);
+            case '8': // 8000-8999: Operating Expenses
+                return getOperatingExpensesCategoryId(companyId);
+            case '9': // 9000-9999: Finance Costs
+                return getFinanceCostsCategoryId(companyId);
+            default:
+                return getOperatingExpensesCategoryId(companyId);
         }
-
-        // Current Liabilities (2000-2999)
-        if (prefix.startsWith("2")) {
-            return 13; // Current Liabilities (used for director loans)
-        }
-
-        // Operating Revenue (4000-4999)
-        if (prefix.startsWith("4")) {
-            return 16; // Operating Revenue
-        }
-
-        // Other Income (5000-5999)
-        if (prefix.startsWith("5")) {
-            return 17; // Other Income
-        }
-
-        // Reversals & Adjustments (6000-6999)
-        if (prefix.startsWith("6")) {
-            return 18; // Operating Expenses (adjustments)
-        }
-
-        // Operating Expenses (8000-8999)
-        if (prefix.startsWith("8")) {
-            return 18; // Operating Expenses
-        }
-
-        // Finance Costs (9600-9699)
-        if (prefix.startsWith("96")) {
-            return 20; // Finance Costs
-        }
-
-        // Default to Operating Expenses
-        return 18;
+    }
+    
+    private int getCurrentAssetsCategoryId(Long companyId) {
+        return companyId == 1L ? 4 : 7;
+    }
+    
+    private int getNonCurrentAssetsCategoryId(Long companyId) {
+        return companyId == 1L ? 4 : 8; // Company 1 doesn't have Non-Current Assets category
+    }
+    
+    private int getCurrentLiabilitiesCategoryId(Long companyId) {
+        return companyId == 1L ? 5 : 9;
+    }
+    
+    private int getNonCurrentLiabilitiesCategoryId(Long companyId) {
+        return companyId == 1L ? 5 : 10; // Company 1 doesn't have Non-Current Liabilities category
+    }
+    
+    private int getEquityCategoryId(Long companyId) {
+        return companyId == 1L ? 5 : 11; // Company 1 doesn't have Equity category
+    }
+    
+    private int getOperatingRevenueCategoryId(Long companyId) {
+        return companyId == 1L ? 6 : 12; // Company 1 doesn't have Revenue category, fallback to Operating Expenses
+    }
+    
+    private int getOtherIncomeCategoryId(Long companyId) {
+        return companyId == 1L ? 6 : 13; // Company 1 doesn't have Other Income category
+    }
+    
+    private int getOperatingExpensesCategoryId(Long companyId) {
+        return companyId == 1L ? 6 : 14;
+    }
+    
+    private int getFinanceCostsCategoryId(Long companyId) {
+        return companyId == 1L ? 6 : 16; // Company 1 doesn't have Finance Costs category
     }
 
     /**
