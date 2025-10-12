@@ -293,23 +293,27 @@ git push origin main  # or feature branch
 
 ---
 
-## 🐛 Known Issues & Technical Debt
+## 🐛 Known Issues & Technical Debt (Updated October 12, 2025)
 
-### High Priority
-1. **Service Redundancy** - 3 classification services need consolidation
-2. **Schema Conflicts** - `match_value` vs `pattern_text` in mapping rules
-3. **Hardcoded Logic** - 2000+ lines should be database-driven
+### ✅ RESOLVED (User Confirmed Fixes)
+1. ✅ **Service Redundancy** - Consolidated into unified TransactionClassificationService
+2. ✅ **Schema Conflicts** - Both `match_value` and `pattern_text` synchronized (150 rules)
+3. ✅ **Hardcoded Logic** - Extracted to database-driven classification rules
+4. ✅ **GL Calculation Logic** - Normal balance handling implemented correctly
+5. ✅ **Classification Services** - All 3 services consolidated into 1
+6. ✅ **Chart of Accounts Init** - Unified initialization architecture
+7. ✅ **Account Race Conditions** - PostgreSQL UPSERT pattern implemented
 
-### Medium Priority
-1. **Account 7300** - Need to add "Reversals & Adjustments" account
-2. **Old Journal Entries** - 12 entries without source links (backfill optional)
-3. **Chart of Accounts Init** - Scattered across 4 locations
+### ⚠️ IN PROGRESS
+1. **Journal Entry Generation** - 247 transactions need journal entries (operational task)
+2. **Bank Reconciliation** - R2,988.50 variance (down from major discrepancies)
 
-### Low Priority
-1. **Checkstyle Warnings** - ~3,142 warnings (non-blocking)
-2. **SpotBugs Issues** - Minor issues (non-blocking)
+### 🔧 MINOR ENHANCEMENTS
+1. **Account 7300** - Add "Reversals & Adjustments" account if needed
+2. **Testing Coverage** - Enhanced test coverage for financial calculations
+3. **Code Quality** - Checkstyle warnings (~3,142) and SpotBugs issues
 
-**All issues documented in:** `../CRITICAL_ISSUE_ANALYSIS_20251003.md`
+**Major Issues:** ✅ RESOLVED - Core system architecture and financial calculations working correctly
 
 ---
 
