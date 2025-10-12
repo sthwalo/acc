@@ -29,14 +29,13 @@ public class TransactionMappingRuleService extends JdbcBaseRepository {
         String sql =
             "INSERT INTO transaction_mapping_rules " +
             "(company_id, rule_name, description, match_type, match_value, " +
-            "pattern_text, account_id, is_active, priority) " +
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) " +
+            "account_id, is_active, priority) " +
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?) " +
             "ON CONFLICT(id) DO UPDATE SET " +
             "rule_name = excluded.rule_name, " +
             "description = excluded.description, " +
             "match_type = excluded.match_type, " +
             "match_value = excluded.match_value, " +
-            "pattern_text = excluded.pattern_text, " +
             "account_id = excluded.account_id, " +
             "is_active = excluded.is_active, " +
             "priority = excluded.priority, " +
@@ -44,9 +43,6 @@ public class TransactionMappingRuleService extends JdbcBaseRepository {
             "RETURNING id, created_at, updated_at";
 
         try {
-            // Use match_value for pattern_text (they should be the same)
-            String patternText = rule.getMatchValue();
-            
             executeQuery(sql, rs -> {
                 if (rs.next()) {
                     rule.setId(rs.getLong("id"));
@@ -55,7 +51,7 @@ public class TransactionMappingRuleService extends JdbcBaseRepository {
                 }
                 return rule;
             }, rule.getCompany().getId(), rule.getRuleName(), rule.getDescription(),
-               rule.getMatchType().name(), rule.getMatchValue(), patternText, 
+               rule.getMatchType().name(), rule.getMatchValue(), 
                rule.getAccount().getId(), rule.isActive(), rule.getPriority());
 
             // Clear cache
