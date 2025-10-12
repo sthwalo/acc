@@ -1,6 +1,8 @@
 package fin.service;
 
 import fin.model.BankTransaction;
+import fin.model.ClassificationResult;
+import fin.repository.AccountRepository;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -14,7 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 import java.util.logging.Level;
-import java.math.BigDecimal;
+
 
 /**
  * Service for processing bank transactions - classification and journal entry generation.
@@ -34,6 +36,7 @@ public class TransactionProcessingService {
     private static final Logger LOGGER = Logger.getLogger(TransactionProcessingService.class.getName());
     private final String dbUrl;
     private final AccountClassificationService accountClassificationService;
+    private final JournalEntryGenerator journalEntryGenerator;
     
     // Cache for account mappings
     private Map<String, Long> accountCache = new HashMap<>();
@@ -41,6 +44,7 @@ public class TransactionProcessingService {
     public TransactionProcessingService(String dbUrl) {
         this.dbUrl = dbUrl;
         this.accountClassificationService = new AccountClassificationService(dbUrl);
+        this.journalEntryGenerator = new JournalEntryGenerator(dbUrl, new AccountRepository(dbUrl));
         loadAccountCache();
     }
     
@@ -267,26 +271,16 @@ public class TransactionProcessingService {
                        " classified transactions needing journal entries for company ID: " + companyId);
             
             // Generate journal entries for each transaction
-            try (Connection conn = DriverManager.getConnection(dbUrl)) {
-                conn.setAutoCommit(false);
-                
-                try {
-                    for (BankTransaction transaction : transactionsNeedingJournalEntries) {
-                        boolean success = generateJournalEntryForTransaction(conn, transaction, createdBy, companyId);
-                        if (success) {
-                            generatedCount++;
-                        }
-                    }
-                    
-                    if (generatedCount > 0) {
-                        conn.commit();
-                        LOGGER.info("Successfully generated " + generatedCount + " journal entries");
-                    }
-                    
-                } catch (SQLException e) {
-                    conn.rollback();
-                    throw e;
+            // JournalEntryGenerator handles its own transactions
+            for (BankTransaction transaction : transactionsNeedingJournalEntries) {
+                boolean success = generateJournalEntryForTransaction(transaction, createdBy, companyId);
+                if (success) {
+                    generatedCount++;
                 }
+            }
+            
+            if (generatedCount > 0) {
+                LOGGER.info("Successfully generated " + generatedCount + " journal entries");
             }
             
         } catch (Exception e) {
@@ -305,14 +299,14 @@ public class TransactionProcessingService {
      * Load account cache for quick lookups
      */
     private void loadAccountCache() {
-        String sql = "SELECT code, id FROM accounts";
+        String sql = "SELECT account_code, id FROM accounts";
         
         try (Connection conn = DriverManager.getConnection(dbUrl);
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
             
             while (rs.next()) {
-                accountCache.put(rs.getString("code"), rs.getLong("id"));
+                accountCache.put(rs.getString("account_code"), rs.getLong("id"));
             }
             
             LOGGER.info("Loaded " + accountCache.size() + " accounts into cache");
@@ -598,7 +592,7 @@ public class TransactionProcessingService {
      * Get account ID by code for a specific company
      */
     private Long getAccountIdFromCode(String accountCode, Long companyId) {
-        String sql = "SELECT id FROM accounts WHERE code = ? AND company_id = ?";
+        String sql = "SELECT id FROM accounts WHERE account_code = ? AND company_id = ?";
         
         try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -620,79 +614,22 @@ public class TransactionProcessingService {
     }
 
     /**
-     * Generate a journal entry for a single transaction
+     * Generate a proper double-entry journal entry for a transaction using JournalEntryGenerator
      */
-    private boolean generateJournalEntryForTransaction(Connection conn, BankTransaction transaction, 
+    private boolean generateJournalEntryForTransaction(BankTransaction transaction, 
                                                      String createdBy, Long companyId) {
         try {
-            // This is a simplified journal entry generation
-            // For a complete implementation, you would need full double-entry logic
-            // This creates a basic entry linking the transaction to its account
+            // Create ClassificationResult from transaction data
+            ClassificationResult classificationResult = new ClassificationResult(
+                transaction.getAccountCode(),
+                transaction.getAccountName(),
+                "Auto-classified by " + createdBy
+            );
             
-            // Get account ID for the classified account
-            Long accountId = getAccountIdFromCode(
-                transaction.getAccountCode(), companyId);
+            // Use the proper JournalEntryGenerator for complete double-entry accounting
+            return journalEntryGenerator.createJournalEntryForTransaction(transaction, classificationResult);
             
-            if (accountId == null) {
-                LOGGER.warning("Cannot find account ID for code: " + transaction.getAccountCode());
-                return false;
-            }
-            
-            // Create journal entry
-            String entryReference = "TX-" + transaction.getId();
-            String description = "Auto-generated from transaction: " + transaction.getDetails();
-            
-            String journalSql = """
-                INSERT INTO journal_entries (company_id, fiscal_period_id, entry_date, reference, description, created_by)
-                VALUES (?, ?, ?, ?, ?, ?)
-                """;
-            
-            Long journalEntryId;
-            try (PreparedStatement stmt = conn.prepareStatement(journalSql, Statement.RETURN_GENERATED_KEYS)) {
-                stmt.setLong(1, transaction.getCompanyId());
-                stmt.setLong(2, transaction.getFiscalPeriodId());
-                stmt.setDate(3, java.sql.Date.valueOf(transaction.getTransactionDate()));
-                stmt.setString(4, entryReference);
-                stmt.setString(5, description);
-                stmt.setString(6, createdBy);
-                
-                stmt.executeUpdate();
-                
-                try (ResultSet keys = stmt.getGeneratedKeys()) {
-                    if (keys.next()) {
-                        journalEntryId = keys.getLong(1);
-                    } else {
-                        LOGGER.warning("No journal entry ID generated");
-                        return false;
-                    }
-                }
-            }
-            
-            // Create journal entry lines (simplified - would need proper double-entry logic)
-            String lineSql = """
-                INSERT INTO journal_entry_lines (journal_entry_id, account_id, debit_amount, credit_amount, 
-                                                description, source_transaction_id)
-                VALUES (?, ?, ?, ?, ?, ?)
-                """;
-            
-            try (PreparedStatement stmt = conn.prepareStatement(lineSql)) {
-                // Transaction side (debit if money coming in, credit if going out)
-                BigDecimal debitAmount = transaction.getDebitAmount() != null ? transaction.getDebitAmount() : BigDecimal.ZERO;
-                BigDecimal creditAmount = transaction.getCreditAmount() != null ? transaction.getCreditAmount() : BigDecimal.ZERO;
-                
-                stmt.setLong(1, journalEntryId);
-                stmt.setLong(2, accountId);
-                stmt.setBigDecimal(3, debitAmount);
-                stmt.setBigDecimal(4, creditAmount);
-                stmt.setString(5, transaction.getDetails());
-                stmt.setLong(6, transaction.getId());
-                
-                stmt.executeUpdate();
-            }
-            
-            return true;
-            
-        } catch (SQLException e) {
+        } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error generating journal entry for transaction: " + transaction.getId(), e);
             return false;
         }
