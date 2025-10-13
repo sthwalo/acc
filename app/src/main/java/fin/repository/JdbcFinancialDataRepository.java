@@ -245,13 +245,16 @@ public class JdbcFinancialDataRepository implements FinancialDataRepository {
 
         // If no previous period found or balance is zero, look for opening balance journal entries
         // Opening balance entries are typically dated at the start of the fiscal period
+        // For cashbook, we want the debit amount to the bank account (1100) as the opening balance
         String openingSql = """
-            SELECT
-                COALESCE(SUM(jel.credit_amount), 0) - COALESCE(SUM(jel.debit_amount), 0) as opening_balance
+            SELECT jel.debit_amount as opening_balance
             FROM journal_entries je
             JOIN journal_entry_lines jel ON je.id = jel.journal_entry_id
+            JOIN accounts a ON jel.account_id = a.id
             WHERE je.company_id = ? AND je.fiscal_period_id = ?
                 AND je.entry_date = ? AND LOWER(je.description) LIKE '%opening%balance%'
+                AND a.account_code = '1100' AND jel.debit_amount IS NOT NULL
+            LIMIT 1
             """;
 
         try (Connection conn = dataSource.getConnection();
@@ -264,7 +267,7 @@ public class JdbcFinancialDataRepository implements FinancialDataRepository {
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     BigDecimal balance = rs.getBigDecimal("opening_balance");
-                    if (balance != null) {
+                    if (balance != null && balance.compareTo(BigDecimal.ZERO) != 0) {
                         return balance;
                     }
                 }

@@ -28,7 +28,7 @@ public class BalanceSheetService {
      * Generate balance sheet report content
      * 
      * CORRECT ACCOUNTING FLOW:
-     * This method reads closing balances FROM General Ledger Service (same as Trial Balance).
+     * This method reads closing balances FROM General Ledger (same as Trial Balance).
      * Implements: Journal Entries → General Ledger → Trial Balance → Balance Sheet
      */
     public String generateBalanceSheet(int companyId, int fiscalPeriodId) throws SQLException {
@@ -49,6 +49,9 @@ public class BalanceSheetService {
         BigDecimal totalAssets = BigDecimal.ZERO;
         BigDecimal totalLiabilities = BigDecimal.ZERO;
         BigDecimal totalEquity = BigDecimal.ZERO;
+
+        // Calculate net profit/loss for retained earnings
+        BigDecimal netProfit = calculateNetProfit(accountBalances);
 
         // Assets section (1000-2999)
         report.append("ASSETS\n");
@@ -90,9 +93,12 @@ public class BalanceSheetService {
         report.append(String.format("%-60s %15s%n", "TOTAL LIABILITIES", formatCurrency(totalLiabilities)));
         report.append("\n");
 
-        // Equity section (5000-5999)
+        // Equity section (5000-5999) + Retained Earnings
         report.append("EQUITY\n");
         report.append("=".repeat(80)).append("\n");
+        
+        // Show existing equity accounts first (opening balances)
+        BigDecimal openingEquity = BigDecimal.ZERO;
         for (AccountBalance balance : accountBalances.values()) {
             String accountCode = balance.getAccountCode();
             if (isEquityAccount(accountCode)) {
@@ -102,12 +108,18 @@ public class BalanceSheetService {
                             accountCode,
                             truncateString(balance.getAccountName(), 43),
                             formatCurrency(amount)));
-                    totalEquity = totalEquity.add(amount);
+                    openingEquity = openingEquity.add(amount);
                 }
             }
         }
-        report.append("-".repeat(80)).append("\n");
-        report.append(String.format("%-60s %15s%n", "TOTAL EQUITY", formatCurrency(totalEquity)));
+        
+        // Add Retained Earnings calculation: Opening Equity + Net Profit/Loss
+        BigDecimal retainedEarnings = openingEquity.add(netProfit);
+        report.append(String.format("%-15s %-45s %15s%n",
+                "RETAINED",
+                "Retained Earnings (Opening + Net Profit)",
+                formatCurrency(retainedEarnings)));
+        totalEquity = retainedEarnings;
         report.append("\n");
 
         // Total Liabilities and Equity
@@ -133,6 +145,34 @@ public class BalanceSheetService {
         }
 
         return report.toString();
+    }
+
+    /**
+     * Calculate net profit/loss for the period
+     * Net Profit = Total Revenue - Total Expenses
+     * Revenue accounts: 6000-7999
+     * Expense accounts: 8000-9999
+     */
+    private BigDecimal calculateNetProfit(Map<String, AccountBalance> accountBalances) {
+        BigDecimal totalRevenue = BigDecimal.ZERO;
+        BigDecimal totalExpenses = BigDecimal.ZERO;
+        
+        for (AccountBalance balance : accountBalances.values()) {
+            String accountCode = balance.getAccountCode();
+            BigDecimal amount = balance.getClosingBalance();
+            
+            // Revenue accounts (6000-7999) - CREDIT normal balance
+            if (isRevenueAccount(accountCode)) {
+                totalRevenue = totalRevenue.add(amount);
+            }
+            // Expense accounts (8000-9999) - DEBIT normal balance  
+            else if (isExpenseAccount(accountCode)) {
+                totalExpenses = totalExpenses.add(amount);
+            }
+        }
+        
+        // Net Profit = Revenue - Expenses
+        return totalRevenue.subtract(totalExpenses);
     }
 
     /**
@@ -169,6 +209,36 @@ public class BalanceSheetService {
         try {
             int code = Integer.parseInt(accountCode);
             return code >= 5000 && code <= 5999;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+    
+    /**
+     * Check if account code represents Revenue (6000-7999)
+     */
+    private boolean isRevenueAccount(String accountCode) {
+        if (accountCode == null || accountCode.length() < 4) return false;
+        // Handle account codes with dashes (e.g., "6100-001")
+        String cleanCode = accountCode.split("-")[0];
+        try {
+            int code = Integer.parseInt(cleanCode);
+            return code >= 6000 && code <= 7999;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Check if account code represents Expenses (8000-9999)
+     */
+    private boolean isExpenseAccount(String accountCode) {
+        if (accountCode == null || accountCode.length() < 4) return false;
+        // Handle account codes with dashes (e.g., "8100-001")
+        String cleanCode = accountCode.split("-")[0];
+        try {
+            int code = Integer.parseInt(cleanCode);
+            return code >= 8000 && code <= 9999;
         } catch (NumberFormatException e) {
             return false;
         }
