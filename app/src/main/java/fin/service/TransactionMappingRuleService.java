@@ -229,9 +229,10 @@ public class TransactionMappingRuleService extends JdbcBaseRepository {
             return null;
         }
 
-        // Extract "8100" from "... [AccountCode:8100]"
+        // Extract account code from "... [AccountCode:XXXX]" 
+        // Supports codes with hyphens like "6100-001"
         java.util.regex.Pattern pattern = 
-            java.util.regex.Pattern.compile("\\[AccountCode:(\\d+)\\]");
+            java.util.regex.Pattern.compile("\\[AccountCode:([0-9-]+)\\]");
         java.util.regex.Matcher matcher = pattern.matcher(description);
         
         if (matcher.find()) {

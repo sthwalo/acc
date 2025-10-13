@@ -18,9 +18,13 @@ FAT_JAR="./app/build/libs/app-fat.jar"
 
 if [ -f "$FAT_JAR" ]; then
     echo "Running with fat JAR: $FAT_JAR"
-    java $JAVA_OPTS -jar "$FAT_JAR" "$@"
+    echo "Auto-selecting: Company 2 (Xinghizana Group), Fiscal Period 2 (FY2024-2025)"
+    # Setup sequence: Company Setup -> Select Company 2 -> Back to Main -> Fiscal Period -> Select Period 2 -> Back to Main
+    # Then leave it interactive for user
+    (echo -e "1\n2\n6\n2\n2\n4"; cat) | java $JAVA_OPTS -jar "$FAT_JAR" "$@"
 else
     echo "Fat JAR not found, falling back to classpath execution..."
+    echo "Auto-selecting: Company 2 (Xinghizana Group), Fiscal Period 2 (FY2024-2025)"
     JARS=$(find . -name "*.jar" | grep -v "gradle-wrapper" | tr '\n' ':')
-    java $JAVA_OPTS -cp "$JARS" fin.ConsoleApplication "$@"
+    (echo -e "1\n2\n6\n2\n2\n4"; cat) | java $JAVA_OPTS -cp "$JARS" fin.ConsoleApplication "$@"
 fi
