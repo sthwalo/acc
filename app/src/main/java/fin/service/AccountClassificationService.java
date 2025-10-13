@@ -357,6 +357,7 @@ public class AccountClassificationService {
         accounts.add(new AccountDefinition("9700", "Foreign Exchange Loss", "Loss on currency exchange", financeCostsId));
         accounts.add(new AccountDefinition("9800", "VAT Payments to SARS", "VAT payments made to South African Revenue Service", financeCostsId));
         accounts.add(new AccountDefinition("9810", "Loan Repayments", "Loan repayment costs", financeCostsId));
+        accounts.add(new AccountDefinition("9820", "PAYE Expense", "PAYE tax payments to South African Revenue Service", financeCostsId));
         accounts.add(new AccountDefinition("9900", "Pension Expenses", "Pension-related costs", financeCostsId));
         
         return accounts;
@@ -647,6 +648,461 @@ public class AccountClassificationService {
         // PRIORITY 9: HIGH-CONFIDENCE PATTERNS
         // ========================================================================
         
+        // COROBRIK customer payments (revenue)
+        rules.add(createRule(
+            "Corobrik Service Revenue",
+            "Customer payments from Corobrik",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "COROBRIK",
+            "6100-001", // Corobrik Service Revenue
+            9
+        ));
+        
+        // Returned debits - offset original transactions
+        // NOTE: These should go to the SAME account as the original transaction
+        // For now, we'll handle specific known providers
+        rules.add(createRule(
+            "Returned Debit - DOTSURE",
+            "Returned debit for DOTSURE insurance payments",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "RTD-DEBIT AGAINST PAYERS AUTH DOTSURE",
+            "8800-002", // DOTSURE Insurance Premiums (offset)
+            9
+        ));
+        
+        // EXCESS INTEREST payments
+        rules.add(createRule(
+            "Excess Interest Expense",
+            "Excess interest charges on loans/accounts",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "EXCESS INTEREST",
+            "9500", // Interest Expense
+            9
+        ));
+        
+        // STD BANK BOND repayments (loans payable)
+        rules.add(createRule(
+            "STD Bank Bond Repayment",
+            "STD Bank bond/home loan repayments",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "STD BANK BOND",
+            "4000", // Long-term Loans (Loans Payable)
+            9
+        ));
+        
+        // Fuel transfers FROM specific account
+        rules.add(createRule(
+            "IB Transfer From Fuel Account",
+            "Internal bank transfers from fuel supplier account",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "IB TRANSFER FROM *****2689327",
+            "8600-099", // Fuel Expenses - Other Stations
+            9
+        ));
+        
+        // CARTRACK vehicle tracking
+        rules.add(createRule(
+            "Cartrack Vehicle Tracking",
+            "Cartrack vehicle tracking service fees",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "CARTRACK",
+            "8500-001", // Cartrack Vehicle Tracking
+            9
+        ));
+        
+        // IB INSTANT MONEY CASH TO - e-wallet payments to part-time employees
+        rules.add(createRule(
+            "IB Instant Money Cash to Employees",
+            "E-wallet payments directly to part-time employees",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "IB INSTANT MONEY CASH TO",
+            "8100", // Employee Costs
+            9
+        ));
+        
+        // AUTOBANK TRANSFER TO ACCOUNT - fuel expenses
+        rules.add(createRule(
+            "Autobank Transfer to Fuel Account",
+            "Automated bank transfers to fuel supplier accounts",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "AUTOBANK TRANSFER TO ACCOUNT",
+            "8600-099", // Fuel Expenses - Other Stations
+            9
+        ));
+        
+        // IMMEDIATE PAYMENT - specific employee payments (high priority)
+        rules.add(createRule(
+            "Immediate Payment - Jeffrey S Maphosa",
+            "Director remuneration payment to Jeffrey S Maphosa",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "IMMEDIATE PAYMENT 224812909 JEFFREY S MAPHOSA",
+            "8100-001", // Director Remuneration
+            10
+        ));
+        
+        rules.add(createRule(
+            "Immediate Payment - Katleho Mogaloa",
+            "Employee payment to Katleho Mogaloa",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "IMMEDIATE PAYMENT 226159243 KATLEHO MOGALOA",
+            "8100", // Employee Costs
+            10
+        ));
+        
+        rules.add(createRule(
+            "Immediate Payment - Jordan Moyane",
+            "Employee payment to Jordan Moyane",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "IMMEDIATE PAYMENT 224812154 JORDAN MOYANE",
+            "8100", // Employee Costs
+            10
+        ));
+        
+        rules.add(createRule(
+            "Immediate Payment - Sibongile Dlamini",
+            "Employee payment to Sibongile Dlamini",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "IMMEDIATE PAYMENT 224850901 SIBONGILE DLAMINI",
+            "8100", // Employee Costs
+            10
+        ));
+        
+        rules.add(createRule(
+            "Immediate Payment - Mabunda IP",
+            "Employee payment to Mabunda IP",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "IMMEDIATE PAYMENT 224855113 MABUNDA IP",
+            "8100", // Employee Costs
+            10
+        ));
+        
+        rules.add(createRule(
+            "Immediate Payment - Albert Zunga",
+            "Employee payment to Albert Zunga",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "IMMEDIATE PAYMENT 221599858 ALBERT ZUNGA",
+            "8100", // Employee Costs
+            10
+        ));
+        
+        rules.add(createRule(
+            "Immediate Payment - Piet Mathebula",
+            "Employee payment to Piet Mathebula",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "IMMEDIATE PAYMENT 221514559 PIET MATHEBULA",
+            "8100", // Employee Costs
+            10
+        ));
+        
+        rules.add(createRule(
+            "Immediate Payment - Alberake Protection",
+            "Cost of goods sold - Alberake Protection",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "IMMEDIATE PAYMENT 218989372 ALBERAKE PROTECTION",
+            "8000", // Cost of Goods Sold
+            10
+        ));
+        
+        // FEE IMMEDIATE PAYMENT - bank charges (high priority)
+        rules.add(createRule(
+            "Fee Immediate Payment",
+            "Bank charges for immediate payment processing",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "FEE IMMEDIATE PAYMENT",
+            "9600", // Bank Charges
+            10
+        ));
+        
+        // IMMEDIATE PAYMENT - generic employee payments (lower priority)
+        rules.add(createRule(
+            "Immediate Payment - Generic Employee",
+            "Generic immediate payment to employees (name and surname pattern)",
+            TransactionMappingRule.MatchType.REGEX,
+            "IMMEDIATE PAYMENT \\d+ [A-Z]+ [A-Z]+",
+            "8100", // Employee Costs
+            8
+        ));
+        
+        // Additional employee payment patterns
+        rules.add(createRule(
+            "Employee Payment - Sibongile Dlamini",
+            "Employee payment to Sibongile Dlamini",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "IMMEDIATE PAYMENT 167855420 SIBONGILE DLAMINI",
+            "8100", // Employee Costs
+            9
+        ));
+        
+        rules.add(createRule(
+            "Employee Payment - Themba Mkhatshwa",
+            "Employee payment to Themba Mkhatshwa",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "IMMEDIATE PAYMENT 207008710 THEMBA MKHATSHWA",
+            "8100", // Employee Costs
+            9
+        ));
+        
+        rules.add(createRule(
+            "Employee Payment - Lawrence Phogole",
+            "Employee payment to Lawrence Phogole",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "IMMEDIATE PAYMENT 207008307 LAWRENCE PHOGOLE",
+            "8100", // Employee Costs
+            9
+        ));
+        
+        rules.add(createRule(
+            "Employee Payment - Tlometsane Moraswi",
+            "Employee payment to Tlometsane Moraswi",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "IMMEDIATE PAYMENT 207009081 TLOMETSANE MORASWI",
+            "8100", // Employee Costs
+            9
+        ));
+        
+        rules.add(createRule(
+            "Employee Payment - Mbhoni Miyambo",
+            "Employee payment to Mbhoni Miyambo",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "IMMEDIATE PAYMENT 204543849 MBHONI MIYAMBO",
+            "8100", // Employee Costs
+            9
+        ));
+        
+        rules.add(createRule(
+            "Employee Payment - Musa Nzunza",
+            "Employee payment to Musa Nzunza",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "IMMEDIATE PAYMENT 156658792 MUSA NZUNZA",
+            "8100", // Employee Costs
+            9
+        ));
+        
+        rules.add(createRule(
+            "Employee Payment - Masemola Matawaneng",
+            "Employee payment to Masemola Matawaneng",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "IMMEDIATE PAYMENT 207009987 MASEMOLA MATAWANENG",
+            "8100", // Employee Costs
+            9
+        ));
+        
+        rules.add(createRule(
+            "Employee Payment - Winners Chauke",
+            "Employee payment to Winners Chauke",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "IMMEDIATE PAYMENT 207010671 WINNERS CHAUKE",
+            "8100", // Employee Costs
+            9
+        ));
+        
+        // Director payments
+        rules.add(createRule(
+            "Director Payment - DB Nkuna",
+            "Director remuneration payment to DB Nkuna",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "DB NKUNA",
+            "8100-001", // Director Remuneration
+            9
+        ));
+        
+        // Pension contributions
+        rules.add(createRule(
+            "Pension Fund Contributions",
+            "Pension fund contributions for employees",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "PENSION FUND CONTRIBUTION",
+            "9900", // Pension Expenses
+            9
+        ));
+        
+        rules.add(createRule(
+            "Pension Fund Transfers",
+            "Pension fund transfers and contributions",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "DEBIT TRANSFER FAW",
+            "9900", // Pension Expenses
+            9
+        ));
+        
+        // Training expenses
+        rules.add(createRule(
+            "OHS Training Expenses",
+            "Occupational Health and Safety training expenses",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "OHS TRAINING",
+            "8730", // Education & Training
+            9
+        ));
+        
+        // Petrol allowance
+        rules.add(createRule(
+            "Petrol Allowance",
+            "Petrol allowance payments to employees",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "PETROL ALOWANCE",
+            "8500", // Motor Vehicle Expenses
+            9
+        ));
+        
+        // PAYE payments to SARS
+        rules.add(createRule(
+            "PAYE Payments to SARS",
+            "PAYE tax payments to South African Revenue Service",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "PAYE-PAY-AS-",
+            "9820", // PAYE Expense (tax expense)
+            9
+        ));
+        
+        // Cash withdrawals
+        rules.add(createRule(
+            "Cash Withdrawals",
+            "ATM cash withdrawals",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "AUTOBANK CASH WITHDRAWAL",
+            "8100", // Employee Costs
+            9
+        ));
+        
+        // Director reimbursements
+        rules.add(createRule(
+            "Director Reimbursements",
+            "Director expense reimbursements",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "REIMBURSE",
+            "4000", // Long-term Loans (Director loans)
+            9
+        ));
+        
+        // Stokvela payments
+        rules.add(createRule(
+            "Stokvela Payments",
+            "Stokvela (savings club) payments",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "STOKVELA",
+            "1000", // Petty Cash/Loans Receivable (asset accounts)
+            8
+        ));
+        
+        // Transport expenses
+        rules.add(createRule(
+            "Transport Expenses",
+            "Transport and related expenses",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "TRANSPORT",
+            "8500", // Motor Vehicle Expenses
+            9
+        ));
+        
+        // Telephone expenses
+        rules.add(createRule(
+            "Telephone Expenses",
+            "Telephone and communication expenses",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "TELEPHONE",
+            "8400", // Communication
+            9
+        ));
+        
+        // Vehicle tracking
+        rules.add(createRule(
+            "Netstar Vehicle Tracking",
+            "Netstar vehicle tracking services",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "NETSTAR",
+            "8500-002", // Netstar Vehicle Tracking
+            9
+        ));
+        
+        // Loan income
+        rules.add(createRule(
+            "Loan Income",
+            "Loans received from directors/associates",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "IB PAYMENT FROM",
+            "2000-001", // Director Loan - Company Assist
+            9
+        ));
+        
+        // Company transfers
+        rules.add(createRule(
+            "Company Transfers",
+            "Inter-company transfers and income",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "CREDIT TRANSFER",
+            "4000", // Long-term Loans
+            9
+        ));
+        
+        // Returned debits (offset transactions)
+        rules.add(createRule(
+            "Returned Debits",
+            "Returned debit orders (offset original transactions)",
+            TransactionMappingRule.MatchType.REGEX,
+            "RTD-.*",
+            "8800", // Insurance (generic offset)
+            8
+        ));
+        
+        // BALANCE BROUGHT FORWARD - opening balance entries
+        rules.add(createRule(
+            "Balance Brought Forward",
+            "Opening balance entries from previous periods",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "BALANCE BROUGHT FORWARD",
+            "5000", // Retained Earnings (opening balances)
+            9
+        ));
+        
+        // COROBRIK customer payments (revenue)
+        rules.add(createRule(
+            "Corobrik Revenue",
+            "Customer payments from Corobrik",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "COROBRIK",
+            "6100-001", // Corobrik Service Revenue
+            9
+        ));
+        
+        // IB TRANSFER FROM fuel account (offsetting fuel expenses)
+        rules.add(createRule(
+            "IB Transfer From Fuel Account",
+            "Internal bank transfers from fuel supplier account",
+            TransactionMappingRule.MatchType.REGEX,
+            "IB TRANSFER FROM \\*\\*\\*\\*\\*2689327.*",
+            "8600-099", // Fuel Expenses - Other Stations
+            8
+        ));
+        
+        // Returned debits - extract provider and map to same account (offset logic)
+        rules.add(createRule(
+            "Returned Debit - DOTSURE Offset",
+            "Returned debit orders for DOTSURE insurance (offset in same account)",
+            TransactionMappingRule.MatchType.REGEX,
+            "RTD-DEBIT AGAINST PAYERS AUTH DOTSURE.*",
+            "8800-002", // DOTSURE Insurance Premiums (offset)
+            8
+        ));
+        
+        rules.add(createRule(
+            "Returned Debit - Generic Provider Offset",
+            "Returned debit orders for other providers (extract provider and offset)",
+            TransactionMappingRule.MatchType.REGEX,
+            "RTD-DEBIT AGAINST PAYERS AUTH ([A-Z]+).*",
+            "8800", // Insurance (generic - will be refined by provider extraction)
+            7
+        ));
+        
+        rules.add(createRule(
+            "Returned Debit - RTD NOT PROVIDED Offset",
+            "Returned debit orders with RTD-NOT PROVIDED pattern",
+            TransactionMappingRule.MatchType.REGEX,
+            "RTD-NOT PROVIDED FOR ([A-Z]+).*",
+            "8800", // Insurance (generic - will be refined by provider extraction)
+            7
+        ));
+        
         // SARS VAT payments (CRITICAL: Must be expense, not liability adjustment)
         rules.add(createRule(
             "SARS VAT Payments",
@@ -678,27 +1134,130 @@ public class AccountClassificationService {
         ));
         
         // ========================================================================
-        // PRIORITY 8: STANDARD BUSINESS PATTERNS
+        // PRIORITY 9: SPECIFIC INDIVIDUAL PAYMENTS (HIGH PRIORITY)
         // ========================================================================
         
-   /*      // Internal bank transfers (between own accounts) - Lower priority to allow specific account rules
+        // IB PAYMENT TO specific individuals (likely director/employee payments)
+        rules.add(createRule(
+            "IB Payment to EUPHODIA N TAU XINGHIZANA",
+            "IB payment to EUPHODIA N TAU XINGHIZANA (director/employee payment)",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "IB PAYMENT TO EUPHODIA N TAU XINGHIZANA",
+            "1000-001", // stokvela Contributions
+            9
+        ));
+        
+        rules.add(createRule(
+            "IB Payment to NGWAKWANE E TAU XINGHIZANA",
+            "IB payment to NGWAKWANE E TAU XINGHIZANA (director/employee payment)",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "IB PAYMENT TO NGWAKWANE E TAU XINGHIZANA",
+            "1000-001", // Stokvela Contributions
+            9
+        ));
+        
+        rules.add(createRule(
+            "IB Payment to EUPHODIA TAU STOKFELA",
+            "IB payment to EUPHODIA TAU STOKFELA (stokvela payment)",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "IB PAYMENT TO EUPHODIA TAU STOKFELA",
+            "1000-001", // Cash and Cash Equivalents (Stokvela)
+            9
+        ));
+        
+        // IMMEDIATE PAYMENT to specific individuals
+        rules.add(createRule(
+            "Immediate Payment to JEFFREY MAPHOSA",
+            "Immediate payment to JEFFREY MAPHOSA (employee payment)",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "IMMEDIATE PAYMENT TO JEFFREY MAPHOSA",
+            "8100-001", // Director Remuneration
+            9
+        ));
+        
+        rules.add(createRule(
+            "Immediate Payment to NGWAKWANE E TAU",
+            "Immediate payment to NGWAKWANE E TAU (employee payment)",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "IMMEDIATE PAYMENT TO NGWAKWANE E TAU",
+            "1000-001", // Stokvela Contributions
+            9
+        ));
+        
+        rules.add(createRule(
+            "Immediate Payment to DAVID MOLEFE",
+            "Immediate payment to DAVID MOLEFE (employee payment)",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "IMMEDIATE PAYMENT TO DAVID MOLEFE",
+            "8100", // Employee Costs
+            9
+        ));
+        
+        rules.add(createRule(
+            "Immediate Payment to MUZIKAYISE ZUNGA",
+            "Immediate payment to MUZIKAYISE ZUNGA (employee payment)",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "IMMEDIATE PAYMENT TO MUZIKAYISE ZUNGA",
+            "8100", // Employee Costs
+            9
+        ));
+        
+        // ========================================================================
+        // PRIORITY 8: GENERIC PAYMENT PATTERNS
+        // ========================================================================
+        
+        // Generic IB PAYMENT TO pattern (fallback for other individuals)
+        rules.add(createRule(
+            "IB Payment To - Generic",
+            "Generic IB payment to individuals (fallback rule)",
+            TransactionMappingRule.MatchType.REGEX,
+            "IB PAYMENT TO [A-Z]+ [A-Z]+.*",
+            "8100", // Employee Costs (generic fallback)
+            8
+        ));
+        
+        // Generic IMMEDIATE PAYMENT pattern
+        rules.add(createRule(
+            "Immediate Payment - Generic",
+            "Generic immediate payment to individuals",
+            TransactionMappingRule.MatchType.REGEX,
+            "IMMEDIATE PAYMENT [0-9]+ [A-Z]+ [A-Z]+.*",
+            "8100", // Employee Costs
+            8
+        ));
+        
+        // ========================================================================
+        // PRIORITY 7: CASH DEPOSITS AND TRANSFERS
+        // ========================================================================
+        
+        // AUTOBANK CASH DEPOSIT (cash inflows - revenue)
+        rules.add(createRule(
+            "Autobank Cash Deposit - Generic",
+            "Cash deposits through autobank (revenue)",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "AUTOBANK CASH DEPOSIT",
+            "1000", // Other 
+            7
+        ));
+        
+        // Internal bank transfers (between own accounts)
         rules.add(createRule(
             "Bank Transfers - IB TRANSFER TO",
-            "Internal bank transfers to other accounts (general case)",
+            "Internal bank transfers to other accounts",
             TransactionMappingRule.MatchType.CONTAINS,
             "IB TRANSFER TO",
-            "1100", // Bank - Current Account
-            7  // Lower priority so specific account patterns (like 2689327 for fuel) take precedence
+            "1100-001", // Bank - Current Account
+            7
         ));
         
         rules.add(createRule(
             "Bank Transfers - IB TRANSFER FROM",
-            "Internal bank transfers from other accounts (general case)", 
+            "Internal bank transfers from other accounts",
             TransactionMappingRule.MatchType.CONTAINS,
             "IB TRANSFER FROM",
-            "1100", // Bank - Current Account
-            7  // Lower priority so specific account patterns take precedence
-        )); */
+            "1100-001", // Bank - Current Account
+            7
+        ));
         
         // Rent payments
         rules.add(createRule(
@@ -895,6 +1454,151 @@ public class AccountClassificationService {
             "LOAN",
             "4000", // Long-term Loans
             5
+        ));
+        
+        // ========================================================================
+        // PRIORITY 6: REMAINING UNCLASSIFIED PATTERNS
+        // ========================================================================
+        
+        // MAGTAPE CREDIT COMPANY ASSIST (loan/credit payments)
+        rules.add(createRule(
+            "MAGTAPE CREDIT COMPANY ASSIST",
+            "Credit company assistance payments (loans)",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "MAGTAPE CREDIT COMPANY ASSIST",
+            "4000", // Long-term Loans
+            6
+        ));
+        
+        // Generic IB PAYMENT TO (fallback for unspecified recipients)
+        rules.add(createRule(
+            "IB Payment To - Generic Fallback",
+            "Generic IB payment to unspecified recipients (expense)",
+            TransactionMappingRule.MatchType.REGEX,
+            "^IB PAYMENT TO$",
+            "8100", // Employee Costs (generic fallback)
+            6
+        ));
+        
+        // Generic IMMEDIATE PAYMENT (fallback for unspecified recipients)
+        rules.add(createRule(
+            "Immediate Payment - Generic Fallback",
+            "Generic immediate payment to unspecified recipients",
+            TransactionMappingRule.MatchType.REGEX,
+            "^IMMEDIATE PAYMENT$",
+            "8100", // Employee Costs (generic fallback)
+            6
+        ));
+        
+        // DEBIT TRANSFER (collections/payments)
+        rules.add(createRule(
+            "Debit Transfer - Collections",
+            "DEBIT TRANSFER MIWAYCOLLE00000057007338240401",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "MIWAY",
+            "8800-004", // Miway Insurance Premiums
+            6
+        ));
+        
+        // Mobile phone payments (MTN, Vodacom prepaid)
+        rules.add(createRule(
+            "Mobile Phone Payments - MTN",
+            "MTN prepaid mobile phone payments",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "PRE-PAID PAYMENT TO MTN PREPAID",
+            "8600", // Communications
+            6
+        ));
+        
+        rules.add(createRule(
+            "Mobile Phone Payments - VOD",
+            "Vodacom prepaid mobile phone payments",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "PRE-PAID PAYMENT TO VOD PREPAID",
+            "8600", // Communications
+            6
+        ));
+        
+        // Interest adjustments/refunds (very small amounts)
+        rules.add(createRule(
+            "Interest Adjustment/Refund",
+            "Bank interest adjustments and refunds",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "INTEREST ADJUSTMENT/REFUND",
+            "9500", // Interest Income
+            6
+        ));
+        
+        // Generic account payments
+        rules.add(createRule(
+            "Account Payment - Generic",
+            "Generic account payments",
+            TransactionMappingRule.MatchType.REGEX,
+            "^ACCOUNT PAYMENT$",
+            "8710", // Suppliers Expense (generic)
+            6
+        ));
+        
+        // ========================================================================
+        // PRIORITY 7: FINAL REMAINING PATTERNS (100% CLASSIFICATION TARGET)
+        // ========================================================================
+        
+        // MAGTAPE CREDIT specific loan payments
+        rules.add(createRule(
+            "MAGTAPE CREDIT XINGHIZANA 13AUGLOA",
+            "MAGTAPE credit payment to XINGHIZANA 13AUGLOA (loan payment)",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "MAGTAPE CREDIT XINGHIZANA 13AUGLOA",
+            "4000", // Long-term Loans
+            7
+        ));
+        
+        rules.add(createRule(
+            "MAGTAPE CREDIT XG LOA MAPHOSA",
+            "MAGTAPE credit payment XG LOA MAPHOSA (loan payment)",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "MAGTAPE CREDIT XG LOA MAPHOSA",
+            "4000", // Long-term Loans
+            7
+        ));
+        
+        rules.add(createRule(
+            "MAGTAPE CREDIT 001 UNPAIDS/WEIERINGS CAPITEC",
+            "MAGTAPE credit payment to UNPAIDS/WEIERINGS CAPITEC (loan payment)",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "MAGTAPE CREDIT 001 UNPAIDS/WEIERINGS CAPITEC",
+            "4000", // Long-term Loans
+            7
+        ));
+        
+        // CASH DEPOSIT STOKFELA
+        rules.add(createRule(
+            "CASH DEPOSIT STOKFELA",
+            "Cash deposit to stokvela account",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "CASH DEPOSIT STOKFELA",
+            "1000", // Cash and Cash Equivalents
+            7
+        ));
+        
+        // AUTOBANK INSTANTMONEY CASH TO (cash withdrawal)
+        rules.add(createRule(
+            "AUTOBANK INSTANTMONEY CASH TO",
+            "Cash withdrawal via Instant Money",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "AUTOBANK INSTANTMONEY CASH TO",
+            "8100", // Employee Costs
+            7
+        ));
+        
+        // AUTOBANK TRANSFER FROM ACCOUNT
+        rules.add(createRule(
+            "AUTOBANK TRANSFER FROM ACCOUNT",
+            "Bank transfer from another account",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "AUTOBANK TRANSFER FROM ACCOUNT",
+            "1100-001", // Bank - Current Account
+            7
         ));
         
         // Sort by priority (descending) to ensure highest priority rules are checked first

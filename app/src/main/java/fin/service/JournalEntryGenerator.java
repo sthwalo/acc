@@ -46,11 +46,23 @@ public class JournalEntryGenerator {
      * @return true if the journal entry was created successfully
      */
     public boolean createJournalEntryForTransaction(BankTransaction transaction, ClassificationResult classificationResult) {
+        return createJournalEntryForTransaction(transaction, classificationResult, false);
+    }
+
+    /**
+     * Creates a journal entry for a classified transaction
+     *
+     * @param transaction The bank transaction to create an entry for
+     * @param classificationResult The classification result containing account info
+     * @param forceCreate If true, skips the existence check (used during regeneration)
+     * @return true if the journal entry was created successfully
+     */
+    public boolean createJournalEntryForTransaction(BankTransaction transaction, ClassificationResult classificationResult, boolean forceCreate) {
         try (Connection conn = getConnection()) {
             conn.setAutoCommit(false);
             
-            // Check if journal entry already exists for this transaction
-            if (journalEntryExistsForTransaction(conn, transaction)) {
+            // Check if journal entry already exists for this transaction (unless forceCreate is true)
+            if (!forceCreate && journalEntryExistsForTransaction(conn, transaction)) {
                 LOGGER.info("Journal entry already exists for transaction: " + transaction.getId() + " - skipping");
                 return true;  // Return true as the entry already exists
             }
@@ -64,7 +76,7 @@ public class JournalEntryGenerator {
             );
 
             // Get the bank account ID
-            Long bankAccountId = getBankAccountId(conn);
+            Long bankAccountId = getBankAccountId(conn, transaction.getCompanyId());
 
             // Create journal entry header
             JournalEntry journalEntry = createJournalEntryHeader(transaction);
@@ -131,15 +143,17 @@ public class JournalEntryGenerator {
         return "Expenses"; // Default
     }
 
-    private Long getBankAccountId(Connection conn) throws SQLException {
-        String sql = "SELECT id FROM accounts WHERE account_code = '1100' LIMIT 1";
-        try (PreparedStatement stmt = conn.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
-            if (rs.next()) {
-                return rs.getLong("id");
+    private Long getBankAccountId(Connection conn, Long companyId) throws SQLException {
+        String sql = "SELECT id FROM accounts WHERE account_code = '1100' AND company_id = ? LIMIT 1";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, companyId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getLong("id");
+                }
             }
         }
-        throw new SQLException("Bank account (1100) not found");
+        throw new SQLException("Bank account (1100) not found for company: " + companyId);
     }
 
     private long insertJournalEntry(Connection conn, JournalEntry journalEntry) throws SQLException {
@@ -171,8 +185,8 @@ public class JournalEntryGenerator {
     private void createJournalEntryLines(Connection conn, long journalEntryId, BankTransaction transaction,
                                        Long classifiedAccountId, Long bankAccountId) throws SQLException {
         String sql = """
-            INSERT INTO journal_entry_lines (journal_entry_id, account_id, debit_amount, credit_amount, description)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO journal_entry_lines (journal_entry_id, account_id, debit_amount, credit_amount, description, source_transaction_id)
+            VALUES (?, ?, ?, ?, ?, ?)
             """;
 
         // Determine transaction type and create double-entry lines
@@ -190,6 +204,7 @@ public class JournalEntryGenerator {
                 stmt.setNull(3, Types.NUMERIC); // debit_amount = NULL
                 stmt.setBigDecimal(4, amount); // credit_amount = transaction amount
                 stmt.setString(5, "Income - " + transaction.getDetails());
+                stmt.setLong(6, transaction.getId()); // source_transaction_id
                 stmt.executeUpdate();
 
                 // Debit the bank account
@@ -198,6 +213,7 @@ public class JournalEntryGenerator {
                 stmt.setBigDecimal(3, amount); // debit_amount = transaction amount
                 stmt.setNull(4, Types.NUMERIC); // credit_amount = NULL
                 stmt.setString(5, "Bank account - " + transaction.getDetails());
+                stmt.setLong(6, transaction.getId()); // source_transaction_id
                 stmt.executeUpdate();
 
             } else if (isExpense) {
@@ -210,6 +226,7 @@ public class JournalEntryGenerator {
                 stmt.setBigDecimal(3, amount); // debit_amount = transaction amount
                 stmt.setNull(4, Types.NUMERIC); // credit_amount = NULL
                 stmt.setString(5, "Expense - " + transaction.getDetails());
+                stmt.setLong(6, transaction.getId()); // source_transaction_id
                 stmt.executeUpdate();
 
                 // Credit the bank account
@@ -218,6 +235,7 @@ public class JournalEntryGenerator {
                 stmt.setNull(3, Types.NUMERIC); // debit_amount = NULL
                 stmt.setBigDecimal(4, amount); // credit_amount = transaction amount
                 stmt.setString(5, "Bank account - " + transaction.getDetails());
+                stmt.setLong(6, transaction.getId()); // source_transaction_id
                 stmt.executeUpdate();
             }
         }
@@ -225,24 +243,16 @@ public class JournalEntryGenerator {
 
     /**
      * Check if a journal entry already exists for this transaction
+     * Uses source_transaction_id linkage for reliable duplicate detection
      */
     private boolean journalEntryExistsForTransaction(Connection conn, BankTransaction transaction) throws SQLException {
         String sql = """
-            SELECT COUNT(*) FROM journal_entries 
-            WHERE company_id = ? 
-            AND entry_date = ? 
-            AND description = ?
-            AND (reference LIKE ? OR reference LIKE ?)
+            SELECT COUNT(*) FROM journal_entry_lines 
+            WHERE source_transaction_id = ?
             """;
             
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setLong(1, transaction.getCompanyId());
-            stmt.setDate(2, java.sql.Date.valueOf(transaction.getTransactionDate()));
-            stmt.setString(3, transaction.getDetails());
-            // Check for existing reference patterns
-            String txRef = transaction.getReference() != null ? transaction.getReference() : "";
-            stmt.setString(4, "%" + txRef + "%");
-            stmt.setString(5, "JE-" + transaction.getId() + "-%"); 
+            stmt.setLong(1, transaction.getId());
             
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
