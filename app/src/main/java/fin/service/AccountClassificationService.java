@@ -651,11 +651,11 @@ public class AccountClassificationService {
         // COROBRIK customer payments (revenue)
         rules.add(createRule(
             "Corobrik Service Revenue",
-            "Customer payments from Corobrik",
+            "Credit Transfer ... Corobrik",
             TransactionMappingRule.MatchType.CONTAINS,
             "COROBRIK",
             "6100-001", // Corobrik Service Revenue
-            9
+            10
         ));
         
         // Returned debits - offset original transactions
@@ -1025,13 +1025,22 @@ public class AccountClassificationService {
             9
         ));
         
-        // Company transfers
+        // Company transfers - specific patterns based on trailing descriptions
         rules.add(createRule(
-            "Company Transfers",
-            "Inter-company transfers and income",
-            TransactionMappingRule.MatchType.CONTAINS,
-            "CREDIT TRANSFER",
+            "Company Transfers - Company Assist",
+            "Inter-company transfers for company assistance (loans)",
+            TransactionMappingRule.MatchType.REGEX,
+            "CREDIT TRANSFER.*COMPANY ASSIST",
             "4000", // Long-term Loans
+            9
+        ));
+        
+        rules.add(createRule(
+            "Company Transfers - TAU",
+            "Inter-company transfers for TAU (stokvela contributions)",
+            TransactionMappingRule.MatchType.REGEX,
+            "CREDIT TRANSFER.*TAU",
+            "1000-001", // Stokvela Contributions
             9
         ));
         
@@ -1060,9 +1069,9 @@ public class AccountClassificationService {
             "Corobrik Revenue",
             "Customer payments from Corobrik",
             TransactionMappingRule.MatchType.CONTAINS,
-            "COROBRIK",
+            "CREDIT TRANSFER.*COROBRIK",
             "6100-001", // Corobrik Service Revenue
-            9
+            10
         ));
         
         // IB TRANSFER FROM fuel account (offsetting fuel expenses)
