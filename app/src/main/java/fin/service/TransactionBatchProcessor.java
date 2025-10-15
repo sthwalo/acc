@@ -19,6 +19,20 @@ public class TransactionBatchProcessor {
     private final ClassificationRuleManager ruleManager;
     private final JournalEntryGenerator journalGenerator;
 
+    /**
+     * Constructor with dependency injection.
+     *
+     * NOTE: EI_EXPOSE_REP warning is intentionally suppressed for this constructor.
+     * This is an architectural design decision for Dependency Injection pattern:
+     * - Services are injected as constructor parameters to enable loose coupling
+     * - Allows for better testability through mock injection
+     * - Enables orchestration of complex batch processing workflows
+     * - Maintains separation between classification and journal entry generation
+     * - Suppressions are configured in config/spotbugs/exclude.xml for all service constructors
+     *
+     * @param ruleManager classification rule manager for transaction mapping
+     * @param journalGenerator journal entry generator for accounting entries
+     */
     public TransactionBatchProcessor(ClassificationRuleManager ruleManager,
                                    JournalEntryGenerator journalGenerator) {
         this.ruleManager = ruleManager;

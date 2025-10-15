@@ -24,6 +24,22 @@ public class FiscalPeriod {
         this.createdAt = LocalDateTime.now();
     }
     
+    /**
+     * Copy constructor for defensive copying.
+     * Creates a deep copy of all FiscalPeriod fields to prevent external modification.
+     */
+    public FiscalPeriod(FiscalPeriod other) {
+        if (other == null) return;
+        
+        this.id = other.id;
+        this.companyId = other.companyId;
+        this.periodName = other.periodName;
+        this.startDate = other.startDate;
+        this.endDate = other.endDate;
+        this.isClosed = other.isClosed;
+        this.createdAt = other.createdAt;
+    }
+    
     // Getters and setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }

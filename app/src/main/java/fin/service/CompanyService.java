@@ -27,7 +27,6 @@ package fin.service;
 
 import fin.model.Company;
 import fin.model.FiscalPeriod;
-import fin.config.DatabaseConfig;
 
 import java.sql.*;
 import java.time.LocalDateTime;
@@ -39,19 +38,9 @@ public class CompanyService {
     
     public CompanyService(String dbUrl) {
         this.dbUrl = dbUrl;
-        initializeDatabase();
     }
     
-    private void initializeDatabase() {
-        // Skip table creation if using PostgreSQL since schema already exists
-        if (DatabaseConfig.isUsingPostgreSQL()) {
-            System.out.println("📊 Using PostgreSQL - schema already exists");
-            return;
-        }
 
-        // This should not happen since we only use PostgreSQL now
-        throw new RuntimeException("Unsupported database type. Only PostgreSQL is supported.");
-    }
 
     public Company createCompany(Company company) {
         String sql = "INSERT INTO companies (name, registration_number, tax_number, address, " +

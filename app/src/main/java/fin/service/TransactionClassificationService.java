@@ -39,9 +39,21 @@ public class TransactionClassificationService {
     /**
      * Constructor with full dependency injection
      * 
+     * NOTE: EI_EXPOSE_REP warning is intentionally suppressed for this constructor.
+     * This is an architectural design decision for Dependency Injection pattern:
+     * - Services are injected as constructor parameters to enable loose coupling
+     * - Allows for better testability through mock injection
+     * - Enables service orchestration for complex classification workflows
+     * - Maintains separation of concerns between different classification strategies
+     * - Suppressions are configured in config/spotbugs/exclude.xml for all service constructors
+     * 
      * NOTE: TransactionMappingService has been ELIMINATED in favor of AccountClassificationService
      * which provides both standard SARS-compliant chart of accounts AND transaction processing.
      * ClassificationRuleManager handles company-specific learned rules.
+     *
+     * @param dbUrl database connection URL
+     * @param ruleManager classification rule manager for learned patterns
+     * @param interactiveService interactive classification service for user input
      */
     public TransactionClassificationService(String dbUrl,
                                            ClassificationRuleManager ruleManager,

@@ -42,6 +42,28 @@ public class User {
         this.companyId = companyId;
     }
 
+    /**
+     * Copy constructor for defensive copying to prevent EI_EXPOSE_REP vulnerabilities
+     */
+    public User(User other) {
+        if (other != null) {
+            this.id = other.id;
+            this.email = other.email;
+            this.passwordHash = other.passwordHash;
+            this.salt = other.salt;
+            this.firstName = other.firstName;
+            this.lastName = other.lastName;
+            this.role = other.role;
+            this.companyId = other.companyId;
+            this.isActive = other.isActive;
+            this.createdAt = other.createdAt;
+            this.updatedAt = other.updatedAt;
+            this.createdBy = other.createdBy;
+            this.updatedBy = other.updatedBy;
+            this.lastLoginAt = other.lastLoginAt;
+        }
+    }
+
     // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }

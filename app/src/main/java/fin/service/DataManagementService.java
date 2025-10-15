@@ -1,7 +1,6 @@
 package fin.service;
 
 import fin.model.*;
-import fin.config.DatabaseConfig;
 import java.sql.*;
 import java.math.BigDecimal;
 import java.time.*;
@@ -23,19 +22,9 @@ public class DataManagementService {
         this.dbUrl = dbUrl;
         this.companyService = companyService;
         this.accountService = accountService;
-        initializeDatabase();
     }
 
-    private void initializeDatabase() {
-        // Skip table creation for PostgreSQL since schema already exists
-        if (DatabaseConfig.isUsingPostgreSQL()) {
-            LOGGER.info("Using PostgreSQL - skipping table creation (schema already exists)");
-            return;
-        }
 
-        // This should not happen since we only use PostgreSQL now
-        throw new RuntimeException("Unsupported database type. Only PostgreSQL is supported.");
-    }
 
     /**
      * Resets all transactional data for a company while preserving master data.

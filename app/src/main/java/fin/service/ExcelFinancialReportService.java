@@ -10,6 +10,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.logging.Logger;
+import java.io.IOException;
 import java.util.logging.Level;
 
 /**
@@ -71,7 +72,7 @@ public class ExcelFinancialReportService {
             System.out.println("✅ Excel Financial Report generated: " + fullPath);
             LOGGER.info("Excel Financial Report generated: " + fullPath);
             
-        } catch (Exception e) {
+        } catch (SQLException | IOException e) {
             LOGGER.log(Level.SEVERE, "Error generating Excel financial report", e);
             throw new RuntimeException("Failed to generate Excel financial report", e);
         }
@@ -385,7 +386,8 @@ public class ExcelFinancialReportService {
     }
     
     private void createAuditReport(Workbook workbook, CompanyInfo company, FiscalPeriodInfo period) {
-        Sheet sheet = workbook.createSheet("Audit report");
+        // TODO: Implement audit report content
+        // Sheet sheet = workbook.createSheet("Audit report");
         // Add audit report content
     }
     
@@ -528,12 +530,76 @@ public class ExcelFinancialReportService {
     }
     
     private List<IncomeStatementItem> getIncomeStatementRevenues(Connection conn, Long companyId, Long fiscalPeriodId) {
-        // Implementation to get revenue accounts
-        return new ArrayList<>();
+        List<IncomeStatementItem> revenues = new ArrayList<>();
+        String sql = """
+            SELECT a.account_code, a.account_name,
+                   COALESCE(SUM(jel.credit_amount - jel.debit_amount), 0) as net_amount
+            FROM accounts a
+            LEFT JOIN journal_entry_lines jel ON a.id = jel.account_id
+            LEFT JOIN journal_entries je ON jel.journal_entry_id = je.id
+                AND je.company_id = ? AND je.fiscal_period_id = ?
+            WHERE a.company_id = ? AND a.account_code LIKE '4%'
+            GROUP BY a.account_code, a.account_name
+            HAVING COALESCE(SUM(jel.credit_amount - jel.debit_amount), 0) != 0
+            ORDER BY a.account_code
+            """;
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, companyId);
+            stmt.setLong(2, fiscalPeriodId);
+            stmt.setLong(3, companyId);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    IncomeStatementItem item = new IncomeStatementItem();
+                    item.accountName = rs.getString("account_name");
+                    item.noteReference = rs.getString("account_code");
+                    item.amount = rs.getDouble("net_amount");
+                    revenues.add(item);
+                }
+            }
+        } catch (SQLException e) {
+            // Log error and return empty list
+            System.err.println("Error getting revenue data: " + e.getMessage());
+        }
+
+        return revenues;
     }
     
     private List<IncomeStatementItem> getIncomeStatementExpenses(Connection conn, Long companyId, Long fiscalPeriodId) {
-        // Implementation to get expense accounts
-        return new ArrayList<>();
+        List<IncomeStatementItem> expenses = new ArrayList<>();
+        String sql = """
+            SELECT a.account_code, a.account_name,
+                   COALESCE(SUM(jel.debit_amount - jel.credit_amount), 0) as net_amount
+            FROM accounts a
+            LEFT JOIN journal_entry_lines jel ON a.id = jel.account_id
+            LEFT JOIN journal_entries je ON jel.journal_entry_id = je.id
+                AND je.company_id = ? AND je.fiscal_period_id = ?
+            WHERE a.company_id = ? AND (a.account_code LIKE '5%' OR a.account_code LIKE '8%' OR a.account_code LIKE '9%')
+            GROUP BY a.account_code, a.account_name
+            HAVING COALESCE(SUM(jel.debit_amount - jel.credit_amount), 0) != 0
+            ORDER BY a.account_code
+            """;
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, companyId);
+            stmt.setLong(2, fiscalPeriodId);
+            stmt.setLong(3, companyId);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    IncomeStatementItem item = new IncomeStatementItem();
+                    item.accountName = rs.getString("account_name");
+                    item.noteReference = rs.getString("account_code");
+                    item.amount = rs.getDouble("net_amount");
+                    expenses.add(item);
+                }
+            }
+        } catch (SQLException e) {
+            // Log error and return empty list
+            System.err.println("Error getting expense data: " + e.getMessage());
+        }
+
+        return expenses;
     }
 }

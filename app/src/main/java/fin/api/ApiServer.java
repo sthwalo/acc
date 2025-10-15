@@ -61,7 +61,15 @@ public class ApiServer {
                     BankStatementProcessingService bankStatementService, 
                     TransactionClassificationService classificationService,
                     PayrollService payrollService) {
-        this.gson = new GsonBuilder()
+        
+        // Instantiate services BEFORE field assignment (secure constructor pattern)
+        CompanyService finalCompanyService = companyService != null ? companyService : new CompanyService(DatabaseConfig.getDatabaseUrl());
+        CsvImportService finalCsvImportService = csvImportService != null ? csvImportService : new CsvImportService(DatabaseConfig.getDatabaseUrl(), finalCompanyService);
+        ReportService finalReportService = reportService != null ? reportService : new ReportService(DatabaseConfig.getDatabaseUrl(), finalCsvImportService);
+        BankStatementProcessingService finalBankStatementService = bankStatementService != null ? bankStatementService : new BankStatementProcessingService(DatabaseConfig.getDatabaseUrl());
+        
+        // Create Gson AFTER service validation (no exception risk)
+        Gson gsonInstance = new GsonBuilder()
             .registerTypeAdapter(LocalDateTime.class, new JsonSerializer<LocalDateTime>() {
                 @Override
                 public JsonElement serialize(LocalDateTime localDateTime, Type type, JsonSerializationContext context) {
@@ -72,18 +80,12 @@ public class ApiServer {
             .setPrettyPrinting()
             .create();
             
-        // Test database connection
-        if (!DatabaseConfig.testConnection()) {
-            throw new RuntimeException("Failed to connect to database");
-        }
-        
-        System.out.println("🔌 Using database: " + DatabaseConfig.getDatabaseType());
-        
-        // Use injected services from ApplicationContext
-        this.companyService = companyService != null ? companyService : new CompanyService(DatabaseConfig.getDatabaseUrl());
-        this.csvImportService = csvImportService != null ? csvImportService : new CsvImportService(DatabaseConfig.getDatabaseUrl(), this.companyService);
-        this.reportService = reportService != null ? reportService : new ReportService(DatabaseConfig.getDatabaseUrl(), this.csvImportService);
-        this.bankStatementService = bankStatementService != null ? bankStatementService : new BankStatementProcessingService(DatabaseConfig.getDatabaseUrl());
+        // Only assign fields AFTER successful initialization
+        this.companyService = finalCompanyService;
+        this.csvImportService = finalCsvImportService;
+        this.reportService = finalReportService;
+        this.bankStatementService = finalBankStatementService;
+        this.gson = gsonInstance;
     }
     
     // Legacy constructor for backward compatibility

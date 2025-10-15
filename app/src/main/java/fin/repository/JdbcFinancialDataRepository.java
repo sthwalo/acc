@@ -101,8 +101,17 @@ public class JdbcFinancialDataRepository implements FinancialDataRepository {
                     } else if ("EXPENSES".equals(type)) {
                         // For expenses: debits increase expenses, credits decrease expenses
                         netBalance = debits.subtract(credits);
+                    } else if ("ASSETS".equals(type)) {
+                        // For assets: debits increase assets, credits decrease assets
+                        netBalance = debits.subtract(credits);
+                    } else if ("LIABILITIES".equals(type)) {
+                        // For liabilities: credits increase liabilities, debits decrease liabilities
+                        netBalance = credits.subtract(debits);
+                    } else if ("EQUITY".equals(type)) {
+                        // For equity: credits increase equity, debits decrease equity
+                        netBalance = credits.subtract(debits);
                     } else {
-                        // For balance sheet accounts: normal debits - credits
+                        // For other accounts: default to debits - credits
                         netBalance = debits.subtract(credits);
                     }
 

@@ -544,7 +544,7 @@ public class AccountClassificationService {
             suggestions.forEach((pattern, account) -> 
                 System.out.printf("%-25s → %s%n", pattern, account));
             
-        } catch (Exception e) {
+        } catch (SQLException e) {
             System.err.println("Error generating classification report: " + e.getMessage());
         }
     }
@@ -1672,7 +1672,7 @@ public class AccountClassificationService {
             
             return classifiedCount;
             
-        } catch (Exception e) {
+        } catch (SQLException e) {
             System.err.println("❌ Error classifying transactions: " + e.getMessage());
             return 0;
         }
@@ -1735,7 +1735,7 @@ public class AccountClassificationService {
             
             return reclassifiedCount;
             
-        } catch (Exception e) {
+        } catch (SQLException e) {
             System.err.println("❌ Error reclassifying transactions: " + e.getMessage());
             return 0;
         }

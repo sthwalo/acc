@@ -114,7 +114,7 @@ public class InteractiveClassificationService {
         public ClassificationRule(String pattern, String[] keywords, String accountCode, 
                                 String accountName, int usageCount) {
             this.pattern = pattern;
-            this.keywords = keywords;
+            this.keywords = keywords != null ? keywords.clone() : null;
             this.accountCode = accountCode;
             this.accountName = accountName;
             this.usageCount = usageCount;
@@ -122,7 +122,7 @@ public class InteractiveClassificationService {
         
         // Getters
         public String getPattern() { return pattern; }
-        public String[] getKeywords() { return keywords; }
+        public String[] getKeywords() { return keywords != null ? keywords.clone() : null; }
         public String getAccountCode() { return accountCode; }
         public String getAccountName() { return accountName; }
         public int getUsageCount() { return usageCount; }
