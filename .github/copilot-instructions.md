@@ -57,9 +57,12 @@ Bank PDFs → DocumentTextExtractor (PDFBox 3.0.0) → BankStatementProcessingSe
 # 3. DatabaseConfig.java automatically loads .env and falls back to system env vars
 
 source .env              # Load environment variables (optional, DatabaseConfig handles this)
-./runbuild.sh            # Initial build with all tests (uses runbuild.sh script)
+./gradlew clean spotbugsMain # Run SpotBugs analysis
+./gradlew clean build          # Compile and package application
 ./gradlew test           # Run all tests (maxHeapSize=2G configured)
+./gradlew clean build          # Compile and package application
 ```
+
 
 ### Running the Application
 ```bash
@@ -107,11 +110,13 @@ SELECT code, name, category FROM accounts ORDER BY code;
 
 ### Build & Test Workflow
 ```bash
-# Standard build with tests (ALWAYS use runbuild.sh for builds)
-./runbuild.sh                    # Full build (21s typical) - skips checkstyle issues
+# Clean and analyze code
+./gradlew clean spotbugsMain # Run SpotBugs analysis
 
+# Standard build with tests (ALWAYS use ./gradlew clean build for builds)
+./gradlew clean build          # Compile and package application
 # Fast build (REQUIRED after code changes - skip tests for speed)
-./runbuild.sh                    # Compile and package only (uses runbuild.sh)
+./run.sh                    # Compile and package only (uses run.sh)
 
 # Create deployable artifact (fat JAR with all dependencies)
 ./gradlew fatJar                 # Creates app/build/libs/app-fat.jar
@@ -138,7 +143,7 @@ SELECT code, name, category FROM accounts ORDER BY code;
 
 #### 1. **BUILD VERIFICATION** (Required After Every Code Change)
 ```bash
-./runbuild.sh
+./gradlew clean build
 ```
 This ensures:
 - All code compiles correctly
@@ -663,7 +668,7 @@ Remember: This system processes real financial data with 7,156+ transactions. Al
    ```
 
 4. **Build & Test After Each Change**
-   - Run `./runbuild.sh` after code changes
+   - Run `./gradlew clean build` after code changes
    - Fix any compilation errors before proceeding
    - Document build results
 

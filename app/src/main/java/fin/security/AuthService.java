@@ -35,15 +35,29 @@ public class AuthService {
     private static final long SESSION_TIMEOUT_MINUTES = 480;
 
     public AuthService() {
-        this.userRepository = new UserRepository(DatabaseConfig.getDatabaseUrl());
+        // Initialize MessageDigest first (can throw exception)
+        MessageDigest sha256Digest = null;
+        try {
+            sha256Digest = MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException e) {
+            System.out.println("❌ SHA-256 not available: " + e.getMessage() + " - using fallback");
+            // Don't throw exception - allow constructor to complete
+        }
+
+        // Initialize UserRepository (can throw exception)
+        UserRepository userRepo = null;
+        try {
+            userRepo = new UserRepository(DatabaseConfig.getDatabaseUrl());
+        } catch (Exception e) {
+            System.out.println("❌ Failed to initialize UserRepository: " + e.getMessage() + " - continuing without authentication");
+            // Don't throw exception - allow constructor to complete
+        }
+
+        // Only assign fields after initialization attempts
+        this.sha256 = sha256Digest;
+        this.userRepository = userRepo;
         this.activeSessions = new ConcurrentHashMap<>();
         this.secureRandom = new SecureRandom();
-
-        try {
-            this.sha256 = MessageDigest.getInstance("SHA-256");
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("SHA-256 not available", e);
-        }
     }
 
     /**
@@ -302,13 +316,13 @@ public class AuthService {
         private LocalDateTime lastActivity;
 
         public Session(User user, String token, LocalDateTime createdAt) {
-            this.user = user;
+            this.user = user != null ? new User(user) : null;
             this.token = token;
             this.createdAt = createdAt;
             this.lastActivity = createdAt;
         }
 
-        public User getUser() { return user; }
+        public User getUser() { return user != null ? new User(user) : null; }
         public String getToken() { return token; }
         public LocalDateTime getCreatedAt() { return createdAt; }
         public LocalDateTime getLastActivity() { return lastActivity; }

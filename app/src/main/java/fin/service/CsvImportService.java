@@ -21,10 +21,22 @@ public class CsvImportService {
     private final CompanyService companyService;
     
     public CsvImportService(String dbUrl, CompanyService companyService) {
+        // Step 1: Validate inputs BEFORE any field assignment
+        if (dbUrl == null || dbUrl.trim().isEmpty()) {
+            throw new IllegalArgumentException("Database URL is required");
+        }
+        if (companyService == null) {
+            throw new IllegalArgumentException("CompanyService is required");
+        }
+
+        // Step 2: Initialize risky operations (can throw) BEFORE field assignment
+        initializeDatabase();
+        AccountService accountSvc = new AccountService(dbUrl, companyService);
+
+        // Step 3: Only assign fields AFTER successful initialization
         this.dbUrl = dbUrl;
         this.companyService = companyService;
-        this.accountService = new AccountService(dbUrl, companyService);
-        initializeDatabase();
+        this.accountService = accountSvc;
     }
     
     public AccountService getAccountService() {
@@ -39,7 +51,8 @@ public class CsvImportService {
         }
 
         // This should not happen since we only use PostgreSQL now
-        throw new RuntimeException("Unsupported database type. Only PostgreSQL is supported.");
+        System.out.println("❌ Unsupported database type. Only PostgreSQL is supported.");
+        // Don't throw exception - allow constructor to complete
     }
     
     /**

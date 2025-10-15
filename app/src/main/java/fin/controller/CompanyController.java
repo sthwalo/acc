@@ -20,6 +20,23 @@ public class CompanyController {
     private final InputHandler inputHandler;
     private final OutputFormatter outputFormatter;
     
+    /**
+     * Constructor with dependency injection.
+     *
+     * NOTE: EI_EXPOSE_REP warning is intentionally suppressed for this constructor.
+     * This is an architectural design decision for Dependency Injection pattern:
+     * - Services and UI components are injected as constructor parameters to enable loose coupling
+     * - Allows for better testability through mock injection
+     * - Enables separation between business logic, UI, and application state
+     * - Maintains single responsibility principle in MVC architecture
+     * - Suppressions are configured in config/spotbugs/exclude.xml for all controller constructors
+     *
+     * @param companyService the service for company management operations
+     * @param applicationState the application state manager
+     * @param menu the console menu for user interaction
+     * @param inputHandler the input handler for user input
+     * @param outputFormatter the output formatter for display formatting
+     */
     public CompanyController(CompanyService companyService, ApplicationState applicationState,
                            ConsoleMenu menu, InputHandler inputHandler, OutputFormatter outputFormatter) {
         this.companyService = companyService;

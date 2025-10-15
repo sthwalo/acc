@@ -18,6 +18,18 @@ public class GeneralLedgerService {
 
     private final FinancialDataRepository repository;
 
+    /**
+     * Constructor with dependency injection.
+     *
+     * NOTE: EI_EXPOSE_REP warning is intentionally suppressed for this constructor.
+     * This is an architectural design decision for Dependency Injection pattern:
+     * - Services are injected as constructor parameters to enable loose coupling
+     * - Allows for better testability through mock injection
+     * - Maintains single responsibility principle
+     * - Suppressions are configured in config/spotbugs/exclude.xml for all service constructors
+     *
+     * @param repository the financial data repository for database operations
+     */
     public GeneralLedgerService(FinancialDataRepository repository) {
         this.repository = repository;
     }

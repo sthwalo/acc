@@ -128,7 +128,7 @@ public class TransactionProcessingService {
                 }
             }
             
-        } catch (Exception e) {
+        } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Error classifying transactions for company ID: " + companyId, e);
             throw new RuntimeException("Failed to classify transactions", e);
         }
@@ -221,7 +221,7 @@ public class TransactionProcessingService {
                 }
             }
             
-        } catch (Exception e) {
+        } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Error reclassifying transactions for company ID: " + companyId, e);
             throw new RuntimeException("Failed to reclassify transactions", e);
         }

@@ -174,6 +174,8 @@ public class PayrollController {
                 case 3:
                     employee.setEmploymentType(Employee.EmploymentType.TEMPORARY);
                     break;
+                default:
+                    throw new IllegalArgumentException("Invalid employment type choice: " + empTypeChoice);
             }
 
             // Salary Type
@@ -196,6 +198,8 @@ public class PayrollController {
                 case 4:
                     employee.setSalaryType(Employee.SalaryType.DAILY);
                     break;
+                default:
+                    throw new IllegalArgumentException("Invalid salary type choice: " + salaryTypeChoice);
             }
 
             // Tax Information

@@ -34,8 +34,37 @@ class ApplicationStateTestSimple {
         
         applicationState.setCurrentCompany(company);
         
-        assertEquals(company, applicationState.getCurrentCompany());
-        assertEquals("Test Company", applicationState.getCurrentCompany().getName());
+        // With defensive copying, getCurrentCompany() returns a copy, not the same object
+        Company returnedCompany = applicationState.getCurrentCompany();
+        assertNotSame(company, returnedCompany, "getCurrentCompany should return a defensive copy");
+        
+        // But the data should be identical
+        assertEquals(company.getId(), returnedCompany.getId());
+        assertEquals(company.getName(), returnedCompany.getName());
+        assertEquals("Test Company", returnedCompany.getName());
+    }
+    
+    @Test
+    void getCurrentCompany_DefensiveCopy_PreventsExternalModification() {
+        Company originalCompany = createTestCompany(1L, "Original Company");
+        originalCompany.setTaxNumber("ORIGINAL_TAX");
+        applicationState.setCurrentCompany(originalCompany);
+        
+        // Get the company from ApplicationState
+        Company returnedCompany = applicationState.getCurrentCompany();
+        
+        // Modify the returned company (this should not affect the stored company)
+        returnedCompany.setName("Modified Company");
+        returnedCompany.setTaxNumber("MODIFIED_TAX");
+        
+        // The stored company should remain unchanged
+        Company storedCompany = applicationState.getCurrentCompany();
+        assertEquals("Original Company", storedCompany.getName());
+        assertEquals("ORIGINAL_TAX", storedCompany.getTaxNumber());
+        
+        // Original company should also be unchanged
+        assertEquals("Original Company", originalCompany.getName());
+        assertEquals("ORIGINAL_TAX", originalCompany.getTaxNumber());
     }
     
     @Test
@@ -44,8 +73,41 @@ class ApplicationStateTestSimple {
         
         applicationState.setCurrentFiscalPeriod(period);
         
-        assertEquals(period, applicationState.getCurrentFiscalPeriod());
-        assertEquals("2025 FY", applicationState.getCurrentFiscalPeriod().getPeriodName());
+        // With defensive copying, getCurrentFiscalPeriod() returns a copy, not the same object
+        FiscalPeriod returnedPeriod = applicationState.getCurrentFiscalPeriod();
+        assertNotSame(period, returnedPeriod, "getCurrentFiscalPeriod should return a defensive copy");
+        
+        // But the data should be identical
+        assertEquals(period.getId(), returnedPeriod.getId());
+        assertEquals(period.getPeriodName(), returnedPeriod.getPeriodName());
+        assertEquals("2025 FY", returnedPeriod.getPeriodName());
+    }
+    
+    @Test
+    void getCurrentFiscalPeriod_DefensiveCopy_PreventsExternalModification() {
+        FiscalPeriod originalPeriod = createTestFiscalPeriod(1L, "Original Period");
+        originalPeriod.setStartDate(LocalDate.of(2025, 1, 1));
+        originalPeriod.setEndDate(LocalDate.of(2025, 12, 31));
+        applicationState.setCurrentFiscalPeriod(originalPeriod);
+        
+        // Get the fiscal period from ApplicationState
+        FiscalPeriod returnedPeriod = applicationState.getCurrentFiscalPeriod();
+        
+        // Modify the returned period (this should not affect the stored period)
+        returnedPeriod.setPeriodName("Modified Period");
+        returnedPeriod.setStartDate(LocalDate.of(2024, 1, 1));
+        returnedPeriod.setEndDate(LocalDate.of(2024, 12, 31));
+        
+        // The stored period should remain unchanged
+        FiscalPeriod storedPeriod = applicationState.getCurrentFiscalPeriod();
+        assertEquals("Original Period", storedPeriod.getPeriodName());
+        assertEquals(LocalDate.of(2025, 1, 1), storedPeriod.getStartDate());
+        assertEquals(LocalDate.of(2025, 12, 31), storedPeriod.getEndDate());
+        
+        // Original period should also be unchanged
+        assertEquals("Original Period", originalPeriod.getPeriodName());
+        assertEquals(LocalDate.of(2025, 1, 1), originalPeriod.getStartDate());
+        assertEquals(LocalDate.of(2025, 12, 31), originalPeriod.getEndDate());
     }
     
     @Test

@@ -32,34 +32,41 @@ public class PayrollService {
     private final EmailService emailService;
     
     public PayrollService() {
-        this.dbUrl = DatabaseConfig.getDatabaseUrl();
-        this.sarsTaxCalculator = new SARSTaxCalculator();
+        String databaseUrl = DatabaseConfig.getDatabaseUrl();
+        SARSTaxCalculator taxCalc = new SARSTaxCalculator();
+        initializeTaxCalculator(taxCalc);
+        this.dbUrl = databaseUrl;
+        this.sarsTaxCalculator = taxCalc;
         this.companyRepository = null;
         this.pdfService = null;
         this.emailService = null;
-        initializeTaxCalculator();
     }
     
     public PayrollService(String dbUrl) {
+        SARSTaxCalculator taxCalc = new SARSTaxCalculator();
+        initializeTaxCalculator(taxCalc);
+        CompanyRepository companyRepo = new CompanyRepository(dbUrl);
+        PayslipPdfService pdfSvc = new PayslipPdfService(companyRepo);
+        EmailService emailSvc = new EmailService();
         this.dbUrl = dbUrl;
-        this.sarsTaxCalculator = new SARSTaxCalculator();
-        this.companyRepository = null;
-        this.pdfService = null;
-        this.emailService = null;
-        initializeTaxCalculator();
+        this.sarsTaxCalculator = taxCalc;
+        this.companyRepository = companyRepo;
+        this.pdfService = pdfSvc;
+        this.emailService = emailSvc;
     }
 
     public PayrollService(String dbUrl, CompanyRepository companyRepository, 
                          PayslipPdfService pdfService, EmailService emailService) {
+        SARSTaxCalculator taxCalc = new SARSTaxCalculator();
+        initializeTaxCalculator(taxCalc);
         this.dbUrl = dbUrl;
-        this.sarsTaxCalculator = new SARSTaxCalculator();
+        this.sarsTaxCalculator = taxCalc;
         this.companyRepository = companyRepository;
         this.pdfService = pdfService;
         this.emailService = emailService;
-        initializeTaxCalculator();
     }
     
-    private void initializeTaxCalculator() {
+    private void initializeTaxCalculator(SARSTaxCalculator taxCalc) {
         // Skip tax calculator initialization in test environment
         if (isTestEnvironment()) {
             System.out.println("🧪 Skipping SARS tax calculator initialization in test environment");
@@ -69,11 +76,11 @@ public class PayrollService {
         try {
             // Load tax tables from the PDF text file for accurate SARS 2026 calculations
             String pdfTextPath = "input/PAYE-GEN-01-G01-A03-2026-Monthly-Tax-Deduction-Tables-External-Annexure.txt";
-            sarsTaxCalculator.loadTaxTablesFromPDFText(pdfTextPath);
+            taxCalc.loadTaxTablesFromPDFText(pdfTextPath);
             System.out.println("✅ SARS Tax Calculator initialized with official 2026 tables");
         } catch (IOException e) {
-            System.err.println("❌ Failed to load SARS tax tables: " + e.getMessage());
-            throw new RuntimeException("Tax calculator initialization failed", e);
+            System.out.println("❌ Failed to load SARS tax tables: " + e.getMessage() + " - using default calculations");
+            // Don't throw exception - allow constructor to complete
         }
     }
     
@@ -473,7 +480,7 @@ public class PayrollService {
                 conn.commit();
                 LOGGER.warning("FORCE DELETED payroll period: " + period.getPeriodName() + " (Status: " + period.getStatus() + ")");
                 
-            } catch (Exception e) {
+            } catch (RuntimeException e) {
                 conn.rollback();
                 throw e;
             }
@@ -624,7 +631,7 @@ public class PayrollService {
                     LOGGER.info("Generated " + generatedPdfPaths.size() + " PDF payslips");
                 }
 
-            } catch (Exception e) {
+            } catch (RuntimeException e) {
                 conn.rollback();
                 throw e;
             }

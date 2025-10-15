@@ -21,7 +21,7 @@ public class ApplicationState {
     
     // Company state management
     public void setCurrentCompany(Company company) {
-        this.currentCompany = company;
+        this.currentCompany = company != null ? new Company(company) : null;
         // Reset fiscal period when company changes
         if (company == null || (currentFiscalPeriod != null && 
                 !currentFiscalPeriod.getCompanyId().equals(company.getId()))) {
@@ -30,7 +30,7 @@ public class ApplicationState {
     }
     
     public Company getCurrentCompany() {
-        return currentCompany;
+        return currentCompany != null ? new Company(currentCompany) : null;
     }
     
     public boolean hasCurrentCompany() {
@@ -43,11 +43,11 @@ public class ApplicationState {
                 !fiscalPeriod.getCompanyId().equals(currentCompany.getId())) {
             throw new IllegalArgumentException("Fiscal period must belong to the current company");
         }
-        this.currentFiscalPeriod = fiscalPeriod;
+        this.currentFiscalPeriod = fiscalPeriod != null ? new FiscalPeriod(fiscalPeriod) : null;
     }
     
     public FiscalPeriod getCurrentFiscalPeriod() {
-        return currentFiscalPeriod;
+        return currentFiscalPeriod != null ? new FiscalPeriod(currentFiscalPeriod) : null;
     }
     
     public boolean hasCurrentFiscalPeriod() {

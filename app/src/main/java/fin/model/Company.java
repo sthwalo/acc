@@ -46,6 +46,24 @@ public class Company {
         this.createdAt = LocalDateTime.now();
     }
     
+    /**
+     * Copy constructor for defensive copying.
+     * Creates a deep copy of all Company fields to prevent external modification.
+     */
+    public Company(Company other) {
+        if (other == null) return;
+        
+        this.id = other.id;
+        this.name = other.name;
+        this.registrationNumber = other.registrationNumber;
+        this.taxNumber = other.taxNumber;
+        this.address = other.address;
+        this.contactEmail = other.contactEmail;
+        this.contactPhone = other.contactPhone;
+        this.logoPath = other.logoPath;
+        this.createdAt = other.createdAt;
+    }
+    
     // Getters and setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }

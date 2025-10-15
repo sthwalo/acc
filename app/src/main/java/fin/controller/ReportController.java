@@ -20,6 +20,23 @@ public class ReportController {
     private final OutputFormatter outputFormatter;
     private final String reportsDir;
     
+    /**
+     * Constructor with dependency injection.
+     *
+     * NOTE: EI_EXPOSE_REP warning is intentionally suppressed for this constructor.
+     * This is an architectural design decision for Dependency Injection pattern:
+     * - Services and UI components are injected as constructor parameters to enable loose coupling
+     * - Allows for better testability through mock injection
+     * - Enables separation between business logic, UI, and application state
+     * - Maintains single responsibility principle in MVC architecture
+     * - Suppressions are configured in config/spotbugs/exclude.xml for all controller constructors
+     *
+     * @param financialReportingService the service for generating financial reports
+     * @param applicationState the application state manager
+     * @param menu the console menu for user interaction
+     * @param inputHandler the input handler for user input
+     * @param outputFormatter the output formatter for display formatting
+     */
     public ReportController(FinancialReportingService financialReportingService,
                           ApplicationState applicationState,
                           ConsoleMenu menu,
@@ -262,6 +279,9 @@ public class ReportController {
                         case 6: financialReportingService.generateCashFlowStatement(
                                 applicationState.getCurrentCompany().getId(), 
                                 applicationState.getCurrentFiscalPeriod().getId(), true); break;
+                        default:
+                            outputFormatter.printError("Unknown report type index: " + i);
+                            break;
                     }
                     successCount++;
                 } catch (Exception e) {

@@ -16,6 +16,20 @@ public class TrialBalanceService {
     private final FinancialDataRepository repository;
     private final GeneralLedgerService generalLedgerService;
 
+    /**
+     * Constructor with dependency injection.
+     *
+     * NOTE: EI_EXPOSE_REP warning is intentionally suppressed for this constructor.
+     * This is an architectural design decision for Dependency Injection pattern:
+     * - Services are injected as constructor parameters to enable loose coupling
+     * - Allows for better testability through mock injection
+     * - Enables proper accounting hierarchy (GL → Trial Balance → Financial Statements)
+     * - Maintains separation between data access and reporting logic
+     * - Suppressions are configured in config/spotbugs/exclude.xml for all service constructors
+     *
+     * @param repository the financial data repository for database operations
+     * @param generalLedgerService the general ledger service for account balance calculations
+     */
     public TrialBalanceService(FinancialDataRepository repository, GeneralLedgerService generalLedgerService) {
         this.repository = repository;
         this.generalLedgerService = generalLedgerService;
