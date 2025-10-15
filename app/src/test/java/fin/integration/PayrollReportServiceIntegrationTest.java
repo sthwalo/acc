@@ -19,6 +19,9 @@ import static org.junit.jupiter.api.Assertions.*;
  * 
  * NOTE: This test uses the PRODUCTION database (not test database) because we need
  * to test against actual payroll data that exists in the production database.
+ * 
+ * CI/CD NOTE: This test is disabled in CI/CD environments since production database
+ * is not available. It should only run in local development environments.
  */
 public class PayrollReportServiceIntegrationTest {
 
@@ -34,6 +37,14 @@ public class PayrollReportServiceIntegrationTest {
 
     @BeforeEach
     void setUp() {
+        // Skip this test in CI/CD environments
+        String ciEnv = System.getenv("CI");
+        String githubActions = System.getenv("GITHUB_ACTIONS");
+        if ("true".equals(ciEnv) || "true".equals(githubActions)) {
+            System.out.println("⏭️ Skipping PayrollReportServiceIntegrationTest in CI/CD environment");
+            Assumptions.assumeTrue(false, "Test skipped in CI/CD environment - production database not available");
+        }
+        
         // Use PRODUCTION database URL (not test database) to access actual payroll data
         // This is necessary because the payroll data exists in the production database
         dbUrl = System.getenv("DATABASE_URL");
