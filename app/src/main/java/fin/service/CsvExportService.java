@@ -24,7 +24,7 @@ public class CsvExportService {
             throw new RuntimeException("Fiscal period not found: " + fiscalPeriodId);
         }
 
-        try (PrintWriter writer = new PrintWriter(new FileWriter(outputPath))) {
+        try (PrintWriter writer = new PrintWriter(new FileWriter(outputPath, java.nio.charset.StandardCharsets.UTF_8))) {
             // Write header
             writer.println("Date,Details,Debits,Credits,Balance,ServiceFee,AccountNumber,StatementPeriod,source_file,FiscalPeriod");
             

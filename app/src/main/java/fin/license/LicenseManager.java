@@ -101,7 +101,7 @@ public class LicenseManager {
     
     private static boolean confirmPersonalUse() {
         // Don't use try-with-resources here as it closes System.in
-        Scanner scanner = new Scanner(System.in);
+        Scanner scanner = new Scanner(System.in, java.nio.charset.StandardCharsets.UTF_8);
         System.out.println();
         System.out.println("📋 LICENSE AGREEMENT CONFIRMATION:");
         System.out.println();
@@ -139,7 +139,7 @@ public class LicenseManager {
         try {
             Path logPath = Paths.get("personal_use.log");
             String logEntry = LocalDate.now() + " - Personal use confirmed\n";
-            Files.write(logPath, logEntry.getBytes(), 
+            Files.write(logPath, logEntry.getBytes(java.nio.charset.StandardCharsets.UTF_8), 
                        java.nio.file.StandardOpenOption.CREATE,
                        java.nio.file.StandardOpenOption.APPEND);
         } catch (IOException e) {

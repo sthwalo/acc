@@ -1149,7 +1149,7 @@ public class PayrollService {
         int importedCount = 0;
         int skippedCount = 0;
         
-        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(filePath, java.nio.charset.StandardCharsets.UTF_8))) {
             String line;
             boolean isFirstLine = true;
             

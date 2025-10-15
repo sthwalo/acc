@@ -12,6 +12,7 @@ import fin.ui.OutputFormatter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Application context for dependency injection
@@ -163,7 +164,7 @@ public class ApplicationContext {
      * Replaces UI logic scattered throughout App.java
      */
     private void initializeUIComponents() {
-        Scanner scanner = new Scanner(System.in);
+        Scanner scanner = new Scanner(System.in, StandardCharsets.UTF_8);
         
         ConsoleMenu menu = new ConsoleMenu();
         register(ConsoleMenu.class, menu);

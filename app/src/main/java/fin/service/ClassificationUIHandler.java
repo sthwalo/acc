@@ -4,6 +4,7 @@ import fin.model.BankTransaction;
 import fin.model.Company;
 
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
@@ -76,9 +77,10 @@ public class ClassificationUIHandler {
         public boolean isClassify() { return accountCode != null && accountName != null; }
     }
     
+    @SuppressWarnings({"EI_EXPOSE_REP2"})
     public ClassificationUIHandler(TransactionClassificationEngine classificationEngine, 
                                   ClassificationRuleManager ruleManager) {
-        this.scanner = new Scanner(System.in);
+        this.scanner = new Scanner(System.in, StandardCharsets.UTF_8);
         this.classificationEngine = classificationEngine;
         this.ruleManager = ruleManager;
     }

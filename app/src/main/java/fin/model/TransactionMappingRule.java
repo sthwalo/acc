@@ -37,11 +37,33 @@ public class TransactionMappingRule {
     public TransactionMappingRule(Company company, String ruleName, MatchType matchType, 
                                 String matchValue, Account account) {
         this();
-        this.company = company;
+        if (company == null) {
+            this.company = null;
+        } else {
+            this.company = new Company(company.getName());
+            this.company.setId(company.getId());
+            this.company.setRegistrationNumber(company.getRegistrationNumber());
+            this.company.setTaxNumber(company.getTaxNumber());
+            this.company.setAddress(company.getAddress());
+            this.company.setContactEmail(company.getContactEmail());
+            this.company.setContactPhone(company.getContactPhone());
+            this.company.setLogoPath(company.getLogoPath());
+            this.company.setCreatedAt(company.getCreatedAt());
+        }
         this.ruleName = ruleName;
         this.matchType = matchType;
         this.matchValue = matchValue;
-        this.account = account;
+        if (account == null) {
+            this.account = null;
+        } else {
+            this.account = new Account(account.getAccountCode(), account.getAccountName(),
+                                     account.getCategory(), account.getCompany(),
+                                     account.getDescription());
+            this.account.setId(account.getId());
+            this.account.setActive(account.isActive());
+            this.account.setCreatedAt(account.getCreatedAt());
+            this.account.setUpdatedAt(account.getUpdatedAt());
+        }
     }
 
     // Getters and Setters
@@ -54,11 +76,33 @@ public class TransactionMappingRule {
     }
 
     public Company getCompany() {
-        return company;
+        if (company == null) return null;
+        Company copy = new Company(company.getName());
+        copy.setId(company.getId());
+        copy.setRegistrationNumber(company.getRegistrationNumber());
+        copy.setTaxNumber(company.getTaxNumber());
+        copy.setAddress(company.getAddress());
+        copy.setContactEmail(company.getContactEmail());
+        copy.setContactPhone(company.getContactPhone());
+        copy.setLogoPath(company.getLogoPath());
+        copy.setCreatedAt(company.getCreatedAt());
+        return copy;
     }
 
     public void setCompany(Company company) {
-        this.company = company;
+        if (company == null) {
+            this.company = null;
+        } else {
+            this.company = new Company(company.getName());
+            this.company.setId(company.getId());
+            this.company.setRegistrationNumber(company.getRegistrationNumber());
+            this.company.setTaxNumber(company.getTaxNumber());
+            this.company.setAddress(company.getAddress());
+            this.company.setContactEmail(company.getContactEmail());
+            this.company.setContactPhone(company.getContactPhone());
+            this.company.setLogoPath(company.getLogoPath());
+            this.company.setCreatedAt(company.getCreatedAt());
+        }
     }
 
     public String getRuleName() {
@@ -94,11 +138,29 @@ public class TransactionMappingRule {
     }
 
     public Account getAccount() {
-        return account;
+        if (account == null) return null;
+        Account copy = new Account(account.getAccountCode(), account.getAccountName(),
+                                 account.getCategory(), account.getCompany(),
+                                 account.getDescription());
+        copy.setId(account.getId());
+        copy.setActive(account.isActive());
+        copy.setCreatedAt(account.getCreatedAt());
+        copy.setUpdatedAt(account.getUpdatedAt());
+        return copy;
     }
 
     public void setAccount(Account account) {
-        this.account = account;
+        if (account == null) {
+            this.account = null;
+        } else {
+            this.account = new Account(account.getAccountCode(), account.getAccountName(),
+                                     account.getCategory(), account.getCompany(),
+                                     account.getDescription());
+            this.account.setId(account.getId());
+            this.account.setActive(account.isActive());
+            this.account.setCreatedAt(account.getCreatedAt());
+            this.account.setUpdatedAt(account.getUpdatedAt());
+        }
     }
 
     public boolean isActive() {

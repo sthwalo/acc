@@ -1076,7 +1076,7 @@ public class AccountClassificationService {
         
         // IB TRANSFER FROM fuel account (offsetting fuel expenses)
         rules.add(createRule(
-            "IB Transfer From Fuel Account",
+            "IB Transfer From Fuel Account (Regex)",
             "Internal bank transfers from fuel supplier account",
             TransactionMappingRule.MatchType.REGEX,
             "IB TRANSFER FROM \\*\\*\\*\\*\\*2689327.*",

@@ -48,24 +48,24 @@ public class ClassificationRuleManager {
             this.id = id;
             this.companyId = companyId;
             this.pattern = pattern;
-            this.keywords = keywords;
+            this.keywords = keywords != null ? keywords.clone() : new String[0];
             this.accountCode = accountCode;
             this.accountName = accountName;
             this.usageCount = usageCount;
-            this.createdAt = createdAt;
-            this.lastUsed = lastUsed;
+            this.createdAt = createdAt != null ? new Timestamp(createdAt.getTime()) : null;
+            this.lastUsed = lastUsed != null ? new Timestamp(lastUsed.getTime()) : null;
         }
         
         // Getters
         public Long getId() { return id; }
         public Long getCompanyId() { return companyId; }
         public String getPattern() { return pattern; }
-        public String[] getKeywords() { return keywords; }
+        public String[] getKeywords() { return keywords != null ? keywords.clone() : new String[0]; }
         public String getAccountCode() { return accountCode; }
         public String getAccountName() { return accountName; }
         public int getUsageCount() { return usageCount; }
-        public Timestamp getCreatedAt() { return createdAt; }
-        public Timestamp getLastUsed() { return lastUsed; }
+        public Timestamp getCreatedAt() { return createdAt != null ? new Timestamp(createdAt.getTime()) : null; }
+        public Timestamp getLastUsed() { return lastUsed != null ? new Timestamp(lastUsed.getTime()) : null; }
     }
     
     public ClassificationRuleManager() {

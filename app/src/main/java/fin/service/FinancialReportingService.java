@@ -340,7 +340,7 @@ public class FinancialReportingService {
 
             Path filePath = reportsDir.resolve(filename);
 
-            try (FileWriter writer = new FileWriter(filePath.toFile())) {
+            try (FileWriter writer = new FileWriter(filePath.toFile(), java.nio.charset.StandardCharsets.UTF_8)) {
                 writer.write(content);
             }
 

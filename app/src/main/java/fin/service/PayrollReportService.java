@@ -81,12 +81,8 @@ public class PayrollReportService {
         // Ensure reports directory exists
         Files.createDirectories(reportPath.getParent());
 
-        // Get company information with explicit null checking for SpotBugs
-        Company company = getCompanyById(companyId);
-        if (company == null) {
-            throw new IllegalArgumentException("Company not found: " + companyId);
-        }
-        assert company != null; // SpotBugs hint: company is non-null after check
+        // Get company information - guaranteed non-null
+        Company company = getCompanyByIdRequired(companyId);
         
         // Get summary data
         PayrollSummaryData summaryData = calculatePayrollSummaryData(companyId);
@@ -307,12 +303,8 @@ public class PayrollReportService {
     public void generateEmployeePayrollReport(Long companyId) throws IOException, SQLException {
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
 
-        // Get company information with explicit null checking for SpotBugs
-        Company company = getCompanyById(companyId);
-        if (company == null) {
-            throw new IllegalArgumentException("Company not found: " + companyId);
-        }
-        assert company != null; // SpotBugs hint: company is non-null after check
+        // Get company information - guaranteed non-null
+        Company company = getCompanyByIdRequired(companyId);
 
         // Get all active employees
         List<Employee> employees = getActiveEmployees(companyId);
@@ -498,6 +490,14 @@ public class PayrollReportService {
     }
 
     // Helper methods
+    private Company getCompanyByIdRequired(Long companyId) throws SQLException {
+        Company company = getCompanyById(companyId);
+        if (company == null) {
+            throw new IllegalArgumentException("Company not found: " + companyId);
+        }
+        return company;
+    }
+    
     private Company getCompanyById(Long companyId) throws SQLException {
         String sql = "SELECT id, name, registration_number FROM companies WHERE id = ?";
         
@@ -605,12 +605,8 @@ public class PayrollReportService {
         // Ensure reports directory exists
         Files.createDirectories(reportPath.getParent());
 
-        // Get company information
-        Company company = getCompanyById(companyId);
-        if (company == null) {
-            throw new IllegalArgumentException("Company not found: " + companyId);
-        }
-        assert company != null; // SpotBugs hint: company is non-null after check
+        // Get company information - guaranteed non-null
+        Company company = getCompanyByIdRequired(companyId);
 
         // Calculate EMP 201 totals
         EMP201Data emp201Data = calculateEMP201Data(companyId);

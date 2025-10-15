@@ -6,10 +6,11 @@
  * Contact: sthwaloe@gmail.com | +27 61 514 6185
  * 
  * This source code is licensed under th    @Test
-    @Disabled("Phase 4: ChartOfAccountsService deleted - test no longer relevant")
-    void testDeprecatedChartOfAccountsServiceStillAvailable() {
-        // ChartOfAccountsService deleted in Phase 4 (2025-10-03)
-        // AccountClassificationService is now single source of truth
+    void testTransactionClassificationServiceInitialization() {
+        // Test that the service can be initialized and has required dependencies
+        assertNotNull(classificationService, "TransactionClassificationService should be initialized");
+        assertNotNull(mockRuleService, "RuleMappingService should be available");
+        assertNotNull(mockJournalGenerator, "JournalEntryGenerator should be available");
     }
 }2.0.
  * Commercial use of the APPLICATION requires separate licensing.
@@ -119,15 +120,15 @@ class TransactionClassificationServiceTest {
             AccountClassificationService accountClassificationService = applicationContext.get(AccountClassificationService.class);
             
             // Supporting services
-            TransactionMappingRuleService ruleService = applicationContext.get(TransactionMappingRuleService.class);
-            // NOTE: TransactionMappingService eliminated 2025-10-11 - AccountClassificationService is single source of truth
+            ClassificationRuleManager ruleManager = applicationContext.get(ClassificationRuleManager.class);
+            // NOTE: TransactionMappingRuleService replaced by ClassificationRuleManager (2025-10-11)
             InteractiveClassificationService interactiveService = applicationContext.get(InteractiveClassificationService.class);
             
             // Phase 4: ChartOfAccountsService deleted - AccountClassificationService is single source of truth
             
             assertNotNull(accountClassificationService, "AccountClassificationService should be available (primary)");
-            assertNotNull(ruleService, "TransactionMappingRuleService should be available");
-            // TransactionMappingService eliminated - functionality consolidated into AccountClassificationService
+            assertNotNull(ruleManager, "ClassificationRuleManager should be available");
+            // TransactionMappingRuleService replaced by ClassificationRuleManager
             assertNotNull(interactiveService, "InteractiveClassificationService should be available");
         }, "All dependency services should be properly registered");
     }
@@ -185,21 +186,21 @@ class TransactionClassificationServiceTest {
                 applicationContext.get(AccountClassificationService.class);
             
             // Supporting services (Phase 4: ChartOfAccountsService removed)
-            TransactionMappingRuleService ruleService = 
-                applicationContext.get(TransactionMappingRuleService.class);
+            ClassificationRuleManager ruleManager = 
+                applicationContext.get(ClassificationRuleManager.class);
             CategoryManagementService categoryService = 
                 applicationContext.get(CategoryManagementService.class);
             AccountManagementService accountService = 
                 applicationContext.get(AccountManagementService.class);
-            // NOTE: TransactionMappingService eliminated 2025-10-11 - consolidated into AccountClassificationService
+            // NOTE: TransactionMappingRuleService replaced by ClassificationRuleManager (2025-10-11)
             
-            // Verify all are non-null (Phase 4: ChartOfAccountsService removed, TransactionMappingService eliminated)
+            // Verify all are non-null (Phase 4: ChartOfAccountsService removed, TransactionMappingRuleService replaced)
             assertNotNull(unifiedService, "TransactionClassificationService should be registered");
             assertNotNull(accountClassificationService, "AccountClassificationService should be registered (primary)");
-            assertNotNull(ruleService, "TransactionMappingRuleService should be registered");
+            assertNotNull(ruleManager, "ClassificationRuleManager should be registered");
             assertNotNull(categoryService, "CategoryManagementService should be registered");
             assertNotNull(accountService, "AccountManagementService should be registered");
-            // TransactionMappingService eliminated - functionality now in AccountClassificationService
+            // TransactionMappingRuleService replaced by ClassificationRuleManager
         }, "Phase 1 refactoring: all services should be properly registered and accessible");
     }
     
@@ -218,12 +219,5 @@ class TransactionClassificationServiceTest {
             assertInstanceOf(AccountClassificationService.class, accountService,
                 "Retrieved instance should be AccountClassificationService");
         }, "AccountClassificationService should be available as single source of truth");
-    }
-    
-    @Test
-    @Disabled("Phase 4: ChartOfAccountsService deleted - test no longer relevant")
-    void chartOfAccountsService_IsDeprecatedButAvailable() {
-        // ChartOfAccountsService deleted in Phase 4 (2025-10-03)
-        // AccountClassificationService is now single source of truth
     }
 }
