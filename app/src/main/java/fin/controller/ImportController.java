@@ -252,7 +252,7 @@ public class ImportController {
     
     @SuppressWarnings("FS")
     private void exportTransactions(List<BankTransaction> transactions, String outputPath) throws IOException {
-        try (FileWriter writer = new FileWriter(outputPath)) {
+        try (FileWriter writer = new FileWriter(outputPath, java.nio.charset.StandardCharsets.UTF_8)) {
             // Write header
             writer.write("Date,Details,Debit Amount,Credit Amount,Balance,Account Number%n");
             

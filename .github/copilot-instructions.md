@@ -156,6 +156,7 @@ After making code changes:
 - ✅ Explain **HOW** to test the fix (specific steps user should follow)
 - ✅ Wait for user to **RUN THE APPLICATION** and verify the fix works
 - ✅ Wait for user to **EXPLICITLY CONFIRM** "the fix works" or "ready to commit"
+- ❌ **DO NOT** Make code changes without user review
 - ❌ **DO NOT** commit changes until user confirms
 - ❌ **DO NOT** assume the fix works just because it compiles
 - ❌ **DO NOT** rush to commit and push

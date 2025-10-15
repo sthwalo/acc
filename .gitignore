@@ -42,7 +42,7 @@ Commands
 cash/
 input/
 exports/
-
+output
 
 # Processed financial data exports
 *.csv

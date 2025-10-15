@@ -46,7 +46,7 @@ public class SARSTaxCalculator {
     }
 
     public void loadTaxTablesFromPDFText(String pdfTextPath) throws IOException {
-        String content = new String(Files.readAllBytes(Paths.get(pdfTextPath)));
+        String content = new String(Files.readAllBytes(Paths.get(pdfTextPath)), java.nio.charset.StandardCharsets.UTF_8);
         parseTaxBrackets(content);
         System.out.println("Loaded " + taxBrackets.size() + " tax brackets");
     }

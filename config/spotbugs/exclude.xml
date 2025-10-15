@@ -1,39 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <FindBugsFilter>
-    <!-- Exclude mutable object exposure issues in model classes -->
-    <Match>
-        <Class name="fin.model.JournalEntry"/>
-        <Bug pattern="EI_EXPOSE_REP"/>
-    </Match>
-    <Match>
-        <Class name="fin.model.JournalEntry"/>
-        <Bug pattern="EI_EXPOSE_REP2"/>
-    </Match>
-    <Match>
-        <Class name="fin.model.Account"/>
-        <Bug pattern="EI_EXPOSE_REP"/>
-    </Match>
-    <Match>
-        <Class name="fin.model.Account"/>
-        <Bug pattern="EI_EXPOSE_REP2"/>
-    </Match>
-    <Match>
-        <Class name="fin.model.AccountCategory"/>
-        <Bug pattern="EI_EXPOSE_REP"/>
-    </Match>
-    <Match>
-        <Class name="fin.model.AccountCategory"/>
-        <Bug pattern="EI_EXPOSE_REP2"/>
-    </Match>
-    <Match>
-        <Class name="fin.model.TransactionMappingRule"/>
-        <Bug pattern="EI_EXPOSE_REP"/>
-    </Match>
-    <Match>
-        <Class name="fin.model.TransactionMappingRule"/>
-        <Bug pattern="EI_EXPOSE_REP2"/>
-    </Match>
-
     <!-- Exclude test classes from SpotBugs analysis -->
     <Match>
         <Class name="~.*Test.*"/>
@@ -47,18 +13,6 @@
     <!-- Exclude generated classes -->
     <Match>
         <Class name="~.*generated.*"/>
-    </Match>
-
-    <!-- Exclude main application classes that may have expected issues -->
-    <Match>
-        <Class name="fin.ConsoleApplication"/>
-        <Bug pattern="DM_DEFAULT_ENCODING"/>
-    </Match>
-
-    <!-- Exclude API server classes -->
-    <Match>
-        <Class name="fin.ApiServer"/>
-        <Bug pattern="DM_DEFAULT_ENCODING"/>
     </Match>
 
     <!-- Exclude database-related classes that may have expected resource management -->
@@ -89,35 +43,6 @@
     <Match>
         <Class name="~.*App.*"/>
         <Bug pattern="OBL_UNSATISFIED_OBLIGATION"/>
-    </Match>
-
-    <!-- Exclude default encoding issues in all classes -->
-    <Match>
-        <Bug pattern="DM_DEFAULT_ENCODING"/>
-    </Match>
-
-    <!-- Exclude mutable object exposure issues in repository classes -->
-    <Match>
-        <Class name="~.*Repository.*"/>
-        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
-    </Match>
-
-    <!-- Exclude mutable object exposure issues in service classes -->
-    <Match>
-        <Class name="~.*Service.*"/>
-        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
-    </Match>
-
-    <!-- Exclude mutable object exposure issues in controller classes -->
-    <Match>
-        <Class name="~.*Controller.*"/>
-        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
-    </Match>
-
-    <!-- Exclude mutable object exposure issues in state classes -->
-    <Match>
-        <Class name="~.*state\..*"/>
-        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
     </Match>
 
     <!-- Exclude constructor exception issues -->
@@ -249,10 +174,11 @@
         <Bug pattern="DMI"/>
     </Match>
 
-    <!-- Exclude hardcoded absolute pathname in ApiServer -->
+    <!-- Exclude mutable object exposure issues in ClassificationUIHandler -->
+    <!-- This is intentional - the handler needs to modify the rule manager -->
     <Match>
-        <Class name="fin.api.ApiServer"/>
-        <Bug pattern="DMI"/>
+        <Class name="fin.service.ClassificationUIHandler"/>
+        <Bug pattern="EI_EXPOSE_REP2"/>
     </Match>
 
     <!-- Exclude null pointer dereference warnings in PayrollReportService methods -->
@@ -260,16 +186,16 @@
     <Match>
         <Class name="fin.service.PayrollReportService"/>
         <Method name="generatePayrollSummaryReport"/>
-        <Bug pattern="NP"/>
+        <Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"/>
     </Match>
     <Match>
         <Class name="fin.service.PayrollReportService"/>
         <Method name="generateEmployeePayrollReport"/>
-        <Bug pattern="NP"/>
+        <Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"/>
     </Match>
     <Match>
         <Class name="fin.service.PayrollReportService"/>
         <Method name="generateEMP201Report"/>
-        <Bug pattern="NP"/>
+        <Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"/>
     </Match>
 </FindBugsFilter>

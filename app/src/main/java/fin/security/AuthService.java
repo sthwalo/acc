@@ -269,7 +269,7 @@ public class AuthService {
 
     private String hashPassword(String password, String salt) {
         String combined = password + salt;
-        byte[] hash = sha256.digest(combined.getBytes());
+        byte[] hash = sha256.digest(combined.getBytes(java.nio.charset.StandardCharsets.UTF_8));
         return Base64.getEncoder().encodeToString(hash);
     }
 

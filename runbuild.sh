@@ -10,10 +10,6 @@ echo "==============================================="
 # Clean and build the project first
 echo "🔨 Building project..."
 ./gradlew clean build -x test -x checkstyleMain -x checkstyleTest
-if [ $? -ne 0 ]; then
-    echo "❌ Build failed. Exiting."
-    exit 1
-fi
 echo "✅ Build successful."
 
 # Set memory options

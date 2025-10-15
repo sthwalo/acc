@@ -194,7 +194,7 @@ public class BatchProcessor {
             String timestamp = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
             String filename = String.format("%s_%s.csv", prefix, timestamp);
             
-            try (FileWriter writer = new FileWriter(filename)) {
+            try (FileWriter writer = new FileWriter(filename, java.nio.charset.StandardCharsets.UTF_8)) {
                 // Write header
                 writer.write(String.format("Date,Details,Debit Amount,Credit Amount,Balance,Account Number%n"));
                 

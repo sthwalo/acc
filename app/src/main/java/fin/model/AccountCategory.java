@@ -24,7 +24,19 @@ public class AccountCategory {
         this.name = name;
         this.description = description;
         this.accountType = accountType;
-        this.company = company;
+        if (company == null) {
+            this.company = null;
+        } else {
+            this.company = new Company(company.getName());
+            this.company.setId(company.getId());
+            this.company.setRegistrationNumber(company.getRegistrationNumber());
+            this.company.setTaxNumber(company.getTaxNumber());
+            this.company.setAddress(company.getAddress());
+            this.company.setContactEmail(company.getContactEmail());
+            this.company.setContactPhone(company.getContactPhone());
+            this.company.setLogoPath(company.getLogoPath());
+            this.company.setCreatedAt(company.getCreatedAt());
+        }
         this.isActive = true;
     }
 
@@ -62,11 +74,33 @@ public class AccountCategory {
     }
 
     public Company getCompany() {
-        return company;
+        if (company == null) return null;
+        Company copy = new Company(company.getName());
+        copy.setId(company.getId());
+        copy.setRegistrationNumber(company.getRegistrationNumber());
+        copy.setTaxNumber(company.getTaxNumber());
+        copy.setAddress(company.getAddress());
+        copy.setContactEmail(company.getContactEmail());
+        copy.setContactPhone(company.getContactPhone());
+        copy.setLogoPath(company.getLogoPath());
+        copy.setCreatedAt(company.getCreatedAt());
+        return copy;
     }
 
     public void setCompany(Company company) {
-        this.company = company;
+        if (company == null) {
+            this.company = null;
+        } else {
+            this.company = new Company(company.getName());
+            this.company.setId(company.getId());
+            this.company.setRegistrationNumber(company.getRegistrationNumber());
+            this.company.setTaxNumber(company.getTaxNumber());
+            this.company.setAddress(company.getAddress());
+            this.company.setContactEmail(company.getContactEmail());
+            this.company.setContactPhone(company.getContactPhone());
+            this.company.setLogoPath(company.getLogoPath());
+            this.company.setCreatedAt(company.getCreatedAt());
+        }
     }
 
     public boolean isActive() {

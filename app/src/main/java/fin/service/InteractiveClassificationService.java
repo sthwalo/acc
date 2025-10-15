@@ -8,6 +8,7 @@ import fin.config.DatabaseConfig;
 import java.sql.*;
 import java.util.*;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -150,7 +151,7 @@ public class InteractiveClassificationService {
     
     public InteractiveClassificationService() {
         this.dbUrl = DatabaseConfig.getDatabaseUrl();
-        this.scanner = new Scanner(System.in);
+        this.scanner = new Scanner(System.in, StandardCharsets.UTF_8);
         this.accountClassificationService = new AccountClassificationService(dbUrl);
         this.companyRules = new HashMap<>();
         this.changesMade = new ArrayList<>();

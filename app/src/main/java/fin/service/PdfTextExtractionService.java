@@ -38,7 +38,7 @@ public class PdfTextExtractionService {
     public void extractTextToFile(String pdfFilePath, String outputTextFile) throws IOException {
         String extractedText = extractTextFromPdf(pdfFilePath);
         
-        try (FileWriter writer = new FileWriter(outputTextFile)) {
+        try (FileWriter writer = new FileWriter(outputTextFile, java.nio.charset.StandardCharsets.UTF_8)) {
             writer.write(extractedText);
         }
         

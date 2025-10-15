@@ -98,7 +98,7 @@ class ConsoleMenuTest {
         String output = outputStream.toString();
         assertTrue(output.contains("Data Management"), "Should contain data management title");
         assertTrue(output.contains("3. Transaction Classification"), "Should contain classification option");
-        assertTrue(output.contains("6. Export to CSV"), "Should contain export option");
+        assertTrue(output.contains("7. Export to CSV"), "Should contain export option");
     }
     
     @Test
