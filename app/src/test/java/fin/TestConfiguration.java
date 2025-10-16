@@ -677,7 +677,7 @@ public class TestConfiguration {
             
             System.out.println("\n🎉 All TestConfiguration.java tests passed!");
             
-        } catch (Exception e) {
+        } catch (SQLException e) {
             System.err.println("❌ TestConfiguration.java test failed: " + e.getMessage());
             e.printStackTrace();
         }

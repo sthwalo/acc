@@ -106,7 +106,7 @@ public class DatabaseTest {
                 
             }
             
-        } catch (Exception e) {
+        } catch (SQLException e) {
             System.err.println("❌ Database test failed: " + e.getMessage());
             e.printStackTrace();
         }
