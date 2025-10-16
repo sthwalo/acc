@@ -6,6 +6,13 @@ import java.util.*;
 import java.util.regex.*;
 
 public class SARSTaxCalculator {
+    // SARS Tax Constants (2024/25 Tax Year)
+    private static final double TAX_FREE_THRESHOLD = 5586.0;        // R5,586 annual tax-free allowance
+    private static final double ANNUAL_SDL_THRESHOLD = 500000.0;    // R500,000 annual payroll threshold for SDL
+    private static final double MONTHLY_SDL_THRESHOLD = ANNUAL_SDL_THRESHOLD / 12; // R41,666.67 monthly threshold
+    private static final double SDL_RATE = 0.01;                    // 1% SDL levy rate
+
+    // UIF Constants
     private static final double UIF_THRESHOLD = 17712.0;
     private static final double UIF_CAP = 177.12;
     private static final double MIN_SALARY_RANGE = 5500.0;
@@ -123,10 +130,8 @@ public class SARSTaxCalculator {
     public double calculateSDL(double grossSalary, double totalCompanyPayroll) {
         // SDL is only applicable if total company payroll > R500,000 per year
         // Monthly threshold: R500,000 / 12 = R41,666.67
-        final double MONTHLY_THRESHOLD = 41666.67;
-        final double SDL_RATE = 0.01; // 1%
         
-        if (totalCompanyPayroll > MONTHLY_THRESHOLD) {
+        if (totalCompanyPayroll > MONTHLY_SDL_THRESHOLD) {
             return Math.round(grossSalary * SDL_RATE * 100.0) / 100.0;
         }
         return 0.0;
@@ -137,7 +142,7 @@ public class SARSTaxCalculator {
         System.out.printf("DEBUG: findPAYE called with grossSalary = %.2f%n", grossSalary);
         
         // Handle salaries below the tax threshold (below R5,586 based on loaded brackets)
-        if (grossSalary < 5586.0) {
+        if (grossSalary < TAX_FREE_THRESHOLD) {
             System.out.printf("✓ Salary R%.2f is below tax threshold, no PAYE tax%n", grossSalary);
             return 0.0;
         }

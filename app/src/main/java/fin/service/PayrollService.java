@@ -31,6 +31,136 @@ public class PayrollService {
     private final PayslipPdfService pdfService;
     private final EmailService emailService;
     
+    // Journal Entry Line Numbers
+    private static final int JOURNAL_LINE_GROSS_SALARY = 1;
+    private static final int JOURNAL_LINE_PAYROLL_DEDUCTIONS = 2;
+    private static final int JOURNAL_LINE_NET_PAY = 3;
+    
+    // Employee Import Field Indices
+    private static final int FIELD_EMPLOYEE_CODE = 0;
+    private static final int FIELD_SURNAME = 1;
+    private static final int FIELD_DATE_OF_BIRTH = 2;
+    private static final int FIELD_DATE_ENGAGED = 3;
+    private static final int FIELD_TITLE = 4;
+    private static final int FIELD_FIRST_NAME = 6;
+    private static final int FIELD_SECOND_NAME = 7;
+    private static final int FIELD_ID_NUMBER = 9;
+    private static final int FIELD_UNIT_NUMBER = 15;
+    private static final int FIELD_COMPLEX_NAME = 16;
+    private static final int FIELD_STREET_NUMBER = 17;
+    private static final int FIELD_STREET_NAME = 18;
+    private static final int FIELD_SUBURB = 19;
+    private static final int FIELD_CITY = 20;
+    private static final int FIELD_POSTAL_CODE = 21;
+    private static final int FIELD_CELL_NUMBER = 22;
+    private static final int FIELD_EMAIL = 24;
+    private static final int FIELD_JOB_TITLE = 28;
+    private static final int FIELD_FIXED_SALARY = 39;
+    
+    // Other Constants
+    private static final int MIN_EMPLOYEE_FIELDS = 40;
+    private static final int MAX_ERROR_MESSAGE_LENGTH = 100;
+    
+    // PreparedStatement Parameter Indices
+    private static final int PARAM_EMPLOYEE_NUMBER = 2;
+    private static final int PARAM_FIRST_NAME = 3;
+    private static final int PARAM_LAST_NAME = 4;
+    private static final int PARAM_EMAIL = 5;
+    private static final int PARAM_PHONE = 6;
+    private static final int PARAM_POSITION = 7;
+    private static final int PARAM_DEPARTMENT = 8;
+    private static final int PARAM_HIRE_DATE = 9;
+    private static final int PARAM_BASIC_SALARY = 10;
+    private static final int PARAM_EMPLOYMENT_TYPE = 11;
+    private static final int PARAM_SALARY_TYPE = 12;
+    private static final int PARAM_TAX_NUMBER = 13;
+    private static final int PARAM_CREATED_BY = 14;
+    private static final int PARAM_ID = 13;
+    private static final int PARAM_COMPANY_ID = 14;
+    
+    // Payroll Period Parameter Indices
+    private static final int PARAM_PERIOD_NAME = 3;
+    private static final int PARAM_PAY_DATE = 4;
+    private static final int PARAM_START_DATE = 5;
+    private static final int PARAM_END_DATE = 6;
+    private static final int PARAM_PERIOD_TYPE = 7;
+    
+    // Query Parameter Indices
+    private static final int PARAM_YEAR = 2;
+    private static final int PARAM_MONTH = 3;
+    
+    // Journal Entry Parameter Indices
+    private static final int PARAM_REFERENCE = 1;
+    private static final int PARAM_ENTRY_DATE = 2;
+    private static final int PARAM_DESCRIPTION = 3;
+    private static final int PARAM_FISCAL_PERIOD_ID = 4;
+    private static final int PARAM_JOURNAL_COMPANY_ID = 5;
+    private static final int PARAM_JOURNAL_CREATED_BY = 6;
+    private static final int PARAM_JOURNAL_ENTRY_ID = 1;
+    private static final int PARAM_ACCOUNT_ID = 2;
+    private static final int PARAM_DEBIT_AMOUNT = 3;
+    private static final int PARAM_CREDIT_AMOUNT = 4;
+    private static final int PARAM_JOURNAL_LINE_DESCRIPTION = 5;
+    private static final int PARAM_JOURNAL_REFERENCE = 6;
+    
+    // Payroll Journal Parameter Indices
+    private static final int PARAM_PAYROLL_COMPANY_ID = 1;
+    private static final int PARAM_PAYROLL_PERIOD_ID = 2;
+    private static final int PARAM_PAYROLL_JOURNAL_ENTRY_ID = 3;
+    private static final int PARAM_ENTRY_TYPE = 4;
+    private static final int PARAM_PAYROLL_DESCRIPTION = 5;
+    private static final int PARAM_TOTAL_AMOUNT = 6;
+    private static final int PARAM_PAYROLL_CREATED_BY = 7;
+    
+    // Payslip Parameter Indices
+    private static final int PARAM_PAYSLIP_COMPANY_ID = 1;
+    private static final int PARAM_PAYSLIP_EMPLOYEE_ID = 2;
+    private static final int PARAM_PAYSLIP_PERIOD_ID = 3;
+    private static final int PARAM_PAYSLIP_NUMBER = 4;
+    private static final int PARAM_PAYSLIP_BASIC_SALARY = 5;
+    private static final int PARAM_PAYSLIP_GROSS_SALARY = 6;
+    private static final int PARAM_PAYSLIP_TOTAL_EARNINGS = 7;
+    private static final int PARAM_PAYSLIP_PAYEE_TAX = 8;
+    private static final int PARAM_PAYSLIP_UIF_EMPLOYEE = 9;
+    private static final int PARAM_PAYSLIP_UIF_EMPLOYER = 10;
+    private static final int PARAM_PAYSLIP_SDL_LEVY = 11;
+    private static final int PARAM_PAYSLIP_TOTAL_DEDUCTIONS = 12;
+    private static final int PARAM_PAYSLIP_NET_PAY = 13;
+    private static final int PARAM_PAYSLIP_STATUS = 14;
+    private static final int PARAM_PAYSLIP_CREATED_BY = 15;
+    
+    // Update Payroll Period Parameter Indices
+    private static final int PARAM_TOTAL_GROSS_PAY = 1;
+    private static final int PARAM_TOTAL_DEDUCTIONS = 2;
+    private static final int PARAM_TOTAL_NET_PAY = 3;
+    private static final int PARAM_EMPLOYEE_COUNT = 4;
+    private static final int PARAM_PROCESSED_BY = 5;
+    private static final int PARAM_PERIOD_ID = 6;
+    
+    // Update Employee Parameter Indices
+    private static final int PARAM_UPDATE_EMPLOYEE_NUMBER = 1;
+    private static final int PARAM_UPDATE_FIRST_NAME = 2;
+    private static final int PARAM_UPDATE_LAST_NAME = 3;
+    private static final int PARAM_UPDATE_EMAIL = 4;
+    private static final int PARAM_UPDATE_PHONE = 5;
+    private static final int PARAM_UPDATE_POSITION = 6;
+    private static final int PARAM_UPDATE_DEPARTMENT = 7;
+    private static final int PARAM_UPDATE_HIRE_DATE = 8;
+    private static final int PARAM_UPDATE_BASIC_SALARY = 9;
+    private static final int PARAM_UPDATE_EMPLOYMENT_TYPE = 10;
+    private static final int PARAM_UPDATE_SALARY_TYPE = 11;
+    private static final int PARAM_UPDATE_TAX_NUMBER = 12;
+    private static final int PARAM_UPDATE_ID = 13;
+    private static final int PARAM_UPDATE_COMPANY_ID = 14;
+    
+    // Create Payroll Period Parameter Indices
+    private static final int PARAM_CREATE_PERIOD_NAME = 3;
+    private static final int PARAM_CREATE_PAY_DATE = 4;
+    private static final int PARAM_CREATE_START_DATE = 5;
+    private static final int PARAM_CREATE_END_DATE = 6;
+    private static final int PARAM_CREATE_PERIOD_TYPE = 7;
+    private static final int PARAM_CREATE_CREATED_BY = 8;
+    
     public PayrollService() {
         String databaseUrl = DatabaseConfig.getDatabaseUrl();
         SARSTaxCalculator taxCalc = new SARSTaxCalculator();
@@ -120,19 +250,19 @@ public class PayrollService {
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             
             pstmt.setLong(1, employee.getCompanyId());
-            pstmt.setString(2, employee.getEmployeeNumber());
-            pstmt.setString(3, employee.getFirstName());
-            pstmt.setString(4, employee.getLastName());
-            pstmt.setString(5, employee.getEmail());
-            pstmt.setString(6, employee.getPhone());
-            pstmt.setString(7, employee.getPosition());
-            pstmt.setString(8, employee.getDepartment());
-            pstmt.setDate(9, java.sql.Date.valueOf(employee.getHireDate()));
-            pstmt.setBigDecimal(10, employee.getBasicSalary());
-            pstmt.setString(11, employee.getEmploymentType().name());
-            pstmt.setString(12, employee.getSalaryType().name());
-            pstmt.setString(13, employee.getTaxNumber());
-            pstmt.setString(14, employee.getCreatedBy());
+            pstmt.setString(PARAM_EMPLOYEE_NUMBER, employee.getEmployeeNumber());
+            pstmt.setString(PARAM_FIRST_NAME, employee.getFirstName());
+            pstmt.setString(PARAM_LAST_NAME, employee.getLastName());
+            pstmt.setString(PARAM_EMAIL, employee.getEmail());
+            pstmt.setString(PARAM_PHONE, employee.getPhone());
+            pstmt.setString(PARAM_POSITION, employee.getPosition());
+            pstmt.setString(PARAM_DEPARTMENT, employee.getDepartment());
+            pstmt.setDate(PARAM_HIRE_DATE, java.sql.Date.valueOf(employee.getHireDate()));
+            pstmt.setBigDecimal(PARAM_BASIC_SALARY, employee.getBasicSalary());
+            pstmt.setString(PARAM_EMPLOYMENT_TYPE, employee.getEmploymentType().name());
+            pstmt.setString(PARAM_SALARY_TYPE, employee.getSalaryType().name());
+            pstmt.setString(PARAM_TAX_NUMBER, employee.getTaxNumber());
+            pstmt.setString(PARAM_CREATED_BY, employee.getCreatedBy());
             
             ResultSet rs = pstmt.executeQuery();
             if (rs.next()) {
@@ -164,20 +294,20 @@ public class PayrollService {
         try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             
-            pstmt.setString(1, employee.getEmployeeNumber());
-            pstmt.setString(2, employee.getFirstName());
-            pstmt.setString(3, employee.getLastName());
-            pstmt.setString(4, employee.getEmail());
-            pstmt.setString(5, employee.getPhone());
-            pstmt.setString(6, employee.getPosition());
-            pstmt.setString(7, employee.getDepartment());
-            pstmt.setDate(8, java.sql.Date.valueOf(employee.getHireDate()));
-            pstmt.setBigDecimal(9, employee.getBasicSalary());
-            pstmt.setString(10, employee.getEmploymentType().name());
-            pstmt.setString(11, employee.getSalaryType().name());
-            pstmt.setString(12, employee.getTaxNumber());
-            pstmt.setLong(13, employee.getId());
-            pstmt.setLong(14, employee.getCompanyId());
+            pstmt.setString(PARAM_UPDATE_EMPLOYEE_NUMBER, employee.getEmployeeNumber());
+            pstmt.setString(PARAM_UPDATE_FIRST_NAME, employee.getFirstName());
+            pstmt.setString(PARAM_UPDATE_LAST_NAME, employee.getLastName());
+            pstmt.setString(PARAM_UPDATE_EMAIL, employee.getEmail());
+            pstmt.setString(PARAM_UPDATE_PHONE, employee.getPhone());
+            pstmt.setString(PARAM_UPDATE_POSITION, employee.getPosition());
+            pstmt.setString(PARAM_UPDATE_DEPARTMENT, employee.getDepartment());
+            pstmt.setDate(PARAM_UPDATE_HIRE_DATE, java.sql.Date.valueOf(employee.getHireDate()));
+            pstmt.setBigDecimal(PARAM_UPDATE_BASIC_SALARY, employee.getBasicSalary());
+            pstmt.setString(PARAM_UPDATE_EMPLOYMENT_TYPE, employee.getEmploymentType().name());
+            pstmt.setString(PARAM_UPDATE_SALARY_TYPE, employee.getSalaryType().name());
+            pstmt.setString(PARAM_UPDATE_TAX_NUMBER, employee.getTaxNumber());
+            pstmt.setLong(PARAM_UPDATE_ID, employee.getId());
+            pstmt.setLong(PARAM_UPDATE_COMPANY_ID, employee.getCompanyId());
             
             int rowsAffected = pstmt.executeUpdate();
             if (rowsAffected > 0) {
@@ -300,12 +430,12 @@ public class PayrollService {
             
             pstmt.setLong(1, period.getCompanyId());
             pstmt.setObject(2, period.getFiscalPeriodId());
-            pstmt.setString(3, period.getPeriodName());
-            pstmt.setDate(4, java.sql.Date.valueOf(period.getPayDate()));
-            pstmt.setDate(5, java.sql.Date.valueOf(period.getStartDate()));
-            pstmt.setDate(6, java.sql.Date.valueOf(period.getEndDate()));
-            pstmt.setString(7, period.getPeriodType().name());
-            pstmt.setString(8, period.getCreatedBy());
+            pstmt.setString(PARAM_CREATE_PERIOD_NAME, period.getPeriodName());
+            pstmt.setDate(PARAM_CREATE_PAY_DATE, java.sql.Date.valueOf(period.getPayDate()));
+            pstmt.setDate(PARAM_CREATE_START_DATE, java.sql.Date.valueOf(period.getStartDate()));
+            pstmt.setDate(PARAM_CREATE_END_DATE, java.sql.Date.valueOf(period.getEndDate()));
+            pstmt.setString(PARAM_CREATE_PERIOD_TYPE, period.getPeriodType().name());
+            pstmt.setString(PARAM_CREATE_CREATED_BY, period.getCreatedBy());
             
             ResultSet rs = pstmt.executeQuery();
             if (rs.next()) {
@@ -504,7 +634,7 @@ public class PayrollService {
             
             pstmt.setLong(1, companyId);
             pstmt.setInt(2, year);
-            pstmt.setInt(3, month);
+            pstmt.setInt(PARAM_MONTH, month);
             
             ResultSet rs = pstmt.executeQuery();
             while (rs.next()) {
@@ -796,12 +926,12 @@ public class PayrollService {
         
         Long journalEntryId;
         try (PreparedStatement pstmt = conn.prepareStatement(insertJournalEntry)) {
-            pstmt.setString(1, reference);
-            pstmt.setDate(2, java.sql.Date.valueOf(period.getPayDate()));
-            pstmt.setString(3, description);
-            pstmt.setObject(4, period.getFiscalPeriodId());
-            pstmt.setLong(5, period.getCompanyId());
-            pstmt.setString(6, period.getCreatedBy());
+            pstmt.setString(PARAM_REFERENCE, reference);
+            pstmt.setDate(PARAM_ENTRY_DATE, java.sql.Date.valueOf(period.getPayDate()));
+            pstmt.setString(PARAM_DESCRIPTION, description);
+            pstmt.setObject(PARAM_FISCAL_PERIOD_ID, period.getFiscalPeriodId());
+            pstmt.setLong(PARAM_JOURNAL_COMPANY_ID, period.getCompanyId());
+            pstmt.setString(PARAM_JOURNAL_CREATED_BY, period.getCreatedBy());
             
             ResultSet rs = pstmt.executeQuery();
             if (!rs.next()) {
@@ -824,32 +954,32 @@ public class PayrollService {
         
         try (PreparedStatement pstmt = conn.prepareStatement(insertLine)) {
             // 1. Debit: Employee Costs (Gross Salary)
-            pstmt.setLong(1, journalEntryId);
-            pstmt.setLong(2, salaryExpenseAccountId);
-            pstmt.setBigDecimal(3, totalGross);
-            pstmt.setBigDecimal(4, null);
-            pstmt.setString(5, "Gross salaries for " + period.getPeriodName());
-            pstmt.setString(6, reference + "-01");
+            pstmt.setLong(PARAM_JOURNAL_ENTRY_ID, journalEntryId);
+            pstmt.setLong(PARAM_ACCOUNT_ID, salaryExpenseAccountId);
+            pstmt.setBigDecimal(PARAM_DEBIT_AMOUNT, totalGross);
+            pstmt.setBigDecimal(PARAM_CREDIT_AMOUNT, null);
+            pstmt.setString(PARAM_JOURNAL_LINE_DESCRIPTION, "Gross salaries for " + period.getPeriodName());
+            pstmt.setString(PARAM_JOURNAL_REFERENCE, reference + "-0" + JOURNAL_LINE_GROSS_SALARY);
             pstmt.executeUpdate();
             
             // 2. Credit: Payroll Liabilities (Total Deductions)
             if (totalDeductions.compareTo(BigDecimal.ZERO) > 0) {
-                pstmt.setLong(1, journalEntryId);
-                pstmt.setLong(2, payrollLiabilityAccountId);
-                pstmt.setBigDecimal(3, null);
-                pstmt.setBigDecimal(4, totalDeductions);
-                pstmt.setString(5, "Payroll deductions for " + period.getPeriodName());
-                pstmt.setString(6, reference + "-02");
+                pstmt.setLong(PARAM_JOURNAL_ENTRY_ID, journalEntryId);
+                pstmt.setLong(PARAM_ACCOUNT_ID, payrollLiabilityAccountId);
+                pstmt.setBigDecimal(PARAM_DEBIT_AMOUNT, null);
+                pstmt.setBigDecimal(PARAM_CREDIT_AMOUNT, totalDeductions);
+                pstmt.setString(PARAM_JOURNAL_LINE_DESCRIPTION, "Payroll deductions for " + period.getPeriodName());
+                pstmt.setString(PARAM_JOURNAL_REFERENCE, reference + "-0" + JOURNAL_LINE_PAYROLL_DEDUCTIONS);
                 pstmt.executeUpdate();
             }
             
             // 3. Credit: Bank Account (Net Pay)
-            pstmt.setLong(1, journalEntryId);
-            pstmt.setLong(2, bankAccountId);
-            pstmt.setBigDecimal(3, null);
-            pstmt.setBigDecimal(4, totalNet);
-            pstmt.setString(5, "Net pay for " + period.getPeriodName());
-            pstmt.setString(6, reference + "-03");
+            pstmt.setLong(PARAM_JOURNAL_ENTRY_ID, journalEntryId);
+            pstmt.setLong(PARAM_ACCOUNT_ID, bankAccountId);
+            pstmt.setBigDecimal(PARAM_DEBIT_AMOUNT, null);
+            pstmt.setBigDecimal(PARAM_CREDIT_AMOUNT, totalNet);
+            pstmt.setString(PARAM_JOURNAL_LINE_DESCRIPTION, "Net pay for " + period.getPeriodName());
+            pstmt.setString(PARAM_JOURNAL_REFERENCE, reference + "-0" + JOURNAL_LINE_NET_PAY);
             pstmt.executeUpdate();
         }
         
@@ -861,13 +991,13 @@ public class PayrollService {
             """;
         
         try (PreparedStatement pstmt = conn.prepareStatement(insertPayrollJournal)) {
-            pstmt.setLong(1, period.getCompanyId());
-            pstmt.setLong(2, period.getId());
-            pstmt.setLong(3, journalEntryId);
-            pstmt.setString(4, "PAYROLL_SUMMARY");
-            pstmt.setString(5, description);
-            pstmt.setBigDecimal(6, totalNet);
-            pstmt.setString(7, period.getCreatedBy());
+            pstmt.setLong(PARAM_PAYROLL_COMPANY_ID, period.getCompanyId());
+            pstmt.setLong(PARAM_PAYROLL_PERIOD_ID, period.getId());
+            pstmt.setLong(PARAM_PAYROLL_JOURNAL_ENTRY_ID, journalEntryId);
+            pstmt.setString(PARAM_ENTRY_TYPE, "PAYROLL_SUMMARY");
+            pstmt.setString(PARAM_PAYROLL_DESCRIPTION, description);
+            pstmt.setBigDecimal(PARAM_TOTAL_AMOUNT, totalNet);
+            pstmt.setString(PARAM_PAYROLL_CREATED_BY, period.getCreatedBy());
             pstmt.executeUpdate();
         }
         
@@ -1186,7 +1316,7 @@ public class PayrollService {
                         }
                     }
                 } catch (Exception e) {
-                    LOGGER.warning("Failed to import employee from line: " + line.substring(0, Math.min(100, line.length())));
+                    LOGGER.warning("Failed to import employee from line: " + line.substring(0, Math.min(MAX_ERROR_MESSAGE_LENGTH, line.length())));
                     LOGGER.warning("Error: " + e.getMessage());
                 }
             }
@@ -1231,7 +1361,7 @@ public class PayrollService {
      */
     private Employee parseEmployeeFromLine(String line, Long companyId) {
         String[] fields = line.split("\t");
-        if (fields.length < 40) {
+        if (fields.length < MIN_EMPLOYEE_FIELDS) {
             throw new IllegalArgumentException("Line does not have enough fields: " + fields.length);
         }
         
@@ -1240,36 +1370,36 @@ public class PayrollService {
         employee.setCreatedBy("system");
         
         // Basic employee information
-        employee.setEmployeeNumber(fields[0].trim()); // Employee Code
-        employee.setLastName(fields[1].trim()); // Surname
+        employee.setEmployeeNumber(fields[FIELD_EMPLOYEE_CODE].trim()); // Employee Code
+        employee.setLastName(fields[FIELD_SURNAME].trim()); // Surname
         
         // Date of Birth
-        if (!fields[2].trim().isEmpty()) {
-            employee.setHireDate(LocalDate.parse(fields[2].trim())); // We'll use hire date for DOB for now
+        if (!fields[FIELD_DATE_OF_BIRTH].trim().isEmpty()) {
+            employee.setHireDate(LocalDate.parse(fields[FIELD_DATE_OF_BIRTH].trim())); // We'll use hire date for DOB for now
         }
         
         // Date Engaged (Hire Date)
-        if (!fields[3].trim().isEmpty()) {
-            employee.setHireDate(LocalDate.parse(fields[3].trim()));
+        if (!fields[FIELD_DATE_ENGAGED].trim().isEmpty()) {
+            employee.setHireDate(LocalDate.parse(fields[FIELD_DATE_ENGAGED].trim()));
         }
         
-        employee.setTitle(fields[4].trim()); // Title
-        employee.setFirstName(fields[6].trim()); // First Name
-        employee.setSecondName(fields[7].trim()); // Second Name
+        employee.setTitle(fields[FIELD_TITLE].trim()); // Title
+        employee.setFirstName(fields[FIELD_FIRST_NAME].trim()); // First Name
+        employee.setSecondName(fields[FIELD_SECOND_NAME].trim()); // Second Name
         
         // Email
-        if (fields[24].trim().length() > 0) {
-            employee.setEmail(fields[24].trim());
+        if (fields[FIELD_EMAIL].trim().length() > 0) {
+            employee.setEmail(fields[FIELD_EMAIL].trim());
         }
         
         // Phone (use cell number)
-        if (fields[22].trim().length() > 0) {
-            employee.setPhone(fields[22].trim());
+        if (fields[FIELD_CELL_NUMBER].trim().length() > 0) {
+            employee.setPhone(fields[FIELD_CELL_NUMBER].trim());
         }
         
         // Position/Job Title
-        if (fields[28].trim().length() > 0) {
-            employee.setPosition(fields[28].trim());
+        if (fields[FIELD_JOB_TITLE].trim().length() > 0) {
+            employee.setPosition(fields[FIELD_JOB_TITLE].trim());
         } else {
             employee.setPosition("Educator"); // Default position
         }
@@ -1277,13 +1407,13 @@ public class PayrollService {
         employee.setDepartment("Education"); // Default department
         
         // Tax Number (ID Number)
-        if (fields[9].trim().length() > 0) {
-            employee.setTaxNumber(fields[9].trim());
+        if (fields[FIELD_ID_NUMBER].trim().length() > 0) {
+            employee.setTaxNumber(fields[FIELD_ID_NUMBER].trim());
         }
         
         // Basic Salary (Fixed Salary) - convert from string with comma decimal separator
-        if (fields[39].trim().length() > 0) {
-            String salaryStr = fields[39].trim().replace(",", ".");
+        if (fields[FIELD_FIXED_SALARY].trim().length() > 0) {
+            String salaryStr = fields[FIELD_FIXED_SALARY].trim().replace(",", ".");
             try {
                 BigDecimal salary = new BigDecimal(salaryStr);
                 employee.setBasicSalary(salary);
@@ -1297,14 +1427,14 @@ public class PayrollService {
         
         // Address Information (use residential address)
         StringBuilder address = new StringBuilder();
-        if (fields[15].trim().length() > 0) address.append(fields[15].trim()).append(" "); // Unit Number
-        if (fields[16].trim().length() > 0) address.append(fields[16].trim()).append(" "); // Complex Name
-        if (fields[17].trim().length() > 0) address.append(fields[17].trim()).append(" "); // Street Number
-        if (fields[18].trim().length() > 0) address.append(fields[18].trim()).append(" "); // Street/Farm Name
-        if (fields[19].trim().length() > 0) address.append(fields[19].trim()).append(" "); // Suburb/District
+        if (fields[FIELD_UNIT_NUMBER].trim().length() > 0) address.append(fields[FIELD_UNIT_NUMBER].trim()).append(" "); // Unit Number
+        if (fields[FIELD_COMPLEX_NAME].trim().length() > 0) address.append(fields[FIELD_COMPLEX_NAME].trim()).append(" "); // Complex Name
+        if (fields[FIELD_STREET_NUMBER].trim().length() > 0) address.append(fields[FIELD_STREET_NUMBER].trim()).append(" "); // Street Number
+        if (fields[FIELD_STREET_NAME].trim().length() > 0) address.append(fields[FIELD_STREET_NAME].trim()).append(" "); // Street/Farm Name
+        if (fields[FIELD_SUBURB].trim().length() > 0) address.append(fields[FIELD_SUBURB].trim()).append(" "); // Suburb/District
         employee.setAddressLine1(address.toString().trim());
-        employee.setCity(fields[20].trim()); // City/Town
-        employee.setPostalCode(fields[21].trim()); // Postal Code
+        employee.setCity(fields[FIELD_CITY].trim()); // City/Town
+        employee.setPostalCode(fields[FIELD_POSTAL_CODE].trim()); // Postal Code
         employee.setCountry("ZA"); // Default to South Africa
         
         return employee;
