@@ -209,7 +209,7 @@ public class OpeningBalanceService {
                 info.companyId = rs.getLong("company_id");
                 info.periodName = rs.getString("period_name");
                 info.startDate = rs.getDate("start_date").toLocalDate();
-                info.endDate = rs.getDate("end_date").toLocalDate();
+                // endDate field removed - was assigned but never used
                 info.reference = "OB-" + info.id;
                 return info;
             }
@@ -372,7 +372,7 @@ public class OpeningBalanceService {
         Long companyId;
         String periodName;
         LocalDate startDate;
-        LocalDate endDate;
+        // endDate field removed - was assigned but never used
         String reference;
     }
 }
