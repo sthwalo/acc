@@ -15,13 +15,13 @@ import java.time.format.DateTimeFormatter;
 
 import java.util.ArrayList;
 import java.util.List;
-public class CsvImportService {
+public final class CsvImportService {
     private final String dbUrl;
     private final AccountService accountService;
     private final CompanyService companyService;
     
     public CsvImportService(String dbUrl, CompanyService companyService) {
-        // Step 1: Validate inputs BEFORE any field assignment
+        // Input validation
         if (dbUrl == null || dbUrl.trim().isEmpty()) {
             throw new IllegalArgumentException("Database URL is required");
         }
@@ -29,14 +29,19 @@ public class CsvImportService {
             throw new IllegalArgumentException("CompanyService is required");
         }
 
-        // Step 2: Initialize risky operations (can throw) BEFORE field assignment
-        initializeDatabase();
-        AccountService accountSvc = new AccountService(dbUrl, companyService);
-
-        // Step 3: Only assign fields AFTER successful initialization
+        // Safe field assignments first
         this.dbUrl = dbUrl;
         this.companyService = companyService;
-        this.accountService = accountSvc;
+
+        // Risky operation with error handling
+        try {
+            this.accountService = new AccountService(dbUrl, companyService);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to initialize AccountService", e);
+        }
+        
+        // Safe operation
+        initializeDatabase();
     }
     
     public AccountService getAccountService() {

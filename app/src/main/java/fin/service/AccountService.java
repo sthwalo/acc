@@ -9,17 +9,32 @@ import java.util.*;
  * Delegates to specialized services following Single Responsibility Principle.
  * Provides a unified interface while maintaining separation of concerns.
  */
-public class AccountService {
+public final class AccountService {
     private final CategoryManagementService categoryService;
     private final AccountManagementService accountService;
     private final ClassificationRuleManager ruleManager;
     private final AccountClassificationService accountClassificationService;
 
     public AccountService(String dbUrl, CompanyService companyService) {
-        this.categoryService = new CategoryManagementService(dbUrl);
-        this.accountService = new AccountManagementService(dbUrl);
-        this.ruleManager = new ClassificationRuleManager();
-        this.accountClassificationService = new AccountClassificationService(dbUrl);
+        // Input validation
+        if (dbUrl == null || dbUrl.trim().isEmpty()) {
+            throw new IllegalArgumentException("Database URL is required");
+        }
+        if (companyService == null) {
+            throw new IllegalArgumentException("CompanyService is required");
+        }
+
+        // Initialize services with proper error handling
+        try {
+            this.categoryService = new CategoryManagementService(dbUrl);
+            this.accountService = new AccountManagementService(dbUrl);
+            this.ruleManager = new ClassificationRuleManager();
+            this.accountClassificationService = new AccountClassificationService(dbUrl);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to initialize service dependencies", e);
+        }
+        
+        // Safe initialization
         initializeDatabase();
     }
     
