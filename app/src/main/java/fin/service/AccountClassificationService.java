@@ -8,32 +8,28 @@ import java.math.BigDecimal;
 
 /**
  * Service for classifying and categorizing accounts based on transaction analysis.
- * Sets up a standard chart of accounts for South African busines        // FINANCE COSTS (9000-9999)
-        Long financeCostsId = categoryIds.get("FINANCE_COSTS");
-        
-        accounts.add(new AccountDefinition("9500", "Interest Expense", "Interest on loans and credit", financeCostsId));
-        // Sub-account for excess interest charges
-        accounts.add(new AccountDefinition("9500-001", "Excess Interest Expense", "Excess interest charges on overdrafts", financeCostsId));
-        
-        accounts.add(new AccountDefinition("9600", "Bank Charges", "Bank fees and transaction costs", financeCostsId));
-        // Sub-accounts for bank-specific fees
-        accounts.add(new AccountDefinition("9600-001", "Standard Bank Fees", "Standard Bank service fees", financeCostsId));
-        accounts.add(new AccountDefinition("9600-002", "Capitec Bank Fees", "Capitec Bank service fees", financeCostsId));
-        accounts.add(new AccountDefinition("9600-003", "ATM Withdrawal Fees", "ATM withdrawal charges", financeCostsId));
-        accounts.add(new AccountDefinition("9600-004", "EFT Transaction Fees", "Electronic funds transfer charges", financeCostsId));
-        accounts.add(new AccountDefinition("9600-005", "Debit Order Fees", "Debit order processing fees", financeCostsId));
-        accounts.add(new AccountDefinition("9600-999", "Other Bank Fees", "Other banking charges", financeCostsId));
-        
-        accounts.add(new AccountDefinition("9700", "Foreign Exchange Loss", "Loss on currency conversion", financeCostsId));ities.
+ * Sets up a standard chart of accounts for South African businesses.
  */
-public class AccountClassificationService {
+public final class AccountClassificationService {
     
     private final String dbUrl;
     private final CompanyService companyService;
     
     public AccountClassificationService(String dbUrl) {
+        // Input validation
+        if (dbUrl == null || dbUrl.trim().isEmpty()) {
+            throw new IllegalArgumentException("Database URL is required");
+        }
+
+        // Safe field assignment
         this.dbUrl = dbUrl;
-        this.companyService = new CompanyService(dbUrl);
+
+        // Risky operation - wrap in try-catch or handle differently
+        try {
+            this.companyService = new CompanyService(dbUrl);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to initialize CompanyService", e);
+        }
     }
     
     /**
