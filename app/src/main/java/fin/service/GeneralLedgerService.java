@@ -16,6 +16,11 @@ import java.util.LinkedHashMap;
  */
 public class GeneralLedgerService {
 
+    // Report formatting constants
+    private static final int GENERAL_LEDGER_REPORT_WIDTH = 130;
+    private static final int MAX_DESCRIPTION_LENGTH = 48;
+    private static final int TRUNCATED_DESCRIPTION_LENGTH = 45;
+
     private final FinancialDataRepository repository;
 
     /**
@@ -145,9 +150,9 @@ public class GeneralLedgerService {
         List<JournalEntryLineDetail> ledgerLines = repository.getJournalEntryLinesForAccount(companyId, fiscalPeriodId, accountCode);
         
         // Account header
-        report.append("=".repeat(130)).append("\n");
+        report.append("=".repeat(GENERAL_LEDGER_REPORT_WIDTH)).append("\n");
         report.append(String.format("ACCOUNT: %s - %s%n", accountCode, accountName));
-        report.append("=".repeat(130)).append("\n");
+        report.append("=".repeat(GENERAL_LEDGER_REPORT_WIDTH)).append("\n");
         
         // Opening balance
         String balanceIndicator = "D".equals(normalBalance) ? "DR" : "CR";
@@ -160,7 +165,7 @@ public class GeneralLedgerService {
         // Column headers
         report.append(String.format("%-12s %-15s %-50s %-15s %-15s %-20s%n",
                 "Date", "Reference", "Description", "Debit", "Credit", "Balance"));
-        report.append("=".repeat(130)).append("\n");
+        report.append("=".repeat(GENERAL_LEDGER_REPORT_WIDTH)).append("\n");
         
         // Calculate running balance
         BigDecimal runningBalance = openingBalance;
@@ -187,8 +192,8 @@ public class GeneralLedgerService {
             
             // Format description
             String description = line.getDescription() != null ? line.getDescription() : "";
-            if (description.length() > 48) {
-                description = description.substring(0, 45) + "...";
+            if (description.length() > MAX_DESCRIPTION_LENGTH) {
+                description = description.substring(0, TRUNCATED_DESCRIPTION_LENGTH) + "...";
             }
             
             // Determine balance display (DR or CR)
@@ -204,7 +209,7 @@ public class GeneralLedgerService {
         }
         
         // Footer with totals
-        report.append("=".repeat(130)).append("\n");
+        report.append("=".repeat(GENERAL_LEDGER_REPORT_WIDTH)).append("\n");
         report.append(String.format("Period Totals:                                       %-15s %-15s%n",
                 formatCurrency(totalDebits),
                 formatCurrency(totalCredits)));
@@ -241,13 +246,13 @@ public class GeneralLedgerService {
 
     private String generateReportHeader(String title, Company company, FiscalPeriod fiscalPeriod) {
         StringBuilder header = new StringBuilder();
-        header.append(centerText(title, 130)).append("\n");
-        header.append(centerText("Company: " + company.getName(), 130)).append("\n");
-        header.append(centerText("Registration: " + company.getRegistrationNumber(), 130)).append("\n");
+        header.append(centerText(title, GENERAL_LEDGER_REPORT_WIDTH)).append("\n");
+        header.append(centerText("Company: " + company.getName(), GENERAL_LEDGER_REPORT_WIDTH)).append("\n");
+        header.append(centerText("Registration: " + company.getRegistrationNumber(), GENERAL_LEDGER_REPORT_WIDTH)).append("\n");
         header.append(centerText("Period: " + fiscalPeriod.getPeriodName() + " (" +
-                fiscalPeriod.getStartDate() + " to " + fiscalPeriod.getEndDate() + ")", 130)).append("\n");
+                fiscalPeriod.getStartDate() + " to " + fiscalPeriod.getEndDate() + ")", GENERAL_LEDGER_REPORT_WIDTH)).append("\n");
         header.append(centerText("Generated on: " + java.time.LocalDateTime.now().format(
-                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")), 130)).append("\n");
+                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")), GENERAL_LEDGER_REPORT_WIDTH)).append("\n");
         return header.toString();
     }
 

@@ -14,6 +14,17 @@ import java.util.List;
  */
 public class OutputFormatter {
     
+    // Display width constants
+    private static final int HEADER_WIDTH = 80;
+    private static final int SUBHEADER_WIDTH = 50;
+    private static final int SEPARATOR_WIDTH = 80;
+    private static final int PROGRESS_BAR_WIDTH = 20;
+    private static final double PROGRESS_PERCENTAGE_MULTIPLIER = 100.0;
+    
+    // Transaction display constants
+    private static final int TRANSACTION_DETAILS_MAX_LENGTH = 38;
+    private static final int TRANSACTION_DETAILS_TRUNCATE_LENGTH = 35;
+    
     private static final String SUCCESS_PREFIX = "✅ ";
     private static final String ERROR_PREFIX = "❌ ";
     private static final String WARNING_PREFIX = "⚠️ ";
@@ -45,7 +56,7 @@ public class OutputFormatter {
     }
     
     public void printHeader(String title) {
-        int totalWidth = 80;
+        int totalWidth = HEADER_WIDTH;
         int titleLength = title.length();
         int paddingLength = (totalWidth - titleLength - 2) / 2;
         String padding = "=".repeat(Math.max(0, paddingLength));
@@ -56,22 +67,22 @@ public class OutputFormatter {
     }
     
     public void printSubHeader(String title) {
-        System.out.println("\n" + "-".repeat(50));
+        System.out.println("\n" + "-".repeat(SUBHEADER_WIDTH));
         System.out.println(title);
-        System.out.println("-".repeat(50));
+        System.out.println("-".repeat(SUBHEADER_WIDTH));
     }
     
     public void printSeparator() {
-        System.out.println("-".repeat(80));
+        System.out.println("-".repeat(SEPARATOR_WIDTH));
     }
     
     public void printDoubleSeparator() {
-        System.out.println("=".repeat(80));
+        System.out.println("=".repeat(SEPARATOR_WIDTH));
     }
     
     public void printProgress(String operation, int current, int total) {
-        int percentage = (int) ((double) current / total * 100);
-        String progressBar = createProgressBar(percentage, 20);
+        int percentage = (int) ((double) current / total * PROGRESS_PERCENTAGE_MULTIPLIER);
+        String progressBar = createProgressBar(percentage, PROGRESS_BAR_WIDTH);
         System.out.printf("\r%s [%s] %d%% (%d/%d)", operation, progressBar, percentage, current, total);
         if (current == total) {
             System.out.println(); // New line when complete
@@ -79,7 +90,7 @@ public class OutputFormatter {
     }
     
     private String createProgressBar(int percentage, int width) {
-        int filled = (int) (percentage / 100.0 * width);
+        int filled = (int) (percentage / PROGRESS_PERCENTAGE_MULTIPLIER * width);
         return "█".repeat(filled) + "░".repeat(width - filled);
     }
     
@@ -218,8 +229,8 @@ public class OutputFormatter {
             
             // Truncate details if too long
             String details = transaction.getDetails();
-            if (details != null && details.length() > 38) {
-                details = details.substring(0, 35) + "...";
+            if (details != null && details.length() > TRANSACTION_DETAILS_MAX_LENGTH) {
+                details = details.substring(0, TRANSACTION_DETAILS_TRUNCATE_LENGTH) + "...";
             }
             
             System.out.printf("%-12s %-40s %-15s %-15s %-15s%n", 

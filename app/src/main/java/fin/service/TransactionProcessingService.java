@@ -38,6 +38,15 @@ public class TransactionProcessingService {
     private final AccountClassificationService accountClassificationService;
     private final JournalEntryGenerator journalEntryGenerator;
     
+    // Database parameter indices for PreparedStatement operations
+    private static final int PARAM_INDEX_ACCOUNT_CODE = 1;
+    private static final int PARAM_INDEX_ACCOUNT_NAME = 2;
+    private static final int PARAM_INDEX_USERNAME = 3;
+    private static final int PARAM_INDEX_TRANSACTION_ID = 4;
+    
+    // Default account codes for unmapped transactions
+    private static final String DEFAULT_BANK_ACCOUNT_CODE = "1100";
+    
     // Cache for account mappings
     private Map<String, Long> accountCache = new HashMap<>();
     
@@ -104,10 +113,10 @@ public class TransactionProcessingService {
                             
                             // Apply rule if found
                             if (matchedRule != null) {
-                                updateStmt.setString(1, matchedRule.accountCode);
-                                updateStmt.setString(2, matchedRule.accountName);
-                                updateStmt.setString(3, username);
-                                updateStmt.setLong(4, transaction.getId());
+                                updateStmt.setString(PARAM_INDEX_ACCOUNT_CODE, matchedRule.accountCode);
+                                updateStmt.setString(PARAM_INDEX_ACCOUNT_NAME, matchedRule.accountName);
+                                updateStmt.setString(PARAM_INDEX_USERNAME, username);
+                                updateStmt.setLong(PARAM_INDEX_TRANSACTION_ID, transaction.getId());
                                 updateStmt.addBatch();
                                 classifiedCount++;
                                 
@@ -196,10 +205,10 @@ public class TransactionProcessingService {
                                 
                                 // Only update if the classification has changed
                                 if (currentAccountCode == null || !currentAccountCode.equals(matchedRule.accountCode)) {
-                                    updateStmt.setString(1, matchedRule.accountCode);
-                                    updateStmt.setString(2, matchedRule.accountName);
-                                    updateStmt.setString(3, username);
-                                    updateStmt.setLong(4, transaction.getId());
+                                    updateStmt.setString(PARAM_INDEX_ACCOUNT_CODE, matchedRule.accountCode);
+                                    updateStmt.setString(PARAM_INDEX_ACCOUNT_NAME, matchedRule.accountName);
+                                    updateStmt.setString(PARAM_INDEX_USERNAME, username);
+                                    updateStmt.setLong(PARAM_INDEX_TRANSACTION_ID, transaction.getId());
                                     updateStmt.addBatch();
                                     reclassifiedCount++;
                                     
@@ -532,7 +541,7 @@ public class TransactionProcessingService {
     private Long mapTransactionToAccount(BankTransaction transaction) {
         try {
             // Use default bank account for unmapped transactions
-            return getAccountIdFromCode("1100", transaction.getCompanyId()); // Default to bank account
+            return getAccountIdFromCode(DEFAULT_BANK_ACCOUNT_CODE, transaction.getCompanyId()); // Default to bank account
             
         } catch (Exception e) {
             LOGGER.log(Level.WARNING, "Failed to map transaction to account", e);

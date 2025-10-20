@@ -21,6 +21,23 @@ public class SARSTaxCalculator {
     private static final double THRESHOLD_HIGHEST_BRACKET = 156328.0;
     private static final double ADDITIONAL_TAX_RATE = 0.45;
     private static final double UIF_RATE = 0.01;
+
+    // Regex group indices for tax bracket parsing
+    private static final int REGEX_GROUP_LOWER_1 = 1;
+    private static final int REGEX_GROUP_UPPER_1 = 2;
+    private static final int REGEX_GROUP_TAX_1 = 3;
+    private static final int REGEX_GROUP_LOWER_2 = 4;
+    private static final int REGEX_GROUP_UPPER_2 = 5;
+    private static final int REGEX_GROUP_TAX_2 = 6;
+
+    // Rounding constants for financial calculations
+    private static final double ROUNDING_FACTOR = 100.0;
+
+    // Display formatting constants
+    private static final int HEADER_WIDTH = 60;
+    private static final int SECTION_WIDTH = 40;
+    private static final int BRACKET_LIST_WIDTH = 50;
+
     private List<TaxBracket> taxBrackets = new ArrayList<>();
 
     public static class TaxBracket {
@@ -72,9 +89,9 @@ public class SARSTaxCalculator {
             if (matcher.find()) {
                 try {
                     // Parse first bracket
-                    double lower1 = parseNumber(matcher.group(1));
-                    double upper1 = parseNumber(matcher.group(2));
-                    double tax1 = parseNumber(matcher.group(3));
+                    double lower1 = parseNumber(matcher.group(REGEX_GROUP_LOWER_1));
+                    double upper1 = parseNumber(matcher.group(REGEX_GROUP_UPPER_1));
+                    double tax1 = parseNumber(matcher.group(REGEX_GROUP_TAX_1));
                     
                     // Validate first bracket is within R5,500-R30,000 range
                     if (lower1 >= MIN_SALARY_RANGE && upper1 <= MAX_SALARY_RANGE) {
@@ -83,9 +100,9 @@ public class SARSTaxCalculator {
                     }
                     
                     // Parse second bracket
-                    double lower2 = parseNumber(matcher.group(4));
-                    double upper2 = parseNumber(matcher.group(5));
-                    double tax2 = parseNumber(matcher.group(6));
+                    double lower2 = parseNumber(matcher.group(REGEX_GROUP_LOWER_2));
+                    double upper2 = parseNumber(matcher.group(REGEX_GROUP_UPPER_2));
+                    double tax2 = parseNumber(matcher.group(REGEX_GROUP_TAX_2));
                     
                     // Validate second bracket is within R5,500-R30,000 range
                     if (lower2 >= MIN_SALARY_RANGE && upper2 <= MAX_SALARY_RANGE) {
@@ -116,7 +133,7 @@ public class SARSTaxCalculator {
 
     public double calculateUIF(double grossSalary) {
         if (grossSalary <= UIF_THRESHOLD) {
-            return Math.round(grossSalary * UIF_RATE * 100.0) / 100.0;
+            return Math.round(grossSalary * UIF_RATE * ROUNDING_FACTOR) / ROUNDING_FACTOR;
         } else {
             return UIF_CAP;
         }
@@ -132,7 +149,7 @@ public class SARSTaxCalculator {
         // Monthly threshold: R500,000 / 12 = R41,666.67
         
         if (totalCompanyPayroll > MONTHLY_SDL_THRESHOLD) {
-            return Math.round(grossSalary * SDL_RATE * 100.0) / 100.0;
+            return Math.round(grossSalary * SDL_RATE * ROUNDING_FACTOR) / ROUNDING_FACTOR;
         }
         return 0.0;
     }
@@ -179,9 +196,9 @@ public class SARSTaxCalculator {
     }
 
     public Map<String, Double> calculateNetPay(double grossSalary) {
-        System.out.println("\n" + "=".repeat(60));
+        System.out.println("\n" + "=".repeat(HEADER_WIDTH));
         System.out.printf("CALCULATING NET PAY FOR GROSS SALARY: R%.2f%n", grossSalary);
-        System.out.println("=".repeat(60));
+        System.out.println("=".repeat(HEADER_WIDTH));
 
         double uif = calculateUIF(grossSalary);
         double paye = findPAYE(grossSalary);
@@ -198,17 +215,17 @@ public class SARSTaxCalculator {
 
     public void printCalculation(Map<String, Double> calculation) {
         System.out.println("\nRESULTS:");
-        System.out.println("-".repeat(40));
+        System.out.println("-".repeat(SECTION_WIDTH));
         System.out.printf("Gross Salary: R%,.2f%n", calculation.get("gross"));
         System.out.printf("UIF Deduction: R%,.2f%n", calculation.get("uif"));
         System.out.printf("PAYE Tax: R%,.2f%n", calculation.get("paye"));
         System.out.printf("NET PAY: R%,.2f%n", calculation.get("net"));
-        System.out.println("-".repeat(40));
+        System.out.println("-".repeat(SECTION_WIDTH));
     }
 
     public void printAllBrackets() {
         System.out.println("\nLOADED TAX BRACKETS:");
-        System.out.println("=".repeat(50));
+        System.out.println("=".repeat(BRACKET_LIST_WIDTH));
         for (TaxBracket bracket : taxBrackets) {
             System.out.println(bracket);
         }

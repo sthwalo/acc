@@ -26,6 +26,16 @@ public class PdfExportService {
     private static final Font NORMAL_FONT = new Font(Font.FontFamily.HELVETICA, 10, Font.NORMAL);
     private static final Font SMALL_FONT = new Font(Font.FontFamily.HELVETICA, 8, Font.NORMAL);
     
+    // Table layout constants
+    private static final float[] TABLE_COLUMN_WIDTHS = {2f, 5f, 2.5f, 2.5f, 2.5f, 1.5f, 3f, 3f};
+    private static final float TABLE_WIDTH_PERCENTAGE = 100f;
+    private static final float SUMMARY_TABLE_WIDTH_PERCENTAGE = 50f;
+    private static final float CELL_PADDING = 5f;
+    
+    // Page layout constants
+    private static final float HEADER_MARGIN_TOP = 10f;
+    private static final float FOOTER_MARGIN_BOTTOM = 10f;
+    
     /**
      * Exports transaction data to PDF
      * 
@@ -112,8 +122,8 @@ public class PdfExportService {
     }
     
     private void addTransactionsTable(Document document, List<BankTransaction> transactions) throws DocumentException {
-        PdfPTable table = new PdfPTable(new float[]{2f, 5f, 2.5f, 2.5f, 2.5f, 1.5f, 3f, 3f});
-        table.setWidthPercentage(100);
+        PdfPTable table = new PdfPTable(TABLE_COLUMN_WIDTHS);
+        table.setWidthPercentage(TABLE_WIDTH_PERCENTAGE);
         
         // Add table headers
         addTableHeader(table);
@@ -135,7 +145,7 @@ public class PdfExportService {
             header.setPhrase(new Phrase(columnTitle, HEADER_FONT));
             header.setHorizontalAlignment(Element.ALIGN_CENTER);
             header.setVerticalAlignment(Element.ALIGN_MIDDLE);
-            header.setPadding(5);
+            header.setPadding(CELL_PADDING);
             table.addCell(header);
         }
     }
@@ -225,7 +235,7 @@ public class PdfExportService {
         
         // Create summary table
         PdfPTable summaryTable = new PdfPTable(2);
-        summaryTable.setWidthPercentage(50);
+        summaryTable.setWidthPercentage(SUMMARY_TABLE_WIDTH_PERCENTAGE);
         summaryTable.setHorizontalAlignment(Element.ALIGN_LEFT);
         
         // Total transactions
@@ -280,17 +290,17 @@ public class PdfExportService {
             // Header
             ColumnText.showTextAligned(cb, Element.ALIGN_LEFT,
                     new Phrase("Company: " + companyName, SMALL_FONT),
-                    document.leftMargin(), document.top() + 10, 0);
+                    document.leftMargin(), document.top() + HEADER_MARGIN_TOP, 0);
             
             ColumnText.showTextAligned(cb, Element.ALIGN_RIGHT,
                     new Phrase("Fiscal Period: " + fiscalPeriodName, SMALL_FONT),
-                    document.right(), document.top() + 10, 0);
+                    document.right(), document.top() + HEADER_MARGIN_TOP, 0);
             
             // Footer - page number
             ColumnText.showTextAligned(cb, Element.ALIGN_CENTER,
                     new Phrase(String.format("Page %d", writer.getPageNumber()), SMALL_FONT),
                     (document.right() - document.left()) / 2 + document.leftMargin(),
-                    document.bottom() - 10, 0);
+                    document.bottom() - FOOTER_MARGIN_BOTTOM, 0);
         }
     }
 }

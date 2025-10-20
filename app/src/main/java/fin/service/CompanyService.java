@@ -36,6 +36,29 @@ import java.util.List;
 public class CompanyService {
     private final String dbUrl;
     
+    // PreparedStatement parameter indices for company operations
+    private static final int PARAM_COMPANY_NAME = 1;
+    private static final int PARAM_REGISTRATION_NUMBER = 2;
+    private static final int PARAM_TAX_NUMBER = 3;
+    private static final int PARAM_ADDRESS = 4;
+    private static final int PARAM_CONTACT_EMAIL = 5;
+    private static final int PARAM_CONTACT_PHONE = 6;
+    private static final int PARAM_CREATED_AT = 7;
+    private static final int PARAM_UPDATED_AT = 7;
+    private static final int PARAM_COMPANY_ID = 8;
+    
+    // PreparedStatement parameter indices for fiscal period operations
+    private static final int PARAM_FISCAL_COMPANY_ID = 1;
+    private static final int PARAM_PERIOD_NAME = 2;
+    private static final int PARAM_START_DATE = 3;
+    private static final int PARAM_END_DATE = 4;
+    private static final int PARAM_IS_CLOSED = 5;
+    private static final int PARAM_FISCAL_CREATED_AT = 6;
+    
+    // PreparedStatement parameter indices for query operations
+    private static final int PARAM_QUERY_COMPANY_ID = 1;
+    private static final int PARAM_QUERY_PERIOD_NAME = 2;
+    
     public CompanyService(String dbUrl) {
         this.dbUrl = dbUrl;
     }
@@ -49,13 +72,13 @@ public class CompanyService {
         try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             
-            pstmt.setString(1, company.getName());
-            pstmt.setString(2, company.getRegistrationNumber());
-            pstmt.setString(3, company.getTaxNumber());
-            pstmt.setString(4, company.getAddress());
-            pstmt.setString(5, company.getContactEmail());
-            pstmt.setString(6, company.getContactPhone());
-            pstmt.setTimestamp(7, Timestamp.valueOf(LocalDateTime.now()));
+            pstmt.setString(PARAM_COMPANY_NAME, company.getName());
+            pstmt.setString(PARAM_REGISTRATION_NUMBER, company.getRegistrationNumber());
+            pstmt.setString(PARAM_TAX_NUMBER, company.getTaxNumber());
+            pstmt.setString(PARAM_ADDRESS, company.getAddress());
+            pstmt.setString(PARAM_CONTACT_EMAIL, company.getContactEmail());
+            pstmt.setString(PARAM_CONTACT_PHONE, company.getContactPhone());
+            pstmt.setTimestamp(PARAM_CREATED_AT, Timestamp.valueOf(LocalDateTime.now()));
             
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows == 0) {
@@ -85,12 +108,12 @@ public class CompanyService {
         try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             
-            pstmt.setLong(1, fiscalPeriod.getCompanyId());
-            pstmt.setString(2, fiscalPeriod.getPeriodName());
-            pstmt.setDate(3, Date.valueOf(fiscalPeriod.getStartDate()));
-            pstmt.setDate(4, Date.valueOf(fiscalPeriod.getEndDate()));
-            pstmt.setBoolean(5, fiscalPeriod.isClosed());
-            pstmt.setTimestamp(6, Timestamp.valueOf(LocalDateTime.now()));
+            pstmt.setLong(PARAM_FISCAL_COMPANY_ID, fiscalPeriod.getCompanyId());
+            pstmt.setString(PARAM_PERIOD_NAME, fiscalPeriod.getPeriodName());
+            pstmt.setDate(PARAM_START_DATE, Date.valueOf(fiscalPeriod.getStartDate()));
+            pstmt.setDate(PARAM_END_DATE, Date.valueOf(fiscalPeriod.getEndDate()));
+            pstmt.setBoolean(PARAM_IS_CLOSED, fiscalPeriod.isClosed());
+            pstmt.setTimestamp(PARAM_FISCAL_CREATED_AT, Timestamp.valueOf(LocalDateTime.now()));
             
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows == 0) {
@@ -120,7 +143,7 @@ public class CompanyService {
         try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             
-            pstmt.setLong(1, companyId);
+            pstmt.setLong(PARAM_QUERY_COMPANY_ID, companyId);
             ResultSet rs = pstmt.executeQuery();
             
             while (rs.next()) {
@@ -178,7 +201,7 @@ public class CompanyService {
         try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             
-            pstmt.setLong(1, id);
+            pstmt.setLong(PARAM_QUERY_COMPANY_ID, id);
             ResultSet rs = pstmt.executeQuery();
             
             if (rs.next()) {
@@ -217,16 +240,16 @@ public class CompanyService {
                 "WHERE id = ?";
         
         try (Connection conn = DriverManager.getConnection(dbUrl);
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+             PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             
-            pstmt.setString(1, company.getName());
-            pstmt.setString(2, company.getRegistrationNumber());
-            pstmt.setString(3, company.getTaxNumber());
-            pstmt.setString(4, company.getAddress());
-            pstmt.setString(5, company.getContactEmail());
-            pstmt.setString(6, company.getContactPhone());
-            pstmt.setTimestamp(7, Timestamp.valueOf(LocalDateTime.now()));
-            pstmt.setLong(8, company.getId());
+            pstmt.setString(PARAM_COMPANY_NAME, company.getName());
+            pstmt.setString(PARAM_REGISTRATION_NUMBER, company.getRegistrationNumber());
+            pstmt.setString(PARAM_TAX_NUMBER, company.getTaxNumber());
+            pstmt.setString(PARAM_ADDRESS, company.getAddress());
+            pstmt.setString(PARAM_CONTACT_EMAIL, company.getContactEmail());
+            pstmt.setString(PARAM_CONTACT_PHONE, company.getContactPhone());
+            pstmt.setTimestamp(PARAM_UPDATED_AT, Timestamp.valueOf(LocalDateTime.now()));
+            pstmt.setLong(PARAM_COMPANY_ID, company.getId());
             
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows == 0) {
@@ -252,7 +275,7 @@ public class CompanyService {
         try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             
-            pstmt.setLong(1, id);
+            pstmt.setLong(PARAM_QUERY_COMPANY_ID, id);
             
             int affectedRows = pstmt.executeUpdate();
             return affectedRows > 0;
@@ -269,7 +292,7 @@ public class CompanyService {
         try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             
-            pstmt.setLong(1, id);
+            pstmt.setLong(PARAM_QUERY_COMPANY_ID, id);
             ResultSet rs = pstmt.executeQuery();
             
             if (rs.next()) {
@@ -298,8 +321,8 @@ public class CompanyService {
         try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             
-            pstmt.setLong(1, companyId);
-            pstmt.setString(2, periodName);
+            pstmt.setLong(PARAM_QUERY_COMPANY_ID, companyId);
+            pstmt.setString(PARAM_QUERY_PERIOD_NAME, periodName);
             ResultSet rs = pstmt.executeQuery();
             
             if (rs.next()) {

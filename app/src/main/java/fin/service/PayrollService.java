@@ -1138,12 +1138,12 @@ public class PayrollService {
             """;
         
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setBigDecimal(1, totalGross);
-            pstmt.setBigDecimal(2, totalDeductions);
-            pstmt.setBigDecimal(3, totalNet);
-            pstmt.setInt(4, employeeCount);
-            pstmt.setString(5, processedBy);
-            pstmt.setLong(6, periodId);
+            pstmt.setBigDecimal(PARAM_TOTAL_GROSS_PAY, totalGross);
+            pstmt.setBigDecimal(PARAM_TOTAL_DEDUCTIONS, totalDeductions);
+            pstmt.setBigDecimal(PARAM_TOTAL_NET_PAY, totalNet);
+            pstmt.setInt(PARAM_EMPLOYEE_COUNT, employeeCount);
+            pstmt.setString(PARAM_PROCESSED_BY, processedBy);
+            pstmt.setLong(PARAM_PERIOD_ID, periodId);
             pstmt.executeUpdate();
         }
     }
