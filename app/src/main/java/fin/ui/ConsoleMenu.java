@@ -5,6 +5,12 @@ package fin.ui;
  * Extracted from monolithic App.java to separate UI concerns
  */
 public class ConsoleMenu {
+
+    // Display constants
+    private static final int HEADER_WIDTH = 50;
+    private static final int SEPARATOR_WIDTH = 80;
+    private static final int FOOTER_WIDTH = 50;
+    private static final int HEADER_PADDING_ADJUSTMENT = 2;
     
     public void displayMainMenu() {
         System.out.println("\n===== FIN Application Menu =====");
@@ -97,23 +103,22 @@ public class ConsoleMenu {
         System.out.print("Enter choice (1-4): ");
     }
     
-    public void displayHeader(String title) {
-        int totalWidth = 50;
+    public static void displayHeader(String title) {
         int titleLength = title.length();
-        int paddingLength = (totalWidth - titleLength - 2) / 2;
-        String padding = "=".repeat(Math.max(0, paddingLength));
-        
-        System.out.println("\n" + "=".repeat(totalWidth));
-        System.out.println(padding + " " + title + " " + padding);
-        System.out.println("=".repeat(totalWidth));
+        int padding = (HEADER_WIDTH - titleLength - HEADER_PADDING_ADJUSTMENT) / HEADER_PADDING_ADJUSTMENT;
+        String leftPadding = " ".repeat(Math.max(0, padding));
+        String rightPadding = " ".repeat(Math.max(0, padding));
+        System.out.println("╔" + "═".repeat(HEADER_WIDTH) + "╗");
+        System.out.println("║" + leftPadding + title + rightPadding + "║");
+        System.out.println("╚" + "═".repeat(HEADER_WIDTH) + "╝");
     }
     
-    public void displaySeparator() {
-        System.out.println("-".repeat(80));
+    public static void displaySeparator() {
+        System.out.println("-".repeat(SEPARATOR_WIDTH));
     }
     
     public void displayFooter() {
-        System.out.println("-".repeat(50));
+        System.out.println("-".repeat(FOOTER_WIDTH));
     }
     
     // Payroll menu methods

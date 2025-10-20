@@ -22,6 +22,42 @@ public class ExcelFinancialReportService {
     private static final Logger LOGGER = Logger.getLogger(ExcelFinancialReportService.class.getName());
     private final String dbUrl;
     
+    // Font size constants for Excel reports
+    private static final short FONT_SIZE_HEADER_LARGE = 14;
+    private static final short FONT_SIZE_HEADER_MEDIUM = 12;
+    private static final short FONT_SIZE_NORMAL = 10;
+    
+    // Excel row and column position constants
+    private static final int ROW_COMPANY_NAME = 10; // Row 11 (0-indexed)
+    private static final int ROW_REGISTRATION_NUMBER = 12; // Row 13 (0-indexed)
+    private static final int ROW_ANNUAL_STATEMENTS = 13; // Row 14 (0-indexed)
+    private static final int ROW_PERIOD = 14; // Row 15 (0-indexed)
+    private static final int MAX_AUTO_SIZE_COLUMNS = 13;
+    
+    private static final int ROW_INDEX_INTRO = 6;
+    private static final int ROW_INDEX_CONTENTS_HEADER = 7;
+    private static final int ROW_INDEX_FIRST_ITEM = 8;
+    
+    private static final int ROW_COMPANY_DETAILS_INTRO = 6;
+    private static final int ROW_COMPANY_DETAILS_FIRST = 7;
+    private static final int COL_COMPANY_DETAILS_VALUE = 7; // Column H
+    
+    private static final int ROW_BALANCE_SHEET_PERIOD = 3;
+    private static final int ROW_BALANCE_SHEET_HEADERS = 7;
+    private static final int ROW_BALANCE_SHEET_UNITS = 8;
+    private static final int ROW_BALANCE_SHEET_FIRST_DATA = 10;
+    private static final int COL_BALANCE_SHEET_NOTE = 2;
+    private static final int COL_BALANCE_SHEET_CURRENT_YEAR = 3;
+    private static final int COL_BALANCE_SHEET_PRIOR_YEAR = 5;
+    
+    private static final int ROW_INCOME_STATEMENT_PERIOD = 3;
+    private static final int ROW_INCOME_STATEMENT_HEADERS = 7;
+    private static final int ROW_INCOME_STATEMENT_UNITS = 8;
+    private static final int ROW_INCOME_STATEMENT_FIRST_DATA = 11;
+    private static final int COL_INCOME_STATEMENT_NOTE = 1;
+    private static final int COL_INCOME_STATEMENT_CURRENT_YEAR = 3;
+    private static final int COL_INCOME_STATEMENT_PRIOR_YEAR = 5;
+    
     public ExcelFinancialReportService(String dbUrl) {
         this.dbUrl = dbUrl;
     }
@@ -85,34 +121,34 @@ public class ExcelFinancialReportService {
         CellStyle headerStyle = workbook.createCellStyle();
         Font headerFont = workbook.createFont();
         headerFont.setBold(true);
-        headerFont.setFontHeightInPoints((short) 14);
+        headerFont.setFontHeightInPoints(FONT_SIZE_HEADER_LARGE);
         headerStyle.setFont(headerFont);
         headerStyle.setAlignment(HorizontalAlignment.CENTER);
         
         // Create company name (row 11 as per template)
-        Row row11 = sheet.createRow(10);
+        Row row11 = sheet.createRow(ROW_COMPANY_NAME);
         Cell companyCell = row11.createCell(0);
         companyCell.setCellValue(company.name.toUpperCase());
         companyCell.setCellStyle(headerStyle);
         
         // Registration number (row 13)
-        Row row13 = sheet.createRow(12);
+        Row row13 = sheet.createRow(ROW_REGISTRATION_NUMBER);
         Cell regCell = row13.createCell(0);
         regCell.setCellValue("(Registration Number: " + company.registrationNumber + ")");
         
         // Annual Financial Statements (row 14)
-        Row row14 = sheet.createRow(13);
+        Row row14 = sheet.createRow(ROW_ANNUAL_STATEMENTS);
         Cell titleCell = row14.createCell(0);
         titleCell.setCellValue("ANNUAL FINANCIAL STATEMENTS");
         titleCell.setCellStyle(headerStyle);
         
         // Period (row 15)
-        Row row15 = sheet.createRow(14);
+        Row row15 = sheet.createRow(ROW_PERIOD);
         Cell periodCell = row15.createCell(0);
         periodCell.setCellValue("for the year ended " + period.endDate.format(DateTimeFormatter.ofPattern("dd MMMM yyyy")));
         
         // Auto-size columns
-        for (int i = 0; i < 13; i++) {
+        for (int i = 0; i < MAX_AUTO_SIZE_COLUMNS; i++) {
             sheet.autoSizeColumn(i);
         }
     }
@@ -123,11 +159,11 @@ public class ExcelFinancialReportService {
         // Company header
         createCompanyHeader(workbook, sheet, company, period, "Annual Financial Statements");
         
-        Row row7 = sheet.createRow(6);
+        Row row7 = sheet.createRow(ROW_INDEX_INTRO);
         row7.createCell(0).setCellValue("The reports and statements set out below comprise the annual financial statements presented to the members:");
         
         // Contents header
-        Row row8 = sheet.createRow(7);
+        Row row8 = sheet.createRow(ROW_INDEX_CONTENTS_HEADER);
         row8.createCell(0).setCellValue("Contents");
         row8.createCell(1).setCellValue("Page");
         
@@ -145,7 +181,7 @@ public class ExcelFinancialReportService {
         };
         
         for (int i = 0; i < indexItems.length; i++) {
-            Row row = sheet.createRow(8 + i);
+            Row row = sheet.createRow(ROW_INDEX_FIRST_ITEM + i);
             row.createCell(0).setCellValue(indexItems[i][0]);
             row.createCell(1).setCellValue(indexItems[i][1]);
         }
@@ -156,7 +192,7 @@ public class ExcelFinancialReportService {
         
         createCompanyHeader(workbook, sheet, company, period, "Annual Financial Statements");
         
-        Row row7 = sheet.createRow(6);
+        Row row7 = sheet.createRow(ROW_COMPANY_DETAILS_INTRO);
         row7.createCell(0).setCellValue("General information");
         
         // Company details
@@ -173,9 +209,9 @@ public class ExcelFinancialReportService {
         };
         
         for (int i = 0; i < details.length; i++) {
-            Row row = sheet.createRow(7 + i);
+            Row row = sheet.createRow(ROW_COMPANY_DETAILS_FIRST + i);
             row.createCell(0).setCellValue(details[i][0]);
-            row.createCell(7).setCellValue(details[i][1]); // Column H as per template
+            row.createCell(COL_COMPANY_DETAILS_VALUE).setCellValue(details[i][1]); // Column H as per template
         }
     }
     
@@ -183,25 +219,25 @@ public class ExcelFinancialReportService {
         Sheet sheet = workbook.createSheet("Balance sheet");
         
         createCompanyHeader(workbook, sheet, company, period, "Statement of Financial Position");
-        Row row4 = sheet.createRow(3);
+        Row row4 = sheet.createRow(ROW_BALANCE_SHEET_PERIOD);
         row4.createCell(0).setCellValue("as at " + period.endDate.format(DateTimeFormatter.ofPattern("dd MMMM yyyy")));
         
         // Headers
-        Row row8 = sheet.createRow(7);
-        row8.createCell(2).setCellValue("Note");
-        row8.createCell(3).setCellValue(period.endDate.getYear());
-        row8.createCell(5).setCellValue(period.startDate.getYear());
+        Row row8 = sheet.createRow(ROW_BALANCE_SHEET_HEADERS);
+        row8.createCell(COL_BALANCE_SHEET_NOTE).setCellValue("Note");
+        row8.createCell(COL_BALANCE_SHEET_CURRENT_YEAR).setCellValue(period.endDate.getYear());
+        row8.createCell(COL_BALANCE_SHEET_PRIOR_YEAR).setCellValue(period.startDate.getYear());
         
-        Row row9 = sheet.createRow(8);
-        row9.createCell(3).setCellValue("R");
-        row9.createCell(5).setCellValue("R");
+        Row row9 = sheet.createRow(ROW_BALANCE_SHEET_UNITS);
+        row9.createCell(COL_BALANCE_SHEET_CURRENT_YEAR).setCellValue("R");
+        row9.createCell(COL_BALANCE_SHEET_PRIOR_YEAR).setCellValue("R");
         
         // Get balance sheet data
         List<BalanceSheetItem> assets = getBalanceSheetAssets(conn, company.id, period.id);
         List<BalanceSheetItem> liabilities = getBalanceSheetLiabilities(conn, company.id, period.id);
         List<BalanceSheetItem> equity = getBalanceSheetEquity(conn, company.id, period.id);
         
-        int currentRow = 10;
+        int currentRow = ROW_BALANCE_SHEET_FIRST_DATA;
         
         // ASSETS
         Row assetsRow = sheet.createRow(currentRow++);
@@ -219,8 +255,8 @@ public class ExcelFinancialReportService {
                 Row row = sheet.createRow(currentRow++);
                 row.createCell(0).setCellValue(item.accountName);
                 row.createCell(1).setCellValue(item.noteReference);
-                row.createCell(3).setCellValue(item.currentYearAmount);
-                row.createCell(5).setCellValue(item.priorYearAmount);
+                row.createCell(COL_BALANCE_SHEET_CURRENT_YEAR).setCellValue(item.currentYearAmount);
+                row.createCell(COL_BALANCE_SHEET_PRIOR_YEAR).setCellValue(item.priorYearAmount);
                 totalNonCurrentAssets += item.currentYearAmount;
             }
         }
@@ -228,7 +264,7 @@ public class ExcelFinancialReportService {
         // Total non-current assets
         Row totalNonCurrentRow = sheet.createRow(currentRow++);
         totalNonCurrentRow.createCell(0).setCellValue("Total non-current assets");
-        totalNonCurrentRow.createCell(3).setCellValue(totalNonCurrentAssets);
+        totalNonCurrentRow.createCell(COL_BALANCE_SHEET_CURRENT_YEAR).setCellValue(totalNonCurrentAssets);
         currentRow++;
         
         // Current assets
@@ -241,8 +277,8 @@ public class ExcelFinancialReportService {
                 Row row = sheet.createRow(currentRow++);
                 row.createCell(0).setCellValue(item.accountName);
                 row.createCell(1).setCellValue(item.noteReference);
-                row.createCell(3).setCellValue(item.currentYearAmount);
-                row.createCell(5).setCellValue(item.priorYearAmount);
+                row.createCell(COL_BALANCE_SHEET_CURRENT_YEAR).setCellValue(item.currentYearAmount);
+                row.createCell(COL_BALANCE_SHEET_PRIOR_YEAR).setCellValue(item.priorYearAmount);
                 totalCurrentAssets += item.currentYearAmount;
             }
         }
@@ -250,7 +286,7 @@ public class ExcelFinancialReportService {
         // Total assets
         Row totalAssetsRow = sheet.createRow(currentRow++);
         totalAssetsRow.createCell(0).setCellValue("TOTAL ASSETS");
-        totalAssetsRow.createCell(3).setCellValue(totalNonCurrentAssets + totalCurrentAssets);
+        totalAssetsRow.createCell(COL_BALANCE_SHEET_CURRENT_YEAR).setCellValue(totalNonCurrentAssets + totalCurrentAssets);
         currentRow += 2;
         
         // EQUITY AND LIABILITIES
@@ -267,8 +303,8 @@ public class ExcelFinancialReportService {
             Row row = sheet.createRow(currentRow++);
             row.createCell(0).setCellValue(item.accountName);
             row.createCell(1).setCellValue(item.noteReference);
-            row.createCell(3).setCellValue(item.currentYearAmount);
-            row.createCell(5).setCellValue(item.priorYearAmount);
+            row.createCell(COL_BALANCE_SHEET_CURRENT_YEAR).setCellValue(item.currentYearAmount);
+            row.createCell(COL_BALANCE_SHEET_PRIOR_YEAR).setCellValue(item.priorYearAmount);
             totalEquity += item.currentYearAmount;
         }
         
@@ -282,57 +318,57 @@ public class ExcelFinancialReportService {
             Row row = sheet.createRow(currentRow++);
             row.createCell(0).setCellValue(item.accountName);
             row.createCell(1).setCellValue(item.noteReference);
-            row.createCell(3).setCellValue(item.currentYearAmount);
-            row.createCell(5).setCellValue(item.priorYearAmount);
+            row.createCell(COL_BALANCE_SHEET_CURRENT_YEAR).setCellValue(item.currentYearAmount);
+            row.createCell(COL_BALANCE_SHEET_PRIOR_YEAR).setCellValue(item.priorYearAmount);
             totalLiabilities += item.currentYearAmount;
         }
         
         // Total equity and liabilities
         Row totalEquityLiabRow = sheet.createRow(currentRow++);
         totalEquityLiabRow.createCell(0).setCellValue("TOTAL EQUITY AND LIABILITIES");
-        totalEquityLiabRow.createCell(3).setCellValue(totalEquity + totalLiabilities);
+        totalEquityLiabRow.createCell(COL_BALANCE_SHEET_CURRENT_YEAR).setCellValue(totalEquity + totalLiabilities);
     }
     
     private void createIncomeStatement(Workbook workbook, CompanyInfo company, FiscalPeriodInfo period, Connection conn) {
         Sheet sheet = workbook.createSheet("Income statement");
         
         createCompanyHeader(workbook, sheet, company, period, "Statement of Comprehensive Income");
-        Row row4 = sheet.createRow(3);
+        Row row4 = sheet.createRow(ROW_INCOME_STATEMENT_PERIOD);
         row4.createCell(0).setCellValue("for the year ended " + period.endDate.format(DateTimeFormatter.ofPattern("dd MMMM yyyy")));
         
         // Headers
-        Row row8 = sheet.createRow(7);
-        row8.createCell(3).setCellValue(period.endDate.getYear());
-        row8.createCell(5).setCellValue(period.startDate.getYear());
+        Row row8 = sheet.createRow(ROW_INCOME_STATEMENT_HEADERS);
+        row8.createCell(COL_INCOME_STATEMENT_CURRENT_YEAR).setCellValue(period.endDate.getYear());
+        row8.createCell(COL_INCOME_STATEMENT_PRIOR_YEAR).setCellValue(period.startDate.getYear());
         
-        Row row9 = sheet.createRow(8);
-        row9.createCell(1).setCellValue("Note");
-        row9.createCell(3).setCellValue("R");
-        row9.createCell(5).setCellValue("R");
+        Row row9 = sheet.createRow(ROW_INCOME_STATEMENT_UNITS);
+        row9.createCell(COL_INCOME_STATEMENT_NOTE).setCellValue("Note");
+        row9.createCell(COL_INCOME_STATEMENT_CURRENT_YEAR).setCellValue("R");
+        row9.createCell(COL_INCOME_STATEMENT_PRIOR_YEAR).setCellValue("R");
         
         // Get income statement data
         List<IncomeStatementItem> revenues = getIncomeStatementRevenues(conn, company.id, period.id);
         List<IncomeStatementItem> expenses = getIncomeStatementExpenses(conn, company.id, period.id);
         
-        int currentRow = 11;
+        int currentRow = ROW_INCOME_STATEMENT_FIRST_DATA;
         
         // Revenue
         Row revenueRow = sheet.createRow(currentRow++);
         revenueRow.createCell(0).setCellValue("Revenue");
-        revenueRow.createCell(1).setCellValue("2");
+        revenueRow.createCell(COL_INCOME_STATEMENT_NOTE).setCellValue("2");
         
         double totalRevenue = 0;
         for (IncomeStatementItem item : revenues) {
             totalRevenue += item.amount;
         }
-        revenueRow.createCell(3).setCellValue(totalRevenue);
+        revenueRow.createCell(COL_INCOME_STATEMENT_CURRENT_YEAR).setCellValue(totalRevenue);
         currentRow++;
         
         // Other income
         Row otherIncomeRow = sheet.createRow(currentRow++);
         otherIncomeRow.createCell(0).setCellValue("Other income");
-        otherIncomeRow.createCell(1).setCellValue("2.1");
-        otherIncomeRow.createCell(3).setCellValue(0.0); // Placeholder
+        otherIncomeRow.createCell(COL_INCOME_STATEMENT_NOTE).setCellValue("2.1");
+        otherIncomeRow.createCell(COL_INCOME_STATEMENT_CURRENT_YEAR).setCellValue(0.0); // Placeholder
         currentRow++;
         
         // Expenses
@@ -340,8 +376,8 @@ public class ExcelFinancialReportService {
         for (IncomeStatementItem item : expenses) {
             Row row = sheet.createRow(currentRow++);
             row.createCell(0).setCellValue(item.accountName);
-            row.createCell(1).setCellValue(item.noteReference);
-            row.createCell(3).setCellValue(-Math.abs(item.amount)); // Show as negative
+            row.createCell(COL_INCOME_STATEMENT_NOTE).setCellValue(item.noteReference);
+            row.createCell(COL_INCOME_STATEMENT_CURRENT_YEAR).setCellValue(-Math.abs(item.amount)); // Show as negative
             totalExpenses += Math.abs(item.amount);
         }
         
@@ -351,7 +387,7 @@ public class ExcelFinancialReportService {
         Row netRow = sheet.createRow(currentRow++);
         netRow.createCell(0).setCellValue("Net surplus/(deficit) for the year");
         double netResult = totalRevenue - totalExpenses;
-        netRow.createCell(3).setCellValue(netResult);
+        netRow.createCell(COL_INCOME_STATEMENT_CURRENT_YEAR).setCellValue(netResult);
     }
     
     // Helper method to create company header
@@ -547,7 +583,7 @@ public class ExcelFinancialReportService {
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setLong(1, companyId);
             stmt.setLong(2, fiscalPeriodId);
-            stmt.setLong(3, companyId);
+            stmt.setLong(COL_INCOME_STATEMENT_CURRENT_YEAR, companyId);
 
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
@@ -584,7 +620,7 @@ public class ExcelFinancialReportService {
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setLong(1, companyId);
             stmt.setLong(2, fiscalPeriodId);
-            stmt.setLong(3, companyId);
+            stmt.setLong(COL_INCOME_STATEMENT_CURRENT_YEAR, companyId);
 
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {

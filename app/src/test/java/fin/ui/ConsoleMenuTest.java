@@ -109,7 +109,7 @@ class ConsoleMenuTest {
         
         String output = outputStream.toString();
         assertTrue(output.contains(title), "Should contain the title");
-        assertTrue(output.contains("="), "Should contain header formatting");
+        assertTrue(output.contains("═"), "Should contain header formatting");
     }
     
     @Test

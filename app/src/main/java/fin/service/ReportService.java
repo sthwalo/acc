@@ -12,6 +12,24 @@ public class ReportService {
     private final String dbUrl;
     private final CsvImportService csvImportService;
     
+    // Report formatting constants
+    private static final int CASHBOOK_SEPARATOR_WIDTH = 100;
+    private static final int GENERAL_LEDGER_SEPARATOR_WIDTH = 80;
+    private static final int TRIAL_BALANCE_SEPARATOR_WIDTH = 72;
+    private static final int INCOME_STATEMENT_SEPARATOR_WIDTH = 60;
+    
+    // Column width constants
+    private static final int DATE_COLUMN_WIDTH = 12;
+    private static final int DESCRIPTION_COLUMN_WIDTH = 40;
+    private static final int AMOUNT_COLUMN_WIDTH = 15;
+    private static final int ACCOUNT_COLUMN_WIDTH = 40;
+    private static final int TOTALS_LABEL_WIDTH = 53;
+    private static final int INCOME_STATEMENT_AMOUNT_WIDTH = 20;
+    
+    // Description truncation constants
+    private static final int MAX_DESCRIPTION_LENGTH = 38;
+    private static final int TRUNCATED_DESCRIPTION_LENGTH = 35;
+    
     public ReportService(String dbUrl, CsvImportService csvImportService) {
         this.dbUrl = dbUrl;
         this.csvImportService = csvImportService;
@@ -45,13 +63,13 @@ public class ReportService {
         // Format and add transactions to report
         report.append(String.format("%-12s %-40s %15s %15s %15s%n", 
                 "Date", "Description", "Debit", "Credit", "Balance"));
-        report.append("-".repeat(100)).append("\n");
+        report.append("-".repeat(CASHBOOK_SEPARATOR_WIDTH)).append("\n");
         
         for (BankTransaction transaction : transactions) {
             String date = transaction.getTransactionDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
             String description = transaction.getDetails();
-            if (description != null && description.length() > 38) {
-                description = description.substring(0, 35) + "...";
+            if (description != null && description.length() > MAX_DESCRIPTION_LENGTH) {
+                description = description.substring(0, TRUNCATED_DESCRIPTION_LENGTH) + "...";
             }
             
             String debit = transaction.getDebitAmount() != null ? 
@@ -76,7 +94,7 @@ public class ReportService {
                 .map(BankTransaction::getCreditAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         
-        report.append("-".repeat(100)).append("\n");
+        report.append("-".repeat(CASHBOOK_SEPARATOR_WIDTH)).append("\n");
         report.append(String.format("%-53s %15s %15s%n", 
                 "TOTALS", String.format("%,.2f", totalDebits), String.format("%,.2f", totalCredits)));
         
@@ -120,10 +138,10 @@ public class ReportService {
             List<BankTransaction> accountTxns = entry.getValue();
             
             report.append("\nAccount: ").append(accountName).append("\n");
-            report.append("-".repeat(80)).append("\n");
+            report.append("-".repeat(GENERAL_LEDGER_SEPARATOR_WIDTH)).append("\n");
             report.append(String.format("%-12s %-40s %12s %12s%n", 
                     "Date", "Description", "Debit", "Credit"));
-            report.append("-".repeat(80)).append("\n");
+            report.append("-".repeat(GENERAL_LEDGER_SEPARATOR_WIDTH)).append("\n");
             
             BigDecimal accountDebitTotal = BigDecimal.ZERO;
             BigDecimal accountCreditTotal = BigDecimal.ZERO;
@@ -131,8 +149,8 @@ public class ReportService {
             for (BankTransaction txn : accountTxns) {
                 String date = txn.getTransactionDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
                 String description = txn.getDetails();
-                if (description != null && description.length() > 38) {
-                    description = description.substring(0, 35) + "...";
+                if (description != null && description.length() > MAX_DESCRIPTION_LENGTH) {
+                    description = description.substring(0, TRUNCATED_DESCRIPTION_LENGTH) + "...";
                 }
                 
                 String debit = txn.getDebitAmount() != null ? 
@@ -151,7 +169,7 @@ public class ReportService {
                 }
             }
             
-            report.append("-".repeat(80)).append("\n");
+            report.append("-".repeat(GENERAL_LEDGER_SEPARATOR_WIDTH)).append("\n");
             report.append(String.format("%-53s %12s %12s%n", 
                     "Account Totals", String.format("%,.2f", accountDebitTotal), 
                     String.format("%,.2f", accountCreditTotal)));
@@ -212,7 +230,7 @@ public class ReportService {
         // Generate trial balance
         report.append(String.format("%-40s %15s %15s%n", 
                 "Account", "Debit", "Credit"));
-        report.append("-".repeat(72)).append("\n");
+        report.append("-".repeat(TRIAL_BALANCE_SEPARATOR_WIDTH)).append("\n");
         
         BigDecimal totalDebits = BigDecimal.ZERO;
         BigDecimal totalCredits = BigDecimal.ZERO;
@@ -236,7 +254,7 @@ public class ReportService {
                     accountName, debit, credit));
         }
         
-        report.append("-".repeat(72)).append("\n");
+        report.append("-".repeat(TRIAL_BALANCE_SEPARATOR_WIDTH)).append("\n");
         report.append(String.format("%-40s %15s %15s%n", 
                 "TOTALS", String.format("%,.2f", totalDebits), String.format("%,.2f", totalCredits)));
         
@@ -288,7 +306,7 @@ public class ReportService {
         
         // Generate income statement
         report.append("REVENUE\n");
-        report.append("-".repeat(60)).append("\n");
+        report.append("-".repeat(INCOME_STATEMENT_SEPARATOR_WIDTH)).append("\n");
         
         BigDecimal totalRevenue = BigDecimal.ZERO;
         for (Map.Entry<String, BigDecimal> entry : revenueAccounts.entrySet()) {
@@ -297,13 +315,13 @@ public class ReportService {
             totalRevenue = totalRevenue.add(entry.getValue());
         }
         
-        report.append("-".repeat(60)).append("\n");
+        report.append("-".repeat(INCOME_STATEMENT_SEPARATOR_WIDTH)).append("\n");
         report.append(String.format("%-40s %20s%n", 
                 "Total Revenue", String.format("%,.2f", totalRevenue)));
         report.append("\n");
         
         report.append("EXPENSES\n");
-        report.append("-".repeat(60)).append("\n");
+        report.append("-".repeat(INCOME_STATEMENT_SEPARATOR_WIDTH)).append("\n");
         
         BigDecimal totalExpenses = BigDecimal.ZERO;
         for (Map.Entry<String, BigDecimal> entry : expenseAccounts.entrySet()) {
@@ -312,14 +330,14 @@ public class ReportService {
             totalExpenses = totalExpenses.add(entry.getValue());
         }
         
-        report.append("-".repeat(60)).append("\n");
+        report.append("-".repeat(INCOME_STATEMENT_SEPARATOR_WIDTH)).append("\n");
         report.append(String.format("%-40s %20s%n", 
                 "Total Expenses", String.format("%,.2f", totalExpenses)));
         report.append("\n");
         
         // Calculate net income
         BigDecimal netIncome = totalRevenue.subtract(totalExpenses);
-        report.append("=".repeat(60)).append("\n");
+        report.append("=".repeat(INCOME_STATEMENT_SEPARATOR_WIDTH)).append("\n");
         report.append(String.format("%-40s %20s%n", 
                 "NET INCOME", String.format("%,.2f", netIncome)));
         

@@ -15,6 +15,13 @@ public class CashbookService {
 
     private final FinancialDataRepository repository;
 
+    // Display formatting constants
+    private static final int REPORT_WIDTH = 130;
+    private static final int DESCRIPTION_MAX_LENGTH = 48;
+    private static final int DESCRIPTION_TRUNCATE_LENGTH = 45;
+    private static final int TOTALS_LABEL_WIDTH = 77;
+    private static final int HEADER_CENTER_WIDTH = 110;
+
     public CashbookService(FinancialDataRepository repository) {
         this.repository = repository;
     }
@@ -37,7 +44,7 @@ public class CashbookService {
         // Column headers
         report.append(String.format("%-12s %-15s %-50s %-15s %-15s %-15s%n",
                 "Date", "Reference", "Description", "Debit (ZAR)", "Credit (ZAR)", "Balance (ZAR)"));
-        report.append("=".repeat(130)).append("\n");
+        report.append("=".repeat(REPORT_WIDTH)).append("\n");
 
         // Opening balance row
         report.append(String.format("%-12s %-15s %-50s %-15s %-15s %-15s%n",
@@ -47,7 +54,7 @@ public class CashbookService {
                 "-",
                 "-",
                 formatCurrency(openingBalance)));
-        report.append("-".repeat(130)).append("\n");
+        report.append("-".repeat(REPORT_WIDTH)).append("\n");
 
         BigDecimal runningBalance = openingBalance;
         BigDecimal totalDebits = BigDecimal.ZERO;
@@ -59,8 +66,8 @@ public class CashbookService {
             String date = transaction.getTransactionDate().format(dateFormatter);
             String reference = transaction.getId().toString();
             String description = transaction.getDetails() != null ? transaction.getDetails() : "";
-            if (description.length() > 48) {
-                description = description.substring(0, 45) + "...";
+            if (description.length() > DESCRIPTION_MAX_LENGTH) {
+                description = description.substring(0, DESCRIPTION_TRUNCATE_LENGTH) + "...";
             }
 
             BigDecimal debit = transaction.getDebitAmount() != null ? transaction.getDebitAmount() : BigDecimal.ZERO;
@@ -82,9 +89,9 @@ public class CashbookService {
         }
 
         // Totals
-        report.append("=".repeat(130)).append("\n");
+        report.append("=".repeat(REPORT_WIDTH)).append("\n");
         BigDecimal closingBalance = openingBalance.add(totalCredits).subtract(totalDebits);
-        report.append(String.format("%-77s %-15s %-15s %-15s%n",
+        report.append(String.format("%-" + TOTALS_LABEL_WIDTH + "s %-15s %-15s %-15s%n",
                 "TOTALS:",
                 formatCurrency(totalDebits),
                 formatCurrency(totalCredits),
@@ -95,13 +102,13 @@ public class CashbookService {
 
     private String generateReportHeader(String title, Company company, FiscalPeriod fiscalPeriod) {
         StringBuilder header = new StringBuilder();
-        header.append(centerText(title, 110)).append("\n");
-        header.append(centerText("Company: " + company.getName(), 110)).append("\n");
-        header.append(centerText("Registration: " + company.getRegistrationNumber(), 110)).append("\n");
+        header.append(centerText(title, HEADER_CENTER_WIDTH)).append("\n");
+        header.append(centerText("Company: " + company.getName(), HEADER_CENTER_WIDTH)).append("\n");
+        header.append(centerText("Registration: " + company.getRegistrationNumber(), HEADER_CENTER_WIDTH)).append("\n");
         header.append(centerText("Period: " + fiscalPeriod.getPeriodName() + " (" +
-                fiscalPeriod.getStartDate() + " to " + fiscalPeriod.getEndDate() + ")", 110)).append("\n");
+                fiscalPeriod.getStartDate() + " to " + fiscalPeriod.getEndDate() + ")", HEADER_CENTER_WIDTH)).append("\n");
         header.append(centerText("Generated on: " + java.time.LocalDateTime.now().format(
-                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")), 110)).append("\n");
+                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")), HEADER_CENTER_WIDTH)).append("\n");
         return header.toString();
     }
 

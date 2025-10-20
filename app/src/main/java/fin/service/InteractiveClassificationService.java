@@ -73,6 +73,12 @@ public class InteractiveClassificationService {
     private static final int DESCRIPTION_DISPLAY_LENGTH = 50;
     @SuppressWarnings("MagicNumber")
     private static final int SIMILAR_TRANSACTION_DESC_LENGTH = 50;
+    @SuppressWarnings("MagicNumber")
+    private static final int SUGGESTIONS_SEPARATOR_WIDTH = 60;
+    @SuppressWarnings("MagicNumber")
+    private static final int MAX_ACCOUNTS_PER_CATEGORY = 3;
+    @SuppressWarnings("MagicNumber")
+    private static final int MAX_ACCOUNT_SUGGESTIONS = 5;
     
     // Change tracking
     public static class ChangeRecord {
@@ -631,7 +637,7 @@ public class InteractiveClassificationService {
     private void showAccountSuggestions(Long companyId, BankTransaction transaction) {
         try {
             System.out.println("\n💡 ACCOUNT SUGGESTIONS:");
-            System.out.println("-".repeat(60));
+            System.out.println("-".repeat(SUGGESTIONS_SEPARATOR_WIDTH));
             
             // Get intelligent suggestions from AccountClassificationService (single source of truth)
             System.out.println("📚 From Standard Classification Rules:");
@@ -659,7 +665,7 @@ public class InteractiveClassificationService {
                 for (Map.Entry<String, List<String>> category : accountCategories.entrySet()) {
                     System.out.println("   " + category.getKey() + ":");
                     category.getValue().stream()
-                        .limit(3) // Show top 3 per category
+                        .limit(MAX_ACCOUNTS_PER_CATEGORY) // Show top 3 per category
                         .forEach(account -> System.out.println("     • " + account));
                 }
             }
@@ -1631,7 +1637,7 @@ public class InteractiveClassificationService {
                 GROUP BY cr.account_code, cr.account_name
                 ORDER BY COUNT(*) DESC
                 LIMIT %d
-                """.formatted(5);
+                """.formatted(MAX_ACCOUNT_SUGGESTIONS);
                 
             try (Connection conn = getConnection();
                  PreparedStatement stmt = conn.prepareStatement(sql)) {

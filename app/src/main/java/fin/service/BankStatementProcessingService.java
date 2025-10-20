@@ -29,6 +29,11 @@ public class BankStatementProcessingService {
     private final BankTransactionValidator validator;
     private final CompanyService companyService;
 
+    // Date constants for fiscal year handling
+    private static final int DEFAULT_FISCAL_YEAR = 2025;
+    private static final int MID_YEAR_MONTH = 6; // June
+    private static final int MID_YEAR_DAY = 30; // 30th
+
     public BankStatementProcessingService(String dbUrl) {
         this.textExtractor = new DocumentTextExtractor();
         this.transactionRepository = new BankTransactionRepository(dbUrl);
@@ -117,11 +122,11 @@ public class BankStatementProcessingService {
     }
 
     private TransactionParsingContext createParsingContext(String pdfPath) {
-        // Extract statement date from the PDF content
+                // Extract statement date from the PDF content
         LocalDate statementDate = extractStatementDateFromPdf();
         if (statementDate == null) {
             // Fallback to a date in the correct fiscal year (2025)
-            statementDate = LocalDate.of(2025, 6, 30); // Mid fiscal year
+            statementDate = LocalDate.of(DEFAULT_FISCAL_YEAR, MID_YEAR_MONTH, MID_YEAR_DAY); // Mid fiscal year
         }
         
         return new TransactionParsingContext.Builder()
@@ -150,7 +155,7 @@ public class BankStatementProcessingService {
                 int year = Integer.parseInt(yearStr);
                 
                 // Return mid-year date for that year
-                return LocalDate.of(year, 6, 30);
+                return LocalDate.of(year, MID_YEAR_MONTH, MID_YEAR_DAY);
             }
             
             // Alternative pattern: look for any 4-digit year
@@ -158,7 +163,7 @@ public class BankStatementProcessingService {
             Matcher yearMatcher = yearPattern.matcher(statementPeriod);
             if (yearMatcher.find()) {
                 int year = Integer.parseInt(yearMatcher.group(1));
-                return LocalDate.of(year, 6, 30);
+                return LocalDate.of(year, MID_YEAR_MONTH, MID_YEAR_DAY);
             }
             
         } catch (Exception e) {

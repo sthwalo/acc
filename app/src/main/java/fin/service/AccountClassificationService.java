@@ -263,7 +263,7 @@ public final class AccountClassificationService {
         
         accounts.add(new AccountDefinition("2100", "Accumulated Depreciation", "Depreciation of fixed assets", nonCurrentAssetsId));
         accounts.add(new AccountDefinition("2200", "Investments", "Long-term investments", nonCurrentAssetsId));
-        
+        accounts.add(new AccountDefinition("2300", "Motor Vehicles", "Motor vehicles and transport equipment", nonCurrentAssetsId));
         // CURRENT LIABILITIES (3000-3999)
         Long currentLiabilitiesId = categoryIds.get("CURRENT_LIABILITIES");
         accounts.add(new AccountDefinition("3000", "Accounts Payable", "Money owed to suppliers", currentLiabilitiesId));
