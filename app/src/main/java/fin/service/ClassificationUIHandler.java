@@ -386,13 +386,19 @@ public class ClassificationUIHandler {
     // Helper methods
     
     private String formatCurrency(BigDecimal amount) {
-        if (amount == null) return "R0.00";
+        if (amount == null) {
+            return "R0.00";
+        }
         return "R" + String.format("%,.2f", amount);
     }
     
     private String truncateString(String str, int maxLength) {
-        if (str == null) return "";
-        if (str.length() <= maxLength) return str;
+        if (str == null) {
+            return "";
+        }
+        if (str.length() <= maxLength) {
+            return str;
+        }
         return str.substring(0, maxLength - TRUNCATE_SUFFIX_LENGTH) + "...";
     }
 }

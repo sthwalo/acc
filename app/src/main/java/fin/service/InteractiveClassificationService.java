@@ -688,7 +688,9 @@ public class InteractiveClassificationService {
                         String simplifiedDescription = rule.getDescription().replaceAll("\\s*\\[AccountCode:.*?\\]", "");
                         System.out.println("   ✓ " + accountCode + " - " + simplifiedDescription);
                         suggestionsShown++;
-                        if (suggestionsShown >= MAX_ACCOUNT_SUGGESTIONS) break; // Show top matches
+                        if (suggestionsShown >= MAX_ACCOUNT_SUGGESTIONS) {
+                            break; // Show top matches
+                        }
                     }
                 }
             }
@@ -719,7 +721,9 @@ public class InteractiveClassificationService {
      * Extract account code from rule description (format: "[AccountCode:XXXX]")
      */
     private String extractAccountCodeFromRuleDescription(String description) {
-        if (description == null) return null;
+        if (description == null) {
+            return null;
+        }
         
         java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("\\[AccountCode:(\\d+(?:-\\d+)?)\\]");
         java.util.regex.Matcher matcher = pattern.matcher(description);
@@ -734,7 +738,9 @@ public class InteractiveClassificationService {
      * Extract keywords from transaction description for pattern matching
      */
     private String[] extractKeywords(String description) {
-        if (description == null) return new String[0];
+        if (description == null) {
+            return new String[0];
+        }
         
         // Remove common words and extract meaningful keywords
         String[] commonWords = {"the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with", "by"};
@@ -1594,7 +1600,9 @@ public class InteractiveClassificationService {
     }
     
     private String formatCurrency(BigDecimal amount) {
-        if (amount == null) return "0.00";
+        if (amount == null) {
+            return "0.00";
+        }
         return String.format("%,.2f", amount);
     }
     
