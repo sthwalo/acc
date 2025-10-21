@@ -51,7 +51,9 @@ public class Company {
      * Creates a deep copy of all Company fields to prevent external modification.
      */
     public Company(Company other) {
-        if (other == null) return;
+        if (other == null) {
+            return;
+        }
         
         this.id = other.id;
         this.name = other.name;

@@ -113,7 +113,9 @@ public class CashbookService {
     }
 
     private String centerText(String text, int width) {
-        if (text.length() >= width) return text;
+        if (text.length() >= width) {
+            return text;
+        }
         int padding = (width - text.length()) / 2;
         return " ".repeat(padding) + text;
     }

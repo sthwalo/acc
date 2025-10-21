@@ -274,11 +274,21 @@ public class ApiServer {
                     // Create company using service
                     Company company = new Company();
                     company.setName(name);
-                    if (registrationNumber != null) company.setRegistrationNumber(registrationNumber);
-                    if (taxNumber != null) company.setTaxNumber(taxNumber);
-                    if (address != null) company.setAddress(address);
-                    if (contactEmail != null) company.setContactEmail(contactEmail);
-                    if (contactPhone != null) company.setContactPhone(contactPhone);
+                    if (registrationNumber != null) {
+                        company.setRegistrationNumber(registrationNumber);
+                    }
+                    if (taxNumber != null) {
+                        company.setTaxNumber(taxNumber);
+                    }
+                    if (address != null) {
+                        company.setAddress(address);
+                    }
+                    if (contactEmail != null) {
+                        company.setContactEmail(contactEmail);
+                    }
+                    if (contactPhone != null) {
+                        company.setContactPhone(contactPhone);
+                    }
                     
                     Company createdCompany = companyService.createCompany(company);
                     

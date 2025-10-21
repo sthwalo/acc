@@ -155,11 +155,21 @@ public class JournalEntryGenerator {
     }
 
     private String getAccountCategory(String accountCode) {
-        if (accountCode.startsWith("1")) return "Assets";
-        if (accountCode.startsWith("2")) return "Liabilities";
-        if (accountCode.startsWith("3")) return "Equity";
-        if (accountCode.startsWith("4") || accountCode.startsWith("5") || accountCode.startsWith("6")) return "Revenue";
-        if (accountCode.startsWith("7") || accountCode.startsWith("8") || accountCode.startsWith("9")) return "Expenses";
+        if (accountCode.startsWith("1")) {
+            return "Assets";
+        }
+        if (accountCode.startsWith("2")) {
+            return "Liabilities";
+        }
+        if (accountCode.startsWith("3")) {
+            return "Equity";
+        }
+        if (accountCode.startsWith("4") || accountCode.startsWith("5") || accountCode.startsWith("6")) {
+            return "Revenue";
+        }
+        if (accountCode.startsWith("7") || accountCode.startsWith("8") || accountCode.startsWith("9")) {
+            return "Expenses";
+        }
         return "Expenses"; // Default
     }
 

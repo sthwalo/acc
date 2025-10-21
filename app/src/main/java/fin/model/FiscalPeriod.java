@@ -29,7 +29,9 @@ public class FiscalPeriod {
      * Creates a deep copy of all FiscalPeriod fields to prevent external modification.
      */
     public FiscalPeriod(FiscalPeriod other) {
-        if (other == null) return;
+        if (other == null) {
+            return;
+        }
         
         this.id = other.id;
         this.companyId = other.companyId;
