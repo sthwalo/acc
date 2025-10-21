@@ -552,7 +552,9 @@ public class DataManagementController {
                         }
                     }
                     
-                    if (suggestions.size() >= MAX_SUGGESTIONS) break;
+                    if (suggestions.size() >= MAX_SUGGESTIONS) {
+                        break;
+                    }
                 }
             }
             

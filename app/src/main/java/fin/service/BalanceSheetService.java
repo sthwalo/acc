@@ -215,7 +215,9 @@ public class BalanceSheetService {
      * Check if account code represents an Asset (1000-2999)
      */
     private boolean isAssetAccount(String accountCode) {
-        if (accountCode == null || accountCode.length() < ACCOUNT_CODE_MIN_LENGTH) return false;
+        if (accountCode == null || accountCode.length() < ACCOUNT_CODE_MIN_LENGTH) {
+            return false;
+        }
         try {
             int code = Integer.parseInt(accountCode);
             return code >= ACCOUNT_RANGE_ASSETS_MIN && code <= ACCOUNT_RANGE_ASSETS_MAX;
@@ -228,7 +230,9 @@ public class BalanceSheetService {
      * Check if account code represents a Liability (3000-4999)
      */
     private boolean isLiabilityAccount(String accountCode) {
-        if (accountCode == null || accountCode.length() < ACCOUNT_CODE_MIN_LENGTH) return false;
+        if (accountCode == null || accountCode.length() < ACCOUNT_CODE_MIN_LENGTH) {
+            return false;
+        }
         try {
             int code = Integer.parseInt(accountCode);
             return code >= ACCOUNT_RANGE_LIABILITIES_MIN && code <= ACCOUNT_RANGE_LIABILITIES_MAX;
@@ -241,7 +245,9 @@ public class BalanceSheetService {
      * Check if account code represents Equity (5000-5999)
      */
     private boolean isEquityAccount(String accountCode) {
-        if (accountCode == null || accountCode.length() < ACCOUNT_CODE_MIN_LENGTH) return false;
+        if (accountCode == null || accountCode.length() < ACCOUNT_CODE_MIN_LENGTH) {
+            return false;
+        }
         try {
             int code = Integer.parseInt(accountCode);
             return code >= ACCOUNT_RANGE_EQUITY_MIN && code <= ACCOUNT_RANGE_EQUITY_MAX;
@@ -254,7 +260,9 @@ public class BalanceSheetService {
      * Check if account code represents Revenue (6000-7999)
      */
     private boolean isRevenueAccount(String accountCode) {
-        if (accountCode == null || accountCode.length() < ACCOUNT_CODE_MIN_LENGTH) return false;
+        if (accountCode == null || accountCode.length() < ACCOUNT_CODE_MIN_LENGTH) {
+            return false;
+        }
         // Handle account codes with dashes (e.g., "6100-001")
         String cleanCode = accountCode.split("-")[0];
         try {
@@ -269,7 +277,9 @@ public class BalanceSheetService {
      * Check if account code represents Expenses (8000-9999)
      */
     private boolean isExpenseAccount(String accountCode) {
-        if (accountCode == null || accountCode.length() < ACCOUNT_CODE_MIN_LENGTH) return false;
+        if (accountCode == null || accountCode.length() < ACCOUNT_CODE_MIN_LENGTH) {
+            return false;
+        }
         // Handle account codes with dashes (e.g., "8100-001")
         String cleanCode = accountCode.split("-")[0];
         try {
@@ -292,14 +302,20 @@ public class BalanceSheetService {
     }
 
     private String centerText(String text, int width) {
-        if (text.length() >= width) return text;
+        if (text.length() >= width) {
+            return text;
+        }
         int padding = (width - text.length()) / 2;
         return " ".repeat(padding) + text;
     }
 
     private String truncateString(String text, int maxLength) {
-        if (text == null) return "";
-        if (text.length() <= maxLength) return text;
+        if (text == null) {
+            return "";
+        }
+        if (text.length() <= maxLength) {
+            return text;
+        }
         return text.substring(0, maxLength - TRUNCATE_SUFFIX_LENGTH) + TRUNCATE_SUFFIX;
     }
 

@@ -1427,11 +1427,21 @@ public class PayrollService {
         
         // Address Information (use residential address)
         StringBuilder address = new StringBuilder();
-        if (fields[FIELD_UNIT_NUMBER].trim().length() > 0) address.append(fields[FIELD_UNIT_NUMBER].trim()).append(" "); // Unit Number
-        if (fields[FIELD_COMPLEX_NAME].trim().length() > 0) address.append(fields[FIELD_COMPLEX_NAME].trim()).append(" "); // Complex Name
-        if (fields[FIELD_STREET_NUMBER].trim().length() > 0) address.append(fields[FIELD_STREET_NUMBER].trim()).append(" "); // Street Number
-        if (fields[FIELD_STREET_NAME].trim().length() > 0) address.append(fields[FIELD_STREET_NAME].trim()).append(" "); // Street/Farm Name
-        if (fields[FIELD_SUBURB].trim().length() > 0) address.append(fields[FIELD_SUBURB].trim()).append(" "); // Suburb/District
+        if (fields[FIELD_UNIT_NUMBER].trim().length() > 0) {
+            address.append(fields[FIELD_UNIT_NUMBER].trim()).append(" ");
+        } // Unit Number
+        if (fields[FIELD_COMPLEX_NAME].trim().length() > 0) {
+            address.append(fields[FIELD_COMPLEX_NAME].trim()).append(" ");
+        } // Complex Name
+        if (fields[FIELD_STREET_NUMBER].trim().length() > 0) {
+            address.append(fields[FIELD_STREET_NUMBER].trim()).append(" ");
+        } // Street Number
+        if (fields[FIELD_STREET_NAME].trim().length() > 0) {
+            address.append(fields[FIELD_STREET_NAME].trim()).append(" ");
+        } // Street/Farm Name
+        if (fields[FIELD_SUBURB].trim().length() > 0) {
+            address.append(fields[FIELD_SUBURB].trim()).append(" ");
+        } // Suburb/District
         employee.setAddressLine1(address.toString().trim());
         employee.setCity(fields[FIELD_CITY].trim()); // City/Town
         employee.setPostalCode(fields[FIELD_POSTAL_CODE].trim()); // Postal Code

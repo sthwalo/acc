@@ -76,7 +76,9 @@ public class TransactionMappingRule {
     }
 
     public Company getCompany() {
-        if (company == null) return null;
+        if (company == null) {
+            return null;
+        }
         Company copy = new Company(company.getName());
         copy.setId(company.getId());
         copy.setRegistrationNumber(company.getRegistrationNumber());
@@ -138,7 +140,9 @@ public class TransactionMappingRule {
     }
 
     public Account getAccount() {
-        if (account == null) return null;
+        if (account == null) {
+            return null;
+        }
         Account copy = new Account(account.getAccountCode(), account.getAccountName(),
                                  account.getCategory(), account.getCompany(),
                                  account.getDescription());

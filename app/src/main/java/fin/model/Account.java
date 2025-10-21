@@ -81,7 +81,9 @@ public class Account {
     }
 
     public AccountCategory getCategory() {
-        if (category == null) return null;
+        if (category == null) {
+            return null;
+        }
         return new AccountCategory(category.getName(), category.getDescription(), 
                                  category.getAccountType(), category.getCompany());
     }
@@ -100,7 +102,9 @@ public class Account {
     }
 
     public Account getParentAccount() {
-        if (parentAccount == null) return null;
+        if (parentAccount == null) {
+            return null;
+        }
         Account copy = new Account(parentAccount.getAccountCode(), parentAccount.getAccountName(),
                                  parentAccount.getCategory(), parentAccount.getCompany(),
                                  parentAccount.getDescription());
@@ -126,7 +130,9 @@ public class Account {
     }
 
     public Company getCompany() {
-        if (company == null) return null;
+        if (company == null) {
+            return null;
+        }
         Company copy = new Company(company.getName());
         copy.setId(company.getId());
         copy.setRegistrationNumber(company.getRegistrationNumber());

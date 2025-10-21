@@ -408,7 +408,9 @@ public class ClassificationRuleManager {
      * Extract account code from rule description (format: "[AccountCode:XXXX]")
      */
     private String extractAccountCodeFromRuleDescription(String description) {
-        if (description == null) return null;
+        if (description == null) {
+            return null;
+        }
         
         java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("\\[AccountCode:(\\d+(?:-\\d+)?)\\]");
         java.util.regex.Matcher matcher = pattern.matcher(description);
@@ -423,7 +425,9 @@ public class ClassificationRuleManager {
      * Extract keywords from transaction description for pattern matching
      */
     private String[] extractKeywords(String description) {
-        if (description == null) return new String[0];
+        if (description == null) {
+            return new String[0];
+        }
         
         // Remove common words and extract meaningful keywords
         String[] commonWords = {"the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with", "by"};

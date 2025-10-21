@@ -248,7 +248,9 @@ public class BankStatementParsingService {
      * Clean transaction details by removing header/footer contamination
      */
     private String cleanTransactionDetails(String details) {
-        if (details == null) return "";
+        if (details == null) {
+            return "";
+        }
         
         // Remove aggressive truncation
         // Keep original length, just normalize spacing
@@ -273,7 +275,9 @@ public class BankStatementParsingService {
                                            BigDecimal debitAmount, BigDecimal creditAmount, 
                                            BigDecimal balanceAmount, Company company) {
         
-        if (details.isEmpty()) return null;
+        if (details.isEmpty()) {
+            return null;
+        }
         
         BankTransaction transaction = new BankTransaction();
         transaction.setCompanyId(company.getId());

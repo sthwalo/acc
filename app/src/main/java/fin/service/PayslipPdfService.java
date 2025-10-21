@@ -542,12 +542,24 @@ public class PayslipPdfService {
             // Calculate from components if null
             totalEarnings = payslip.getBasicSalary() != null ? payslip.getBasicSalary() : BigDecimal.ZERO;
             // Add allowances if they exist
-            if (payslip.getHousingAllowance() != null) totalEarnings = totalEarnings.add(payslip.getHousingAllowance());
-            if (payslip.getTransportAllowance() != null) totalEarnings = totalEarnings.add(payslip.getTransportAllowance());
-            if (payslip.getMedicalAllowance() != null) totalEarnings = totalEarnings.add(payslip.getMedicalAllowance());
-            if (payslip.getOtherAllowances() != null) totalEarnings = totalEarnings.add(payslip.getOtherAllowances());
-            if (payslip.getCommission() != null) totalEarnings = totalEarnings.add(payslip.getCommission());
-            if (payslip.getBonus() != null) totalEarnings = totalEarnings.add(payslip.getBonus());
+            if (payslip.getHousingAllowance() != null) {
+                totalEarnings = totalEarnings.add(payslip.getHousingAllowance());
+            }
+            if (payslip.getTransportAllowance() != null) {
+                totalEarnings = totalEarnings.add(payslip.getTransportAllowance());
+            }
+            if (payslip.getMedicalAllowance() != null) {
+                totalEarnings = totalEarnings.add(payslip.getMedicalAllowance());
+            }
+            if (payslip.getOtherAllowances() != null) {
+                totalEarnings = totalEarnings.add(payslip.getOtherAllowances());
+            }
+            if (payslip.getCommission() != null) {
+                totalEarnings = totalEarnings.add(payslip.getCommission());
+            }
+            if (payslip.getBonus() != null) {
+                totalEarnings = totalEarnings.add(payslip.getBonus());
+            }
         }
         Libharu.INSTANCE.HPDF_Page_TextOut(page, leftColumnX + columnWidth - EARNINGS_DEDUCTIONS_TOTAL_AMOUNT_OFFSET, rowY, String.format("R %.2f", totalEarnings));
         Libharu.INSTANCE.HPDF_Page_EndText(page);
@@ -557,12 +569,24 @@ public class PayslipPdfService {
         BigDecimal totalDeductions = payslip.getTotalDeductions();
         if (totalDeductions == null) {
             totalDeductions = BigDecimal.ZERO;
-            if (payslip.getPayeeTax() != null) totalDeductions = totalDeductions.add(payslip.getPayeeTax());
-            if (payslip.getUifEmployee() != null) totalDeductions = totalDeductions.add(payslip.getUifEmployee());
-            if (payslip.getMedicalAid() != null) totalDeductions = totalDeductions.add(payslip.getMedicalAid());
-            if (payslip.getPensionFund() != null) totalDeductions = totalDeductions.add(payslip.getPensionFund());
-            if (payslip.getLoanDeduction() != null) totalDeductions = totalDeductions.add(payslip.getLoanDeduction());
-            if (payslip.getOtherDeductions() != null) totalDeductions = totalDeductions.add(payslip.getOtherDeductions());
+            if (payslip.getPayeeTax() != null) {
+                totalDeductions = totalDeductions.add(payslip.getPayeeTax());
+            }
+            if (payslip.getUifEmployee() != null) {
+                totalDeductions = totalDeductions.add(payslip.getUifEmployee());
+            }
+            if (payslip.getMedicalAid() != null) {
+                totalDeductions = totalDeductions.add(payslip.getMedicalAid());
+            }
+            if (payslip.getPensionFund() != null) {
+                totalDeductions = totalDeductions.add(payslip.getPensionFund());
+            }
+            if (payslip.getLoanDeduction() != null) {
+                totalDeductions = totalDeductions.add(payslip.getLoanDeduction());
+            }
+            if (payslip.getOtherDeductions() != null) {
+                totalDeductions = totalDeductions.add(payslip.getOtherDeductions());
+            }
         }
         Libharu.INSTANCE.HPDF_Page_TextOut(page, rightColumnX + columnWidth - EARNINGS_DEDUCTIONS_TOTAL_AMOUNT_OFFSET, rowY, String.format("R %.2f", totalDeductions));
         Libharu.INSTANCE.HPDF_Page_EndText(page);
@@ -663,12 +687,24 @@ public class PayslipPdfService {
         // Ensure totalDeductions is calculated
         if (payslip.getTotalDeductions() == null) {
             BigDecimal deductions = BigDecimal.ZERO;
-            if (payslip.getPayeeTax() != null) deductions = deductions.add(payslip.getPayeeTax());
-            if (payslip.getUifEmployee() != null) deductions = deductions.add(payslip.getUifEmployee());
-            if (payslip.getMedicalAid() != null) deductions = deductions.add(payslip.getMedicalAid());
-            if (payslip.getPensionFund() != null) deductions = deductions.add(payslip.getPensionFund());
-            if (payslip.getLoanDeduction() != null) deductions = deductions.add(payslip.getLoanDeduction());
-            if (payslip.getOtherDeductions() != null) deductions = deductions.add(payslip.getOtherDeductions());
+            if (payslip.getPayeeTax() != null) {
+                deductions = deductions.add(payslip.getPayeeTax());
+            }
+            if (payslip.getUifEmployee() != null) {
+                deductions = deductions.add(payslip.getUifEmployee());
+            }
+            if (payslip.getMedicalAid() != null) {
+                deductions = deductions.add(payslip.getMedicalAid());
+            }
+            if (payslip.getPensionFund() != null) {
+                deductions = deductions.add(payslip.getPensionFund());
+            }
+            if (payslip.getLoanDeduction() != null) {
+                deductions = deductions.add(payslip.getLoanDeduction());
+            }
+            if (payslip.getOtherDeductions() != null) {
+                deductions = deductions.add(payslip.getOtherDeductions());
+            }
             payslip.setTotalDeductions(deductions);
         }
 

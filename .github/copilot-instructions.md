@@ -608,6 +608,44 @@ This provides the complete list of ALL magic number violations across the entire
 
 **This protocol ensures systematic, complete cleanup rather than scattered partial fixes.**
 
+### ⚠️ CRITICAL: Missing Braces Cleanup Protocol (Established October 2025)
+
+**MANDATORY PATTERN**: All missing braces cleanup must follow this systematic approach:
+
+#### 1. **Comprehensive Inventory First** (MANDATORY)
+**ALWAYS run this command BEFORE starting any missing braces work:**
+```bash
+./gradlew clean checkstyleMain --no-daemon 2>&1 | grep "NeedBraces" | sort | uniq
+```
+This provides the complete list of ALL missing braces violations across the entire codebase. **Never start working on individual files without this comprehensive inventory.**
+
+#### 2. **Systematic File-by-File Completion** (MANDATORY)
+- Work on **ONE file at a time only**
+- **Complete ALL missing braces in the current file** before moving to the next
+- Add curly braces `{}` around single-line `if`, `else`, `for`, `while`, and `do-while` statements
+- **Verify each file is 100% clean** using checkstyle before proceeding
+- **Only after fully completing one file and running `./gradlew clean build` to make sure everything is working**, then move to the next file in the inventory
+
+#### 3. **Documentation Updates** (MANDATORY)
+- Update task documentation **immediately after each file completion**
+- Mark files as "✅ COMPLETED" with specific missing braces fixed
+- Update progress metrics and remaining work
+- **Never move to next file without documentation update**
+
+#### 4. **No Partial Fixes** (STRICTLY ENFORCED)
+- ❌ **DO NOT** fix some missing braces in multiple files simultaneously
+- ❌ **DO NOT** leave files partially completed
+- ❌ **DO NOT** skip documentation updates
+- ❌ **DO NOT** work on files without comprehensive inventory
+
+#### Consequences of Violation:
+- Incomplete fixes across multiple files
+- Inconsistent code quality
+- Difficulty tracking progress
+- Potential regressions in partially modified files
+
+**This protocol ensures systematic, complete cleanup rather than scattered partial fixes.**
+
 Remember: This system processes real financial data with 7,156+ transactions. Always validate operations and maintain data integrity through proper transaction handling and balance verification.
 
 ## � Financial Reporting
