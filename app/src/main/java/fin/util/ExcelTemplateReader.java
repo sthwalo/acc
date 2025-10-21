@@ -14,6 +14,15 @@ import java.util.List;
  */
 public class ExcelTemplateReader {
     
+    // Display formatting constants
+    private static final int REPORT_TITLE_SEPARATOR_WIDTH = 80;
+    private static final int SHEET_HEADER_SEPARATOR_WIDTH = 60;
+    private static final int SAMPLE_DATA_ROW_LIMIT = 15;
+    private static final int SAMPLE_DATA_SEPARATOR_WIDTH = 120;
+    private static final int MAX_DISPLAY_COLUMNS = 8;
+    private static final int MAX_CELL_VALUE_LENGTH = 12;
+    private static final int TRUNCATED_CELL_VALUE_LENGTH = 9;
+    
     public static void main(String[] args) {
         String filePath;
         if (args.length == 0) {
@@ -39,7 +48,7 @@ public class ExcelTemplateReader {
             }
             
             System.out.println("🏢 FINANCIAL REPORT TEMPLATE ANALYSIS");
-            System.out.println("=".repeat(80));
+            System.out.println("=".repeat(REPORT_TITLE_SEPARATOR_WIDTH));
             System.out.println("File: " + filePath);
             System.out.println("Number of sheets: " + workbook.getNumberOfSheets());
             System.out.println();
@@ -60,7 +69,7 @@ public class ExcelTemplateReader {
     
     private void analyzeSheet(Sheet sheet, int sheetNumber) {
         System.out.println(String.format("📋 SHEET %d: %s", sheetNumber, sheet.getSheetName()));
-        System.out.println("-".repeat(60));
+        System.out.println("-".repeat(SHEET_HEADER_SEPARATOR_WIDTH));
         
         int rowCount = 0;
         int maxCols = 0;
@@ -88,7 +97,7 @@ public class ExcelTemplateReader {
             }
             
             // Store first 15 rows as sample data
-            if (rowCount <= 15) {
+            if (rowCount <= SAMPLE_DATA_ROW_LIMIT) {
                 sampleData.add(rowData);
             }
         }
@@ -103,21 +112,21 @@ public class ExcelTemplateReader {
         }
         
         System.out.println("\nSample data (first 15 rows):");
-        System.out.println("-".repeat(120));
+        System.out.println("-".repeat(SAMPLE_DATA_SEPARATOR_WIDTH));
         
-        for (int i = 0; i < Math.min(15, sampleData.size()); i++) {
+        for (int i = 0; i < Math.min(SAMPLE_DATA_ROW_LIMIT, sampleData.size()); i++) {
             List<String> row = sampleData.get(i);
             System.out.printf("Row %2d: ", i + 1);
             
-            for (int col = 0; col < Math.min(8, row.size()); col++) {
+            for (int col = 0; col < Math.min(MAX_DISPLAY_COLUMNS, row.size()); col++) {
                 String value = row.get(col);
-                if (value.length() > 12) {
-                    value = value.substring(0, 9) + "...";
+                if (value.length() > MAX_CELL_VALUE_LENGTH) {
+                    value = value.substring(0, TRUNCATED_CELL_VALUE_LENGTH) + "...";
                 }
                 System.out.printf("%-15s", value);
             }
             
-            if (row.size() > 8) {
+            if (row.size() > MAX_DISPLAY_COLUMNS) {
                 System.out.print("...");
             }
             System.out.println();

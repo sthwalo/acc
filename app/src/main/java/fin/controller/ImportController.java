@@ -22,6 +22,11 @@ import java.util.List;
  * Extracted from monolithic App.java import-related methods
  */
 public class ImportController {
+    // Controller constants for menu bounds and choices
+    private static final int MAX_IMPORT_MENU_CHOICE = 3;
+    private static final int IMPORT_MENU_BACK_CHOICE = 3;
+    private static final int MAX_VIEW_DATA_CHOICE = 3;
+    private static final int VIEW_DATA_BACK_CHOICE = 3;
     private final BankStatementProcessingService bankStatementService;
     private final CsvImportService csvImportService;
     private final ApplicationState applicationState;
@@ -50,7 +55,7 @@ public class ImportController {
             boolean back = false;
             while (!back) {
                 menu.displayImportMenu();
-                int choice = inputHandler.getInteger("Enter your choice", 1, 3);
+                int choice = inputHandler.getInteger("Enter your choice", 1, MAX_IMPORT_MENU_CHOICE);
                 
                 switch (choice) {
                     case 1:
@@ -59,7 +64,7 @@ public class ImportController {
                     case 2:
                         handleBatchBankStatementImport();
                         break;
-                    case 3:
+                    case IMPORT_MENU_BACK_CHOICE:
                         back = true;
                         break;
                     default:
@@ -200,7 +205,7 @@ public class ImportController {
             outputFormatter.printPlain("2. Export transactions to PDF");
             outputFormatter.printPlain("3. Back to main menu");
             
-            int choice = inputHandler.getInteger("Enter your choice", 1, 3);
+            int choice = inputHandler.getInteger("Enter your choice", 1, MAX_VIEW_DATA_CHOICE);
             
             switch (choice) {
                 case 1:
@@ -219,7 +224,7 @@ public class ImportController {
                         outputFormatter.printError("PDF export failed: " + e.getMessage());
                     }
                     break;
-                case 3:
+                case VIEW_DATA_BACK_CHOICE:
                     return;
                 default:
                     outputFormatter.printError("Invalid choice. Returning to main menu.");

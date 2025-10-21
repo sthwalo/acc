@@ -18,6 +18,10 @@ import java.time.format.DateTimeFormatter;
  */
 public class CashFlowService {
 
+    // Display formatting constants
+    private static final int CASH_FLOW_SEPARATOR_WIDTH = 60;
+    private static final int CASH_FLOW_REPORT_WIDTH = 65;
+
     private final FinancialDataRepository repository;
     private final IncomeStatementService incomeStatementService;
 
@@ -238,36 +242,36 @@ public class CashFlowService {
 
         // Operating Activities - Start with net income, then adjust for non-cash items
         report.append("CASH FLOWS FROM OPERATING ACTIVITIES\n");
-        report.append("-".repeat(60)).append("\n");
+        report.append("-".repeat(CASH_FLOW_SEPARATOR_WIDTH)).append("\n");
         report.append(String.format("%-45s %-15s%n", "Net Income/(Loss)", formatCurrency(netIncome)));
         report.append(String.format("%-45s %-15s%n", "Adjustments for non-cash items", formatCurrency(BigDecimal.ZERO)));
-        report.append("-".repeat(60)).append("\n");
+        report.append("-".repeat(CASH_FLOW_SEPARATOR_WIDTH)).append("\n");
         report.append(String.format("%-45s %-15s%n", "Net Cash from Operating Activities", formatCurrency(netIncome)));
         report.append("\n");
 
         // Investing Activities
         report.append("CASH FLOWS FROM INVESTING ACTIVITIES\n");
-        report.append("-".repeat(60)).append("\n");
+        report.append("-".repeat(CASH_FLOW_SEPARATOR_WIDTH)).append("\n");
         if (cashFlowData.assetPurchases.compareTo(BigDecimal.ZERO) != 0) {
             report.append(String.format("%-45s %-15s%n", "Purchase of Property, Plant & Equipment", formatCurrency(cashFlowData.assetPurchases.negate())));
         }
         if (cashFlowData.investments.compareTo(BigDecimal.ZERO) != 0) {
             report.append(String.format("%-45s %-15s%n", "Purchase of Investments", formatCurrency(cashFlowData.investments.negate())));
         }
-        report.append("-".repeat(60)).append("\n");
+        report.append("-".repeat(CASH_FLOW_SEPARATOR_WIDTH)).append("\n");
         report.append(String.format("%-45s %-15s%n", "Net Cash used in Investing Activities", formatCurrency(cashFlowData.investingCashFlow)));
         report.append("\n");
 
         // Financing Activities
         report.append("CASH FLOWS FROM FINANCING ACTIVITIES\n");
-        report.append("-".repeat(60)).append("\n");
+        report.append("-".repeat(CASH_FLOW_SEPARATOR_WIDTH)).append("\n");
         if (cashFlowData.loanProceeds.compareTo(BigDecimal.ZERO) != 0) {
             report.append(String.format("%-45s %-15s%n", "Proceeds from Long-term Loans", formatCurrency(cashFlowData.loanProceeds)));
         }
         if (cashFlowData.loanPayments.compareTo(BigDecimal.ZERO) != 0) {
             report.append(String.format("%-45s %-15s%n", "Repayment of Long-term Loans", formatCurrency(cashFlowData.loanPayments.negate())));
         }
-        report.append("-".repeat(60)).append("\n");
+        report.append("-".repeat(CASH_FLOW_SEPARATOR_WIDTH)).append("\n");
         report.append(String.format("%-45s %-15s%n", "Net Cash from Financing Activities", formatCurrency(cashFlowData.financingCashFlow)));
         report.append("\n");
 
@@ -277,10 +281,10 @@ public class CashFlowService {
             .add(cashFlowData.financingCashFlow);
             
         report.append("NET CHANGE IN CASH\n");
-        report.append("-".repeat(60)).append("\n");
+        report.append("-".repeat(CASH_FLOW_SEPARATOR_WIDTH)).append("\n");
         report.append(String.format("%-45s %-15s%n", "Net Change in Cash", formatCurrency(netCashChange)));
         report.append(String.format("%-45s %-15s%n", "Cash at Beginning of Period", formatCurrency(openingCashBalance)));
-        report.append("-".repeat(60)).append("\n");
+        report.append("-".repeat(CASH_FLOW_SEPARATOR_WIDTH)).append("\n");
         
         BigDecimal calculatedEndingBalance = openingCashBalance.add(netCashChange);
         report.append(String.format("%-45s %-15s%n", "Cash at End of Period (calculated)", formatCurrency(calculatedEndingBalance)));
@@ -303,13 +307,13 @@ public class CashFlowService {
 
     private String generateReportHeader(String title, Company company, FiscalPeriod fiscalPeriod) {
         StringBuilder header = new StringBuilder();
-        header.append(centerText(title, 65)).append("\n");
-        header.append(centerText("Company: " + company.getName(), 65)).append("\n");
-        header.append(centerText("Registration: " + company.getRegistrationNumber(), 65)).append("\n");
+        header.append(centerText(title, CASH_FLOW_REPORT_WIDTH)).append("\n");
+        header.append(centerText("Company: " + company.getName(), CASH_FLOW_REPORT_WIDTH)).append("\n");
+        header.append(centerText("Registration: " + company.getRegistrationNumber(), CASH_FLOW_REPORT_WIDTH)).append("\n");
         header.append(centerText("Period: " + fiscalPeriod.getPeriodName() + " (" +
-                fiscalPeriod.getStartDate() + " to " + fiscalPeriod.getEndDate() + ")", 65)).append("\n");
+                fiscalPeriod.getStartDate() + " to " + fiscalPeriod.getEndDate() + ")", CASH_FLOW_REPORT_WIDTH)).append("\n");
         header.append(centerText("Generated on: " + java.time.LocalDateTime.now().format(
-                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")), 65)).append("\n");
+                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")), CASH_FLOW_REPORT_WIDTH)).append("\n");
         return header.toString();
     }
 

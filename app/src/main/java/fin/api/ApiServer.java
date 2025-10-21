@@ -51,6 +51,16 @@ public class ApiServer {
     private final ReportService reportService;
     private final BankStatementProcessingService bankStatementService;
     
+    // HTTP status code constants
+    private static final int HTTP_OK = 200;
+    private static final int HTTP_CREATED = 201;
+    private static final int HTTP_BAD_REQUEST = 400;
+    private static final int HTTP_NOT_FOUND = 404;
+    private static final int HTTP_INTERNAL_SERVER_ERROR = 500;
+    
+    // Server configuration constants
+    private static final int SERVER_PORT = 8080;
+    
     // In-memory store for API session data (replace with proper session management)
     private final Map<String, Object> sessionStore = new ConcurrentHashMap<>();
     
@@ -95,7 +105,7 @@ public class ApiServer {
     
     public void start() {
         // Set port
-        port(8080);
+        port(SERVER_PORT);
         
         // Configure CORS for frontend connection
         setupCors();
@@ -125,7 +135,7 @@ public class ApiServer {
         
         // Handle preflight requests
         options("/*", (request, response) -> {
-            response.status(200);
+            response.status(HTTP_OK);
             return "";
         });
     }
@@ -133,7 +143,7 @@ public class ApiServer {
     private void setupExceptionHandling() {
         // Global exception handler
         exception(Exception.class, (exception, request, response) -> {
-            response.status(500);
+            response.status(HTTP_INTERNAL_SERVER_ERROR);
             response.type("application/json");
             
             Map<String, Object> error = new HashMap<>();
@@ -229,7 +239,7 @@ public class ApiServer {
                     
                     return gson.toJson(response);
                 } catch (Exception e) {
-                    res.status(500);
+                    res.status(HTTP_INTERNAL_SERVER_ERROR);
                     return gson.toJson(Map.of(
                         "success", false,
                         "error", "Failed to fetch companies",
@@ -254,7 +264,7 @@ public class ApiServer {
                     String contactPhone = (String) companyData.get("contactPhone");
                     
                     if (name == null || name.trim().isEmpty()) {
-                        res.status(400);
+                        res.status(HTTP_BAD_REQUEST);
                         return gson.toJson(Map.of(
                             "success", false,
                             "error", "Company name is required"
@@ -278,11 +288,11 @@ public class ApiServer {
                     response.put("message", "Company created successfully");
                     response.put("timestamp", System.currentTimeMillis());
                     
-                    res.status(201);
+                    res.status(HTTP_CREATED);
                     return gson.toJson(response);
                     
                 } catch (Exception e) {
-                    res.status(500);
+                    res.status(HTTP_INTERNAL_SERVER_ERROR);
                     return gson.toJson(Map.of(
                         "success", false,
                         "error", "Failed to create company",
@@ -309,13 +319,13 @@ public class ApiServer {
                     return gson.toJson(response);
                     
                 } catch (NumberFormatException e) {
-                    res.status(400);
+                    res.status(HTTP_BAD_REQUEST);
                     return gson.toJson(Map.of(
                         "success", false,
                         "error", "Invalid company ID format"
                     ));
                 } catch (Exception e) {
-                    res.status(500);
+                    res.status(HTTP_INTERNAL_SERVER_ERROR);
                     return gson.toJson(Map.of(
                         "success", false,
                         "error", "Failed to fetch fiscal periods",
@@ -345,13 +355,13 @@ public class ApiServer {
                     return gson.toJson(response);
                     
                 } catch (NumberFormatException e) {
-                    res.status(400);
+                    res.status(HTTP_BAD_REQUEST);
                     return gson.toJson(Map.of(
                         "success", false,
                         "error", "Invalid company ID format"
                     ));
                 } catch (Exception e) {
-                    res.status(500);
+                    res.status(HTTP_INTERNAL_SERVER_ERROR);
                     return gson.toJson(Map.of(
                         "success", false,
                         "error", "Failed to fetch transactions",
@@ -370,7 +380,7 @@ public class ApiServer {
                     // Check if company exists
                     Company company = companyService.getCompanyById(companyId);
                     if (company == null) {
-                        res.status(404);
+                        res.status(HTTP_NOT_FOUND);
                         return gson.toJson(Map.of(
                             "success", false,
                             "error", "Company not found",
@@ -428,13 +438,13 @@ public class ApiServer {
                     return gson.toJson(response);
                     
                 } catch (NumberFormatException e) {
-                    res.status(400);
+                    res.status(HTTP_BAD_REQUEST);
                     return gson.toJson(Map.of(
                         "success", false,
                         "error", "Invalid company ID format"
                     ));
                 } catch (Exception e) {
-                    res.status(500);
+                    res.status(HTTP_INTERNAL_SERVER_ERROR);
                     System.err.println("Upload processing error: " + e.getMessage());
                     e.printStackTrace();
                     return gson.toJson(Map.of(

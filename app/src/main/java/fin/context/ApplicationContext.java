@@ -22,6 +22,10 @@ public class ApplicationContext {
     private final Map<Class<?>, Object> services = new HashMap<>();
     private final String dbUrl;
     
+    // Database connection pool configuration
+    private static final int DATABASE_MAX_POOL_SIZE = 5;
+    private static final int DATABASE_MIN_IDLE = 2;
+    
     public ApplicationContext() {
         // Determine database URL first (validation before assignment)
         String databaseUrl;
@@ -141,8 +145,8 @@ public class ApplicationContext {
             // Create DataSource for repository (same pattern as FinancialReportingService)
             com.zaxxer.hikari.HikariConfig config = new com.zaxxer.hikari.HikariConfig();
             config.setJdbcUrl(dbUrl);
-            config.setMaximumPoolSize(5);
-            config.setMinimumIdle(2);
+            config.setMaximumPoolSize(DATABASE_MAX_POOL_SIZE);
+            config.setMinimumIdle(DATABASE_MIN_IDLE);
             com.zaxxer.hikari.HikariDataSource repositoryDataSource = new com.zaxxer.hikari.HikariDataSource(config);
             
             fin.repository.FinancialDataRepository financialDataRepository = new fin.repository.JdbcFinancialDataRepository(repositoryDataSource);

@@ -35,6 +35,17 @@ public class FinancialReportingService {
     private final DataSource dataSource;
     private final FinancialDataRepository repository;
 
+    // Database connection pool constants
+    private static final int MAX_CONNECTION_POOL_SIZE = 10;
+    private static final int MIN_IDLE_CONNECTIONS = 2;
+
+    // Report formatting constants
+    private static final int REPORT_SEPARATOR_WIDTH = 120;
+    private static final int ACCOUNT_NAME_TRUNCATE_CHECK = 23;
+    private static final int ACCOUNT_NAME_TRUNCATE_LENGTH = 20;
+    private static final int DESCRIPTION_TRUNCATE_CHECK = 28;
+    private static final int DESCRIPTION_TRUNCATE_LENGTH = 25;
+
     // Modular services
     private final CashbookService cashbookService;
     private final GeneralLedgerService generalLedgerService;
@@ -50,8 +61,8 @@ public class FinancialReportingService {
         // Create DataSource from dbUrl
         HikariConfig config = new HikariConfig();
         config.setJdbcUrl(dbUrl);
-        config.setMaximumPoolSize(10);
-        config.setMinimumIdle(2);
+        config.setMaximumPoolSize(MAX_CONNECTION_POOL_SIZE);
+        config.setMinimumIdle(MIN_IDLE_CONNECTIONS);
         this.dataSource = new HikariDataSource(config);
 
         // Create repository
@@ -247,7 +258,7 @@ public class FinancialReportingService {
                 if (!reference.equals(currentEntry)) {
                     currentEntry = reference;
                     
-                    report.append("\n").append("=".repeat(120)).append("\n");
+                    report.append("\n").append("=".repeat(REPORT_SEPARATOR_WIDTH)).append("\n");
                     report.append(String.format("ENTRY: %-20s DATE: %-12s CREATED BY: %-20s%n",
                             reference,
                             entryDate.toLocalDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")),
@@ -255,10 +266,10 @@ public class FinancialReportingService {
                     report.append(String.format("DESCRIPTION: %s%n", journalDescription));
                     report.append(String.format("TIMESTAMP: %s%n", 
                             createdAt.toLocalDateTime().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss"))));
-                    report.append("-".repeat(120)).append("\n");
+                    report.append("-".repeat(REPORT_SEPARATOR_WIDTH)).append("\n");
                     report.append(String.format("%-10s %-25s %-30s %15s %15s%n",
                             "Code", "Account", "Description", "Debit", "Credit"));
-                    report.append("-".repeat(120)).append("\n");
+                    report.append("-".repeat(REPORT_SEPARATOR_WIDTH)).append("\n");
                 }
                 
                 // Journal entry line
@@ -273,20 +284,20 @@ public class FinancialReportingService {
                 
                 report.append(String.format("%-10s %-25s %-30s %15s %15s%n",
                         accountCode,
-                        accountName.length() > 23 ? accountName.substring(0, 20) + "..." : accountName,
-                        lineDescription != null && lineDescription.length() > 28 ? 
-                            lineDescription.substring(0, 25) + "..." : lineDescription,
+                        accountName.length() > ACCOUNT_NAME_TRUNCATE_CHECK ? accountName.substring(0, ACCOUNT_NAME_TRUNCATE_LENGTH) + "..." : accountName,
+                        lineDescription != null && lineDescription.length() > DESCRIPTION_TRUNCATE_CHECK ? 
+                            lineDescription.substring(0, DESCRIPTION_TRUNCATE_LENGTH) + "..." : lineDescription,
                         debitAmount != null ? formatCurrency(debitAmount) : "",
                         creditAmount != null ? formatCurrency(creditAmount) : ""));
             }
             
             // Grand totals
-            report.append("\n").append("=".repeat(120)).append("\n");
+            report.append("\n").append("=".repeat(REPORT_SEPARATOR_WIDTH)).append("\n");
             report.append(String.format("%-71s %15s %15s%n", 
                     "GRAND TOTALS:", 
                     formatCurrency(grandTotalDebits),
                     formatCurrency(grandTotalCredits)));
-            report.append("=".repeat(120)).append("\n");
+            report.append("=".repeat(REPORT_SEPARATOR_WIDTH)).append("\n");
             
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Error generating audit trail", e);
@@ -305,9 +316,9 @@ public class FinancialReportingService {
     
     private String generateReportHeader(String reportTitle, Company company, FiscalPeriod period) {
         StringBuilder header = new StringBuilder();
-        header.append("=".repeat(120)).append("\n");
-        header.append(String.format("%s%n", centerText(reportTitle, 120)));
-        header.append("=".repeat(120)).append("\n");
+        header.append("=".repeat(REPORT_SEPARATOR_WIDTH)).append("\n");
+        header.append(String.format("%s%n", centerText(reportTitle, REPORT_SEPARATOR_WIDTH)));
+        header.append("=".repeat(REPORT_SEPARATOR_WIDTH)).append("\n");
         
         if (company != null) {
             header.append(String.format("Company: %s%n", company.getName()));
@@ -320,7 +331,7 @@ public class FinancialReportingService {
         }
         header.append(String.format("Generated: %s%n", 
                 LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss"))));
-        header.append("-".repeat(120)).append("\n\n");
+        header.append("-".repeat(REPORT_SEPARATOR_WIDTH)).append("\n\n");
         
         return header.toString();
     }

@@ -26,6 +26,34 @@ public class ApplicationController {
     private final DataManagementController dataManagementController;
     private final PayrollController payrollController;
     
+    // Menu option constants
+    private static final int MENU_OPTION_COMPANY_SETUP = 1;
+    private static final int MENU_OPTION_FISCAL_PERIODS = 2;
+    private static final int MENU_OPTION_BANK_STATEMENT_IMPORT = 3;
+    private static final int MENU_OPTION_CSV_IMPORT = 4;
+    private static final int MENU_OPTION_VIEW_IMPORTED_DATA = 5;
+    private static final int MENU_OPTION_REPORT_GENERATION = 6;
+    private static final int MENU_OPTION_DATA_MANAGEMENT = 7;
+    private static final int MENU_OPTION_PAYROLL_MANAGEMENT = 8;
+    private static final int MENU_OPTION_DISPLAY_TIME = 9;
+    private static final int MENU_OPTION_SYSTEM_LOGS = 10;
+    private static final int MENU_OPTION_EXIT = 11;
+    private static final int MAIN_MENU_MAX_OPTION = 11;
+    
+    // Save menu options
+    private static final int SAVE_OPTION_EXPORT_CSV = 1;
+    private static final int SAVE_OPTION_GENERATE_REPORT = 2;
+    private static final int SAVE_OPTION_SKIP = 3;
+    private static final int SAVE_MENU_MAX_OPTION = 3;
+    
+    // Log menu options
+    private static final int LOG_OPTION_VIEW_APP_LOGS = 1;
+    private static final int LOG_OPTION_VIEW_DB_LOGS = 2;
+    private static final int LOG_OPTION_VIEW_ERROR_LOGS = 3;
+    private static final int LOG_OPTION_CLEAR_LOGS = 4;
+    private static final int LOG_OPTION_BACK_TO_MAIN = 5;
+    private static final int LOG_MENU_MAX_OPTION = 5;
+    
     public ApplicationController(
         ConsoleMenu menu,
         InputHandler inputHandler,
@@ -67,31 +95,31 @@ public class ApplicationController {
                 displayCurrentContext();
                 menu.displayMainMenu();
                 
-                int choice = inputHandler.getInteger("Enter your choice", 1, 11);
+                int choice = inputHandler.getInteger("Enter your choice", 1, MAIN_MENU_MAX_OPTION);
                 
                 switch (choice) {
-                    case 1:
+                    case MENU_OPTION_COMPANY_SETUP:
                         companyController.handleCompanySetup();
                         break;
-                    case 2:
+                    case MENU_OPTION_FISCAL_PERIODS:
                         fiscalPeriodController.handleFiscalPeriods();
                         break;
-                    case 3:
+                    case MENU_OPTION_BANK_STATEMENT_IMPORT:
                         importController.handleBankStatementImport();
                         break;
-                    case 4:
+                    case MENU_OPTION_CSV_IMPORT:
                         importController.handleCsvImport();
                         break;
-                    case 5:
+                    case MENU_OPTION_VIEW_IMPORTED_DATA:
                         importController.handleViewImportedData();
                         break;
-                    case 6:
+                    case MENU_OPTION_REPORT_GENERATION:
                         reportController.handleReportGeneration();
                         break;
-                    case 7:
+                    case MENU_OPTION_DATA_MANAGEMENT:
                         dataManagementController.handleDataManagement();
                         break;
-                    case 8:
+                    case MENU_OPTION_PAYROLL_MANAGEMENT:
                         if (applicationState.hasCurrentCompany()) {
                             payrollController.handlePayrollManagement(applicationState.getCurrentCompany().getId());
                         } else {
@@ -99,13 +127,13 @@ public class ApplicationController {
                             inputHandler.waitForEnter();
                         }
                         break;
-                    case 9:
+                    case MENU_OPTION_DISPLAY_TIME:
                         displayCurrentTime();
                         break;
-                    case 10:
+                    case MENU_OPTION_SYSTEM_LOGS:
                         handleSystemLogs();
                         break;
-                    case 11:
+                    case MENU_OPTION_EXIT:
                         exit = handleExit();
                         break;
                     default:
@@ -156,10 +184,10 @@ public class ApplicationController {
         outputFormatter.printPlain("2. Generate summary report");
         outputFormatter.printPlain("3. Skip saving");
         
-        int choice = inputHandler.getInteger("Select save option", 1, 3);
+        int choice = inputHandler.getInteger("Select save option", 1, SAVE_MENU_MAX_OPTION);
         
         switch (choice) {
-            case 1:
+            case SAVE_OPTION_EXPORT_CSV:
                 try {
                     dataManagementController.handleExportToCSV();
                     outputFormatter.printSuccess("Data exported before exit");
@@ -167,7 +195,7 @@ public class ApplicationController {
                     outputFormatter.printError("Error exporting data: " + e.getMessage());
                 }
                 break;
-            case 2:
+            case SAVE_OPTION_GENERATE_REPORT:
                 try {
                     reportController.generateTrialBalanceReport();
                     outputFormatter.printSuccess("Summary report generated before exit");
@@ -175,7 +203,7 @@ public class ApplicationController {
                     outputFormatter.printError("Error generating report: " + e.getMessage());
                 }
                 break;
-            case 3:
+            case SAVE_OPTION_SKIP:
                 outputFormatter.printInfo("Skipping save operations");
                 break;
             default:
@@ -231,22 +259,22 @@ public class ApplicationController {
         System.out.println("5. Back to main menu");
         System.out.print("Enter your choice (1-5): ");
         
-        int choice = inputHandler.getInteger("Enter your choice", 1, 5);
+        int choice = inputHandler.getInteger("Enter your choice", 1, LOG_MENU_MAX_OPTION);
         
         switch (choice) {
-            case 1:
+            case LOG_OPTION_VIEW_APP_LOGS:
                 displayApplicationLogs();
                 break;
-            case 2:
+            case LOG_OPTION_VIEW_DB_LOGS:
                 displayDatabaseLogs();
                 break;
-            case 3:
+            case LOG_OPTION_VIEW_ERROR_LOGS:
                 displayErrorLogs();
                 break;
-            case 4:
+            case LOG_OPTION_CLEAR_LOGS:
                 clearLogs();
                 break;
-            case 5:
+            case LOG_OPTION_BACK_TO_MAIN:
                 // Back to main menu
                 break;
             default:

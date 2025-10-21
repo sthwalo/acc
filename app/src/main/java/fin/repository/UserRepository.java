@@ -18,6 +18,24 @@ import java.util.Optional;
 public class UserRepository implements BaseRepository<User, Long> {
     private final String dbUrl;
 
+    // PreparedStatement parameter indices for INSERT operation
+    private static final int PARAM_EMAIL = 1;
+    private static final int PARAM_PASSWORD_HASH = 2;
+    private static final int PARAM_SALT = 3;
+    private static final int PARAM_FIRST_NAME = 4;
+    private static final int PARAM_LAST_NAME = 5;
+    private static final int PARAM_ROLE = 6;
+    private static final int PARAM_COMPANY_ID = 7;
+    private static final int PARAM_IS_ACTIVE = 8;
+    private static final int PARAM_CREATED_BY = 9;
+    private static final int PARAM_CREATED_AT = 10;
+    private static final int PARAM_UPDATED_AT = 11;
+
+    // Additional parameters for UPDATE operation
+    private static final int PARAM_UPDATED_BY_UPDATE = 12;
+    private static final int PARAM_UPDATED_AT_UPDATE = 13;
+    private static final int PARAM_ID_UPDATE = 14;
+
     public UserRepository(String dbUrl) {
         this.dbUrl = dbUrl;
     }
@@ -31,22 +49,22 @@ public class UserRepository implements BaseRepository<User, Long> {
         try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
-            stmt.setString(1, user.getEmail());
-            stmt.setString(2, user.getPasswordHash());
-            stmt.setString(3, user.getSalt());
-            stmt.setString(4, user.getFirstName());
-            stmt.setString(5, user.getLastName());
-            stmt.setString(6, user.getRole());
-            stmt.setLong(7, user.getCompanyId());
-            stmt.setBoolean(8, user.isActive());
-            stmt.setString(9, user.getCreatedBy());
-            stmt.setTimestamp(10, Timestamp.valueOf(user.getCreatedAt()));
-            stmt.setTimestamp(11, Timestamp.valueOf(user.getUpdatedAt()));
+            stmt.setString(PARAM_EMAIL, user.getEmail());
+            stmt.setString(PARAM_PASSWORD_HASH, user.getPasswordHash());
+            stmt.setString(PARAM_SALT, user.getSalt());
+            stmt.setString(PARAM_FIRST_NAME, user.getFirstName());
+            stmt.setString(PARAM_LAST_NAME, user.getLastName());
+            stmt.setString(PARAM_ROLE, user.getRole());
+            stmt.setLong(PARAM_COMPANY_ID, user.getCompanyId());
+            stmt.setBoolean(PARAM_IS_ACTIVE, user.isActive());
+            stmt.setString(PARAM_CREATED_BY, user.getCreatedBy());
+            stmt.setTimestamp(PARAM_CREATED_AT, Timestamp.valueOf(user.getCreatedAt()));
+            stmt.setTimestamp(PARAM_UPDATED_AT, Timestamp.valueOf(user.getUpdatedAt()));
 
             if (user.getId() != null) {
-                stmt.setString(12, user.getUpdatedBy());
-                stmt.setTimestamp(13, Timestamp.valueOf(user.getUpdatedAt()));
-                stmt.setLong(14, user.getId());
+                stmt.setString(PARAM_UPDATED_BY_UPDATE, user.getUpdatedBy());
+                stmt.setTimestamp(PARAM_UPDATED_AT_UPDATE, Timestamp.valueOf(user.getUpdatedAt()));
+                stmt.setLong(PARAM_ID_UPDATE, user.getId());
             }
 
             int affectedRows = stmt.executeUpdate();

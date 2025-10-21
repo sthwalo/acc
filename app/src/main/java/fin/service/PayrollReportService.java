@@ -65,6 +65,33 @@ public class PayrollReportService {
     private static final int MAX_MONTHLY_PAYSLIPS = 10;
     private static final float MIN_Y_POSITION = 100f;
 
+    // EMP201 Report Layout Constants
+    private static final float EMP201_TITLE_Y = 750f;
+    private static final float EMP201_COMPANY_INFO_Y = 720f;
+    private static final float EMP201_TAX_TOTALS_Y = 660f;
+    private static final float EMP201_TAX_DATA_Y = 630f;
+    private static final float EMP201_SUMMARY_Y = 500f;
+    private static final float EMP201_SUMMARY_DATA_Y = 470f;
+    private static final float EMP201_FOOTER_Y = 100f;
+    
+    // EMP201 Spacing Constants
+    private static final float EMP201_LINE_SPACING = 15f;
+    private static final float EMP201_TAX_LINE_SPACING = 20f;
+    private static final float EMP201_SUMMARY_LINE_SPACING = 20f;
+    private static final float EMP201_FOOTER_LINE_SPACING = 12f;
+    
+    // EMP201 Font Sizes
+    private static final float EMP201_TITLE_FONT_SIZE = 16f;
+    private static final float EMP201_HEADER_FONT_SIZE = 12f;
+    private static final float EMP201_SECTION_FONT_SIZE = 14f;
+    private static final float EMP201_DATA_FONT_SIZE = 11f;
+    private static final float EMP201_FOOTER_FONT_SIZE = 9f;
+    
+    // EMP201 Column Widths and Positions
+    private static final float EMP201_LABEL_COLUMN_WIDTH = 50f;
+    private static final float EMP201_VALUE_COLUMN_WIDTH = 100f;
+    private static final float EMP201_TOTAL_LABEL_WIDTH = 470f;
+
     public PayrollReportService(String dbUrl) {
         this.dbUrl = dbUrl;
     }
@@ -642,72 +669,72 @@ public class PayrollReportService {
             try (PDPageContentStream contentStream = new PDPageContentStream(document, page)) {
                 // Title
                 contentStream.beginText();
-                contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 16);
-                contentStream.newLineAtOffset(50, 750);
+                contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), EMP201_TITLE_FONT_SIZE);
+                contentStream.newLineAtOffset(PAGE_MARGIN_LEFT, EMP201_TITLE_Y);
                 contentStream.showText("EMP 201 - MONTHLY EMPLOYER DECLARATIONS");
                 contentStream.endText();
 
                 // Company info
                 contentStream.beginText();
-                contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 12);
-                contentStream.newLineAtOffset(50, 720);
+                contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), EMP201_HEADER_FONT_SIZE);
+                contentStream.newLineAtOffset(PAGE_MARGIN_LEFT, EMP201_COMPANY_INFO_Y);
                 contentStream.showText("Company: " + company.getName());
-                contentStream.newLineAtOffset(0, -15);
+                contentStream.newLineAtOffset(0, -EMP201_LINE_SPACING);
                 contentStream.showText("Registration: " + (company.getRegistrationNumber() != null ? company.getRegistrationNumber() : "Not set"));
-                contentStream.newLineAtOffset(0, -15);
+                contentStream.newLineAtOffset(0, -EMP201_LINE_SPACING);
                 contentStream.showText("Report Date: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
                 contentStream.endText();
 
                 // Tax totals section
                 contentStream.beginText();
-                contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 14);
-                contentStream.newLineAtOffset(50, 660);
+                contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), EMP201_SECTION_FONT_SIZE);
+                contentStream.newLineAtOffset(PAGE_MARGIN_LEFT, EMP201_TAX_TOTALS_Y);
                 contentStream.showText("TAX TOTALS FOR REPORTING PERIOD");
                 contentStream.endText();
 
                 contentStream.beginText();
-                contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 11);
-                contentStream.newLineAtOffset(50, 630);
+                contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), EMP201_DATA_FONT_SIZE);
+                contentStream.newLineAtOffset(PAGE_MARGIN_LEFT, EMP201_TAX_DATA_Y);
                 contentStream.showText("PAYE (Pay As You Earn): R" + String.format("%,.2f", emp201Data.totalPAYE));
-                contentStream.newLineAtOffset(0, -20);
+                contentStream.newLineAtOffset(0, -EMP201_TAX_LINE_SPACING);
                 contentStream.showText("UIF Employee Contributions (1%): R" + String.format("%,.2f", emp201Data.totalUIFEmployee));
-                contentStream.newLineAtOffset(0, -20);
+                contentStream.newLineAtOffset(0, -EMP201_TAX_LINE_SPACING);
                 contentStream.showText("UIF Employer Contributions (1%): R" + String.format("%,.2f", emp201Data.totalUIFEmployer));
-                contentStream.newLineAtOffset(0, -20);
+                contentStream.newLineAtOffset(0, -EMP201_TAX_LINE_SPACING);
                 contentStream.showText("Total UIF: R" + String.format("%,.2f", emp201Data.totalUIFEmployee + emp201Data.totalUIFEmployer));
-                contentStream.newLineAtOffset(0, -20);
+                contentStream.newLineAtOffset(0, -EMP201_TAX_LINE_SPACING);
                 contentStream.showText("SDL (Skills Development Levy): R" + String.format("%,.2f", emp201Data.totalSDL));
                 contentStream.endText();
 
                 // Summary section
                 contentStream.beginText();
-                contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 14);
-                contentStream.newLineAtOffset(50, 500);
+                contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), EMP201_SECTION_FONT_SIZE);
+                contentStream.newLineAtOffset(PAGE_MARGIN_LEFT, EMP201_SUMMARY_Y);
                 contentStream.showText("SUMMARY");
                 contentStream.endText();
 
                 contentStream.beginText();
-                contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 11);
-                contentStream.newLineAtOffset(50, 470);
+                contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), EMP201_DATA_FONT_SIZE);
+                contentStream.newLineAtOffset(PAGE_MARGIN_LEFT, EMP201_SUMMARY_DATA_Y);
                 contentStream.showText("Total Employees: " + emp201Data.totalEmployees);
-                contentStream.newLineAtOffset(0, -20);
+                contentStream.newLineAtOffset(0, -EMP201_SUMMARY_LINE_SPACING);
                 contentStream.showText("Total Payroll Periods: " + emp201Data.totalPeriods);
-                contentStream.newLineAtOffset(0, -20);
+                contentStream.newLineAtOffset(0, -EMP201_SUMMARY_LINE_SPACING);
                 contentStream.showText("Total Gross Pay: R" + String.format("%,.2f", emp201Data.totalGrossPay));
-                contentStream.newLineAtOffset(0, -20);
-                contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 11);
+                contentStream.newLineAtOffset(0, -EMP201_SUMMARY_LINE_SPACING);
+                contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), EMP201_DATA_FONT_SIZE);
                 contentStream.showText("Total Tax Liability: R" + String.format("%,.2f", 
                     emp201Data.totalPAYE + emp201Data.totalUIFEmployee + emp201Data.totalUIFEmployer + emp201Data.totalSDL));
                 contentStream.endText();
 
                 // Footer note
                 contentStream.beginText();
-                contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_OBLIQUE), 9);
-                contentStream.newLineAtOffset(50, 100);
+                contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_OBLIQUE), EMP201_FOOTER_FONT_SIZE);
+                contentStream.newLineAtOffset(PAGE_MARGIN_LEFT, EMP201_FOOTER_Y);
                 contentStream.showText("Note: UIF contributions are calculated at 1% each for employee and employer");
-                contentStream.newLineAtOffset(0, -12);
+                contentStream.newLineAtOffset(0, -EMP201_FOOTER_LINE_SPACING);
                 contentStream.showText("SDL is calculated at 1% of total payroll for companies with payroll > R500,000 annually");
-                contentStream.newLineAtOffset(0, -12);
+                contentStream.newLineAtOffset(0, -EMP201_FOOTER_LINE_SPACING);
                 contentStream.showText("This report is for informational purposes. Consult your tax advisor for official submissions.");
                 contentStream.endText();
             }

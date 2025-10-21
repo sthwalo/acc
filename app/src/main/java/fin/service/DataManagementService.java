@@ -18,6 +18,43 @@ public class DataManagementService {
     private final CompanyService companyService;
     private final AccountService accountService;
 
+    // SQL Parameter indices for manual invoice creation
+    private static final int MANUAL_INVOICE_PARAM_COMPANY_ID = 1;
+    private static final int MANUAL_INVOICE_PARAM_INVOICE_NUMBER = 2;
+    private static final int MANUAL_INVOICE_PARAM_INVOICE_DATE = 3;
+    private static final int MANUAL_INVOICE_PARAM_DESCRIPTION = 4;
+    private static final int MANUAL_INVOICE_PARAM_AMOUNT = 5;
+    private static final int MANUAL_INVOICE_PARAM_DEBIT_ACCOUNT_ID = 6;
+    private static final int MANUAL_INVOICE_PARAM_CREDIT_ACCOUNT_ID = 7;
+    private static final int MANUAL_INVOICE_PARAM_FISCAL_PERIOD_ID = 8;
+
+    // SQL Parameter indices for journal entry header creation
+    private static final int JOURNAL_HEADER_PARAM_COMPANY_ID = 1;
+    private static final int JOURNAL_HEADER_PARAM_ENTRY_NUMBER = 2;
+    private static final int JOURNAL_HEADER_PARAM_ENTRY_DATE = 3;
+    private static final int JOURNAL_HEADER_PARAM_DESCRIPTION = 4;
+    private static final int JOURNAL_HEADER_PARAM_FISCAL_PERIOD_ID = 5;
+
+    // SQL Parameter indices for journal entry line creation
+    private static final int JOURNAL_LINE_PARAM_JOURNAL_ENTRY_ID = 1;
+    private static final int JOURNAL_LINE_PARAM_ACCOUNT_ID = 2;
+    private static final int JOURNAL_LINE_PARAM_DESCRIPTION = 3;
+    private static final int JOURNAL_LINE_PARAM_DEBIT_AMOUNT = 4;
+    private static final int JOURNAL_LINE_PARAM_CREDIT_AMOUNT = 5;
+
+    // SQL Parameter indices for data correction recording
+    private static final int CORRECTION_PARAM_COMPANY_ID = 1;
+    private static final int CORRECTION_PARAM_TRANSACTION_ID = 2;
+    private static final int CORRECTION_PARAM_ORIGINAL_ACCOUNT_ID = 3;
+    private static final int CORRECTION_PARAM_NEW_ACCOUNT_ID = 4;
+    private static final int CORRECTION_PARAM_REASON = 5;
+    private static final int CORRECTION_PARAM_CORRECTED_BY = 6;
+
+    // SQL Parameter indices for transaction update
+    private static final int UPDATE_TRANSACTION_PARAM_NEW_ACCOUNT_ID = 1;
+    private static final int UPDATE_TRANSACTION_PARAM_TRANSACTION_ID = 2;
+    private static final int UPDATE_TRANSACTION_PARAM_COMPANY_ID = 3;
+
     public DataManagementService(String dbUrl, CompanyService companyService, AccountService accountService) {
         this.dbUrl = dbUrl;
         this.companyService = companyService;
@@ -111,14 +148,14 @@ public class DataManagementService {
         try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             
-            pstmt.setLong(1, companyId);
-            pstmt.setString(2, invoiceNumber);
-            pstmt.setDate(3, Date.valueOf(invoiceDate));
-            pstmt.setString(4, description);
-            pstmt.setBigDecimal(5, amount);
-            pstmt.setLong(6, debitAccountId);
-            pstmt.setLong(7, creditAccountId);
-            pstmt.setLong(8, fiscalPeriodId);
+            pstmt.setLong(MANUAL_INVOICE_PARAM_COMPANY_ID, companyId);
+            pstmt.setString(MANUAL_INVOICE_PARAM_INVOICE_NUMBER, invoiceNumber);
+            pstmt.setDate(MANUAL_INVOICE_PARAM_INVOICE_DATE, Date.valueOf(invoiceDate));
+            pstmt.setString(MANUAL_INVOICE_PARAM_DESCRIPTION, description);
+            pstmt.setBigDecimal(MANUAL_INVOICE_PARAM_AMOUNT, amount);
+            pstmt.setLong(MANUAL_INVOICE_PARAM_DEBIT_ACCOUNT_ID, debitAccountId);
+            pstmt.setLong(MANUAL_INVOICE_PARAM_CREDIT_ACCOUNT_ID, creditAccountId);
+            pstmt.setLong(MANUAL_INVOICE_PARAM_FISCAL_PERIOD_ID, fiscalPeriodId);
             
             pstmt.executeUpdate();
             
@@ -202,11 +239,11 @@ public class DataManagementService {
             "RETURNING id";
             
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setLong(1, companyId);
-            pstmt.setString(2, entryNumber);
-            pstmt.setDate(3, Date.valueOf(entryDate));
-            pstmt.setString(4, description);
-            pstmt.setLong(5, fiscalPeriodId);
+            pstmt.setLong(JOURNAL_HEADER_PARAM_COMPANY_ID, companyId);
+            pstmt.setString(JOURNAL_HEADER_PARAM_ENTRY_NUMBER, entryNumber);
+            pstmt.setDate(JOURNAL_HEADER_PARAM_ENTRY_DATE, Date.valueOf(entryDate));
+            pstmt.setString(JOURNAL_HEADER_PARAM_DESCRIPTION, description);
+            pstmt.setLong(JOURNAL_HEADER_PARAM_FISCAL_PERIOD_ID, fiscalPeriodId);
             
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
@@ -224,11 +261,11 @@ public class DataManagementService {
             "debit_amount, credit_amount) VALUES (?, ?, ?, ?, ?)";
             
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setLong(1, journalEntryId);
-            pstmt.setLong(2, line.getAccountId());
-            pstmt.setString(3, line.getDescription());
-            pstmt.setBigDecimal(4, line.getDebitAmount());
-            pstmt.setBigDecimal(5, line.getCreditAmount());
+            pstmt.setLong(JOURNAL_LINE_PARAM_JOURNAL_ENTRY_ID, journalEntryId);
+            pstmt.setLong(JOURNAL_LINE_PARAM_ACCOUNT_ID, line.getAccountId());
+            pstmt.setString(JOURNAL_LINE_PARAM_DESCRIPTION, line.getDescription());
+            pstmt.setBigDecimal(JOURNAL_LINE_PARAM_DEBIT_AMOUNT, line.getDebitAmount());
+            pstmt.setBigDecimal(JOURNAL_LINE_PARAM_CREDIT_AMOUNT, line.getCreditAmount());
             
             pstmt.executeUpdate();
         }
@@ -251,12 +288,12 @@ public class DataManagementService {
                     "VALUES (?, ?, ?, ?, ?, ?)";
                     
                 try (PreparedStatement pstmt = conn.prepareStatement(correctionSql)) {
-                    pstmt.setLong(1, companyId);
-                    pstmt.setLong(2, transactionId);
-                    pstmt.setLong(3, originalAccountId);
-                    pstmt.setLong(4, newAccountId);
-                    pstmt.setString(5, reason);
-                    pstmt.setString(6, correctedBy);
+                    pstmt.setLong(CORRECTION_PARAM_COMPANY_ID, companyId);
+                    pstmt.setLong(CORRECTION_PARAM_TRANSACTION_ID, transactionId);
+                    pstmt.setLong(CORRECTION_PARAM_ORIGINAL_ACCOUNT_ID, originalAccountId);
+                    pstmt.setLong(CORRECTION_PARAM_NEW_ACCOUNT_ID, newAccountId);
+                    pstmt.setString(CORRECTION_PARAM_REASON, reason);
+                    pstmt.setString(CORRECTION_PARAM_CORRECTED_BY, correctedBy);
                     
                     pstmt.executeUpdate();
                 }
@@ -267,9 +304,9 @@ public class DataManagementService {
                     "WHERE id = ? AND company_id = ?";
                     
                 try (PreparedStatement pstmt = conn.prepareStatement(updateSql)) {
-                    pstmt.setLong(1, newAccountId);
-                    pstmt.setLong(2, transactionId);
-                    pstmt.setLong(3, companyId);
+                    pstmt.setLong(UPDATE_TRANSACTION_PARAM_NEW_ACCOUNT_ID, newAccountId);
+                    pstmt.setLong(UPDATE_TRANSACTION_PARAM_TRANSACTION_ID, transactionId);
+                    pstmt.setLong(UPDATE_TRANSACTION_PARAM_COMPANY_ID, companyId);
                     
                     pstmt.executeUpdate();
                 }

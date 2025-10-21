@@ -17,6 +17,78 @@ public class PayrollController {
     private final InputHandler inputHandler;
     private final OutputFormatter outputFormatter;
 
+    // Menu bounds constants
+    private static final int MAX_PAYROLL_MENU_CHOICE = 7;
+    private static final int PAYROLL_MENU_BACK_CHOICE = 7;
+    private static final int MAX_EMPLOYEE_MENU_CHOICE = 5;
+    private static final int EMPLOYEE_MENU_BACK_CHOICE = 5;
+    private static final int MAX_PAYROLL_PERIOD_MENU_CHOICE = 5;
+    private static final int PAYROLL_PERIOD_MENU_BACK_CHOICE = 5;
+    private static final int MAX_PAYROLL_REPORTS_MENU_CHOICE = 4;
+    private static final int PAYROLL_REPORTS_MENU_BACK_CHOICE = 4;
+    private static final int MAX_DOCUMENT_MENU_CHOICE = 3;
+    private static final int DOCUMENT_MENU_BACK_CHOICE = 3;
+
+    // Employment type choice constants
+    private static final int EMPLOYMENT_TYPE_PERMANENT = 1;
+    private static final int EMPLOYMENT_TYPE_CONTRACT = 2;
+    private static final int EMPLOYMENT_TYPE_TEMPORARY = 3;
+
+    // Salary type choice constants
+    private static final int SALARY_TYPE_MONTHLY = 1;
+    private static final int SALARY_TYPE_WEEKLY = 2;
+    private static final int SALARY_TYPE_HOURLY = 3;
+    private static final int SALARY_TYPE_DAILY = 4;
+
+    // Date validation constants
+    private static final int MIN_YEAR = 2000;
+    private static final int MAX_YEAR = 2030;
+    private static final int MIN_MONTH = 1;
+    private static final int MAX_MONTH = 12;
+    private static final int MIN_DAY = 1;
+    private static final int MAX_DAY = 31;
+
+    // Pay date constant
+    private static final int DEFAULT_PAY_DAY = 25;
+
+    // Force delete constants (specific to September 2025 cleanup)
+    private static final int FORCE_DELETE_YEAR = 2025;
+    private static final int FORCE_DELETE_MONTH = 9;
+
+    // Payroll menu choice constants
+    private static final int PAYROLL_MENU_EMPLOYEE_MGMT = 1;
+    private static final int PAYROLL_MENU_PERIOD_MGMT = 2;
+    private static final int PAYROLL_MENU_PROCESSING = 3;
+    private static final int PAYROLL_MENU_PAYSLIP_GEN = 4;
+    private static final int PAYROLL_MENU_REPORTS = 5;
+    private static final int PAYROLL_MENU_DOC_MGMT = 6;
+    private static final int PAYROLL_MENU_BACK = 7;
+
+    // Employee menu choice constants
+    private static final int EMPLOYEE_MENU_LIST = 1;
+    private static final int EMPLOYEE_MENU_CREATE = 2;
+    private static final int EMPLOYEE_MENU_UPDATE = 3;
+    private static final int EMPLOYEE_MENU_DELETE = 4;
+    private static final int EMPLOYEE_MENU_BACK = 5;
+
+    // Payroll period menu choice constants
+    private static final int PAYROLL_PERIOD_MENU_LIST = 1;
+    private static final int PAYROLL_PERIOD_MENU_CREATE = 2;
+    private static final int PAYROLL_PERIOD_MENU_DELETE = 3;
+    private static final int PAYROLL_PERIOD_MENU_FORCE_DELETE_SEPT = 4;
+    private static final int PAYROLL_PERIOD_MENU_BACK = 5;
+
+    // Payroll reports menu choice constants
+    private static final int PAYROLL_REPORTS_MENU_SUMMARY = 1;
+    private static final int PAYROLL_REPORTS_MENU_EMPLOYEE = 2;
+    private static final int PAYROLL_REPORTS_MENU_EMP201 = 3;
+    private static final int PAYROLL_REPORTS_MENU_BACK = 4;
+
+    // Document menu choice constants
+    private static final int DOCUMENT_MENU_LIST = 1;
+    private static final int DOCUMENT_MENU_DELETE = 2;
+    private static final int DOCUMENT_MENU_BACK = 3;
+
     public PayrollController(PayrollService payrollService, PayrollReportService payrollReportService, 
                            InputHandler inputHandler, OutputFormatter outputFormatter) {
         this.payrollService = payrollService;
@@ -30,28 +102,28 @@ public class PayrollController {
         boolean backToMain = false;
         while (!backToMain) {
             displayPayrollMenu();
-            int choice = inputHandler.getInteger("Enter your choice", 1, 7);
+            int choice = inputHandler.getInteger("Enter your choice", 1, MAX_PAYROLL_MENU_CHOICE);
             
             switch (choice) {
-                case 1:
+                case PAYROLL_MENU_EMPLOYEE_MGMT:
                     handleEmployeeManagement(companyId);
                     break;
-                case 2:
+                case PAYROLL_MENU_PERIOD_MGMT:
                     handlePayrollPeriodManagement(companyId);
                     break;
-                case 3:
+                case PAYROLL_MENU_PROCESSING:
                     handlePayrollProcessing(companyId);
                     break;
-                case 4:
+                case PAYROLL_MENU_PAYSLIP_GEN:
                     handlePayslipGeneration(companyId);
                     break;
-                case 5:
+                case PAYROLL_MENU_REPORTS:
                     handlePayrollReports(companyId);
                     break;
-                case 6:
+                case PAYROLL_MENU_DOC_MGMT:
                     handleDocumentManagement(companyId);
                     break;
-                case 7:
+                case PAYROLL_MENU_BACK:
                     backToMain = true;
                     break;
                 default:
@@ -101,9 +173,9 @@ public class PayrollController {
             outputFormatter.printPlain("3. Update Employee");
             outputFormatter.printPlain("4. Delete Employee");
             outputFormatter.printPlain("5. Back to Payroll Management");
-            int choice = inputHandler.getInteger("Enter your choice", 1, 5);
+            int choice = inputHandler.getInteger("Enter your choice", 1, MAX_EMPLOYEE_MENU_CHOICE);
             switch (choice) {
-                case 1:
+                case EMPLOYEE_MENU_LIST:
                     List<Employee> employees = payrollService.getActiveEmployees(companyId);
                     outputFormatter.printPlain("Active Employees:");
                     for (Employee emp : employees) {
@@ -111,16 +183,16 @@ public class PayrollController {
                     }
                     inputHandler.waitForEnter();
                     break;
-                case 2:
+                case EMPLOYEE_MENU_CREATE:
                     createEmployee(companyId);
                     break;
-                case 3:
+                case EMPLOYEE_MENU_UPDATE:
                     updateEmployee(companyId);
                     break;
-                case 4:
+                case EMPLOYEE_MENU_DELETE:
                     deleteEmployee(companyId);
                     break;
-                case 5:
+                case EMPLOYEE_MENU_BACK:
                     back = true;
                     break;
                 default:
@@ -149,9 +221,9 @@ public class PayrollController {
 
             // Hire Date
             outputFormatter.printPlain("Enter hire date:");
-            int hireYear = inputHandler.getInteger("Year", 2000, 2030);
-            int hireMonth = inputHandler.getInteger("Month", 1, 12);
-            int hireDay = inputHandler.getInteger("Day", 1, 31);
+            int hireYear = inputHandler.getInteger("Year", MIN_YEAR, MAX_YEAR);
+            int hireMonth = inputHandler.getInteger("Month", MIN_MONTH, MAX_MONTH);
+            int hireDay = inputHandler.getInteger("Day", MIN_DAY, MAX_DAY);
             employee.setHireDate(LocalDate.of(hireYear, hireMonth, hireDay));
 
             // Salary Information
@@ -163,15 +235,15 @@ public class PayrollController {
             outputFormatter.printPlain("1. Permanent");
             outputFormatter.printPlain("2. Contract");
             outputFormatter.printPlain("3. Temporary");
-            int empTypeChoice = inputHandler.getInteger("Enter choice", 1, 3);
+            int empTypeChoice = inputHandler.getInteger("Enter choice", 1, EMPLOYMENT_TYPE_TEMPORARY);
             switch (empTypeChoice) {
-                case 1:
+                case EMPLOYMENT_TYPE_PERMANENT:
                     employee.setEmploymentType(Employee.EmploymentType.PERMANENT);
                     break;
-                case 2:
+                case EMPLOYMENT_TYPE_CONTRACT:
                     employee.setEmploymentType(Employee.EmploymentType.CONTRACT);
                     break;
-                case 3:
+                case EMPLOYMENT_TYPE_TEMPORARY:
                     employee.setEmploymentType(Employee.EmploymentType.TEMPORARY);
                     break;
                 default:
@@ -184,18 +256,18 @@ public class PayrollController {
             outputFormatter.printPlain("2. Weekly");
             outputFormatter.printPlain("3. Hourly");
             outputFormatter.printPlain("4. Daily");
-            int salaryTypeChoice = inputHandler.getInteger("Enter choice", 1, 4);
+            int salaryTypeChoice = inputHandler.getInteger("Enter choice", 1, SALARY_TYPE_DAILY);
             switch (salaryTypeChoice) {
-                case 1:
+                case SALARY_TYPE_MONTHLY:
                     employee.setSalaryType(Employee.SalaryType.MONTHLY);
                     break;
-                case 2:
+                case SALARY_TYPE_WEEKLY:
                     employee.setSalaryType(Employee.SalaryType.WEEKLY);
                     break;
-                case 3:
+                case SALARY_TYPE_HOURLY:
                     employee.setSalaryType(Employee.SalaryType.HOURLY);
                     break;
-                case 4:
+                case SALARY_TYPE_DAILY:
                     employee.setSalaryType(Employee.SalaryType.DAILY);
                     break;
                 default:
@@ -399,9 +471,9 @@ public class PayrollController {
             outputFormatter.printPlain("3. Delete Payroll Period");
             outputFormatter.printPlain("4. Force Delete All September 2025 Periods");
             outputFormatter.printPlain("5. Back to Payroll Management");
-            int choice = inputHandler.getInteger("Enter your choice", 1, 5);
+            int choice = inputHandler.getInteger("Enter your choice", 1, MAX_PAYROLL_PERIOD_MENU_CHOICE);
             switch (choice) {
-                case 1:
+                case PAYROLL_PERIOD_MENU_LIST:
                     List<PayrollPeriod> periods = payrollService.getPayrollPeriods(companyId);
                     outputFormatter.printPlain("Payroll Periods:");
                     for (PayrollPeriod period : periods) {
@@ -409,16 +481,16 @@ public class PayrollController {
                     }
                     inputHandler.waitForEnter();
                     break;
-                case 2:
+                case PAYROLL_PERIOD_MENU_CREATE:
                     createPayrollPeriod(companyId);
                     break;
-                case 3:
+                case PAYROLL_PERIOD_MENU_DELETE:
                     deletePayrollPeriod(companyId);
                     break;
-                case 4:
+                case PAYROLL_PERIOD_MENU_FORCE_DELETE_SEPT:
                     forceDeleteAllSeptember2025Periods(companyId);
                     break;
-                case 5:
+                case PAYROLL_PERIOD_MENU_BACK:
                     back = true;
                     break;
                 default:
@@ -433,14 +505,14 @@ public class PayrollController {
         String periodName = inputHandler.getString("Enter period name (e.g., October 2025):");
         
         outputFormatter.printPlain("Enter start date:");
-        int startYear = inputHandler.getInteger("Year", 2020, 2030);
-        int startMonth = inputHandler.getInteger("Month", 1, 12);
-        int startDay = inputHandler.getInteger("Day", 1, 31);
+        int startYear = inputHandler.getInteger("Year", MIN_YEAR, MAX_YEAR);
+        int startMonth = inputHandler.getInteger("Month", MIN_MONTH, MAX_MONTH);
+        int startDay = inputHandler.getInteger("Day", MIN_DAY, MAX_DAY);
         
         outputFormatter.printPlain("Enter end date:");
-        int endYear = inputHandler.getInteger("Year", 2020, 2030);
-        int endMonth = inputHandler.getInteger("Month", 1, 12);
-        int endDay = inputHandler.getInteger("Day", 1, 31);
+        int endYear = inputHandler.getInteger("Year", MIN_YEAR, MAX_YEAR);
+        int endMonth = inputHandler.getInteger("Month", MIN_MONTH, MAX_MONTH);
+        int endDay = inputHandler.getInteger("Day", MIN_DAY, MAX_DAY);
         
         try {
             PayrollPeriod period = new PayrollPeriod();
@@ -450,7 +522,7 @@ public class PayrollController {
             period.setEndDate(LocalDate.of(endYear, endMonth, endDay));
             
             // Automatically set pay date to the 25th of the month
-            LocalDate payDate = LocalDate.of(endYear, endMonth, 25);
+            LocalDate payDate = LocalDate.of(endYear, endMonth, DEFAULT_PAY_DAY);
             period.setPayDate(payDate);
             
             period.setCreatedBy("system");
@@ -542,7 +614,7 @@ public class PayrollController {
         }
         
         try {
-            payrollService.forceDeleteAllPayrollPeriodsForMonth(companyId, 2025, 9);
+            payrollService.forceDeleteAllPayrollPeriodsForMonth(companyId, FORCE_DELETE_YEAR, FORCE_DELETE_MONTH);
             outputFormatter.printSuccess("✅ All September 2025 payroll periods have been force deleted!");
             outputFormatter.printInfo("You can now create a single, correct payroll period for September 2025.");
             
@@ -645,9 +717,9 @@ public class PayrollController {
             outputFormatter.printPlain("2. Generate Employee Payroll Report");
             outputFormatter.printPlain("3. Generate EMP 201 Report (SARS Tax Submission)");
             outputFormatter.printPlain("4. Back to Payroll Management");
-            int choice = inputHandler.getInteger("Enter your choice", 1, 4);
+            int choice = inputHandler.getInteger("Enter your choice", 1, MAX_PAYROLL_REPORTS_MENU_CHOICE);
             switch (choice) {
-                case 1:
+                case PAYROLL_REPORTS_MENU_SUMMARY:
                     try {
                         payrollReportService.generatePayrollSummaryReport(companyId);
                         outputFormatter.printSuccess("Payroll summary report generated.");
@@ -656,7 +728,7 @@ public class PayrollController {
                     }
                     inputHandler.waitForEnter();
                     break;
-                case 2:
+                case PAYROLL_REPORTS_MENU_EMPLOYEE:
                     try {
                         payrollReportService.generateEmployeePayrollReport(companyId);
                         outputFormatter.printSuccess("Employee payroll report generated.");
@@ -665,7 +737,7 @@ public class PayrollController {
                     }
                     inputHandler.waitForEnter();
                     break;
-                case 3:
+                case PAYROLL_REPORTS_MENU_EMP201:
                     try {
                         payrollReportService.generateEMP201Report(companyId);
                         outputFormatter.printSuccess("EMP 201 report generated and saved as PDF.");
@@ -676,7 +748,7 @@ public class PayrollController {
                     }
                     inputHandler.waitForEnter();
                     break;
-                case 4:
+                case PAYROLL_REPORTS_MENU_BACK:
                     back = true;
                     break;
                 default:
@@ -706,15 +778,15 @@ public class PayrollController {
             outputFormatter.printPlain("1. List Payslip Documents");
             outputFormatter.printPlain("2. Delete Payslip Document");
             outputFormatter.printPlain("3. Back to Payroll Management");
-            int choice = inputHandler.getInteger("Enter your choice", 1, 3);
+            int choice = inputHandler.getInteger("Enter your choice", 1, MAX_DOCUMENT_MENU_CHOICE);
             switch (choice) {
-                case 1:
+                case DOCUMENT_MENU_LIST:
                     listPayslipDocuments();
                     break;
-                case 2:
+                case DOCUMENT_MENU_DELETE:
                     deletePayslipDocument();
                     break;
-                case 3:
+                case DOCUMENT_MENU_BACK:
                     back = true;
                     break;
                 default:

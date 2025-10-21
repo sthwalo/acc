@@ -4,6 +4,9 @@ package fin.model;
  * Statistics for batch processing operations
  */
 public class BatchProcessingStatistics {
+    // Constants for percentage calculations
+    private static final double PERCENTAGE_MULTIPLIER = 100.0;
+
     private long totalTransactions;
     private long classifiedTransactions;
     private long unclassifiedTransactions;
@@ -15,7 +18,7 @@ public class BatchProcessingStatistics {
         this.totalTransactions = totalTransactions;
         this.classifiedTransactions = classifiedTransactions;
         this.unclassifiedTransactions = unclassifiedTransactions;
-        this.classificationRate = totalTransactions > 0 ? (double) classifiedTransactions / totalTransactions * 100.0 : 0.0;
+        this.classificationRate = totalTransactions > 0 ? (double) classifiedTransactions / totalTransactions * PERCENTAGE_MULTIPLIER : 0.0;
     }
 
     // Getters and setters

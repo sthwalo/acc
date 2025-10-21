@@ -37,48 +37,84 @@ public class InteractiveClassificationService {
     private final Map<String, List<String>> accountCategories;
     
     // Constants for display and thresholds
-    @SuppressWarnings("MagicNumber")
     private static final int DISPLAY_LINE_WIDTH = 80;
-    @SuppressWarnings("MagicNumber")
     private static final double CONFIDENCE_THRESHOLD_HIGH = 0.9;
-    @SuppressWarnings("MagicNumber")
     private static final double CONFIDENCE_THRESHOLD_MEDIUM = 0.6;
-    @SuppressWarnings("MagicNumber")
     private static final int PERCENTAGE_MULTIPLIER = 100;
-    @SuppressWarnings("MagicNumber")
     private static final int SIGNIFICANT_KEYWORD_LENGTH = 4;
-    @SuppressWarnings("MagicNumber")
     private static final double HIGH_MATCH_SCORE = 1.0;
-    @SuppressWarnings("MagicNumber")
     private static final double LOW_MATCH_SCORE = 0.5;
-    @SuppressWarnings("MagicNumber")
     private static final double PATTERN_MATCH_SCORE = 0.8;
-    @SuppressWarnings("MagicNumber")
     private static final double SIGNIFICANT_MATCH_BOOST = 1.2;
-    @SuppressWarnings("MagicNumber")
     private static final double SUPPLIER_MATCH_SCORE = 0.9;
-    @SuppressWarnings("MagicNumber")
     private static final double MAX_MATCH_SCORE = 1.0;
-    @SuppressWarnings("MagicNumber")
     private static final int MAX_KEYWORDS = 5;
-    @SuppressWarnings("MagicNumber")
     private static final int MAX_SIMILAR_TRANSACTIONS = 5;
-    @SuppressWarnings("MagicNumber")
     private static final int MAX_BATCH_SIMILAR = 20;
-    @SuppressWarnings("MagicNumber")
     private static final int MAX_UNCATEGORIZED_TRANSACTIONS = 100;
-    @SuppressWarnings("MagicNumber")
     private static final int ACCOUNT_NAME_DISPLAY_LENGTH = 35;
-    @SuppressWarnings("MagicNumber")
     private static final int DESCRIPTION_DISPLAY_LENGTH = 50;
-    @SuppressWarnings("MagicNumber")
     private static final int SIMILAR_TRANSACTION_DESC_LENGTH = 50;
-    @SuppressWarnings("MagicNumber")
     private static final int SUGGESTIONS_SEPARATOR_WIDTH = 60;
-    @SuppressWarnings("MagicNumber")
     private static final int MAX_ACCOUNTS_PER_CATEGORY = 3;
-    @SuppressWarnings("MagicNumber")
     private static final int MAX_ACCOUNT_SUGGESTIONS = 5;
+    private static final int TABLE_SEPARATOR_WIDTH = 85;
+    private static final int PATTERN_DISPLAY_LENGTH = 40;
+    private static final int PARTIAL_PATTERN_WORDS = 3;
+    private static final int LAST_CHANGES_COUNT = 5;
+    private static final int ELLIPSIS_LENGTH = 3; // Length of "..." for truncated display
+    
+    // SQL Parameter Index Constants for PreparedStatement operations
+    private static final int RULE_COMPANY_ID_PARAM = 1;
+    private static final int RULE_PATTERN_PARAM = 2;
+    private static final int RULE_KEYWORDS_PARAM = 3;
+    private static final int RULE_ACCOUNT_CODE_PARAM = 4;
+    private static final int RULE_ACCOUNT_NAME_PARAM = 5;
+    private static final int RULE_USAGE_COUNT_PARAM = 6;
+    private static final int RULE_ID_PARAM = 2;
+    private static final int RULE_UPDATE_KEYWORDS_PARAM = 1;
+    private static final int RULE_UPDATE_ID_PARAM = 2;
+    private static final int RULE_CHECK_COMPANY_ID_PARAM = 1;
+    private static final int RULE_CHECK_ACCOUNT_CODE_PARAM = 2;
+    private static final int RULE_CHECK_PATTERN_PARAM = 3;
+    private static final int RULE_UPDATE_USAGE_COMPANY_ID_PARAM = 1;
+    private static final int RULE_UPDATE_USAGE_ACCOUNT_CODE_PARAM = 2;
+    private static final int RULE_UPDATE_USAGE_PATTERN_PARAM = 3;
+    private static final int SIMILAR_TRANSACTIONS_COMPANY_ID_PARAM = 1;
+    private static final int SIMILAR_TRANSACTIONS_PATTERN_PARAM = 2;
+    private static final int SIMILAR_TRANSACTIONS_PATTERN_PARAM_2 = 3;
+    private static final int BATCH_UPDATE_ACCOUNT_CODE_PARAM = 1;
+    private static final int BATCH_UPDATE_ACCOUNT_NAME_PARAM = 2;
+    private static final int BATCH_UPDATE_CLASSIFIED_BY_PARAM = 3;
+    private static final int BATCH_UPDATE_TRANSACTION_ID_PARAM = 4;
+    private static final int UNCATEGORIZED_COMPANY_ID_PARAM = 1;
+    private static final int UNCATEGORIZED_FISCAL_PERIOD_PARAM = 2;
+    private static final int UPDATE_CLASSIFICATION_ACCOUNT_CODE_PARAM = 1;
+    private static final int UPDATE_CLASSIFICATION_ACCOUNT_NAME_PARAM = 2;
+    private static final int UPDATE_CLASSIFICATION_CLASSIFIED_BY_PARAM = 3;
+    private static final int UPDATE_CLASSIFICATION_TRANSACTION_ID_PARAM = 4;
+    private static final int JOURNAL_HEADER_REFERENCE_PARAM = 1;
+    private static final int JOURNAL_HEADER_DATE_PARAM = 2;
+    private static final int JOURNAL_HEADER_DESCRIPTION_PARAM = 3;
+    private static final int JOURNAL_HEADER_FISCAL_PERIOD_PARAM = 4;
+    private static final int JOURNAL_HEADER_COMPANY_ID_PARAM = 5;
+    private static final int JOURNAL_HEADER_CREATED_BY_PARAM = 6;
+    private static final int JOURNAL_LINE_JOURNAL_ENTRY_ID_PARAM = 1;
+    private static final int JOURNAL_LINE_ACCOUNT_ID_PARAM = 2;
+    private static final int JOURNAL_LINE_DEBIT_AMOUNT_PARAM = 3;
+    private static final int JOURNAL_LINE_CREDIT_AMOUNT_PARAM = 4;
+    private static final int JOURNAL_LINE_DESCRIPTION_PARAM = 5;
+    private static final int JOURNAL_LINE_REFERENCE_PARAM = 6;
+    private static final int JOURNAL_LINE_SOURCE_TRANSACTION_PARAM = 7;
+    private static final int ACCOUNT_LOOKUP_NAME_PARAM = 1;
+    private static final int ACCOUNT_LOOKUP_CODE_PARAM = 1;
+    private static final int SIMILAR_UNCATEGORIZED_COMPANY_ID_PARAM = 1;
+    private static final int SIMILAR_UNCATEGORIZED_PATTERN_PARAM = 2;
+    private static final int ALLOCATION_ANALYSIS_COMPANY_ID_PARAM = 1;
+    private static final int ALLOCATION_ANALYSIS_FISCAL_PERIOD_PARAM = 2;
+    private static final int SUMMARY_COMPANY_ID_PARAM = 1;
+    private static final int SUMMARY_FISCAL_PERIOD_PARAM = 2;
+    private static final int SUGGESTIONS_PATTERN_PARAM = 1;
     
     // Change tracking
     public static class ChangeRecord {
@@ -545,9 +581,9 @@ public class InteractiveClassificationService {
             try (Connection conn = getConnection();
                  PreparedStatement stmt = conn.prepareStatement(sql)) {
                 
-                stmt.setLong(1, companyId);
-                stmt.setString(2, rule.getAccountCode());
-                stmt.setString(3, "%" + String.join("%", rule.getKeywords()) + "%");
+                stmt.setLong(RULE_UPDATE_USAGE_COMPANY_ID_PARAM, companyId);
+                stmt.setString(RULE_UPDATE_USAGE_ACCOUNT_CODE_PARAM, rule.getAccountCode());
+                stmt.setString(RULE_UPDATE_USAGE_PATTERN_PARAM, "%" + String.join("%", rule.getKeywords()) + "%");
                 
                 stmt.executeUpdate();
                 
@@ -579,9 +615,9 @@ public class InteractiveClassificationService {
             try (Connection conn = getConnection();
                  PreparedStatement stmt = conn.prepareStatement(sql)) {
                 
-                stmt.setLong(1, companyId);
-                stmt.setString(2, searchPattern);
-                stmt.setString(3, searchPattern);
+                stmt.setLong(SIMILAR_TRANSACTIONS_COMPANY_ID_PARAM, companyId);
+                stmt.setString(SIMILAR_TRANSACTIONS_PATTERN_PARAM, searchPattern);
+                stmt.setString(SIMILAR_TRANSACTIONS_PATTERN_PARAM_2, searchPattern);
                 
                 try (ResultSet rs = stmt.executeQuery()) {
                     if (rs.next()) {
@@ -652,7 +688,7 @@ public class InteractiveClassificationService {
                         String simplifiedDescription = rule.getDescription().replaceAll("\\s*\\[AccountCode:.*?\\]", "");
                         System.out.println("   ✓ " + accountCode + " - " + simplifiedDescription);
                         suggestionsShown++;
-                        if (suggestionsShown >= 5) break; // Show top 5 matches
+                        if (suggestionsShown >= MAX_ACCOUNT_SUGGESTIONS) break; // Show top matches
                     }
                 }
             }
@@ -670,7 +706,7 @@ public class InteractiveClassificationService {
                 }
             }
             
-            System.out.println("-".repeat(60));
+            System.out.println("-".repeat(SUGGESTIONS_SEPARATOR_WIDTH));
             System.out.println("💡 TIP: Use account codes like 8100 (Employee Costs), 9600 (Bank Charges), etc.");
             
         } catch (Exception e) {
@@ -758,26 +794,26 @@ public class InteractiveClassificationService {
             try (Connection conn = getConnection()) {
                 // Check for existing rule
                 try (PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
-                    checkStmt.setLong(1, companyId);
-                    checkStmt.setString(2, accountCode);
-                    checkStmt.setString(3, "%" + String.join("%", keywords) + "%");
+                    checkStmt.setLong(RULE_CHECK_COMPANY_ID_PARAM, companyId);
+                    checkStmt.setString(RULE_CHECK_ACCOUNT_CODE_PARAM, accountCode);
+                    checkStmt.setString(RULE_CHECK_PATTERN_PARAM, "%" + String.join("%", keywords) + "%");
                     
                     try (ResultSet rs = checkStmt.executeQuery()) {
                         if (rs.next()) {
                             // Update existing rule
                             try (PreparedStatement updateStmt = conn.prepareStatement(updateSql)) {
-                                updateStmt.setString(1, String.join(",", keywords));
-                                updateStmt.setLong(2, rs.getLong("id"));
+                                updateStmt.setString(RULE_UPDATE_KEYWORDS_PARAM, String.join(",", keywords));
+                                updateStmt.setLong(RULE_UPDATE_ID_PARAM, rs.getLong("id"));
                                 updateStmt.executeUpdate();
                             }
                         } else {
                             // Insert new rule
                             try (PreparedStatement insertStmt = conn.prepareStatement(insertSql)) {
-                                insertStmt.setLong(1, companyId);
-                                insertStmt.setString(2, pattern);
-                                insertStmt.setString(3, String.join(",", keywords));
-                                insertStmt.setString(4, accountCode);
-                                insertStmt.setString(5, accountName);
+                                insertStmt.setLong(RULE_COMPANY_ID_PARAM, companyId);
+                                insertStmt.setString(RULE_PATTERN_PARAM, pattern);
+                                insertStmt.setString(RULE_KEYWORDS_PARAM, String.join(",", keywords));
+                                insertStmt.setString(RULE_ACCOUNT_CODE_PARAM, accountCode);
+                                insertStmt.setString(RULE_ACCOUNT_NAME_PARAM, accountName);
                                 insertStmt.executeUpdate();
                             }
                         }
@@ -842,9 +878,9 @@ public class InteractiveClassificationService {
      * Display the main menu
      */
     private void showMainMenu() {
-        System.out.println("\n" + "=".repeat(60));
+        System.out.println("\n" + "=".repeat(SUGGESTIONS_SEPARATOR_WIDTH));
         System.out.println("📋 CATEGORIZATION MENU");
-        System.out.println("=".repeat(60));
+        System.out.println("=".repeat(SUGGESTIONS_SEPARATOR_WIDTH));
         System.out.println("1. Review Uncategorized Transactions");
         System.out.println("2. Analyze Account Allocations");
         System.out.println("3. Show Categorization Summary");
@@ -903,10 +939,10 @@ public class InteractiveClassificationService {
                     try (PreparedStatement stmt = conn.prepareStatement(updateSql)) {
                         for (Long id : transactionIds) {
                             if (transactionDetails.containsKey(id)) {
-                                stmt.setString(1, accountCode);
-                                stmt.setString(2, accountName);
-                                stmt.setString(3, "BATCH_CLASSIFICATION");
-                                stmt.setLong(4, id);
+                                stmt.setString(BATCH_UPDATE_ACCOUNT_CODE_PARAM, accountCode);
+                                stmt.setString(BATCH_UPDATE_ACCOUNT_NAME_PARAM, accountName);
+                                stmt.setString(BATCH_UPDATE_CLASSIFIED_BY_PARAM, "BATCH_CLASSIFICATION");
+                                stmt.setLong(BATCH_UPDATE_TRANSACTION_ID_PARAM, id);
                                 stmt.addBatch();
                                 
                                 // Also create rule for future similar transactions
@@ -954,8 +990,8 @@ public class InteractiveClassificationService {
         try (Connection conn = getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             
-            pstmt.setLong(1, companyId);
-            pstmt.setLong(2, fiscalPeriodId);
+            pstmt.setLong(UNCATEGORIZED_COMPANY_ID_PARAM, companyId);
+            pstmt.setLong(UNCATEGORIZED_FISCAL_PERIOD_PARAM, fiscalPeriodId);
             ResultSet rs = pstmt.executeQuery();
             
             while (rs.next()) {
@@ -1096,7 +1132,7 @@ public class InteractiveClassificationService {
         // Add partial patterns
         String[] words = details.split("\\s+");
         if (words.length > 1) {
-            patterns.add(String.join(" ", Arrays.copyOf(words, Math.min(words.length - 1, 3)))); // First few words
+            patterns.add(String.join(" ", Arrays.copyOf(words, Math.min(words.length - 1, PARTIAL_PATTERN_WORDS)))); // First few words
         }
         
         // Find and categorize similar transactions
@@ -1106,7 +1142,7 @@ public class InteractiveClassificationService {
             
             if (!similar.isEmpty()) {
                 System.out.println("\n🔍 Found " + similar.size() + " similar transactions matching: '" + 
-                                 pattern.substring(0, Math.min(40, pattern.length())) + "'");
+                                 pattern.substring(0, Math.min(PATTERN_DISPLAY_LENGTH, pattern.length())) + "'");
                 
                 System.out.print("Auto-categorize these? (y/n): ");
                 String confirm = scanner.nextLine().trim().toLowerCase();
@@ -1167,8 +1203,8 @@ public class InteractiveClassificationService {
         try (Connection conn = getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             
-            pstmt.setLong(1, companyId);
-            pstmt.setString(2, "%" + pattern + "%");
+            pstmt.setLong(SIMILAR_UNCATEGORIZED_COMPANY_ID_PARAM, companyId);
+            pstmt.setString(SIMILAR_UNCATEGORIZED_PATTERN_PARAM, "%" + pattern + "%");
             ResultSet rs = pstmt.executeQuery();
             
             while (rs.next()) {
@@ -1187,7 +1223,7 @@ public class InteractiveClassificationService {
      */
     private void analyzeAccountAllocations(Long companyId, Long fiscalPeriodId) {
         System.out.println("\n📊 ACCOUNT ALLOCATION ANALYSIS");
-        System.out.println("=".repeat(60));
+        System.out.println("=".repeat(SUGGESTIONS_SEPARATOR_WIDTH));
         
         String sql = """
             SELECT 
@@ -1209,13 +1245,13 @@ public class InteractiveClassificationService {
         try (Connection conn = getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             
-            pstmt.setLong(1, companyId);
-            pstmt.setLong(2, fiscalPeriodId);
+            pstmt.setLong(ALLOCATION_ANALYSIS_COMPANY_ID_PARAM, companyId);
+            pstmt.setLong(ALLOCATION_ANALYSIS_FISCAL_PERIOD_PARAM, fiscalPeriodId);
             ResultSet rs = pstmt.executeQuery();
             
             System.out.printf("%-35s %-12s %8s %15s %15s%n", 
                             "Account", "Type", "Count", "Debits", "Credits");
-            System.out.println("-".repeat(85));
+            System.out.println("-".repeat(TABLE_SEPARATOR_WIDTH));
             
             while (rs.next()) {
                 String accountName = rs.getString("account_name");
@@ -1225,7 +1261,7 @@ public class InteractiveClassificationService {
                 BigDecimal credits = rs.getBigDecimal("total_credits");
                 
                 System.out.printf("%-35s %-12s %8d %15s %15s%n",
-                                accountName.length() > ACCOUNT_NAME_DISPLAY_LENGTH ? accountName.substring(0, ACCOUNT_NAME_DISPLAY_LENGTH - 3) + "..." : accountName,
+                                accountName.length() > ACCOUNT_NAME_DISPLAY_LENGTH ? accountName.substring(0, ACCOUNT_NAME_DISPLAY_LENGTH - ELLIPSIS_LENGTH) + "..." : accountName,
                                 accountType,
                                 count,
                                 formatCurrency(debits),
@@ -1242,7 +1278,7 @@ public class InteractiveClassificationService {
      */
     private void showCategorizationSummary(Long companyId, Long fiscalPeriodId) {
         System.out.println("\n📊 CATEGORIZATION SUMMARY");
-        System.out.println("=".repeat(60));
+        System.out.println("=".repeat(SUGGESTIONS_SEPARATOR_WIDTH));
         
         String sql = """
             SELECT 
@@ -1257,8 +1293,8 @@ public class InteractiveClassificationService {
         try (Connection conn = getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             
-            pstmt.setLong(1, companyId);
-            pstmt.setLong(2, fiscalPeriodId);
+            pstmt.setLong(SUMMARY_COMPANY_ID_PARAM, companyId);
+            pstmt.setLong(SUMMARY_FISCAL_PERIOD_PARAM, fiscalPeriodId);
             ResultSet rs = pstmt.executeQuery();
             
             if (rs.next()) {
@@ -1266,7 +1302,7 @@ public class InteractiveClassificationService {
                 int categorized = rs.getInt("categorized_count");
                 int uncategorized = rs.getInt("uncategorized_count");
                 
-                double percentage = total > 0 ? (categorized * 100.0 / total) : 0;
+                double percentage = total > 0 ? (categorized * PERCENTAGE_MULTIPLIER / total) : 0;
                 
                 System.out.println("📈 Total Transactions: " + total);
                 System.out.println("✅ Categorized: " + categorized + " (" + String.format("%.1f%%", percentage) + ")");
@@ -1293,8 +1329,8 @@ public class InteractiveClassificationService {
         System.out.println("Changes made: " + changesMade.size());
         
         if (changesMade.size() > 0) {
-            System.out.println("\nLast 5 changes:");
-            int start = Math.max(0, changesMade.size() - 5);
+            System.out.println("\nLast " + LAST_CHANGES_COUNT + " changes:");
+            int start = Math.max(0, changesMade.size() - LAST_CHANGES_COUNT);
             for (int i = start; i < changesMade.size(); i++) {
                 ChangeRecord change = changesMade.get(i);
                 System.out.println("  • " + change.transactionDate.format(DateTimeFormatter.ofPattern("MM-dd")) + 
@@ -1379,10 +1415,10 @@ public class InteractiveClassificationService {
         try (Connection conn = getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            stmt.setString(1, accountCode);
-            stmt.setString(2, accountName);
-            stmt.setString(3, "INTERACTIVE-CATEGORIZATION");
-            stmt.setLong(4, transactionId);
+            stmt.setString(UPDATE_CLASSIFICATION_ACCOUNT_CODE_PARAM, accountCode);
+            stmt.setString(UPDATE_CLASSIFICATION_ACCOUNT_NAME_PARAM, accountName);
+            stmt.setString(UPDATE_CLASSIFICATION_CLASSIFIED_BY_PARAM, "INTERACTIVE-CATEGORIZATION");
+            stmt.setLong(UPDATE_CLASSIFICATION_TRANSACTION_ID_PARAM, transactionId);
 
             int updated = stmt.executeUpdate();
             return updated > 0;
@@ -1418,12 +1454,12 @@ public class InteractiveClassificationService {
                 // Create journal entry header
                 Long journalEntryId;
                 try (PreparedStatement pstmt = conn.prepareStatement(sql1)) {
-                    pstmt.setString(1, "CAT-" + transaction.getId());
-                    pstmt.setDate(2, java.sql.Date.valueOf(transaction.getTransactionDate()));
-                    pstmt.setString(3, "Categorized: " + transaction.getDetails());
-                    pstmt.setLong(4, transaction.getFiscalPeriodId());
-                    pstmt.setLong(5, transaction.getCompanyId());
-                    pstmt.setString(6, "INTERACTIVE-CATEGORIZATION");
+                    pstmt.setString(JOURNAL_HEADER_REFERENCE_PARAM, "CAT-" + transaction.getId());
+                    pstmt.setDate(JOURNAL_HEADER_DATE_PARAM, java.sql.Date.valueOf(transaction.getTransactionDate()));
+                    pstmt.setString(JOURNAL_HEADER_DESCRIPTION_PARAM, "Categorized: " + transaction.getDetails());
+                    pstmt.setLong(JOURNAL_HEADER_FISCAL_PERIOD_PARAM, transaction.getFiscalPeriodId());
+                    pstmt.setLong(JOURNAL_HEADER_COMPANY_ID_PARAM, transaction.getCompanyId());
+                    pstmt.setString(JOURNAL_HEADER_CREATED_BY_PARAM, "INTERACTIVE-CATEGORIZATION");
 
                     ResultSet rs = pstmt.executeQuery();
                     if (rs.next()) {
@@ -1442,40 +1478,40 @@ public class InteractiveClassificationService {
                 // Create journal entry lines
                 try (PreparedStatement pstmt = conn.prepareStatement(sql2)) {
                     // Bank account line (opposite of transaction)
-                    pstmt.setLong(1, journalEntryId);
-                    pstmt.setLong(2, bankAccountId != null ? bankAccountId : accountId);
+                    pstmt.setLong(JOURNAL_LINE_JOURNAL_ENTRY_ID_PARAM, journalEntryId);
+                    pstmt.setLong(JOURNAL_LINE_ACCOUNT_ID_PARAM, bankAccountId != null ? bankAccountId : accountId);
 
                     if (transaction.getDebitAmount() != null && transaction.getDebitAmount().compareTo(BigDecimal.ZERO) > 0) {
                         // Transaction is debit, so credit the bank account
-                        pstmt.setBigDecimal(3, null);
-                        pstmt.setBigDecimal(4, transaction.getDebitAmount());
+                        pstmt.setBigDecimal(JOURNAL_LINE_DEBIT_AMOUNT_PARAM, null);
+                        pstmt.setBigDecimal(JOURNAL_LINE_CREDIT_AMOUNT_PARAM, transaction.getDebitAmount());
                     } else {
                         // Transaction is credit, so debit the bank account
-                        pstmt.setBigDecimal(3, transaction.getCreditAmount());
-                        pstmt.setBigDecimal(4, null);
+                        pstmt.setBigDecimal(JOURNAL_LINE_DEBIT_AMOUNT_PARAM, transaction.getCreditAmount());
+                        pstmt.setBigDecimal(JOURNAL_LINE_CREDIT_AMOUNT_PARAM, null);
                     }
 
-                    pstmt.setString(5, "Bank Account");
-                    pstmt.setString(6, "CAT-" + transaction.getId() + "-01");
-                    pstmt.setLong(7, transaction.getId());
+                    pstmt.setString(JOURNAL_LINE_DESCRIPTION_PARAM, "Bank Account");
+                    pstmt.setString(JOURNAL_LINE_REFERENCE_PARAM, "CAT-" + transaction.getId() + "-01");
+                    pstmt.setLong(JOURNAL_LINE_SOURCE_TRANSACTION_PARAM, transaction.getId());
                     pstmt.executeUpdate();
 
                     // Categorized account line (same as transaction)
-                    pstmt.setLong(2, accountId);
+                    pstmt.setLong(JOURNAL_LINE_ACCOUNT_ID_PARAM, accountId);
 
                     if (transaction.getDebitAmount() != null && transaction.getDebitAmount().compareTo(BigDecimal.ZERO) > 0) {
                         // Transaction is debit, so debit the expense/asset account
-                        pstmt.setBigDecimal(3, transaction.getDebitAmount());
-                        pstmt.setBigDecimal(4, null);
+                        pstmt.setBigDecimal(JOURNAL_LINE_DEBIT_AMOUNT_PARAM, transaction.getDebitAmount());
+                        pstmt.setBigDecimal(JOURNAL_LINE_CREDIT_AMOUNT_PARAM, null);
                     } else {
                         // Transaction is credit, so credit the income/liability account
-                        pstmt.setBigDecimal(3, null);
-                        pstmt.setBigDecimal(4, transaction.getCreditAmount());
+                        pstmt.setBigDecimal(JOURNAL_LINE_DEBIT_AMOUNT_PARAM, null);
+                        pstmt.setBigDecimal(JOURNAL_LINE_CREDIT_AMOUNT_PARAM, transaction.getCreditAmount());
                     }
 
-                    pstmt.setString(5, "Categorized Account");
-                    pstmt.setString(6, "CAT-" + transaction.getId() + "-02");
-                    pstmt.setLong(7, transaction.getId());
+                    pstmt.setString(JOURNAL_LINE_DESCRIPTION_PARAM, "Categorized Account");
+                    pstmt.setString(JOURNAL_LINE_REFERENCE_PARAM, "CAT-" + transaction.getId() + "-02");
+                    pstmt.setLong(JOURNAL_LINE_SOURCE_TRANSACTION_PARAM, transaction.getId());
                     pstmt.executeUpdate();
                 }
 
@@ -1568,7 +1604,7 @@ public class InteractiveClassificationService {
         try (Connection conn = getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             
-            pstmt.setString(1, accountName);
+            pstmt.setString(ACCOUNT_LOOKUP_NAME_PARAM, accountName);
             ResultSet rs = pstmt.executeQuery();
             
             if (rs.next()) {
@@ -1591,7 +1627,7 @@ public class InteractiveClassificationService {
         try (Connection conn = getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             
-            pstmt.setString(1, accountCode);
+            pstmt.setString(ACCOUNT_LOOKUP_CODE_PARAM, accountCode);
             ResultSet rs = pstmt.executeQuery();
             
             if (rs.next()) {
@@ -1642,7 +1678,7 @@ public class InteractiveClassificationService {
             try (Connection conn = getConnection();
                  PreparedStatement stmt = conn.prepareStatement(sql)) {
                 
-                stmt.setString(1, "%" + pattern.toLowerCase() + "%");
+                stmt.setString(SUGGESTIONS_PATTERN_PARAM, "%" + pattern.toLowerCase() + "%");
                 
                 try (ResultSet rs = stmt.executeQuery()) {
                     while (rs.next()) {

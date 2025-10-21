@@ -14,6 +14,27 @@ public class AccountRepository {
 
     private final String jdbcUrl;
 
+    // PreparedStatement parameter indices for accounts table
+    private static final int PARAM_COMPANY_ID = 1;
+    private static final int PARAM_ACCOUNT_CODE = 2;
+    private static final int PARAM_ACCOUNT_NAME = 3;
+    private static final int PARAM_PARENT_ACCOUNT_ID = 4;
+    private static final int PARAM_CATEGORY_ID = 5;
+
+    // Category ID constants for different account types
+    private static final int CATEGORY_CURRENT_ASSETS_COMPANY1 = 4;
+    private static final int CATEGORY_CURRENT_ASSETS_COMPANY2 = 7;
+    private static final int CATEGORY_NON_CURRENT_ASSETS_COMPANY2 = 8;
+    private static final int CATEGORY_LIABILITIES_COMPANY1 = 5;
+    private static final int CATEGORY_CURRENT_LIABILITIES_COMPANY2 = 9;
+    private static final int CATEGORY_NON_CURRENT_LIABILITIES_COMPANY2 = 10;
+    private static final int CATEGORY_EQUITY_COMPANY2 = 11;
+    private static final int CATEGORY_REVENUE_EXPENSES_COMPANY1 = 6;
+    private static final int CATEGORY_OPERATING_REVENUE_COMPANY2 = 12;
+    private static final int CATEGORY_OTHER_INCOME_COMPANY2 = 13;
+    private static final int CATEGORY_OPERATING_EXPENSES_COMPANY2 = 14;
+    private static final int CATEGORY_FINANCE_COSTS_COMPANY2 = 16;
+
     public AccountRepository(String jdbcUrl) {
         this.jdbcUrl = jdbcUrl;
     }
@@ -64,15 +85,15 @@ public class AccountRepository {
                      "ON CONFLICT (company_id, account_code) DO NOTHING " +
                      "RETURNING id")) {
 
-                upsertStmt.setLong(1, companyId);
-                upsertStmt.setString(2, accountCode);
-                upsertStmt.setString(3, accountName);
+                upsertStmt.setLong(PARAM_COMPANY_ID, companyId);
+                upsertStmt.setString(PARAM_ACCOUNT_CODE, accountCode);
+                upsertStmt.setString(PARAM_ACCOUNT_NAME, accountName);
                 if (parentAccountId != null) {
-                    upsertStmt.setLong(4, parentAccountId);
+                    upsertStmt.setLong(PARAM_PARENT_ACCOUNT_ID, parentAccountId);
                 } else {
-                    upsertStmt.setNull(4, java.sql.Types.INTEGER);
+                    upsertStmt.setNull(PARAM_PARENT_ACCOUNT_ID, java.sql.Types.INTEGER);
                 }
-                upsertStmt.setInt(5, categoryId);
+                upsertStmt.setInt(PARAM_CATEGORY_ID, categoryId);
 
                 try (ResultSet rs = upsertStmt.executeQuery()) {
                     if (rs.next()) {
@@ -150,15 +171,15 @@ public class AccountRepository {
                      "RETURNING id",
                      Statement.RETURN_GENERATED_KEYS)) {
 
-                stmt.setLong(1, companyId); // Use company 2
-                stmt.setString(2, accountCode);
-                stmt.setString(3, accountName);
+                stmt.setLong(PARAM_COMPANY_ID, companyId); // Use company 2
+                stmt.setString(PARAM_ACCOUNT_CODE, accountCode);
+                stmt.setString(PARAM_ACCOUNT_NAME, accountName);
                 if (parentAccountId != null) {
-                    stmt.setLong(4, parentAccountId);
+                    stmt.setLong(PARAM_PARENT_ACCOUNT_ID, parentAccountId);
                 } else {
-                    stmt.setNull(4, java.sql.Types.INTEGER);
+                    stmt.setNull(PARAM_PARENT_ACCOUNT_ID, java.sql.Types.INTEGER);
                 }
-                stmt.setInt(5, categoryId);
+                stmt.setInt(PARAM_CATEGORY_ID, categoryId);
 
                 stmt.executeUpdate();
 
@@ -274,39 +295,39 @@ public class AccountRepository {
     }
     
     private int getCurrentAssetsCategoryId(Long companyId) {
-        return companyId == 1L ? 4 : 7;
+        return companyId == 1L ? CATEGORY_CURRENT_ASSETS_COMPANY1 : CATEGORY_CURRENT_ASSETS_COMPANY2;
     }
     
     private int getNonCurrentAssetsCategoryId(Long companyId) {
-        return companyId == 1L ? 4 : 8; // Company 1 doesn't have Non-Current Assets category
+        return companyId == 1L ? CATEGORY_CURRENT_ASSETS_COMPANY1 : CATEGORY_NON_CURRENT_ASSETS_COMPANY2; // Company 1 doesn't have Non-Current Assets category
     }
     
     private int getCurrentLiabilitiesCategoryId(Long companyId) {
-        return companyId == 1L ? 5 : 9;
+        return companyId == 1L ? CATEGORY_LIABILITIES_COMPANY1 : CATEGORY_CURRENT_LIABILITIES_COMPANY2;
     }
     
     private int getNonCurrentLiabilitiesCategoryId(Long companyId) {
-        return companyId == 1L ? 5 : 10; // Company 1 doesn't have Non-Current Liabilities category
+        return companyId == 1L ? CATEGORY_LIABILITIES_COMPANY1 : CATEGORY_NON_CURRENT_LIABILITIES_COMPANY2; // Company 1 doesn't have Non-Current Liabilities category
     }
     
     private int getEquityCategoryId(Long companyId) {
-        return companyId == 1L ? 5 : 11; // Company 1 doesn't have Equity category
+        return companyId == 1L ? CATEGORY_LIABILITIES_COMPANY1 : CATEGORY_EQUITY_COMPANY2; // Company 1 doesn't have Equity category
     }
     
     private int getOperatingRevenueCategoryId(Long companyId) {
-        return companyId == 1L ? 6 : 12; // Company 1 doesn't have Revenue category, fallback to Operating Expenses
+        return companyId == 1L ? CATEGORY_REVENUE_EXPENSES_COMPANY1 : CATEGORY_OPERATING_REVENUE_COMPANY2; // Company 1 doesn't have Revenue category, fallback to Operating Expenses
     }
     
     private int getOtherIncomeCategoryId(Long companyId) {
-        return companyId == 1L ? 6 : 13; // Company 1 doesn't have Other Income category
+        return companyId == 1L ? CATEGORY_REVENUE_EXPENSES_COMPANY1 : CATEGORY_OTHER_INCOME_COMPANY2; // Company 1 doesn't have Other Income category
     }
     
     private int getOperatingExpensesCategoryId(Long companyId) {
-        return companyId == 1L ? 6 : 14;
+        return companyId == 1L ? CATEGORY_REVENUE_EXPENSES_COMPANY1 : CATEGORY_OPERATING_EXPENSES_COMPANY2;
     }
     
     private int getFinanceCostsCategoryId(Long companyId) {
-        return companyId == 1L ? 6 : 16; // Company 1 doesn't have Finance Costs category
+        return companyId == 1L ? CATEGORY_REVENUE_EXPENSES_COMPANY1 : CATEGORY_FINANCE_COSTS_COMPANY2; // Company 1 doesn't have Finance Costs category
     }
 
     /**

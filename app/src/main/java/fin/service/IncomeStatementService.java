@@ -18,6 +18,12 @@ import java.util.LinkedHashMap;
  */
 public class IncomeStatementService {
 
+    // Display formatting constants
+    private static final int ACCOUNT_NAME_MAX_LENGTH = 43;
+    private static final int REPORT_SEPARATOR_WIDTH = 80;
+    private static final int REPORT_HEADER_WIDTH = 60;
+    private static final int TRUNCATE_SUFFIX_LENGTH = 3;
+
     private final FinancialDataRepository repository;
     private final GeneralLedgerService generalLedgerService;
 
@@ -88,9 +94,9 @@ public class IncomeStatementService {
 
         // REVENUE SECTION
         report.append("REVENUE\n");
-        report.append("=".repeat(80)).append("\n");
+        report.append("=".repeat(REPORT_SEPARATOR_WIDTH)).append("\n");
         report.append(String.format("%-15s %-45s %-15s%n", "Account Code", "Account Name", "Amount (ZAR)"));
-        report.append("-".repeat(80)).append("\n");
+        report.append("-".repeat(REPORT_SEPARATOR_WIDTH)).append("\n");
         
         if (revenueAccounts.isEmpty()) {
             report.append("No revenue accounts with balances found.\n");
@@ -102,20 +108,20 @@ public class IncomeStatementService {
                 
                 report.append(String.format("%-15s %-45s %-15s%n",
                         balance.getAccountCode(),
-                        truncateString(balance.getAccountName(), 43),
+                        truncateString(balance.getAccountName(), ACCOUNT_NAME_MAX_LENGTH),
                         formatCurrency(revenueAmount)));
             }
         }
         
-        report.append("-".repeat(80)).append("\n");
+        report.append("-".repeat(REPORT_SEPARATOR_WIDTH)).append("\n");
         report.append(String.format("%-60s %-15s%n", "TOTAL REVENUE:", formatCurrency(totalRevenue)));
         report.append("\n\n");
 
         // EXPENSES SECTION
         report.append("EXPENSES\n");
-        report.append("=".repeat(80)).append("\n");
+        report.append("=".repeat(REPORT_SEPARATOR_WIDTH)).append("\n");
         report.append(String.format("%-15s %-45s %-15s%n", "Account Code", "Account Name", "Amount (ZAR)"));
-        report.append("-".repeat(80)).append("\n");
+        report.append("-".repeat(REPORT_SEPARATOR_WIDTH)).append("\n");
         
         if (expenseAccounts.isEmpty()) {
             report.append("No expense accounts with balances found.\n");
@@ -127,12 +133,12 @@ public class IncomeStatementService {
                 
                 report.append(String.format("%-15s %-45s %-15s%n",
                         balance.getAccountCode(),
-                        truncateString(balance.getAccountName(), 43),
+                        truncateString(balance.getAccountName(), ACCOUNT_NAME_MAX_LENGTH),
                         formatCurrency(expenseAmount)));
             }
         }
         
-        report.append("-".repeat(80)).append("\n");
+        report.append("-".repeat(REPORT_SEPARATOR_WIDTH)).append("\n");
         report.append(String.format("%-60s %-15s%n", "TOTAL EXPENSES:", formatCurrency(totalExpenses)));
         report.append("\n\n");
 
@@ -140,28 +146,28 @@ public class IncomeStatementService {
         BigDecimal netIncome = totalRevenue.subtract(totalExpenses);
         
         report.append("NET INCOME\n");
-        report.append("=".repeat(80)).append("\n");
+        report.append("=".repeat(REPORT_SEPARATOR_WIDTH)).append("\n");
         report.append(String.format("%-60s %-15s%n", "Total Revenue:", formatCurrency(totalRevenue)));
         report.append(String.format("%-60s %-15s%n", "Less: Total Expenses:", formatCurrency(totalExpenses)));
-        report.append("-".repeat(80)).append("\n");
+        report.append("-".repeat(REPORT_SEPARATOR_WIDTH)).append("\n");
         
         String netIncomeLabel = netIncome.compareTo(BigDecimal.ZERO) >= 0 ? "NET PROFIT:" : "NET LOSS:";
         report.append(String.format("%-60s %-15s%n", netIncomeLabel, formatCurrency(netIncome.abs())));
         
-        report.append("=".repeat(80)).append("\n");
+        report.append("=".repeat(REPORT_SEPARATOR_WIDTH)).append("\n");
 
         return report.toString();
     }
 
     private String generateReportHeader(String title, Company company, FiscalPeriod fiscalPeriod) {
         StringBuilder header = new StringBuilder();
-        header.append(centerText(title, 60)).append("\n");
-        header.append(centerText("Company: " + company.getName(), 60)).append("\n");
-        header.append(centerText("Registration: " + company.getRegistrationNumber(), 60)).append("\n");
+        header.append(centerText(title, REPORT_HEADER_WIDTH)).append("\n");
+        header.append(centerText("Company: " + company.getName(), REPORT_HEADER_WIDTH)).append("\n");
+        header.append(centerText("Registration: " + company.getRegistrationNumber(), REPORT_HEADER_WIDTH)).append("\n");
         header.append(centerText("Period: " + fiscalPeriod.getPeriodName() + " (" +
-                fiscalPeriod.getStartDate() + " to " + fiscalPeriod.getEndDate() + ")", 60)).append("\n");
+                fiscalPeriod.getStartDate() + " to " + fiscalPeriod.getEndDate() + ")", REPORT_HEADER_WIDTH)).append("\n");
         header.append(centerText("Generated on: " + java.time.LocalDateTime.now().format(
-                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")), 60)).append("\n");
+                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")), REPORT_HEADER_WIDTH)).append("\n");
         return header.toString();
     }
 
@@ -173,7 +179,7 @@ public class IncomeStatementService {
 
     private String truncateString(String text, int maxLength) {
         if (text == null) return "";
-        return text.length() <= maxLength ? text : text.substring(0, maxLength - 3) + "...";
+        return text.length() <= maxLength ? text : text.substring(0, maxLength - TRUNCATE_SUFFIX_LENGTH) + "...";
     }
 
     private String formatCurrency(BigDecimal amount) {

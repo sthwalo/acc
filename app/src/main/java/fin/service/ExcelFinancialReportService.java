@@ -58,6 +58,8 @@ public class ExcelFinancialReportService {
     private static final int COL_INCOME_STATEMENT_CURRENT_YEAR = 3;
     private static final int COL_INCOME_STATEMENT_PRIOR_YEAR = 5;
     
+    private static final int ROW_COMPANY_HEADER_PERIOD = 3;
+    
     public ExcelFinancialReportService(String dbUrl) {
         this.dbUrl = dbUrl;
     }
@@ -410,7 +412,7 @@ public class ExcelFinancialReportService {
         titleCell.setCellValue(reportTitle);
         titleCell.setCellStyle(headerStyle);
         
-        Row row4 = sheet.createRow(3);
+        Row row4 = sheet.createRow(ROW_COMPANY_HEADER_PERIOD);
         row4.createCell(0).setCellValue("for the year ended " + period.endDate.format(DateTimeFormatter.ofPattern("dd MMMM yyyy")));
     }
     

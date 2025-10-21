@@ -20,6 +20,15 @@ public class CompanyController {
     private final InputHandler inputHandler;
     private final OutputFormatter outputFormatter;
     
+    // Menu option constants
+    private static final int MENU_OPTION_CREATE_COMPANY = 1;
+    private static final int MENU_OPTION_SELECT_COMPANY = 2;
+    private static final int MENU_OPTION_VIEW_COMPANY_DETAILS = 3;
+    private static final int MENU_OPTION_EDIT_COMPANY = 4;
+    private static final int MENU_OPTION_DELETE_COMPANY = 5;
+    private static final int MENU_OPTION_BACK_TO_MAIN = 6;
+    private static final int COMPANY_MENU_MAX_OPTION = 6;
+    
     /**
      * Constructor with dependency injection.
      *
@@ -50,25 +59,25 @@ public class CompanyController {
         boolean back = false;
         while (!back) {
             menu.displayCompanyMenu();
-            int choice = inputHandler.getInteger("Enter your choice", 1, 6);
+            int choice = inputHandler.getInteger("Enter your choice", 1, COMPANY_MENU_MAX_OPTION);
             
             switch (choice) {
-                case 1:
+                case MENU_OPTION_CREATE_COMPANY:
                     createCompany();
                     break;
-                case 2:
+                case MENU_OPTION_SELECT_COMPANY:
                     selectCompany();
                     break;
-                case 3:
+                case MENU_OPTION_VIEW_COMPANY_DETAILS:
                     viewCompanyDetails();
                     break;
-                case 4:
+                case MENU_OPTION_EDIT_COMPANY:
                     editCompany();
                     break;
-                case 5:
+                case MENU_OPTION_DELETE_COMPANY:
                     deleteCompany();
                     break;
-                case 6:
+                case MENU_OPTION_BACK_TO_MAIN:
                     back = true;
                     break;
                 default:

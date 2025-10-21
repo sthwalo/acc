@@ -31,6 +31,9 @@ import java.util.logging.Logger;
 public class TransactionClassificationService {
     private static final Logger LOGGER = Logger.getLogger(TransactionClassificationService.class.getName());
     
+    // Console output formatting constants
+    private static final int CONSOLE_SEPARATOR_WIDTH = 80;
+    
     private final String dbUrl;
     private final AccountClassificationService accountClassificationService;
     private final TransactionMappingRuleService ruleService;
@@ -146,9 +149,9 @@ public class TransactionClassificationService {
      */
     public boolean performFullInitialization(Long companyId) {
         try {
-            System.out.println("\n" + "=".repeat(80));
+            System.out.println("\n" + "=".repeat(CONSOLE_SEPARATOR_WIDTH));
             System.out.println("🚀 FULL INITIALIZATION FOR COMPANY ID: " + companyId);
-            System.out.println("=".repeat(80));
+            System.out.println("=".repeat(CONSOLE_SEPARATOR_WIDTH));
             
             // Use AccountClassificationService for BOTH chart of accounts AND mapping rules
             // This eliminates the need for separate TransactionMappingService.createStandardMappingRules()
@@ -169,11 +172,11 @@ public class TransactionClassificationService {
                 return false;
             }
             
-            System.out.println("\n" + "=".repeat(80));
+            System.out.println("\n" + "=".repeat(CONSOLE_SEPARATOR_WIDTH));
             System.out.println("✅ FULL INITIALIZATION COMPLETED SUCCESSFULLY");
             System.out.println("   AccountClassificationService is now the single source of truth");
             System.out.println("   for both chart of accounts AND mapping rules");
-            System.out.println("=".repeat(80));
+            System.out.println("=".repeat(CONSOLE_SEPARATOR_WIDTH));
             
             return true;
             
@@ -200,9 +203,9 @@ public class TransactionClassificationService {
                 return;
             }
             
-            System.out.println("\n" + "=".repeat(80));
+            System.out.println("\n" + "=".repeat(CONSOLE_SEPARATOR_WIDTH));
             System.out.println("🏢 INTERACTIVE CLASSIFICATION FOR: " + company.getName());
-            System.out.println("=".repeat(80));
+            System.out.println("=".repeat(CONSOLE_SEPARATOR_WIDTH));
             
             // Count unclassified transactions
             int count = countUnclassifiedTransactions(companyId, fiscalPeriodId);
@@ -230,9 +233,9 @@ public class TransactionClassificationService {
      */
     public int autoClassifyTransactions(Long companyId, Long fiscalPeriodId) {
         try {
-            System.out.println("\n" + "=".repeat(80));
+            System.out.println("\n" + "=".repeat(CONSOLE_SEPARATOR_WIDTH));
             System.out.println("🤖 AUTO-CLASSIFICATION OF TRANSACTIONS");
-            System.out.println("=".repeat(80));
+            System.out.println("=".repeat(CONSOLE_SEPARATOR_WIDTH));
             
             // Count unclassified transactions
             int count = countUnclassifiedTransactions(companyId, fiscalPeriodId);
@@ -277,9 +280,9 @@ public class TransactionClassificationService {
      */
     public int reclassifyAllTransactions(Long companyId, Long fiscalPeriodId) {
         try {
-            System.out.println("\n" + "=".repeat(80));
+            System.out.println("\n" + "=".repeat(CONSOLE_SEPARATOR_WIDTH));
             System.out.println("🔄 RECLASSIFY ALL TRANSACTIONS WITH UPDATED RULES");
-            System.out.println("=".repeat(80));
+            System.out.println("=".repeat(CONSOLE_SEPARATOR_WIDTH));
             System.out.println("⚠️  This will reapply mapping rules to ALL transactions");
             System.out.println("   (including those already classified)");
             System.out.println();
@@ -317,9 +320,9 @@ public class TransactionClassificationService {
      */
     public int synchronizeJournalEntries(Long companyId, Long fiscalPeriodId) {
         try {
-            System.out.println("\n" + "=".repeat(80));
+            System.out.println("\n" + "=".repeat(CONSOLE_SEPARATOR_WIDTH));
             System.out.println("🔄 SYNCHRONIZING JOURNAL ENTRIES");
-            System.out.println("=".repeat(80));
+            System.out.println("=".repeat(CONSOLE_SEPARATOR_WIDTH));
             
             // Count classified transactions without journal entries
             int count = countClassifiedWithoutJournalEntries(companyId, fiscalPeriodId);
@@ -354,9 +357,9 @@ public class TransactionClassificationService {
      */
     public int regenerateAllJournalEntries(Long companyId, Long fiscalPeriodId) {
         try {
-            System.out.println("\n" + "=".repeat(80));
+            System.out.println("\n" + "=".repeat(CONSOLE_SEPARATOR_WIDTH));
             System.out.println("🔄 REGENERATING ALL JOURNAL ENTRIES");
-            System.out.println("=".repeat(80));
+            System.out.println("=".repeat(CONSOLE_SEPARATOR_WIDTH));
             System.out.println("⚠️  This will DELETE all existing journal entries and create new ones");
             System.out.println("    based on current transaction classifications");
             System.out.println();

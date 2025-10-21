@@ -36,6 +36,16 @@ import java.util.Optional;
  */
 public class CompanyRepository implements BaseRepository<Company, Long> {
     private final String dbUrl;
+    
+    // Prepared statement parameter indices
+    private static final int PREPARED_STATEMENT_PARAM_1 = 1;
+    private static final int PREPARED_STATEMENT_PARAM_2 = 2;
+    private static final int PREPARED_STATEMENT_PARAM_3 = 3;
+    private static final int PREPARED_STATEMENT_PARAM_4 = 4;
+    private static final int PREPARED_STATEMENT_PARAM_5 = 5;
+    private static final int PREPARED_STATEMENT_PARAM_6 = 6;
+    private static final int PREPARED_STATEMENT_PARAM_7 = 7;
+    private static final int PREPARED_STATEMENT_PARAM_8 = 8;
 
     public CompanyRepository(String dbUrl) {
         this.dbUrl = dbUrl;
@@ -50,16 +60,16 @@ public class CompanyRepository implements BaseRepository<Company, Long> {
         try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             
-            stmt.setString(1, company.getName());
-            stmt.setString(2, company.getRegistrationNumber());
-            stmt.setString(3, company.getTaxNumber());
-            stmt.setString(4, company.getAddress());
-            stmt.setString(5, company.getContactEmail());
-            stmt.setString(6, company.getContactPhone());
-            stmt.setString(7, company.getLogoPath());
+            stmt.setString(PREPARED_STATEMENT_PARAM_1, company.getName());
+            stmt.setString(PREPARED_STATEMENT_PARAM_2, company.getRegistrationNumber());
+            stmt.setString(PREPARED_STATEMENT_PARAM_3, company.getTaxNumber());
+            stmt.setString(PREPARED_STATEMENT_PARAM_4, company.getAddress());
+            stmt.setString(PREPARED_STATEMENT_PARAM_5, company.getContactEmail());
+            stmt.setString(PREPARED_STATEMENT_PARAM_6, company.getContactPhone());
+            stmt.setString(PREPARED_STATEMENT_PARAM_7, company.getLogoPath());
             
             if (company.getId() != null) {
-                stmt.setLong(8, company.getId());
+                stmt.setLong(PREPARED_STATEMENT_PARAM_8, company.getId());
             }
 
             stmt.executeUpdate();

@@ -12,6 +12,14 @@ import java.util.Optional;
 public class FiscalPeriodRepository implements BaseRepository<FiscalPeriod, Long> {
     private final String dbUrl;
 
+    // Parameter constants for PreparedStatement indices
+    private static final int PARAM_COMPANY_ID = 1;
+    private static final int PARAM_PERIOD_NAME = 2;
+    private static final int PARAM_START_DATE = 3;
+    private static final int PARAM_END_DATE = 4;
+    private static final int PARAM_IS_CLOSED = 5;
+    private static final int PARAM_ID_UPDATE = 6;
+
     public FiscalPeriodRepository(String dbUrl) {
         this.dbUrl = dbUrl;
     }
@@ -25,14 +33,14 @@ public class FiscalPeriodRepository implements BaseRepository<FiscalPeriod, Long
         try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             
-            stmt.setLong(1, period.getCompanyId());
-            stmt.setString(2, period.getPeriodName());
-            stmt.setDate(3, Date.valueOf(period.getStartDate()));
-            stmt.setDate(4, Date.valueOf(period.getEndDate()));
-            stmt.setBoolean(5, period.isClosed());
+            stmt.setLong(PARAM_COMPANY_ID, period.getCompanyId());
+            stmt.setString(PARAM_PERIOD_NAME, period.getPeriodName());
+            stmt.setDate(PARAM_START_DATE, Date.valueOf(period.getStartDate()));
+            stmt.setDate(PARAM_END_DATE, Date.valueOf(period.getEndDate()));
+            stmt.setBoolean(PARAM_IS_CLOSED, period.isClosed());
             
             if (period.getId() != null) {
-                stmt.setLong(6, period.getId());
+                stmt.setLong(PARAM_ID_UPDATE, period.getId());
             }
 
             stmt.executeUpdate();

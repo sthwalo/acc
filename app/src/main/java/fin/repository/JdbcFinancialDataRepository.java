@@ -14,6 +14,12 @@ public class JdbcFinancialDataRepository implements FinancialDataRepository {
 
     @SuppressWarnings("EI_EXPOSE_REP") // DataSource is thread-safe and not exposed
     private final DataSource dataSource;
+    
+    // Prepared statement parameter indices
+    private static final int PREPARED_STATEMENT_PARAM_1 = 1;
+    private static final int PREPARED_STATEMENT_PARAM_2 = 2;
+    private static final int PREPARED_STATEMENT_PARAM_3 = 3;
+    private static final int PREPARED_STATEMENT_PARAM_4 = 4;
 
     public JdbcFinancialDataRepository(@SuppressWarnings("EI_EXPOSE_REP") DataSource dataSource) {
         this.dataSource = dataSource;
@@ -85,7 +91,7 @@ public class JdbcFinancialDataRepository implements FinancialDataRepository {
 
             stmt.setInt(1, companyId);
             stmt.setInt(2, fiscalPeriodId);
-            stmt.setInt(3, companyId);
+            stmt.setInt(PREPARED_STATEMENT_PARAM_3, companyId);
 
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
@@ -271,7 +277,7 @@ public class JdbcFinancialDataRepository implements FinancialDataRepository {
 
             stmt.setInt(1, companyId);
             stmt.setInt(2, fiscalPeriodId);
-            stmt.setDate(3, java.sql.Date.valueOf(currentPeriod.getStartDate()));
+            stmt.setDate(PREPARED_STATEMENT_PARAM_3, java.sql.Date.valueOf(currentPeriod.getStartDate()));
 
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
@@ -384,7 +390,7 @@ public class JdbcFinancialDataRepository implements FinancialDataRepository {
                     try (PreparedStatement balanceStmt = conn.prepareStatement(balanceSql)) {
                         balanceStmt.setInt(1, companyId);
                         balanceStmt.setInt(2, previousPeriodId);
-                        balanceStmt.setString(3, accountCode);
+                        balanceStmt.setString(PREPARED_STATEMENT_PARAM_3, accountCode);
 
                         try (ResultSet balanceRs = balanceStmt.executeQuery()) {
                             if (balanceRs.next()) {
@@ -416,8 +422,8 @@ public class JdbcFinancialDataRepository implements FinancialDataRepository {
 
             stmt.setInt(1, companyId);
             stmt.setInt(2, fiscalPeriodId);
-            stmt.setDate(3, java.sql.Date.valueOf(currentPeriod.getStartDate()));
-            stmt.setString(4, accountCode);
+            stmt.setDate(PREPARED_STATEMENT_PARAM_3, java.sql.Date.valueOf(currentPeriod.getStartDate()));
+            stmt.setString(PREPARED_STATEMENT_PARAM_4, accountCode);
 
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
@@ -454,7 +460,7 @@ public class JdbcFinancialDataRepository implements FinancialDataRepository {
 
             stmt.setInt(1, companyId);
             stmt.setInt(2, fiscalPeriodId);
-            stmt.setString(3, accountCode);
+            stmt.setString(PREPARED_STATEMENT_PARAM_3, accountCode);
 
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
@@ -538,7 +544,7 @@ public class JdbcFinancialDataRepository implements FinancialDataRepository {
             
             stmt.setInt(1, companyId);
             stmt.setInt(2, fiscalPeriodId);
-            stmt.setString(3, accountCode);
+            stmt.setString(PREPARED_STATEMENT_PARAM_3, accountCode);
             
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
@@ -579,7 +585,7 @@ public class JdbcFinancialDataRepository implements FinancialDataRepository {
             
             stmt.setInt(1, companyId);
             stmt.setInt(2, fiscalPeriodId);
-            stmt.setString(3, accountCode);
+            stmt.setString(PREPARED_STATEMENT_PARAM_3, accountCode);
             
             ResultSet rs = stmt.executeQuery();
             while (rs.next()) {

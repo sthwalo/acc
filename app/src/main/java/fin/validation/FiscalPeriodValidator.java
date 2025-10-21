@@ -7,6 +7,7 @@ import java.time.LocalDate;
  * Validator for FiscalPeriod entities
  */
 public class FiscalPeriodValidator implements ModelValidator<FiscalPeriod> {
+    private static final int MAX_PERIOD_NAME_LENGTH = 100;
     @Override
     public ValidationResult validate(FiscalPeriod period) {
         ValidationResult result = new ValidationResult();
@@ -47,8 +48,8 @@ public class FiscalPeriodValidator implements ModelValidator<FiscalPeriod> {
         }
 
         // Length validations
-        if (period.getPeriodName() != null && period.getPeriodName().length() > 100) {
-            result.addError("periodName", "Period name cannot exceed 100 characters");
+        if (period.getPeriodName() != null && period.getPeriodName().length() > MAX_PERIOD_NAME_LENGTH) {
+            result.addError("periodName", "Period name cannot exceed " + MAX_PERIOD_NAME_LENGTH + " characters");
         }
 
         return result;
