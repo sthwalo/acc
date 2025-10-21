@@ -24,6 +24,15 @@ public class BatchProcessor {
     private final ApplicationState applicationState;
     private final OutputFormatter outputFormatter;
     
+    // Command line argument indices and minimum requirements
+    private static final int COMMAND_ARG_INDEX = 1;
+    private static final int MIN_ARGS_PROCESS_STATEMENT = 3;
+    private static final int MIN_ARGS_CREATE_COMPANY = 3;
+    private static final int MIN_ARGS_CREATE_FISCAL_PERIOD = 5;
+    private static final int FISCAL_PERIOD_NAME_ARG_INDEX = 2;
+    private static final int FISCAL_PERIOD_START_ARG_INDEX = 3;
+    private static final int FISCAL_PERIOD_END_ARG_INDEX = 4;
+    
     public BatchProcessor(ApplicationContext context) {
         this.companyService = context.get(fin.service.CompanyService.class);
         this.bankStatementService = context.get(fin.service.BankStatementProcessingService.class);
@@ -40,11 +49,11 @@ public class BatchProcessor {
             return;
         }
         
-        String command = args[1];
+        String command = args[COMMAND_ARG_INDEX];
         
         switch (command.toLowerCase()) {
             case "process-statement":
-                if (args.length < 3) {
+                if (args.length < MIN_ARGS_PROCESS_STATEMENT) {
                     System.err.println("❌ Missing file path for process-statement command");
                     printUsage();
                     return;
@@ -53,7 +62,7 @@ public class BatchProcessor {
                 break;
                 
             case "create-company":
-                if (args.length < 3) {
+                if (args.length < MIN_ARGS_CREATE_COMPANY) {
                     System.err.println("❌ Missing company name for create-company command");
                     printUsage();
                     return;
@@ -62,12 +71,12 @@ public class BatchProcessor {
                 break;
                 
             case "create-fiscal-period":
-                if (args.length < 5) {
+                if (args.length < MIN_ARGS_CREATE_FISCAL_PERIOD) {
                     System.err.println("❌ Missing parameters for create-fiscal-period command");
                     printUsage();
                     return;
                 }
-                createFiscalPeriod(args[2], args[3], args[4]);
+                createFiscalPeriod(args[FISCAL_PERIOD_NAME_ARG_INDEX], args[FISCAL_PERIOD_START_ARG_INDEX], args[FISCAL_PERIOD_END_ARG_INDEX]);
                 break;
                 
             default:

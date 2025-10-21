@@ -12,6 +12,34 @@ import java.math.BigDecimal;
  */
 public final class AccountClassificationService {
     
+    // Display formatting constants
+    private static final int DISPLAY_WIDTH_STANDARD = 80;
+    private static final int DISPLAY_WIDTH_REPORT = 60;
+    private static final int DISPLAY_WIDTH_CATEGORY = 25;
+    private static final int DISPLAY_WIDTH_COUNT = 10;
+    private static final int DISPLAY_WIDTH_AMOUNT = 15;
+    private static final int DISPLAY_WIDTH_ACCOUNT = 30;
+    private static final int DISPLAY_WIDTH_PATTERN = 25;
+    
+    // Array indices and limits
+    private static final int SAMPLE_LIMIT_PER_CATEGORY = 3;
+    private static final int PREPARED_STATEMENT_PARAM_1 = 1;
+    private static final int PREPARED_STATEMENT_PARAM_2 = 2;
+    private static final int PREPARED_STATEMENT_PARAM_3 = 3;
+    private static final int PREPARED_STATEMENT_PARAM_4 = 4;
+    private static final int PREPARED_STATEMENT_PARAM_5 = 5;
+    private static final int PREPARED_STATEMENT_PARAM_6 = 6;
+    private static final int PREPARED_STATEMENT_PARAM_7 = 7;
+    
+    // Rule priority constants
+    private static final int PRIORITY_CRITICAL = 10;
+    private static final int PRIORITY_HIGH = 9;
+    private static final int PRIORITY_STANDARD = 8;
+    private static final int PRIORITY_GENERIC = 5;
+    private static final int PRIORITY_LOW = 6;
+    private static final int PRIORITY_FALLBACK = 7;
+    private static final int PRIORITY_HIGHEST = 20;
+    
     private final String dbUrl;
     private final CompanyService companyService;
     
@@ -102,33 +130,33 @@ public final class AccountClassificationService {
         
         // Asset categories
         categoryIds.put("CURRENT_ASSETS", createCategory(companyId, "Current Assets", 
-            "Cash, bank accounts, and assets convertible to cash within one year", 1)); // Asset type
+            "Cash, bank accounts, and assets convertible to cash within one year", PREPARED_STATEMENT_PARAM_1)); // Asset type
         categoryIds.put("NON_CURRENT_ASSETS", createCategory(companyId, "Non-Current Assets", 
-            "Property, plant, equipment and long-term investments", 1));
+            "Property, plant, equipment and long-term investments", PREPARED_STATEMENT_PARAM_1));
         
         // Liability categories
         categoryIds.put("CURRENT_LIABILITIES", createCategory(companyId, "Current Liabilities", 
-            "Debts and obligations due within one year", 2)); // Liability type
+            "Debts and obligations due within one year", PREPARED_STATEMENT_PARAM_2)); // Liability type
         categoryIds.put("NON_CURRENT_LIABILITIES", createCategory(companyId, "Non-Current Liabilities", 
-            "Long-term debts and obligations", 2));
+            "Long-term debts and obligations", PREPARED_STATEMENT_PARAM_2));
         
         // Equity categories
         categoryIds.put("EQUITY", createCategory(companyId, "Owner's Equity", 
-            "Owner's claim on business assets", 3)); // Equity type
+            "Owner's claim on business assets", PREPARED_STATEMENT_PARAM_3)); // Equity type
         
         // Revenue categories
         categoryIds.put("OPERATING_REVENUE", createCategory(companyId, "Operating Revenue", 
-            "Income from primary business activities", 4)); // Revenue type
+            "Income from primary business activities", PREPARED_STATEMENT_PARAM_4)); // Revenue type
         categoryIds.put("OTHER_INCOME", createCategory(companyId, "Other Income", 
-            "Non-operating income and gains", 4));
+            "Non-operating income and gains", PREPARED_STATEMENT_PARAM_4));
         
         // Expense categories
         categoryIds.put("OPERATING_EXPENSES", createCategory(companyId, "Operating Expenses", 
-            "Costs of running the business", 5)); // Expense type
+            "Costs of running the business", PREPARED_STATEMENT_PARAM_5)); // Expense type
         categoryIds.put("ADMINISTRATIVE_EXPENSES", createCategory(companyId, "Administrative Expenses", 
-            "General administration and overhead costs", 5));
+            "General administration and overhead costs", PREPARED_STATEMENT_PARAM_5));
         categoryIds.put("FINANCE_COSTS", createCategory(companyId, "Finance Costs", 
-            "Interest, bank charges and financial expenses", 5));
+            "Interest, bank charges and financial expenses", PREPARED_STATEMENT_PARAM_5));
         
         System.out.println("✅ Created " + categoryIds.size() + " account categories");
         return categoryIds;
@@ -160,10 +188,10 @@ public final class AccountClassificationService {
                         "VALUES (?, ?, ?, ?) RETURNING id";
             
             try (PreparedStatement insertStmt = conn.prepareStatement(insertSql)) {
-                insertStmt.setString(1, name);
-                insertStmt.setString(2, description);
-                insertStmt.setInt(3, accountTypeId);
-                insertStmt.setLong(4, companyId);
+                insertStmt.setString(PREPARED_STATEMENT_PARAM_1, name);
+                insertStmt.setString(PREPARED_STATEMENT_PARAM_2, description);
+                insertStmt.setInt(PREPARED_STATEMENT_PARAM_3, accountTypeId);
+                insertStmt.setLong(PREPARED_STATEMENT_PARAM_4, companyId);
                 
                 try (ResultSet rs = insertStmt.executeQuery()) {
                     if (rs.next()) {
@@ -216,11 +244,11 @@ public final class AccountClassificationService {
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
             for (AccountDefinition account : newAccounts) {
-                stmt.setString(1, account.code);
-                stmt.setString(2, account.name);
-                stmt.setString(3, account.description);
-                stmt.setLong(4, account.categoryId);
-                stmt.setLong(5, companyId);
+                stmt.setString(PREPARED_STATEMENT_PARAM_1, account.code);
+                stmt.setString(PREPARED_STATEMENT_PARAM_2, account.name);
+                stmt.setString(PREPARED_STATEMENT_PARAM_3, account.description);
+                stmt.setLong(PREPARED_STATEMENT_PARAM_4, account.categoryId);
+                stmt.setLong(PREPARED_STATEMENT_PARAM_5, companyId);
                 stmt.addBatch();
             }
             
@@ -395,9 +423,9 @@ public final class AccountClassificationService {
              ResultSet rs = stmt.executeQuery()) {
             
             System.out.println("\n📊 Transaction Pattern Analysis:");
-            System.out.println("=" .repeat(80));
-            System.out.printf("%-25s %10s %15s %15s%n", "Category", "Count", "Credits", "Debits");
-            System.out.println("-".repeat(80));
+            System.out.println("=".repeat(DISPLAY_WIDTH_STANDARD));
+            System.out.printf("%-" + DISPLAY_WIDTH_CATEGORY + "s %" + DISPLAY_WIDTH_COUNT + "s %" + DISPLAY_WIDTH_AMOUNT + "s %" + DISPLAY_WIDTH_AMOUNT + "s%n", "Category", "Count", "Credits", "Debits");
+            System.out.println("-".repeat(DISPLAY_WIDTH_STANDARD));
             
             while (rs.next()) {
                 String category = rs.getString("suggested_category");
@@ -405,16 +433,16 @@ public final class AccountClassificationService {
                 BigDecimal credits = rs.getBigDecimal("total_credits");
                 BigDecimal debits = rs.getBigDecimal("total_debits");
                 
-                System.out.printf("%-25s %10d %15s %15s%n", 
+                System.out.printf("%-" + DISPLAY_WIDTH_CATEGORY + "s %" + DISPLAY_WIDTH_COUNT + "d %" + DISPLAY_WIDTH_AMOUNT + "s %" + DISPLAY_WIDTH_AMOUNT + "s%n", 
                     category, count, 
                     formatAmount(credits), 
                     formatAmount(debits));
             }
-            System.out.println("=" .repeat(80));
+            System.out.println("=" .repeat(DISPLAY_WIDTH_STANDARD));
             
             // Also get sample transactions for each category
             System.out.println("\n📝 Sample Transactions:");
-            System.out.println("-".repeat(80));
+            System.out.println("-".repeat(DISPLAY_WIDTH_STANDARD));
             
             String sampleSql = """
                 SELECT 
@@ -457,7 +485,7 @@ public final class AccountClassificationService {
                         sampleCount = 0;
                     }
                     
-                    if (sampleCount < 3) { // Limit to 3 samples per category
+                    if (sampleCount < SAMPLE_LIMIT_PER_CATEGORY) { // Limit to 3 samples per category
                         System.out.println("  - " + details);
                         sampleCount++;
                     }
@@ -496,7 +524,7 @@ public final class AccountClassificationService {
             System.out.println("\n📈 ACCOUNT CLASSIFICATION REPORT");
             System.out.println("Company: " + company.getName());
             System.out.println("Generated: " + java.time.LocalDateTime.now());
-            System.out.println("=" .repeat(60));
+            System.out.println("=".repeat(DISPLAY_WIDTH_REPORT));
             
             // Show account categories and counts
             String sql = """
@@ -535,7 +563,7 @@ public final class AccountClassificationService {
             
             // Show mapping suggestions
             System.out.println("\n🎯 RECOMMENDED ACCOUNT MAPPINGS:");
-            System.out.println("-".repeat(60));
+            System.out.println("-".repeat(DISPLAY_WIDTH_REPORT));
             Map<String, String> suggestions = getAccountMappingSuggestions(companyId);
             suggestions.forEach((pattern, account) -> 
                 System.out.printf("%-25s → %s%n", pattern, account));
@@ -617,7 +645,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "INSURANCE CHAUKE",
             "8100", // Employee Costs
-            10
+            PRIORITY_CRITICAL
         ));
         
         // Loan repayments from directors/employees
@@ -627,7 +655,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "JEFFREY MAPHOSA LOAN",
             "4000", // Long-term Loans
-            10
+            PRIORITY_CRITICAL
         ));
         
         // Director reimbursements (for personal credit card expenses paid by company)
@@ -637,7 +665,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.REGEX,
             "STONE JEFFR.*MAPHOSA.*(REIMBURSE|REPAYMENT)",
             "4000", // Long-term Loans
-            10
+            PRIORITY_CRITICAL
         ));
         
         // ========================================================================
@@ -651,7 +679,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "COROBRIK",
             "6100-001", // Corobrik Service Revenue
-            10
+            PRIORITY_CRITICAL
         ));
         
         // Returned debits - offset original transactions
@@ -663,7 +691,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "RTD-DEBIT AGAINST PAYERS AUTH DOTSURE",
             "8800-002", // DOTSURE Insurance Premiums (offset)
-            9
+            PRIORITY_HIGH
         ));
         
         // EXCESS INTEREST payments
@@ -673,7 +701,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "EXCESS INTEREST",
             "9500", // Interest Expense
-            9
+            PRIORITY_HIGH
         ));
         
         // STD BANK BOND repayments (loans payable)
@@ -683,7 +711,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "STD BANK BOND",
             "4000", // Long-term Loans (Loans Payable)
-            9
+            PRIORITY_HIGH
         ));
         
         // Fuel transfers FROM specific account
@@ -693,7 +721,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "IB TRANSFER FROM *****2689327",
             "8600-099", // Fuel Expenses - Other Stations
-            9
+            PRIORITY_HIGH
         ));
         
         // CARTRACK vehicle tracking
@@ -703,7 +731,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "CARTRACK",
             "8500-001", // Cartrack Vehicle Tracking
-            9
+            PRIORITY_HIGH
         ));
         
         // IB INSTANT MONEY CASH TO - e-wallet payments to part-time employees
@@ -713,7 +741,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "IB INSTANT MONEY CASH TO",
             "8100", // Employee Costs
-            9
+            PRIORITY_HIGH
         ));
         
         // AUTOBANK TRANSFER TO ACCOUNT - fuel expenses
@@ -723,7 +751,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "AUTOBANK TRANSFER TO ACCOUNT",
             "8600-099", // Fuel Expenses - Other Stations
-            9
+            PRIORITY_HIGH
         ));
         
         // IMMEDIATE PAYMENT - specific employee payments (high priority)
@@ -733,7 +761,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "IMMEDIATE PAYMENT 224812909 JEFFREY S MAPHOSA",
             "8100-001", // Director Remuneration
-            10
+            PRIORITY_CRITICAL
         ));
         
         rules.add(createRule(
@@ -742,7 +770,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "IMMEDIATE PAYMENT 226159243 KATLEHO MOGALOA",
             "8100", // Employee Costs
-            10
+            PRIORITY_CRITICAL
         ));
         
         rules.add(createRule(
@@ -751,7 +779,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "IMMEDIATE PAYMENT 224812154 JORDAN MOYANE",
             "8100", // Employee Costs
-            10
+            PRIORITY_CRITICAL
         ));
         
         rules.add(createRule(
@@ -760,7 +788,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "IMMEDIATE PAYMENT 224850901 SIBONGILE DLAMINI",
             "8100", // Employee Costs
-            10
+            PRIORITY_CRITICAL
         ));
         
         rules.add(createRule(
@@ -769,7 +797,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "IMMEDIATE PAYMENT 224855113 MABUNDA IP",
             "8100", // Employee Costs
-            10
+            PRIORITY_CRITICAL
         ));
         
         rules.add(createRule(
@@ -778,7 +806,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "IMMEDIATE PAYMENT 221599858 ALBERT ZUNGA",
             "8100", // Employee Costs
-            10
+            PRIORITY_CRITICAL
         ));
         
         rules.add(createRule(
@@ -787,7 +815,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "IMMEDIATE PAYMENT 221514559 PIET MATHEBULA",
             "8100", // Employee Costs
-            10
+            PRIORITY_CRITICAL
         ));
         
         rules.add(createRule(
@@ -796,7 +824,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "IMMEDIATE PAYMENT 218989372 ALBERAKE PROTECTION",
             "8000", // Cost of Goods Sold
-            10
+            PRIORITY_CRITICAL
         ));
         
         // FEE IMMEDIATE PAYMENT - bank charges (high priority)
@@ -806,7 +834,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "FEE IMMEDIATE PAYMENT",
             "9600", // Bank Charges
-            10
+            PRIORITY_CRITICAL
         ));
         
         // IMMEDIATE PAYMENT - generic employee payments (lower priority)
@@ -816,7 +844,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.REGEX,
             "IMMEDIATE PAYMENT \\d+ [A-Z]+ [A-Z]+",
             "8100", // Employee Costs
-            8
+            PRIORITY_STANDARD
         ));
         
         // Additional employee payment patterns
@@ -826,7 +854,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "IMMEDIATE PAYMENT 167855420 SIBONGILE DLAMINI",
             "8100", // Employee Costs
-            9
+            PRIORITY_HIGH
         ));
         
         rules.add(createRule(
@@ -835,7 +863,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "IMMEDIATE PAYMENT 207008710 THEMBA MKHATSHWA",
             "8100", // Employee Costs
-            9
+            PRIORITY_HIGH
         ));
         
         rules.add(createRule(
@@ -844,7 +872,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "IMMEDIATE PAYMENT 207008307 LAWRENCE PHOGOLE",
             "8100", // Employee Costs
-            9
+            PRIORITY_HIGH
         ));
         
         rules.add(createRule(
@@ -853,7 +881,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "IMMEDIATE PAYMENT 207009081 TLOMETSANE MORASWI",
             "8100", // Employee Costs
-            9
+            PRIORITY_HIGH
         ));
         
         rules.add(createRule(
@@ -862,7 +890,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "IMMEDIATE PAYMENT 204543849 MBHONI MIYAMBO",
             "8100", // Employee Costs
-            9
+            PRIORITY_HIGH
         ));
         
         rules.add(createRule(
@@ -871,7 +899,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "IMMEDIATE PAYMENT 156658792 MUSA NZUNZA",
             "8100", // Employee Costs
-            9
+            PRIORITY_HIGH
         ));
         
         rules.add(createRule(
@@ -880,7 +908,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "IMMEDIATE PAYMENT 207009987 MASEMOLA MATAWANENG",
             "8100", // Employee Costs
-            9
+            PRIORITY_HIGH
         ));
         
         rules.add(createRule(
@@ -889,7 +917,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "IMMEDIATE PAYMENT 207010671 WINNERS CHAUKE",
             "8100", // Employee Costs
-            9
+            PRIORITY_HIGH
         ));
         
         // Director payments
@@ -899,7 +927,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "DB NKUNA",
             "8100-001", // Director Remuneration
-            9
+            PRIORITY_HIGH
         ));
         
         // Pension contributions
@@ -909,7 +937,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "PENSION FUND CONTRIBUTION",
             "9900", // Pension Expenses
-            9
+            PRIORITY_HIGH
         ));
         
         rules.add(createRule(
@@ -918,7 +946,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "DEBIT TRANSFER FAW",
             "9900", // Pension Expenses
-            9
+            PRIORITY_HIGH
         ));
         
         // Training expenses
@@ -928,7 +956,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "OHS TRAINING",
             "8730", // Education & Training
-            9
+            PRIORITY_HIGH
         ));
         
         // Petrol allowance
@@ -938,7 +966,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "PETROL ALOWANCE",
             "8500", // Motor Vehicle Expenses
-            9
+            PRIORITY_HIGH
         ));
         
         // PAYE payments to SARS
@@ -948,7 +976,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "PAYE-PAY-AS-",
             "9820", // PAYE Expense (tax expense)
-            9
+            PRIORITY_HIGH
         ));
         
         // Cash withdrawals
@@ -958,7 +986,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "AUTOBANK CASH WITHDRAWAL",
             "8100", // Employee Costs
-            9
+            PRIORITY_HIGH
         ));
         
         // Director reimbursements
@@ -968,7 +996,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "REIMBURSE",
             "4000", // Long-term Loans (Director loans)
-            9
+            PRIORITY_HIGH
         ));
         
         // Stokvela payments
@@ -978,7 +1006,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "STOKVELA",
             "1000", // Petty Cash/Loans Receivable (asset accounts)
-            8
+            PRIORITY_STANDARD
         ));
         
         // Transport expenses
@@ -988,7 +1016,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "TRANSPORT",
             "8500", // Motor Vehicle Expenses
-            9
+            PRIORITY_HIGH
         ));
         
         // Telephone expenses
@@ -998,7 +1026,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "TELEPHONE",
             "8400", // Communication
-            9
+            PRIORITY_HIGH
         ));
         
         // Vehicle tracking
@@ -1008,7 +1036,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "NETSTAR",
             "8500-002", // Netstar Vehicle Tracking
-            9
+            PRIORITY_HIGH
         ));
         
         // Loan income
@@ -1018,7 +1046,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "IB PAYMENT FROM",
             "2000-001", // Director Loan - Company Assist
-            9
+            PRIORITY_HIGH
         ));
         
         // Company transfers - specific patterns based on trailing descriptions
@@ -1028,7 +1056,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.REGEX,
             "CREDIT TRANSFER.*COMPANY ASSIST",
             "4000", // Long-term Loans
-            9
+            PRIORITY_HIGH
         ));
         
         rules.add(createRule(
@@ -1037,7 +1065,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.REGEX,
             "CREDIT TRANSFER.*TAU",
             "1000-001", // Stokvela Contributions
-            9
+            PRIORITY_HIGH
         ));
         
         // Returned debits (offset transactions)
@@ -1047,7 +1075,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.REGEX,
             "RTD-.*",
             "8800", // Insurance (generic offset)
-            8
+            PRIORITY_STANDARD
         ));
         
         // BALANCE BROUGHT FORWARD - opening balance entries
@@ -1057,7 +1085,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "BALANCE BROUGHT FORWARD",
             "5000", // Retained Earnings (opening balances)
-            9
+            PRIORITY_HIGH
         ));
         
         // COROBRIK customer payments (revenue)
@@ -1067,7 +1095,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "CREDIT TRANSFER.*COROBRIK",
             "6100-001", // Corobrik Service Revenue
-            10
+            PRIORITY_CRITICAL
         ));
         
         // IB TRANSFER FROM fuel account (offsetting fuel expenses)
@@ -1077,7 +1105,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.REGEX,
             "IB TRANSFER FROM \\*\\*\\*\\*\\*2689327.*",
             "8600-099", // Fuel Expenses - Other Stations
-            8
+            PRIORITY_STANDARD
         ));
         
         // Returned debits - extract provider and map to same account (offset logic)
@@ -1087,7 +1115,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.REGEX,
             "RTD-DEBIT AGAINST PAYERS AUTH DOTSURE.*",
             "8800-002", // DOTSURE Insurance Premiums (offset)
-            8
+            PRIORITY_STANDARD
         ));
         
         rules.add(createRule(
@@ -1096,7 +1124,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.REGEX,
             "RTD-DEBIT AGAINST PAYERS AUTH ([A-Z]+).*",
             "8800", // Insurance (generic - will be refined by provider extraction)
-            7
+            PRIORITY_FALLBACK
         ));
         
         rules.add(createRule(
@@ -1105,7 +1133,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.REGEX,
             "RTD-NOT PROVIDED FOR ([A-Z]+).*",
             "8800", // Insurance (generic - will be refined by provider extraction)
-            7
+            PRIORITY_FALLBACK
         ));
         
         // SARS VAT payments (CRITICAL: Must be expense, not liability adjustment)
@@ -1115,7 +1143,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "PAYMENT TO SARS-VAT",
             "9800", // VAT Payments to SARS (Expense)
-            9
+            PRIORITY_HIGH
         ));
         
         // Professional services (accounting, legal)
@@ -1125,7 +1153,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "GLOBAL HOPE FINACIA",
             "8700", // Professional Services
-            9
+            PRIORITY_HIGH
         ));
         
         // Fuel purchases (specific account identifier)
@@ -1135,7 +1163,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "2689327",
             "8600-099", // Fuel Expenses - Other Stations
-            9
+            PRIORITY_HIGH
         ));
         
         // ========================================================================
@@ -1149,7 +1177,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "IB PAYMENT TO EUPHODIA N TAU XINGHIZANA",
             "1000-001", // stokvela Contributions
-            9
+            PRIORITY_HIGH
         ));
         
         rules.add(createRule(
@@ -1158,7 +1186,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "IB PAYMENT TO NGWAKWANE E TAU XINGHIZANA",
             "1000-001", // Stokvela Contributions
-            9
+            PRIORITY_HIGH
         ));
         
         rules.add(createRule(
@@ -1167,7 +1195,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "IB PAYMENT TO EUPHODIA TAU STOKFELA",
             "1000-001", // Cash and Cash Equivalents (Stokvela)
-            9
+            PRIORITY_HIGH
         ));
         
         // IMMEDIATE PAYMENT to specific individuals
@@ -1177,7 +1205,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "IMMEDIATE PAYMENT TO JEFFREY MAPHOSA",
             "8100-001", // Director Remuneration
-            9
+            PRIORITY_HIGH
         ));
         
         rules.add(createRule(
@@ -1186,7 +1214,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "IMMEDIATE PAYMENT TO NGWAKWANE E TAU",
             "1000-001", // Stokvela Contributions
-            9
+            PRIORITY_HIGH
         ));
         
         rules.add(createRule(
@@ -1195,7 +1223,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "IMMEDIATE PAYMENT TO DAVID MOLEFE",
             "8100", // Employee Costs
-            9
+            PRIORITY_HIGH
         ));
         
         rules.add(createRule(
@@ -1204,7 +1232,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "IMMEDIATE PAYMENT TO MUZIKAYISE ZUNGA",
             "8100", // Employee Costs
-            9
+            PRIORITY_HIGH
         ));
         
         // ========================================================================
@@ -1218,7 +1246,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.REGEX,
             "IB PAYMENT TO [A-Z]+ [A-Z]+.*",
             "8100", // Employee Costs (generic fallback)
-            8
+            PRIORITY_STANDARD
         ));
         
         // Generic IMMEDIATE PAYMENT pattern
@@ -1228,7 +1256,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.REGEX,
             "IMMEDIATE PAYMENT [0-9]+ [A-Z]+ [A-Z]+.*",
             "8100", // Employee Costs
-            8
+            PRIORITY_STANDARD
         ));
         
         // ========================================================================
@@ -1242,7 +1270,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "AUTOBANK CASH DEPOSIT",
             "1000", // Other 
-            7
+            PRIORITY_FALLBACK
         ));
         
         // Internal bank transfers (between own accounts)
@@ -1252,7 +1280,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "IB TRANSFER TO",
             "1100-001", // Bank - Current Account
-            7
+            PRIORITY_FALLBACK
         ));
         
         rules.add(createRule(
@@ -1261,7 +1289,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "IB TRANSFER FROM",
             "1100-001", // Bank - Current Account
-            7
+            PRIORITY_FALLBACK
         ));
         
         // Rent payments
@@ -1271,7 +1299,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "ELLISPARK STADIUM",
             "8200", // Rent Expense
-            9
+            PRIORITY_HIGH
         ));
         
         // Vehicle purchases (capital expenditure)
@@ -1281,7 +1309,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "EBS CAR SALES",
             "2000", // Property, Plant & Equipment
-            9
+            PRIORITY_HIGH
         ));
         
         // Supplier payments
@@ -1291,7 +1319,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "TWO WAY TECHNOLOGIES",
             "8710", // Suppliers Expense
-            9
+            PRIORITY_HIGH
         ));
         
         rules.add(createRule(
@@ -1300,7 +1328,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "RENT A DOG",
             "8710", // Suppliers Expense
-            9
+            PRIORITY_HIGH
         ));
         
         // HR Management expenses
@@ -1310,7 +1338,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "NEO ENTLE LABOUR",
             "8720", // HR Management Expense
-            9
+            PRIORITY_HIGH
         ));
         
         // Investment transactions
@@ -1320,7 +1348,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "STANLIB",
             "2200", // Investments
-            9
+            PRIORITY_HIGH
         ));
         
         // Cost of Goods Sold
@@ -1330,7 +1358,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "DB PROJECTS",
             "8000", // Cost of Goods Sold
-            9
+            PRIORITY_HIGH
         ));
         
         // Education/Training expenses
@@ -1340,7 +1368,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "LYCEUM COLLEGE",
             "8730", // Education & Training
-            9
+            PRIORITY_HIGH
         ));
         
         // Employee salaries (specific names)
@@ -1350,7 +1378,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "ANTHONY NDOU",
             "8100", // Employee Costs
-            8
+            PRIORITY_STANDARD
         ));
         
         rules.add(createRule(
@@ -1359,7 +1387,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "GOODMAN ZUNGA",
             "8100", // Employee Costs
-            8
+            PRIORITY_STANDARD
         ));
         
         // Salary payments (generic keywords)
@@ -1369,7 +1397,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "XG SALARIES",
             "8100", // Employee Costs
-            8
+            PRIORITY_STANDARD
         ));
         
         rules.add(createRule(
@@ -1378,7 +1406,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "SALARIES",
             "8100", // Employee Costs
-            8
+            PRIORITY_STANDARD
         ));
         
         rules.add(createRule(
@@ -1387,7 +1415,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "WAGES",
             "8100", // Employee Costs
-            8
+            PRIORITY_STANDARD
         ));
         
         // ========================================================================
@@ -1401,7 +1429,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.REGEX,
             ".*(COLLEGE|SCHOOL|UNIVERSITY).*",
             "9300", // Training & Development
-            5
+            PRIORITY_GENERIC
         ));
         
         // Insurance premiums (generic - MUST come after "Insurance Chauke" check)
@@ -1411,7 +1439,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "INSURANCE",
             "8800", // Insurance
-            5
+            PRIORITY_GENERIC
         ));
         
         rules.add(createRule(
@@ -1420,7 +1448,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "PREMIUM",
             "8800", // Insurance
-            5
+            PRIORITY_GENERIC
         ));
         
         // Bank charges and fees - HIGHEST PRIORITY to override ALL other classifications
@@ -1430,7 +1458,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "FEE",
             "9600", // Bank Charges
-            20  // HIGHEST priority - overrides ALL other rules
+            PRIORITY_HIGHEST  // HIGHEST priority - overrides ALL other rules
         ));
         
         rules.add(createRule(
@@ -1439,7 +1467,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "SERVICE FEE",
             "9600", // Bank Charges
-            20  // HIGHEST priority - overrides ALL other rules
+            PRIORITY_HIGHEST  // HIGHEST priority - overrides ALL other rules
         ));
         
         rules.add(createRule(
@@ -1448,7 +1476,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "CHARGE",
             "9600", // Bank Charges
-            20  // HIGHEST priority - overrides ALL other rules
+            PRIORITY_HIGHEST  // HIGHEST priority - overrides ALL other rules
         ));
         
         // Loan payments (generic)
@@ -1458,7 +1486,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "LOAN",
             "4000", // Long-term Loans
-            5
+            PRIORITY_GENERIC
         ));
         
         // ========================================================================
@@ -1472,7 +1500,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "MAGTAPE CREDIT COMPANY ASSIST",
             "4000", // Long-term Loans
-            6
+            PRIORITY_FALLBACK
         ));
         
         // Generic IB PAYMENT TO (fallback for unspecified recipients)
@@ -1482,7 +1510,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.REGEX,
             "^IB PAYMENT TO$",
             "8100", // Employee Costs (generic fallback)
-            6
+            PRIORITY_FALLBACK
         ));
         
         // Generic IMMEDIATE PAYMENT (fallback for unspecified recipients)
@@ -1492,7 +1520,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.REGEX,
             "^IMMEDIATE PAYMENT$",
             "8100", // Employee Costs (generic fallback)
-            6
+            PRIORITY_FALLBACK
         ));
         
         // DEBIT TRANSFER (collections/payments)
@@ -1502,7 +1530,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "MIWAY",
             "8800-004", // Miway Insurance Premiums
-            6
+            PRIORITY_FALLBACK
         ));
         
         // Mobile phone payments (MTN, Vodacom prepaid)
@@ -1512,7 +1540,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "PRE-PAID PAYMENT TO MTN PREPAID",
             "8600", // Communications
-            6
+            PRIORITY_FALLBACK
         ));
         
         rules.add(createRule(
@@ -1521,7 +1549,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "PRE-PAID PAYMENT TO VOD PREPAID",
             "8600", // Communications
-            6
+            PRIORITY_FALLBACK
         ));
         
         // Interest adjustments/refunds (very small amounts)
@@ -1531,7 +1559,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "INTEREST ADJUSTMENT/REFUND",
             "9500", // Interest Income
-            6
+            PRIORITY_FALLBACK
         ));
         
         // Generic account payments
@@ -1541,7 +1569,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.REGEX,
             "^ACCOUNT PAYMENT$",
             "8710", // Suppliers Expense (generic)
-            6
+            PRIORITY_FALLBACK
         ));
         
         // ========================================================================
@@ -1555,7 +1583,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "MAGTAPE CREDIT XINGHIZANA 13AUGLOA",
             "4000", // Long-term Loans
-            7
+            PRIORITY_LOW
         ));
         
         rules.add(createRule(
@@ -1564,7 +1592,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "MAGTAPE CREDIT XG LOA MAPHOSA",
             "4000", // Long-term Loans
-            7
+            PRIORITY_LOW
         ));
         
         rules.add(createRule(
@@ -1573,7 +1601,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "MAGTAPE CREDIT 001 UNPAIDS/WEIERINGS CAPITEC",
             "4000", // Long-term Loans
-            7
+            PRIORITY_LOW
         ));
         
         // CASH DEPOSIT STOKFELA
@@ -1583,7 +1611,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "CASH DEPOSIT STOKFELA",
             "1000", // Cash and Cash Equivalents
-            7
+            PRIORITY_LOW
         ));
         
         // AUTOBANK INSTANTMONEY CASH TO (cash withdrawal)
@@ -1593,7 +1621,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "AUTOBANK INSTANTMONEY CASH TO",
             "8100", // Employee Costs
-            7
+            PRIORITY_LOW
         ));
         
         // AUTOBANK TRANSFER FROM ACCOUNT
@@ -1603,7 +1631,7 @@ public final class AccountClassificationService {
             TransactionMappingRule.MatchType.CONTAINS,
             "AUTOBANK TRANSFER FROM ACCOUNT",
             "1100-001", // Bank - Current Account
-            7
+            PRIORITY_LOW
         ));
         
         // Sort by priority (descending) to ensure highest priority rules are checked first
@@ -1656,9 +1684,9 @@ public final class AccountClassificationService {
                             """;
                         
                         try (PreparedStatement updateStmt = conn.prepareStatement(updateSql)) {
-                            updateStmt.setString(1, account.getAccountCode());
-                            updateStmt.setString(2, account.getAccountName());
-                            updateStmt.setLong(3, transaction.getId());
+                            updateStmt.setString(PREPARED_STATEMENT_PARAM_1, account.getAccountCode());
+                            updateStmt.setString(PREPARED_STATEMENT_PARAM_2, account.getAccountName());
+                            updateStmt.setLong(PREPARED_STATEMENT_PARAM_3, transaction.getId());
                             updateStmt.executeUpdate();
                             classifiedCount++;
                         }
@@ -1718,10 +1746,10 @@ public final class AccountClassificationService {
                             """;
                         
                         try (PreparedStatement updateStmt = conn.prepareStatement(updateSql)) {
-                            updateStmt.setString(1, account.getAccountCode());
-                            updateStmt.setString(2, account.getAccountName());
-                            updateStmt.setString(3, username);
-                            updateStmt.setLong(4, transaction.getId());
+                            updateStmt.setString(PREPARED_STATEMENT_PARAM_1, account.getAccountCode());
+                            updateStmt.setString(PREPARED_STATEMENT_PARAM_2, account.getAccountName());
+                            updateStmt.setString(PREPARED_STATEMENT_PARAM_3, username);
+                            updateStmt.setLong(PREPARED_STATEMENT_PARAM_4, transaction.getId());
                             updateStmt.executeUpdate();
                             reclassifiedCount++;
                         }
@@ -1778,9 +1806,9 @@ public final class AccountClassificationService {
             try (Connection conn = DriverManager.getConnection(dbUrl);
                  PreparedStatement stmt = conn.prepareStatement(sql)) {
                 
-                stmt.setString(1, accountCode);
-                stmt.setString(2, accountName);
-                stmt.setLong(3, transaction.getId());
+                stmt.setString(PREPARED_STATEMENT_PARAM_1, accountCode);
+                stmt.setString(PREPARED_STATEMENT_PARAM_2, accountName);
+                stmt.setLong(PREPARED_STATEMENT_PARAM_3, transaction.getId());
                 
                 int rowsUpdated = stmt.executeUpdate();
                 return rowsUpdated > 0;

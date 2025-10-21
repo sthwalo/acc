@@ -19,6 +19,30 @@ public class ReportController {
     private final InputHandler inputHandler;
     private final OutputFormatter outputFormatter;
     private final String reportsDir;
+
+    // Controller Constants
+    private static final int MAX_REPORT_MENU_CHOICE = 8;
+    private static final int REPORT_MENU_BACK_CHOICE = 8;
+    private static final int MAX_CUSTOM_REPORT_CHOICE = 4;
+    private static final int CUSTOM_REPORT_BACK_CHOICE = 4;
+    private static final int REPORT_TYPE_CASHBOOK_INDEX = 0;
+    private static final int REPORT_TYPE_GENERAL_LEDGER_INDEX = 1;
+    private static final int REPORT_TYPE_TRIAL_BALANCE_INDEX = 2;
+    private static final int REPORT_TYPE_INCOME_STATEMENT_INDEX = 3;
+    private static final int REPORT_TYPE_BALANCE_SHEET_INDEX = 4;
+    private static final int REPORT_TYPE_AUDIT_TRAIL_INDEX = 5;
+    private static final int REPORT_TYPE_CASH_FLOW_INDEX = 6;
+    // Menu choice constants
+    private static final int REPORT_MENU_CASHBOOK = 1;
+    private static final int REPORT_MENU_GENERAL_LEDGER = 2;
+    private static final int REPORT_MENU_TRIAL_BALANCE = 3;
+    private static final int REPORT_MENU_INCOME_STATEMENT = 4;
+    private static final int REPORT_MENU_BALANCE_SHEET = 5;
+    private static final int REPORT_MENU_AUDIT_TRAIL = 6;
+    private static final int REPORT_MENU_CASH_FLOW = 7;
+    private static final int CUSTOM_REPORT_DATE_RANGE = 1;
+    private static final int CUSTOM_REPORT_ACCOUNT_SPECIFIC = 2;
+    private static final int CUSTOM_REPORT_TRANSACTION_TYPE = 3;
     
     /**
      * Constructor with dependency injection.
@@ -57,31 +81,31 @@ public class ReportController {
             boolean back = false;
             while (!back) {
                 menu.displayReportMenu();
-                int choice = inputHandler.getInteger("Enter your choice", 1, 8);
+                int choice = inputHandler.getInteger("Enter your choice", 1, MAX_REPORT_MENU_CHOICE);
                 
                 switch (choice) {
-                    case 1:
+                    case REPORT_MENU_CASHBOOK:
                         generateCashbookReport();
                         break;
-                    case 2:
+                    case REPORT_MENU_GENERAL_LEDGER:
                         generateGeneralLedgerReport();
                         break;
-                    case 3:
+                    case REPORT_MENU_TRIAL_BALANCE:
                         generateTrialBalanceReport();
                         break;
-                    case 4:
+                    case REPORT_MENU_INCOME_STATEMENT:
                         generateIncomeStatementReport();
                         break;
-                    case 5:
+                    case REPORT_MENU_BALANCE_SHEET:
                         generateBalanceSheetReport();
                         break;
-                    case 6:
+                    case REPORT_MENU_AUDIT_TRAIL:
                         generateAuditTrailReport();
                         break;
-                    case 7:
+                    case REPORT_MENU_CASH_FLOW:
                         generateCashFlowReport();
                         break;
-                    case 8:
+                    case REPORT_MENU_BACK_CHOICE:
                         back = true;
                         break;
                     default:
@@ -258,25 +282,25 @@ public class ReportController {
                     outputFormatter.printProgress("Generating reports", i + 1, reportTypes.length);
                     
                     switch (i) {
-                        case 0: financialReportingService.generateCashbook(
+                        case REPORT_TYPE_CASHBOOK_INDEX: financialReportingService.generateCashbook(
                                 applicationState.getCurrentCompany().getId(), 
                                 applicationState.getCurrentFiscalPeriod().getId(), true); break;
-                        case 1: financialReportingService.generateGeneralLedger(
+                        case REPORT_TYPE_GENERAL_LEDGER_INDEX: financialReportingService.generateGeneralLedger(
                                 applicationState.getCurrentCompany().getId(), 
                                 applicationState.getCurrentFiscalPeriod().getId(), true); break;
-                        case 2: financialReportingService.generateTrialBalance(
+                        case REPORT_TYPE_TRIAL_BALANCE_INDEX: financialReportingService.generateTrialBalance(
                                 applicationState.getCurrentCompany().getId(), 
                                 applicationState.getCurrentFiscalPeriod().getId(), true); break;
-                        case 3: financialReportingService.generateIncomeStatement(
+                        case REPORT_TYPE_INCOME_STATEMENT_INDEX: financialReportingService.generateIncomeStatement(
                                 applicationState.getCurrentCompany().getId(), 
                                 applicationState.getCurrentFiscalPeriod().getId(), true); break;
-                        case 4: financialReportingService.generateBalanceSheet(
+                        case REPORT_TYPE_BALANCE_SHEET_INDEX: financialReportingService.generateBalanceSheet(
                                 applicationState.getCurrentCompany().getId(), 
                                 applicationState.getCurrentFiscalPeriod().getId(), true); break;
-                        case 5: financialReportingService.generateAuditTrail(
+                        case REPORT_TYPE_AUDIT_TRAIL_INDEX: financialReportingService.generateAuditTrail(
                                 applicationState.getCurrentCompany().getId(), 
                                 applicationState.getCurrentFiscalPeriod().getId(), true); break;
-                        case 6: financialReportingService.generateCashFlowStatement(
+                        case REPORT_TYPE_CASH_FLOW_INDEX: financialReportingService.generateCashFlowStatement(
                                 applicationState.getCurrentCompany().getId(), 
                                 applicationState.getCurrentFiscalPeriod().getId(), true); break;
                         default:
@@ -311,19 +335,19 @@ public class ReportController {
             outputFormatter.printPlain("3. Transaction type report");
             outputFormatter.printPlain("4. Back to reports menu");
             
-            int choice = inputHandler.getInteger("Select custom report type", 1, 4);
+            int choice = inputHandler.getInteger("Select custom report type", 1, MAX_CUSTOM_REPORT_CHOICE);
             
             switch (choice) {
-                case 1:
+                case CUSTOM_REPORT_DATE_RANGE:
                     generateDateRangeReport();
                     break;
-                case 2:
+                case CUSTOM_REPORT_ACCOUNT_SPECIFIC:
                     generateAccountSpecificReport();
                     break;
-                case 3:
+                case CUSTOM_REPORT_TRANSACTION_TYPE:
                     generateTransactionTypeReport();
                     break;
-                case 4:
+                case CUSTOM_REPORT_BACK_CHOICE:
                     // Go back
                     break;
                 default:

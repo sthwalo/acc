@@ -31,6 +31,11 @@ public class AuthService {
     private final SecureRandom secureRandom;
     private final MessageDigest sha256;
 
+    // Security constants
+    private static final int MINIMUM_PASSWORD_LENGTH = 8;
+    private static final int SESSION_TOKEN_BYTE_LENGTH = 32;
+    private static final int SALT_BYTE_LENGTH = 16;
+
     // Session timeout: 8 hours
     private static final long SESSION_TIMEOUT_MINUTES = 480;
 
@@ -191,7 +196,7 @@ public class AuthService {
             throw new IllegalArgumentException("Email is required");
         }
 
-        if (password == null || password.length() < 8) {
+        if (password == null || password.length() < MINIMUM_PASSWORD_LENGTH) {
             throw new IllegalArgumentException("Password must be at least 8 characters");
         }
 
@@ -244,7 +249,7 @@ public class AuthService {
         }
 
         // Validate new password
-        if (newPassword == null || newPassword.length() < 8) {
+        if (newPassword == null || newPassword.length() < MINIMUM_PASSWORD_LENGTH) {
             throw new IllegalArgumentException("New password must be at least 8 characters");
         }
 
@@ -270,13 +275,13 @@ public class AuthService {
     // Utility methods
 
     private String generateSessionToken() {
-        byte[] bytes = new byte[32];
+        byte[] bytes = new byte[SESSION_TOKEN_BYTE_LENGTH];
         secureRandom.nextBytes(bytes);
         return Base64.getEncoder().encodeToString(bytes);
     }
 
     private String generateSalt() {
-        byte[] bytes = new byte[16];
+        byte[] bytes = new byte[SALT_BYTE_LENGTH];
         secureRandom.nextBytes(bytes);
         return Base64.getEncoder().encodeToString(bytes);
     }

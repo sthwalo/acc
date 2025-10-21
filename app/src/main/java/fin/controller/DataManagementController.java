@@ -25,6 +25,60 @@ import java.util.Map;
  * Extracted from monolithic App.java data management-related methods
  */
 public class DataManagementController {
+    // Menu choice constants
+    private static final int MENU_CHOICE_MANUAL_INVOICE = 1;
+    private static final int MENU_CHOICE_JOURNAL_ENTRY = 2;
+    private static final int MENU_CHOICE_TRANSACTION_CLASSIFICATION = 3;
+    private static final int MENU_CHOICE_TRANSACTION_CORRECTION = 4;
+    private static final int MENU_CHOICE_TRANSACTION_HISTORY = 5;
+    private static final int MENU_CHOICE_DATA_RESET = 6;
+    private static final int MENU_CHOICE_EXPORT_CSV = 7;
+    private static final int MENU_CHOICE_BACK = 8;
+    
+    // Transaction classification menu choices
+    private static final int CLASSIFICATION_CHOICE_INTERACTIVE = 1;
+    private static final int CLASSIFICATION_CHOICE_AUTO_CLASSIFY = 2;
+    private static final int CLASSIFICATION_CHOICE_RECLASSIFY_ALL = 3;
+    private static final int CLASSIFICATION_CHOICE_INIT_CHART = 4;
+    private static final int CLASSIFICATION_CHOICE_SYNC_JOURNAL = 5;
+    private static final int CLASSIFICATION_CHOICE_REGENERATE_JOURNAL = 6;
+    private static final int CLASSIFICATION_CHOICE_BACK = 7;
+    
+    // Account initialization menu choices
+    private static final int INIT_CHOICE_CHART_OF_ACCOUNTS = 1;
+    private static final int INIT_CHOICE_MAPPING_RULES = 2;
+    private static final int INIT_CHOICE_FULL_INIT = 3;
+    private static final int INIT_CHOICE_BACK = 4;
+    
+    // Transaction correction filter choices
+    private static final int FILTER_CHOICE_ALL = 1;
+    private static final int FILTER_CHOICE_UNCATEGORIZED = 2;
+    private static final int FILTER_CHOICE_CATEGORIZED = 3;
+    private static final int FILTER_CHOICE_BACK = 4;
+    
+    // Data reset choices
+    private static final int RESET_CHOICE_TRANSACTIONS_ONLY = 1;
+    private static final int RESET_CHOICE_ALL_DATA = 2;
+    private static final int RESET_CHOICE_CANCEL = 3;
+    
+    // Display constants
+    private static final int TRANSACTIONS_PER_PAGE = 50;
+    private static final int MAX_DESCRIPTION_LENGTH = 50;
+    private static final int TRUNCATED_DESCRIPTION_LENGTH = 47;
+    private static final int MAX_SUGGESTIONS = 5;
+    private static final int MAX_SIMILAR_TRANSACTIONS_DISPLAY = 5;
+    private static final int MAX_RECENT_TRANSACTIONS = 10;
+    private static final int MIN_KEYWORD_LENGTH = 3;
+    private static final int MAX_SIMILAR_TRANSACTIONS = 20;
+    
+    // Menu bounds constants
+    private static final int MAX_FILTER_CHOICE = 4;
+    private static final int MAX_RESET_CHOICE = 3;
+    
+    // Pattern extraction constants
+    private static final int MIN_WORD_LENGTH = 3;
+    private static final int MAX_DESCRIPTION_PATTERN_LENGTH = 10;
+    
     private final DataManagementService dataManagementService;
     private final TransactionClassificationService classificationService;
     private final CsvExportService csvExportService;
@@ -59,31 +113,31 @@ public class DataManagementController {
             boolean back = false;
             while (!back) {
                 menu.displayDataManagementMenu();
-                int choice = inputHandler.getInteger("Enter your choice", 1, 8);
+                int choice = inputHandler.getInteger("Enter your choice", 1, MENU_CHOICE_BACK);
                 
                 switch (choice) {
-                    case 1:
+                    case MENU_CHOICE_MANUAL_INVOICE:
                         handleManualInvoiceCreation();
                         break;
-                    case 2:
+                    case MENU_CHOICE_JOURNAL_ENTRY:
                         handleJournalEntryCreation();
                         break;
-                    case 3:
+                    case MENU_CHOICE_TRANSACTION_CLASSIFICATION:
                         handleTransactionClassification();
                         break;
-                    case 4:
+                    case MENU_CHOICE_TRANSACTION_CORRECTION:
                         handleTransactionCorrection();
                         break;
-                    case 5:
+                    case MENU_CHOICE_TRANSACTION_HISTORY:
                         handleTransactionHistory();
                         break;
-                    case 6:
+                    case MENU_CHOICE_DATA_RESET:
                         handleDataReset();
                         break;
-                    case 7:
+                    case MENU_CHOICE_EXPORT_CSV:
                         handleExportToCSV();
                         break;
-                    case 8:
+                    case MENU_CHOICE_BACK:
                         back = true;
                         break;
                     default:
@@ -205,16 +259,16 @@ public class DataManagementController {
             boolean back = false;
             while (!back) {
                 menu.displayTransactionClassificationMenu();
-                int choice = inputHandler.getInteger("Enter your choice", 1, 7);
+                int choice = inputHandler.getInteger("Enter your choice", 1, CLASSIFICATION_CHOICE_BACK);
                 
                 switch (choice) {
-                    case 1:
+                    case CLASSIFICATION_CHOICE_INTERACTIVE:
                         // Interactive Classification (new transactions)
                         classificationService.runInteractiveClassification(
                             applicationState.getCurrentCompany().getId(),
                             applicationState.getCurrentFiscalPeriod().getId());
                         break;
-                    case 2:
+                    case CLASSIFICATION_CHOICE_AUTO_CLASSIFY:
                         // Auto-Classify Unclassified Transactions
                         int classifiedCount = classificationService.autoClassifyTransactions(
                             applicationState.getCurrentCompany().getId(),
@@ -223,7 +277,7 @@ public class DataManagementController {
                             outputFormatter.printSuccess("Auto-classified " + classifiedCount + " transactions");
                         }
                         break;
-                    case 3:
+                    case CLASSIFICATION_CHOICE_RECLASSIFY_ALL:
                         // Reclassify ALL Transactions (apply updated rules)
                         int reclassifiedCount = classificationService.reclassifyAllTransactions(
                             applicationState.getCurrentCompany().getId(),
@@ -232,11 +286,11 @@ public class DataManagementController {
                             outputFormatter.printSuccess("Reclassified " + reclassifiedCount + " transactions with updated rules");
                         }
                         break;
-                    case 4:
+                    case CLASSIFICATION_CHOICE_INIT_CHART:
                         // Initialize Chart of Accounts & Mapping Rules (consolidated)
                         handleChartOfAccountsInitialization();
                         break;
-                    case 5:
+                    case CLASSIFICATION_CHOICE_SYNC_JOURNAL:
                         // Sync Journal Entries (new transactions only)
                         int syncCount = classificationService.synchronizeJournalEntries(
                             applicationState.getCurrentCompany().getId(),
@@ -245,7 +299,7 @@ public class DataManagementController {
                             outputFormatter.printSuccess("Generated " + syncCount + " journal entries");
                         }
                         break;
-                    case 6:
+                    case CLASSIFICATION_CHOICE_REGENERATE_JOURNAL:
                         // Regenerate ALL Journal Entries (after reclassification)
                         System.out.println("\n⚠️  WARNING: This will delete and regenerate ALL journal entries!");
                         System.out.print("Are you sure? (yes/no): ");
@@ -262,7 +316,7 @@ public class DataManagementController {
                             outputFormatter.printInfo("Operation cancelled");
                         }
                         break;
-                    case 7:
+                    case CLASSIFICATION_CHOICE_BACK:
                         back = true;
                         break;
                     default:
@@ -280,31 +334,31 @@ public class DataManagementController {
         boolean back = false;
         while (!back) {
             menu.displayAccountInitializationMenu();
-            int choice = inputHandler.getInteger("Enter choice", 1, 4);
+            int choice = inputHandler.getInteger("Enter choice", 1, INIT_CHOICE_BACK);
             
             switch (choice) {
-                case 1:
+                case INIT_CHOICE_CHART_OF_ACCOUNTS:
                     boolean success = classificationService.initializeChartOfAccounts(
                         applicationState.getCurrentCompany().getId());
                     if (success) {
                         outputFormatter.printSuccess("Chart of Accounts initialized successfully");
                     }
                     break;
-                case 2:
+                case INIT_CHOICE_MAPPING_RULES:
                     success = classificationService.initializeTransactionMappingRules(
                         applicationState.getCurrentCompany().getId());
                     if (success) {
                         outputFormatter.printSuccess("Transaction Mapping Rules initialized successfully");
                     }
                     break;
-                case 3:
+                case INIT_CHOICE_FULL_INIT:
                     success = classificationService.performFullInitialization(
                         applicationState.getCurrentCompany().getId());
                     if (success) {
                         outputFormatter.printSuccess("Full initialization completed successfully");
                     }
                     break;
-                case 4:
+                case INIT_CHOICE_BACK:
                     back = true;
                     break;
                 default:
@@ -336,9 +390,9 @@ public class DataManagementController {
             System.out.println("3. Show Categorized Only");
             System.out.println("4. Back to Data Management");
             
-            int filterChoice = inputHandler.getInteger("Select filter option", 1, 4);
+            int filterChoice = inputHandler.getInteger("Select filter option", 1, MAX_FILTER_CHOICE);
             
-            if (filterChoice == 4) {
+            if (filterChoice == FILTER_CHOICE_BACK) {
                 return;
             }
             
@@ -367,7 +421,7 @@ public class DataManagementController {
                         i + 1,
                         status,
                         tx.getTransactionDate(), 
-                        tx.getDetails().length() > 50 ? tx.getDetails().substring(0, 47) + "..." : tx.getDetails(),
+                        tx.getDetails().length() > MAX_DESCRIPTION_LENGTH ? tx.getDetails().substring(0, TRUNCATED_DESCRIPTION_LENGTH) + "..." : tx.getDetails(),
                         tx.getDebitAmount() != null ? tx.getDebitAmount() : tx.getCreditAmount());
                 }
                 
@@ -426,11 +480,11 @@ public class DataManagementController {
     
     private List<BankTransaction> filterTransactions(List<BankTransaction> transactions, int filterChoice) {
         switch (filterChoice) {
-            case 2: // Uncategorized only
+            case FILTER_CHOICE_UNCATEGORIZED: // Uncategorized only
                 return transactions.stream()
                     .filter(tx -> tx.getAccountCode() == null || tx.getAccountCode().isEmpty())
                     .collect(java.util.stream.Collectors.toList());
-            case 3: // Categorized only
+            case FILTER_CHOICE_CATEGORIZED: // Categorized only
                 return transactions.stream()
                     .filter(tx -> tx.getAccountCode() != null && !tx.getAccountCode().isEmpty())
                     .collect(java.util.stream.Collectors.toList());
@@ -492,13 +546,13 @@ public class DataManagementController {
                     String[] accountWords = accountName.split(" ");
                     
                     for (String word : accountWords) {
-                        if (word.length() > 3 && description.contains(word)) {
+                        if (word.length() > MIN_KEYWORD_LENGTH && description.contains(word)) {
                             suggestions.add(account);
                             break;
                         }
                     }
                     
-                    if (suggestions.size() >= 5) break;
+                    if (suggestions.size() >= MAX_SUGGESTIONS) break;
                 }
             }
             
@@ -531,17 +585,17 @@ public class DataManagementController {
                 .filter(t -> !t.getId().equals(tx.getId()))
                 .filter(t -> t.getAccountCode() == null || t.getAccountCode().isEmpty())
                 .filter(t -> t.getDetails().toLowerCase().contains(pattern.toLowerCase()))
-                .limit(20)
+                .limit(MAX_SIMILAR_TRANSACTIONS)
                 .collect(java.util.stream.Collectors.toList());
             
             if (!similarTransactions.isEmpty()) {
                 System.out.println("\n📋 Found " + similarTransactions.size() + " similar uncategorized transactions:");
-                for (int i = 0; i < Math.min(5, similarTransactions.size()); i++) {
+                for (int i = 0; i < Math.min(MAX_SIMILAR_TRANSACTIONS_DISPLAY, similarTransactions.size()); i++) {
                     BankTransaction similar = similarTransactions.get(i);
                     System.out.printf("  %d. [%s] %s - Amount: %s%n",
                         i + 1,
                         similar.getTransactionDate(),
-                        similar.getDetails().length() > 50 ? similar.getDetails().substring(0, 47) + "..." : similar.getDetails(),
+                        similar.getDetails().length() > MAX_DESCRIPTION_LENGTH ? similar.getDetails().substring(0, TRUNCATED_DESCRIPTION_LENGTH) + "..." : similar.getDetails(),
                         similar.getDebitAmount() != null ? similar.getDebitAmount() : similar.getCreditAmount());
                 }
                 
@@ -576,13 +630,13 @@ public class DataManagementController {
         if (words.length > 0) {
             // Return first meaningful word (longer than 3 characters)
             for (String word : words) {
-                if (word.length() > 3) {
+                if (word.length() > MIN_WORD_LENGTH) {
                     return word;
                 }
             }
             return words[0];
         }
-        return description.length() > 10 ? description.substring(0, 10) : description;
+        return description.length() > MAX_DESCRIPTION_PATTERN_LENGTH ? description.substring(0, MAX_DESCRIPTION_PATTERN_LENGTH) : description;
     }
     
     public void handleTransactionHistory() {
@@ -601,16 +655,16 @@ public class DataManagementController {
             }
             
             outputFormatter.printSubHeader("Recent Transactions");
-            for (int i = 0; i < Math.min(transactions.size(), 10); i++) {
+            for (int i = 0; i < Math.min(transactions.size(), MAX_RECENT_TRANSACTIONS); i++) {
                 BankTransaction tx = transactions.get(i);
                 System.out.printf("%d. [%s] %s - Amount: %s%n", i + 1,
                     tx.getTransactionDate(), 
-                    tx.getDetails().length() > 50 ? tx.getDetails().substring(0, 47) + "..." : tx.getDetails(),
+                    tx.getDetails().length() > MAX_DESCRIPTION_LENGTH ? tx.getDetails().substring(0, TRUNCATED_DESCRIPTION_LENGTH) + "..." : tx.getDetails(),
                     tx.getDebitAmount() != null ? tx.getDebitAmount() : tx.getCreditAmount());
             }
             
             int txIndex = inputHandler.getInteger("Select transaction number to view history", 1, 
-                Math.min(transactions.size(), 10)) - 1;
+                Math.min(transactions.size(), MAX_RECENT_TRANSACTIONS)) - 1;
             
             BankTransaction tx = transactions.get(txIndex);
             List<Map<String, Object>> history = 
@@ -652,9 +706,9 @@ public class DataManagementController {
         outputFormatter.printPlain("2. Reset all data (including chart of accounts)");
         outputFormatter.printPlain("3. Cancel");
         
-        int choice = inputHandler.getInteger("Enter choice", 1, 3);
+        int choice = inputHandler.getInteger("Enter choice", 1, MAX_RESET_CHOICE);
         
-        if (choice == 3) {
+        if (choice == RESET_CHOICE_CANCEL) {
             outputFormatter.printInfo("Reset operation cancelled");
             return;
         }
@@ -663,7 +717,7 @@ public class DataManagementController {
         
         if ("CONFIRM".equals(confirmation)) {
             try {
-                boolean preserveMasterData = (choice == 1);
+                boolean preserveMasterData = (choice == RESET_CHOICE_TRANSACTIONS_ONLY);
                 dataManagementService.resetCompanyData(
                     applicationState.getCurrentCompany().getId(), 
                     preserveMasterData);

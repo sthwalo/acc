@@ -14,6 +14,9 @@ import java.nio.file.Paths;
  */
 public class TestDatabaseSetup {
 
+    // Maximum length for displaying skipped SQL statements in error messages
+    private static final int MAX_STATEMENT_DISPLAY_LENGTH = 50;
+
     public static void main(String[] args) {
         String dbUrl = System.getProperty("TEST_DATABASE_URL", System.getenv("TEST_DATABASE_URL"));
         String dbUser = System.getProperty("TEST_DATABASE_USER", System.getenv("TEST_DATABASE_USER"));
@@ -62,7 +65,7 @@ public class TestDatabaseSetup {
                         stmt.executeUpdate(statement);
                     } catch (Exception e) {
                         // Some statements might fail (comments, etc.) - continue
-                        System.out.println("⚠️ Skipping statement: " + statement.substring(0, Math.min(50, statement.length())));
+                        System.out.println("⚠️ Skipping statement: " + statement.substring(0, Math.min(MAX_STATEMENT_DISPLAY_LENGTH, statement.length())));
                     }
                 }
             }

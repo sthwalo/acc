@@ -13,6 +13,12 @@ import java.util.Map;
  */
 public class TrialBalanceService {
 
+    // Display formatting constants
+    private static final int REPORT_LINE_WIDTH = 105;
+    private static final int ACCOUNT_NAME_MAX_LENGTH = 48;
+    private static final int HEADER_CENTER_WIDTH = 130;
+    private static final int TRUNCATE_SUFFIX_LENGTH = 3;
+
     private final FinancialDataRepository repository;
     private final GeneralLedgerService generalLedgerService;
 
@@ -56,10 +62,10 @@ public class TrialBalanceService {
         report.append("Hierarchy: Journal Entries → General Ledger → Trial Balance → Financial Statements\n");
         report.append("\n");
 
-        // Column headers for traditional trial balance
+                // Column headers for traditional trial balance
         report.append(String.format("%-15s %-50s %-20s %-20s%n",
                 "Account Code", "Account Name", "Debit (ZAR)", "Credit (ZAR)"));
-        report.append("=".repeat(105)).append("\n");
+        report.append("=".repeat(REPORT_LINE_WIDTH)).append("\n");
 
         BigDecimal totalDebits = BigDecimal.ZERO;
         BigDecimal totalCredits = BigDecimal.ZERO;
@@ -78,14 +84,14 @@ public class TrialBalanceService {
             if (debitAmount.compareTo(BigDecimal.ZERO) != 0 || creditAmount.compareTo(BigDecimal.ZERO) != 0) {
                 report.append(String.format("%-15s %-50s %-20s %-20s%n",
                         balance.getAccountCode(),
-                        truncateString(balance.getAccountName(), 48),
+                        truncateString(balance.getAccountName(), ACCOUNT_NAME_MAX_LENGTH),
                         formatCurrency(debitAmount),
                         formatCurrency(creditAmount)));
             }
         }
 
         // Totals
-        report.append("=".repeat(105)).append("\n");
+        report.append("=".repeat(REPORT_LINE_WIDTH)).append("\n");
         report.append(String.format("%-65s %-20s %-20s%n",
                 "TOTALS:",
                 formatCurrency(totalDebits),
@@ -105,13 +111,13 @@ public class TrialBalanceService {
 
     private String generateReportHeader(String title, Company company, FiscalPeriod fiscalPeriod) {
         StringBuilder header = new StringBuilder();
-        header.append(centerText(title, 130)).append("\n");
-        header.append(centerText("Company: " + company.getName(), 130)).append("\n");
-        header.append(centerText("Registration: " + company.getRegistrationNumber(), 130)).append("\n");
+        header.append(centerText(title, HEADER_CENTER_WIDTH)).append("\n");
+        header.append(centerText("Company: " + company.getName(), HEADER_CENTER_WIDTH)).append("\n");
+        header.append(centerText("Registration: " + company.getRegistrationNumber(), HEADER_CENTER_WIDTH)).append("\n");
         header.append(centerText("Period: " + fiscalPeriod.getPeriodName() + " (" +
-                fiscalPeriod.getStartDate() + " to " + fiscalPeriod.getEndDate() + ")", 130)).append("\n");
+                fiscalPeriod.getStartDate() + " to " + fiscalPeriod.getEndDate() + ")", HEADER_CENTER_WIDTH)).append("\n");
         header.append(centerText("Generated on: " + java.time.LocalDateTime.now().format(
-                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")), 130)).append("\n");
+                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")), HEADER_CENTER_WIDTH)).append("\n");
         return header.toString();
     }
 
@@ -124,7 +130,7 @@ public class TrialBalanceService {
     private String truncateString(String text, int maxLength) {
         if (text == null) return "";
         if (text.length() <= maxLength) return text;
-        return text.substring(0, maxLength - 3) + "...";
+        return text.substring(0, maxLength - TRUNCATE_SUFFIX_LENGTH) + "...";
     }
 
     private String formatCurrency(BigDecimal amount) {

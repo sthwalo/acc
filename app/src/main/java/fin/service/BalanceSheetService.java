@@ -16,6 +16,28 @@ import java.util.Map;
  */
 public class BalanceSheetService {
 
+    // Display width constants
+    private static final int DISPLAY_WIDTH_STANDARD = 80;
+    private static final int DISPLAY_WIDTH_ACCOUNT_NAME = 43;
+    private static final int DISPLAY_WIDTH_HEADER = 60;
+
+    // Account range constants
+    private static final int ACCOUNT_RANGE_ASSETS_MIN = 1000;
+    private static final int ACCOUNT_RANGE_ASSETS_MAX = 2999;
+    private static final int ACCOUNT_RANGE_LIABILITIES_MIN = 3000;
+    private static final int ACCOUNT_RANGE_LIABILITIES_MAX = 4999;
+    private static final int ACCOUNT_RANGE_EQUITY_MIN = 5000;
+    private static final int ACCOUNT_RANGE_EQUITY_MAX = 5999;
+    private static final int ACCOUNT_RANGE_REVENUE_MIN = 6000;
+    private static final int ACCOUNT_RANGE_REVENUE_MAX = 7999;
+    private static final int ACCOUNT_RANGE_EXPENSES_MIN = 8000;
+    private static final int ACCOUNT_RANGE_EXPENSES_MAX = 9999;
+
+    // Formatting constants
+    private static final int ACCOUNT_CODE_MIN_LENGTH = 4;
+    private static final int TRUNCATE_SUFFIX_LENGTH = 3;
+    private static final String TRUNCATE_SUFFIX = "...";
+
     private final FinancialDataRepository repository;
     private final GeneralLedgerService generalLedgerService;
 
@@ -69,7 +91,7 @@ public class BalanceSheetService {
 
         // Assets section (1000-2999)
         report.append("ASSETS\n");
-        report.append("=".repeat(80)).append("\n");
+        report.append("=".repeat(DISPLAY_WIDTH_STANDARD)).append("\n");
         for (AccountBalance balance : accountBalances.values()) {
             String accountCode = balance.getAccountCode();
             if (isAssetAccount(accountCode)) {
@@ -77,19 +99,19 @@ public class BalanceSheetService {
                 if (amount.compareTo(BigDecimal.ZERO) != 0) {
                     report.append(String.format("%-15s %-45s %15s%n",
                             accountCode,
-                            truncateString(balance.getAccountName(), 43),
+                            truncateString(balance.getAccountName(), DISPLAY_WIDTH_ACCOUNT_NAME),
                             formatCurrency(amount)));
                     totalAssets = totalAssets.add(amount);
                 }
             }
         }
-        report.append("-".repeat(80)).append("\n");
+        report.append("-".repeat(DISPLAY_WIDTH_STANDARD)).append("\n");
         report.append(String.format("%-60s %15s%n", "TOTAL ASSETS", formatCurrency(totalAssets)));
         report.append("\n");
 
         // Liabilities section (3000-4999)
         report.append("LIABILITIES\n");
-        report.append("=".repeat(80)).append("\n");
+        report.append("=".repeat(DISPLAY_WIDTH_STANDARD)).append("\n");
         for (AccountBalance balance : accountBalances.values()) {
             String accountCode = balance.getAccountCode();
             if (isLiabilityAccount(accountCode)) {
@@ -97,19 +119,19 @@ public class BalanceSheetService {
                 if (amount.compareTo(BigDecimal.ZERO) != 0) {
                     report.append(String.format("%-15s %-45s %15s%n",
                             accountCode,
-                            truncateString(balance.getAccountName(), 43),
+                            truncateString(balance.getAccountName(), DISPLAY_WIDTH_ACCOUNT_NAME),
                             formatCurrency(amount)));
                     totalLiabilities = totalLiabilities.add(amount);
                 }
             }
         }
-        report.append("-".repeat(80)).append("\n");
+        report.append("-".repeat(DISPLAY_WIDTH_STANDARD)).append("\n");
         report.append(String.format("%-60s %15s%n", "TOTAL LIABILITIES", formatCurrency(totalLiabilities)));
         report.append("\n");
 
         // Equity section (5000-5999) + Retained Earnings
         report.append("EQUITY\n");
-        report.append("=".repeat(80)).append("\n");
+        report.append("=".repeat(DISPLAY_WIDTH_STANDARD)).append("\n");
         
         // Show existing equity accounts first (opening balances)
         BigDecimal openingEquity = BigDecimal.ZERO;
@@ -120,7 +142,7 @@ public class BalanceSheetService {
                 if (amount.compareTo(BigDecimal.ZERO) != 0) {
                     report.append(String.format("%-15s %-45s %15s%n",
                             accountCode,
-                            truncateString(balance.getAccountName(), 43),
+                            truncateString(balance.getAccountName(), DISPLAY_WIDTH_ACCOUNT_NAME),
                             formatCurrency(amount)));
                     openingEquity = openingEquity.add(amount);
                 }
@@ -139,7 +161,7 @@ public class BalanceSheetService {
         // Total Liabilities and Equity
         BigDecimal totalLiabilitiesAndEquity = totalLiabilities.add(totalEquity);
         report.append("TOTAL LIABILITIES AND EQUITY\n");
-        report.append("=".repeat(80)).append("\n");
+        report.append("=".repeat(DISPLAY_WIDTH_STANDARD)).append("\n");
         report.append(String.format("%-60s %15s%n", "TOTAL LIABILITIES & EQUITY", formatCurrency(totalLiabilitiesAndEquity)));
         report.append("\n");
 
@@ -193,10 +215,10 @@ public class BalanceSheetService {
      * Check if account code represents an Asset (1000-2999)
      */
     private boolean isAssetAccount(String accountCode) {
-        if (accountCode == null || accountCode.length() < 4) return false;
+        if (accountCode == null || accountCode.length() < ACCOUNT_CODE_MIN_LENGTH) return false;
         try {
             int code = Integer.parseInt(accountCode);
-            return code >= 1000 && code <= 2999;
+            return code >= ACCOUNT_RANGE_ASSETS_MIN && code <= ACCOUNT_RANGE_ASSETS_MAX;
         } catch (NumberFormatException e) {
             return false;
         }
@@ -206,10 +228,10 @@ public class BalanceSheetService {
      * Check if account code represents a Liability (3000-4999)
      */
     private boolean isLiabilityAccount(String accountCode) {
-        if (accountCode == null || accountCode.length() < 4) return false;
+        if (accountCode == null || accountCode.length() < ACCOUNT_CODE_MIN_LENGTH) return false;
         try {
             int code = Integer.parseInt(accountCode);
-            return code >= 3000 && code <= 4999;
+            return code >= ACCOUNT_RANGE_LIABILITIES_MIN && code <= ACCOUNT_RANGE_LIABILITIES_MAX;
         } catch (NumberFormatException e) {
             return false;
         }
@@ -219,10 +241,10 @@ public class BalanceSheetService {
      * Check if account code represents Equity (5000-5999)
      */
     private boolean isEquityAccount(String accountCode) {
-        if (accountCode == null || accountCode.length() < 4) return false;
+        if (accountCode == null || accountCode.length() < ACCOUNT_CODE_MIN_LENGTH) return false;
         try {
             int code = Integer.parseInt(accountCode);
-            return code >= 5000 && code <= 5999;
+            return code >= ACCOUNT_RANGE_EQUITY_MIN && code <= ACCOUNT_RANGE_EQUITY_MAX;
         } catch (NumberFormatException e) {
             return false;
         }
@@ -232,12 +254,12 @@ public class BalanceSheetService {
      * Check if account code represents Revenue (6000-7999)
      */
     private boolean isRevenueAccount(String accountCode) {
-        if (accountCode == null || accountCode.length() < 4) return false;
+        if (accountCode == null || accountCode.length() < ACCOUNT_CODE_MIN_LENGTH) return false;
         // Handle account codes with dashes (e.g., "6100-001")
         String cleanCode = accountCode.split("-")[0];
         try {
             int code = Integer.parseInt(cleanCode);
-            return code >= 6000 && code <= 7999;
+            return code >= ACCOUNT_RANGE_REVENUE_MIN && code <= ACCOUNT_RANGE_REVENUE_MAX;
         } catch (NumberFormatException e) {
             return false;
         }
@@ -247,12 +269,12 @@ public class BalanceSheetService {
      * Check if account code represents Expenses (8000-9999)
      */
     private boolean isExpenseAccount(String accountCode) {
-        if (accountCode == null || accountCode.length() < 4) return false;
+        if (accountCode == null || accountCode.length() < ACCOUNT_CODE_MIN_LENGTH) return false;
         // Handle account codes with dashes (e.g., "8100-001")
         String cleanCode = accountCode.split("-")[0];
         try {
             int code = Integer.parseInt(cleanCode);
-            return code >= 8000 && code <= 9999;
+            return code >= ACCOUNT_RANGE_EXPENSES_MIN && code <= ACCOUNT_RANGE_EXPENSES_MAX;
         } catch (NumberFormatException e) {
             return false;
         }
@@ -260,12 +282,12 @@ public class BalanceSheetService {
 
     private String generateReportHeader(String title, Company company, FiscalPeriod fiscalPeriod) {
         StringBuilder header = new StringBuilder();
-        header.append(centerText(title, 60)).append("\n");
-        header.append(centerText("Company: " + company.getName(), 60)).append("\n");
-        header.append(centerText("Registration: " + company.getRegistrationNumber(), 60)).append("\n");
-        header.append(centerText("As at: " + fiscalPeriod.getEndDate(), 60)).append("\n");
+        header.append(centerText(title, DISPLAY_WIDTH_HEADER)).append("\n");
+        header.append(centerText("Company: " + company.getName(), DISPLAY_WIDTH_HEADER)).append("\n");
+        header.append(centerText("Registration: " + company.getRegistrationNumber(), DISPLAY_WIDTH_HEADER)).append("\n");
+        header.append(centerText("As at: " + fiscalPeriod.getEndDate(), DISPLAY_WIDTH_HEADER)).append("\n");
         header.append(centerText("Generated on: " + java.time.LocalDateTime.now().format(
-                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")), 60)).append("\n");
+                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")), DISPLAY_WIDTH_HEADER)).append("\n");
         return header.toString();
     }
 
@@ -278,7 +300,7 @@ public class BalanceSheetService {
     private String truncateString(String text, int maxLength) {
         if (text == null) return "";
         if (text.length() <= maxLength) return text;
-        return text.substring(0, maxLength - 3) + "...";
+        return text.substring(0, maxLength - TRUNCATE_SUFFIX_LENGTH) + TRUNCATE_SUFFIX;
     }
 
     private String formatCurrency(BigDecimal amount) {

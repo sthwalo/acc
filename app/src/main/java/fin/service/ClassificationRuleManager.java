@@ -25,6 +25,21 @@ import java.util.logging.Level;
 public class ClassificationRuleManager {
     private static final Logger LOGGER = Logger.getLogger(ClassificationRuleManager.class.getName());
     
+    // Constants for PreparedStatement parameter indices
+    private static final int CREATE_RULE_CHECK_COMPANY_ID_PARAM = 1;
+    private static final int CREATE_RULE_CHECK_ACCOUNT_CODE_PARAM = 2;
+    private static final int CREATE_RULE_CHECK_PATTERN_PARAM = 3;
+    private static final int CREATE_RULE_UPDATE_KEYWORDS_PARAM = 1;
+    private static final int CREATE_RULE_UPDATE_RULE_ID_PARAM = 2;
+    private static final int CREATE_RULE_INSERT_COMPANY_ID_PARAM = 1;
+    private static final int CREATE_RULE_INSERT_PATTERN_PARAM = 2;
+    private static final int CREATE_RULE_INSERT_KEYWORDS_PARAM = 3;
+    private static final int CREATE_RULE_INSERT_ACCOUNT_CODE_PARAM = 4;
+    private static final int CREATE_RULE_INSERT_ACCOUNT_NAME_PARAM = 5;
+    
+    // Constants for keyword extraction
+    private static final int MAX_KEYWORDS_LIMIT = 5;
+    
     private final String dbUrl;
     private final AccountClassificationService accountClassificationService;
     
@@ -151,9 +166,9 @@ public class ClassificationRuleManager {
             try (Connection conn = DriverManager.getConnection(dbUrl)) {
                 // Check for existing rule
                 try (PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
-                    checkStmt.setLong(1, companyId);
-                    checkStmt.setString(2, accountCode);
-                    checkStmt.setString(3, "%" + pattern + "%");
+                    checkStmt.setLong(CREATE_RULE_CHECK_COMPANY_ID_PARAM, companyId);
+                    checkStmt.setString(CREATE_RULE_CHECK_ACCOUNT_CODE_PARAM, accountCode);
+                    checkStmt.setString(CREATE_RULE_CHECK_PATTERN_PARAM, "%" + pattern + "%");
                     
                     ResultSet rs = checkStmt.executeQuery();
                     
@@ -161,8 +176,8 @@ public class ClassificationRuleManager {
                         // Update existing rule
                         Long existingId = rs.getLong("id");
                         try (PreparedStatement updateStmt = conn.prepareStatement(updateSql)) {
-                            updateStmt.setString(1, String.join(",", keywords));
-                            updateStmt.setLong(2, existingId);
+                            updateStmt.setString(CREATE_RULE_UPDATE_KEYWORDS_PARAM, String.join(",", keywords));
+                            updateStmt.setLong(CREATE_RULE_UPDATE_RULE_ID_PARAM, existingId);
                             updateStmt.executeUpdate();
                             
                             LOGGER.info("Updated existing rule: " + pattern + " → " + accountCode);
@@ -171,11 +186,11 @@ public class ClassificationRuleManager {
                     } else {
                         // Create new rule
                         try (PreparedStatement insertStmt = conn.prepareStatement(insertSql)) {
-                            insertStmt.setLong(1, companyId);
-                            insertStmt.setString(2, pattern);
-                            insertStmt.setString(3, String.join(",", keywords));
-                            insertStmt.setString(4, accountCode);
-                            insertStmt.setString(5, accountName);
+                            insertStmt.setLong(CREATE_RULE_INSERT_COMPANY_ID_PARAM, companyId);
+                            insertStmt.setString(CREATE_RULE_INSERT_PATTERN_PARAM, pattern);
+                            insertStmt.setString(CREATE_RULE_INSERT_KEYWORDS_PARAM, String.join(",", keywords));
+                            insertStmt.setString(CREATE_RULE_INSERT_ACCOUNT_CODE_PARAM, accountCode);
+                            insertStmt.setString(CREATE_RULE_INSERT_ACCOUNT_NAME_PARAM, accountName);
                             
                             ResultSet insertRs = insertStmt.executeQuery();
                             if (insertRs.next()) {
@@ -417,7 +432,7 @@ public class ClassificationRuleManager {
         return Arrays.stream(description.toLowerCase().split("\\W+"))
                 .filter(word -> word.length() > 2)
                 .filter(word -> !commonWordsSet.contains(word))
-                .limit(5) // Take top 5 keywords
+                .limit(MAX_KEYWORDS_LIMIT) // Take top 5 keywords
                 .toArray(String[]::new);
     }
 }

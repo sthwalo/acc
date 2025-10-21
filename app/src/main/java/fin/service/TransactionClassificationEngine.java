@@ -43,6 +43,16 @@ public class TransactionClassificationEngine {
     private static final double MAX_MATCH_SCORE = 1.0;
     @SuppressWarnings("MagicNumber")
     private static final int SIGNIFICANT_KEYWORD_LENGTH = 4;
+    @SuppressWarnings("MagicNumber")
+    private static final int MAX_KEYWORDS_TO_EXTRACT = 5;
+    
+    // Database parameter indices for similar transaction queries
+    private static final int PARAM_COMPANY_ID = 1;
+    private static final int PARAM_TRANSACTION_ID = 2;
+    private static final int PARAM_PATTERN_EXACT = 3;
+    private static final int PARAM_PATTERN_KEYWORD1 = 4;
+    private static final int PARAM_PATTERN_KEYWORD2 = 5;
+    private static final int PARAM_MAX_RESULTS = 6;
     
     /**
      * Classification result with confidence score
@@ -264,18 +274,18 @@ public class TransactionClassificationEngine {
             String details = transaction.getDetails().toLowerCase();
             String[] keywords = extractKeywords(details);
             
-            pstmt.setLong(1, companyId);
-            pstmt.setLong(2, transaction.getId());
+            pstmt.setLong(PARAM_COMPANY_ID, companyId);
+            pstmt.setLong(PARAM_TRANSACTION_ID, transaction.getId());
             
             // Create search patterns
             String pattern1 = "%" + details + "%"; // Exact description match
             String pattern2 = keywords.length > 0 ? "%" + keywords[0] + "%" : ""; // First keyword
             String pattern3 = keywords.length > 1 ? "%" + keywords[1] + "%" : ""; // Second keyword
             
-            pstmt.setString(3, pattern1);
-            pstmt.setString(4, pattern2);
-            pstmt.setString(5, pattern3);
-            pstmt.setInt(6, maxResults);
+            pstmt.setString(PARAM_PATTERN_EXACT, pattern1);
+            pstmt.setString(PARAM_PATTERN_KEYWORD1, pattern2);
+            pstmt.setString(PARAM_PATTERN_KEYWORD2, pattern3);
+            pstmt.setInt(PARAM_MAX_RESULTS, maxResults);
             
             ResultSet rs = pstmt.executeQuery();
             while (rs.next()) {
@@ -302,7 +312,7 @@ public class TransactionClassificationEngine {
         return Arrays.stream(description.toLowerCase().split("\\W+"))
                 .filter(word -> word.length() > 2)
                 .filter(word -> !commonWordsSet.contains(word))
-                .limit(5) // Take top 5 keywords
+                .limit(MAX_KEYWORDS_TO_EXTRACT) // Take top N keywords
                 .toArray(String[]::new);
     }
     

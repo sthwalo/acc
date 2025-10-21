@@ -21,6 +21,12 @@ import java.util.regex.Pattern;
  */
 public class StandardBankTabularParser implements TransactionParser {
     
+    // Regex group indices for transaction parsing
+    private static final int BALANCE_GROUP_INDEX = 3;
+    
+    // Default year for transaction date parsing when no context is available
+    private static final int DEFAULT_YEAR = 2024;
+    
     // Pattern to identify transaction lines - they start with description and have date/balance in columns
     // Format: "DESCRIPTION [amounts in middle columns] MM DD [balance]"
     private static final Pattern TRANSACTION_LINE_PATTERN = Pattern.compile(
@@ -288,7 +294,7 @@ public class StandardBankTabularParser implements TransactionParser {
         TransactionData data = new TransactionData();
         data.month = Integer.parseInt(dateMatcher.group(1));
         data.day = Integer.parseInt(dateMatcher.group(2));
-        data.balance = parseAmount(dateMatcher.group(3));
+        data.balance = parseAmount(dateMatcher.group(BALANCE_GROUP_INDEX));
         
         // Extract the description part by removing the trailing "AMOUNT MM DD BALANCE" pattern
         // The pattern captures everything before the final "MM DD BALANCE"
@@ -404,7 +410,7 @@ public class StandardBankTabularParser implements TransactionParser {
         
         // Fallback to context-based parsing
         if (context == null || context.getStatementDate() == null) {
-            return LocalDate.of(2024, month, day); // Default year
+            return LocalDate.of(DEFAULT_YEAR, month, day); // Default year
         }
         
         int year = context.getStatementDate().getYear();

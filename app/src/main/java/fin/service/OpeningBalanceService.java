@@ -14,6 +14,21 @@ public class OpeningBalanceService {
     private static final Logger LOGGER = Logger.getLogger(OpeningBalanceService.class.getName());
     private final String dbUrl;
 
+    // SQL Parameter Constants
+    private static final int JOURNAL_ENTRY_REFERENCE_PARAM = 1;
+    private static final int JOURNAL_ENTRY_DATE_PARAM = 2;
+    private static final int JOURNAL_ENTRY_DESCRIPTION_PARAM = 3;
+    private static final int JOURNAL_ENTRY_FISCAL_PERIOD_PARAM = 4;
+    private static final int JOURNAL_ENTRY_COMPANY_PARAM = 5;
+    private static final int JOURNAL_ENTRY_CREATED_BY_PARAM = 6;
+
+    private static final int JOURNAL_LINE_ENTRY_ID_PARAM = 1;
+    private static final int JOURNAL_LINE_ACCOUNT_ID_PARAM = 2;
+    private static final int JOURNAL_LINE_DEBIT_PARAM = 3;
+    private static final int JOURNAL_LINE_CREDIT_PARAM = 4;
+    private static final int JOURNAL_LINE_DESCRIPTION_PARAM = 5;
+    private static final int JOURNAL_LINE_REFERENCE_PARAM = 6;
+
     public OpeningBalanceService(String dbUrl) {
         this.dbUrl = dbUrl;
     }
@@ -232,12 +247,12 @@ public class OpeningBalanceService {
             """;
         
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, fiscalPeriod.reference);
-            pstmt.setDate(2, java.sql.Date.valueOf(fiscalPeriod.startDate));
-            pstmt.setString(3, description);
-            pstmt.setLong(4, fiscalPeriod.id);
-            pstmt.setLong(5, fiscalPeriod.companyId);
-            pstmt.setString(6, createdBy);
+            pstmt.setString(JOURNAL_ENTRY_REFERENCE_PARAM, fiscalPeriod.reference);
+            pstmt.setDate(JOURNAL_ENTRY_DATE_PARAM, java.sql.Date.valueOf(fiscalPeriod.startDate));
+            pstmt.setString(JOURNAL_ENTRY_DESCRIPTION_PARAM, description);
+            pstmt.setLong(JOURNAL_ENTRY_FISCAL_PERIOD_PARAM, fiscalPeriod.id);
+            pstmt.setLong(JOURNAL_ENTRY_COMPANY_PARAM, fiscalPeriod.companyId);
+            pstmt.setString(JOURNAL_ENTRY_CREATED_BY_PARAM, createdBy);
             
             ResultSet rs = pstmt.executeQuery();
             if (rs.next()) {
@@ -262,21 +277,21 @@ public class OpeningBalanceService {
         
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             // Line 1: DEBIT Bank Account (asset increases on debit)
-            pstmt.setLong(1, journalEntryId);
-            pstmt.setLong(2, bankAccountId);
-            pstmt.setBigDecimal(3, openingBalance);  // DEBIT
-            pstmt.setBigDecimal(4, null);
-            pstmt.setString(5, "Bank - Current Account");
-            pstmt.setString(6, reference + "-L1");
+            pstmt.setLong(JOURNAL_LINE_ENTRY_ID_PARAM, journalEntryId);
+            pstmt.setLong(JOURNAL_LINE_ACCOUNT_ID_PARAM, bankAccountId);
+            pstmt.setBigDecimal(JOURNAL_LINE_DEBIT_PARAM, openingBalance);  // DEBIT
+            pstmt.setBigDecimal(JOURNAL_LINE_CREDIT_PARAM, null);
+            pstmt.setString(JOURNAL_LINE_DESCRIPTION_PARAM, "Bank - Current Account");
+            pstmt.setString(JOURNAL_LINE_REFERENCE_PARAM, reference + "-L1");
             pstmt.executeUpdate();
             
             // Line 2: CREDIT Opening Balance Equity (temporary equity account - Cash Flow Statement only)
-            pstmt.setLong(1, journalEntryId);
-            pstmt.setLong(2, openingBalanceEquityAccountId);
-            pstmt.setBigDecimal(3, null);
-            pstmt.setBigDecimal(4, openingBalance);  // CREDIT
-            pstmt.setString(5, "Opening Balance Equity - Cash Flow Statement Only");
-            pstmt.setString(6, reference + "-L2");
+            pstmt.setLong(JOURNAL_LINE_ENTRY_ID_PARAM, journalEntryId);
+            pstmt.setLong(JOURNAL_LINE_ACCOUNT_ID_PARAM, openingBalanceEquityAccountId);
+            pstmt.setBigDecimal(JOURNAL_LINE_DEBIT_PARAM, null);
+            pstmt.setBigDecimal(JOURNAL_LINE_CREDIT_PARAM, openingBalance);  // CREDIT
+            pstmt.setString(JOURNAL_LINE_DESCRIPTION_PARAM, "Opening Balance Equity - Cash Flow Statement Only");
+            pstmt.setString(JOURNAL_LINE_REFERENCE_PARAM, reference + "-L2");
             pstmt.executeUpdate();
         }
     }

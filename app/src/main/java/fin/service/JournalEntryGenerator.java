@@ -26,6 +26,26 @@ public class JournalEntryGenerator {
     private final String dbUrl;
     private final AccountRepository accountRepository;
 
+    // SQL Parameter indices for journal entry header insertion
+    private static final int JOURNAL_ENTRY_INSERT_REFERENCE = 1;
+    private static final int JOURNAL_ENTRY_INSERT_ENTRY_DATE = 2;
+    private static final int JOURNAL_ENTRY_INSERT_DESCRIPTION = 3;
+    private static final int JOURNAL_ENTRY_INSERT_COMPANY_ID = 4;
+    private static final int JOURNAL_ENTRY_INSERT_FISCAL_PERIOD_ID = 5;
+    private static final int JOURNAL_ENTRY_INSERT_CREATED_BY = 6;
+    private static final int JOURNAL_ENTRY_INSERT_CREATED_AT = 7;
+
+    // SQL Parameter indices for journal entry line insertion
+    private static final int JOURNAL_LINE_INSERT_JOURNAL_ENTRY_ID = 1;
+    private static final int JOURNAL_LINE_INSERT_ACCOUNT_ID = 2;
+    private static final int JOURNAL_LINE_INSERT_DEBIT_AMOUNT = 3;
+    private static final int JOURNAL_LINE_INSERT_CREDIT_AMOUNT = 4;
+    private static final int JOURNAL_LINE_INSERT_DESCRIPTION = 5;
+    private static final int JOURNAL_LINE_INSERT_SOURCE_TRANSACTION_ID = 6;
+
+    // Account code constants
+    private static final int PARENT_ACCOUNT_CODE_LENGTH = 4;
+
     public JournalEntryGenerator(String dbUrl, AccountRepository accountRepository) {
         this.dbUrl = dbUrl;
         this.accountRepository = accountRepository;
@@ -128,8 +148,8 @@ public class JournalEntryGenerator {
 
     private String getParentAccountCode(String accountCode) {
         // Extract parent code (first 4 digits for main categories)
-        if (accountCode.length() >= 4) {
-            return accountCode.substring(0, 4);
+        if (accountCode.length() >= PARENT_ACCOUNT_CODE_LENGTH) {
+            return accountCode.substring(0, PARENT_ACCOUNT_CODE_LENGTH);
         }
         return accountCode;
     }
@@ -163,13 +183,13 @@ public class JournalEntryGenerator {
             """;
 
         try (PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            stmt.setString(1, journalEntry.getReference());
-            stmt.setDate(2, Date.valueOf(journalEntry.getEntryDate()));
-            stmt.setString(3, journalEntry.getDescription());
-            stmt.setLong(4, journalEntry.getCompanyId());
-            stmt.setLong(5, journalEntry.getFiscalPeriodId());
-            stmt.setString(6, journalEntry.getCreatedBy());
-            stmt.setTimestamp(7, Timestamp.valueOf(journalEntry.getCreatedAt()));
+            stmt.setString(JOURNAL_ENTRY_INSERT_REFERENCE, journalEntry.getReference());
+            stmt.setDate(JOURNAL_ENTRY_INSERT_ENTRY_DATE, Date.valueOf(journalEntry.getEntryDate()));
+            stmt.setString(JOURNAL_ENTRY_INSERT_DESCRIPTION, journalEntry.getDescription());
+            stmt.setLong(JOURNAL_ENTRY_INSERT_COMPANY_ID, journalEntry.getCompanyId());
+            stmt.setLong(JOURNAL_ENTRY_INSERT_FISCAL_PERIOD_ID, journalEntry.getFiscalPeriodId());
+            stmt.setString(JOURNAL_ENTRY_INSERT_CREATED_BY, journalEntry.getCreatedBy());
+            stmt.setTimestamp(JOURNAL_ENTRY_INSERT_CREATED_AT, Timestamp.valueOf(journalEntry.getCreatedAt()));
 
             stmt.executeUpdate();
 
@@ -199,21 +219,21 @@ public class JournalEntryGenerator {
                 BigDecimal amount = transaction.getCreditAmount();
 
                 // Credit the income account
-                stmt.setLong(1, journalEntryId);
-                stmt.setLong(2, classifiedAccountId);
-                stmt.setNull(3, Types.NUMERIC); // debit_amount = NULL
-                stmt.setBigDecimal(4, amount); // credit_amount = transaction amount
-                stmt.setString(5, "Income - " + transaction.getDetails());
-                stmt.setLong(6, transaction.getId()); // source_transaction_id
+                stmt.setLong(JOURNAL_LINE_INSERT_JOURNAL_ENTRY_ID, journalEntryId);
+                stmt.setLong(JOURNAL_LINE_INSERT_ACCOUNT_ID, classifiedAccountId);
+                stmt.setNull(JOURNAL_LINE_INSERT_DEBIT_AMOUNT, Types.NUMERIC); // debit_amount = NULL
+                stmt.setBigDecimal(JOURNAL_LINE_INSERT_CREDIT_AMOUNT, amount); // credit_amount = transaction amount
+                stmt.setString(JOURNAL_LINE_INSERT_DESCRIPTION, "Income - " + transaction.getDetails());
+                stmt.setLong(JOURNAL_LINE_INSERT_SOURCE_TRANSACTION_ID, transaction.getId()); // source_transaction_id
                 stmt.executeUpdate();
 
                 // Debit the bank account
-                stmt.setLong(1, journalEntryId);
-                stmt.setLong(2, bankAccountId);
-                stmt.setBigDecimal(3, amount); // debit_amount = transaction amount
-                stmt.setNull(4, Types.NUMERIC); // credit_amount = NULL
-                stmt.setString(5, "Bank account - " + transaction.getDetails());
-                stmt.setLong(6, transaction.getId()); // source_transaction_id
+                stmt.setLong(JOURNAL_LINE_INSERT_JOURNAL_ENTRY_ID, journalEntryId);
+                stmt.setLong(JOURNAL_LINE_INSERT_ACCOUNT_ID, bankAccountId);
+                stmt.setBigDecimal(JOURNAL_LINE_INSERT_DEBIT_AMOUNT, amount); // debit_amount = transaction amount
+                stmt.setNull(JOURNAL_LINE_INSERT_CREDIT_AMOUNT, Types.NUMERIC); // credit_amount = NULL
+                stmt.setString(JOURNAL_LINE_INSERT_DESCRIPTION, "Bank account - " + transaction.getDetails());
+                stmt.setLong(JOURNAL_LINE_INSERT_SOURCE_TRANSACTION_ID, transaction.getId()); // source_transaction_id
                 stmt.executeUpdate();
 
             } else if (isExpense) {
@@ -221,21 +241,21 @@ public class JournalEntryGenerator {
                 BigDecimal amount = transaction.getDebitAmount();
 
                 // Debit the expense account
-                stmt.setLong(1, journalEntryId);
-                stmt.setLong(2, classifiedAccountId);
-                stmt.setBigDecimal(3, amount); // debit_amount = transaction amount
-                stmt.setNull(4, Types.NUMERIC); // credit_amount = NULL
-                stmt.setString(5, "Expense - " + transaction.getDetails());
-                stmt.setLong(6, transaction.getId()); // source_transaction_id
+                stmt.setLong(JOURNAL_LINE_INSERT_JOURNAL_ENTRY_ID, journalEntryId);
+                stmt.setLong(JOURNAL_LINE_INSERT_ACCOUNT_ID, classifiedAccountId);
+                stmt.setBigDecimal(JOURNAL_LINE_INSERT_DEBIT_AMOUNT, amount); // debit_amount = transaction amount
+                stmt.setNull(JOURNAL_LINE_INSERT_CREDIT_AMOUNT, Types.NUMERIC); // credit_amount = NULL
+                stmt.setString(JOURNAL_LINE_INSERT_DESCRIPTION, "Expense - " + transaction.getDetails());
+                stmt.setLong(JOURNAL_LINE_INSERT_SOURCE_TRANSACTION_ID, transaction.getId()); // source_transaction_id
                 stmt.executeUpdate();
 
                 // Credit the bank account
-                stmt.setLong(1, journalEntryId);
-                stmt.setLong(2, bankAccountId);
-                stmt.setNull(3, Types.NUMERIC); // debit_amount = NULL
-                stmt.setBigDecimal(4, amount); // credit_amount = transaction amount
-                stmt.setString(5, "Bank account - " + transaction.getDetails());
-                stmt.setLong(6, transaction.getId()); // source_transaction_id
+                stmt.setLong(JOURNAL_LINE_INSERT_JOURNAL_ENTRY_ID, journalEntryId);
+                stmt.setLong(JOURNAL_LINE_INSERT_ACCOUNT_ID, bankAccountId);
+                stmt.setNull(JOURNAL_LINE_INSERT_DEBIT_AMOUNT, Types.NUMERIC); // debit_amount = NULL
+                stmt.setBigDecimal(JOURNAL_LINE_INSERT_CREDIT_AMOUNT, amount); // credit_amount = transaction amount
+                stmt.setString(JOURNAL_LINE_INSERT_DESCRIPTION, "Bank account - " + transaction.getDetails());
+                stmt.setLong(JOURNAL_LINE_INSERT_SOURCE_TRANSACTION_ID, transaction.getId()); // source_transaction_id
                 stmt.executeUpdate();
             }
         }

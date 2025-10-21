@@ -40,6 +40,10 @@ public class ClassificationUIHandler {
     private static final int MAX_SUGGESTIONS = 5;
     @SuppressWarnings("MagicNumber")
     private static final int PERCENTAGE_MULTIPLIER = 100;
+    @SuppressWarnings("MagicNumber")
+    private static final int MENU_SEPARATOR_WIDTH = 60;
+    @SuppressWarnings("MagicNumber")
+    private static final int TRUNCATE_SUFFIX_LENGTH = 3;
     
     /**
      * User classification choice
@@ -159,7 +163,7 @@ public class ClassificationUIHandler {
      */
     public void showAccountSuggestions(Long companyId, BankTransaction transaction) {
         System.out.println("\n💡 ACCOUNT SUGGESTIONS:");
-        System.out.println("-".repeat(60));
+        System.out.println("-".repeat(MENU_SEPARATOR_WIDTH));
         
         // Show most used accounts from rules
         List<Map<String, Object>> mostUsed = ruleManager.getMostUsedAccounts(companyId, MAX_SUGGESTIONS);
@@ -181,7 +185,7 @@ public class ClassificationUIHandler {
         // Show intelligent suggestions based on transaction content
         showIntelligentSuggestions(transaction);
         
-        System.out.println("-".repeat(60));
+        System.out.println("-".repeat(MENU_SEPARATOR_WIDTH));
     }
     
     /**
@@ -307,7 +311,7 @@ public class ClassificationUIHandler {
         System.out.println("⏭️  Skipped: " + skippedCount);
         
         if (processedCount > 0) {
-            double successRate = (classifiedCount * 100.0) / processedCount;
+            double successRate = (classifiedCount * PERCENTAGE_MULTIPLIER) / processedCount;
             System.out.println("📈 Success rate: " + String.format("%.1f%%", successRate));
         }
         
@@ -318,15 +322,15 @@ public class ClassificationUIHandler {
      * Show main classification menu
      */
     public void showClassificationMenu() {
-        System.out.println("\n" + "=".repeat(60));
+        System.out.println("\n" + "=".repeat(MENU_SEPARATOR_WIDTH));
         System.out.println("📋 TRANSACTION CLASSIFICATION MENU");
-        System.out.println("=".repeat(60));
+        System.out.println("=".repeat(MENU_SEPARATOR_WIDTH));
         System.out.println("1. Review Uncategorized Transactions");
         System.out.println("2. Auto-Classify All Transactions");
         System.out.println("3. Show Classification Summary");
         System.out.println("4. Manage Classification Rules");
         System.out.println("5. Back to Main Menu");
-        System.out.println("=".repeat(60));
+        System.out.println("=".repeat(MENU_SEPARATOR_WIDTH));
     }
     
     /**
@@ -389,6 +393,6 @@ public class ClassificationUIHandler {
     private String truncateString(String str, int maxLength) {
         if (str == null) return "";
         if (str.length() <= maxLength) return str;
-        return str.substring(0, maxLength - 3) + "...";
+        return str.substring(0, maxLength - TRUNCATE_SUFFIX_LENGTH) + "...";
     }
 }

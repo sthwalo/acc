@@ -15,6 +15,20 @@ import java.util.List;
  * Extracted from monolithic App.java fiscal period-related methods
  */
 public class FiscalPeriodController {
+    // Menu choice constants
+    private static final int MAX_FISCAL_PERIOD_MENU_CHOICE = 4;
+    private static final int MENU_CHOICE_CREATE_PERIOD = 1;
+    private static final int MENU_CHOICE_SELECT_PERIOD = 2;
+    private static final int MENU_CHOICE_VIEW_DETAILS = 3;
+    private static final int MENU_CHOICE_BACK = 4;
+    
+    // Manage fiscal periods menu choice constants
+    private static final int MAX_MANAGE_FISCAL_PERIOD_MENU_CHOICE = 4;
+    private static final int MANAGE_CHOICE_SELECT_PERIOD = 1;
+    private static final int MANAGE_CHOICE_CREATE_PERIOD = 2;
+    private static final int MANAGE_CHOICE_CLOSE_PERIOD = 3;
+    private static final int MANAGE_CHOICE_BACK = 4;
+    
     private final CompanyService companyService;
     private final ApplicationState applicationState;
     private final ConsoleMenu menu;
@@ -40,19 +54,19 @@ public class FiscalPeriodController {
             boolean back = false;
             while (!back) {
                 menu.displayFiscalPeriodMenu();
-                int choice = inputHandler.getInteger("Enter your choice", 1, 4);
+                int choice = inputHandler.getInteger("Enter your choice", 1, MAX_FISCAL_PERIOD_MENU_CHOICE);
                 
                 switch (choice) {
-                    case 1:
+                    case MENU_CHOICE_CREATE_PERIOD:
                         createFiscalPeriod();
                         break;
-                    case 2:
+                    case MENU_CHOICE_SELECT_PERIOD:
                         selectFiscalPeriod();
                         break;
-                    case 3:
+                    case MENU_CHOICE_VIEW_DETAILS:
                         viewFiscalPeriodDetails();
                         break;
-                    case 4:
+                    case MENU_CHOICE_BACK:
                         back = true;
                         break;
                     default:
@@ -156,19 +170,19 @@ public class FiscalPeriodController {
             outputFormatter.printPlain("3. Close a period");
             outputFormatter.printPlain("4. Back to main menu");
             
-            int choice = inputHandler.getInteger("Enter your choice", 1, 4);
+            int choice = inputHandler.getInteger("Enter your choice", 1, MAX_MANAGE_FISCAL_PERIOD_MENU_CHOICE);
             
             switch (choice) {
-                case 1:
+                case MANAGE_CHOICE_SELECT_PERIOD:
                     selectFiscalPeriod();
                     break;
-                case 2:
+                case MANAGE_CHOICE_CREATE_PERIOD:
                     createFiscalPeriod();
                     break;
-                case 3:
+                case MANAGE_CHOICE_CLOSE_PERIOD:
                     closeFiscalPeriod(periods);
                     break;
-                case 4:
+                case MANAGE_CHOICE_BACK:
                     // Go back
                     break;
                 default:

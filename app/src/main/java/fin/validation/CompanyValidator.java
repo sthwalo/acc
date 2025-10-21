@@ -6,6 +6,11 @@ import fin.model.Company;
  * Validator for Company entities
  */
 public class CompanyValidator implements ModelValidator<Company> {
+    
+    // Field length limits
+    private static final int MAX_COMPANY_NAME_LENGTH = 100;
+    private static final int MAX_REGISTRATION_NUMBER_LENGTH = 50;
+    private static final int MAX_TAX_NUMBER_LENGTH = 50;
     @Override
     public ValidationResult validate(Company company) {
         ValidationResult result = new ValidationResult();
@@ -16,16 +21,16 @@ public class CompanyValidator implements ModelValidator<Company> {
         }
 
         // Length validations
-        if (company.getName() != null && company.getName().length() > 100) {
-            result.addError("name", "Company name cannot exceed 100 characters");
+        if (company.getName() != null && company.getName().length() > MAX_COMPANY_NAME_LENGTH) {
+            result.addError("name", "Company name cannot exceed " + MAX_COMPANY_NAME_LENGTH + " characters");
         }
 
-        if (company.getRegistrationNumber() != null && company.getRegistrationNumber().length() > 50) {
-            result.addError("registrationNumber", "Registration number cannot exceed 50 characters");
+        if (company.getRegistrationNumber() != null && company.getRegistrationNumber().length() > MAX_REGISTRATION_NUMBER_LENGTH) {
+            result.addError("registrationNumber", "Registration number cannot exceed " + MAX_REGISTRATION_NUMBER_LENGTH + " characters");
         }
 
-        if (company.getTaxNumber() != null && company.getTaxNumber().length() > 50) {
-            result.addError("taxNumber", "Tax number cannot exceed 50 characters");
+        if (company.getTaxNumber() != null && company.getTaxNumber().length() > MAX_TAX_NUMBER_LENGTH) {
+            result.addError("taxNumber", "Tax number cannot exceed " + MAX_TAX_NUMBER_LENGTH + " characters");
         }
 
         // Format validations
