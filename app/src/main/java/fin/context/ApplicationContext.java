@@ -69,6 +69,10 @@ public class ApplicationContext {
             CompanyService companyService = new CompanyService(dbUrl);
             register(CompanyService.class, companyService);
             
+            // Company logo service (depends on CompanyService)
+            CompanyLogoService companyLogoService = new CompanyLogoService(dbUrl);
+            register(CompanyLogoService.class, companyLogoService);
+            
             CsvImportService csvImportService = new CsvImportService(dbUrl, companyService);
             register(CsvImportService.class, csvImportService);
             

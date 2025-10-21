@@ -43,9 +43,10 @@ public class CompanyService {
     private static final int PARAM_ADDRESS = 4;
     private static final int PARAM_CONTACT_EMAIL = 5;
     private static final int PARAM_CONTACT_PHONE = 6;
-    private static final int PARAM_CREATED_AT = 7;
-    private static final int PARAM_UPDATED_AT = 7;
-    private static final int PARAM_COMPANY_ID = 8;
+    private static final int PARAM_LOGO_PATH = 7;
+    private static final int PARAM_CREATED_AT = 8;
+    private static final int PARAM_UPDATED_AT = 8;
+    private static final int PARAM_COMPANY_ID = 9;
     
     // PreparedStatement parameter indices for fiscal period operations
     private static final int PARAM_FISCAL_COMPANY_ID = 1;
@@ -67,7 +68,7 @@ public class CompanyService {
 
     public Company createCompany(Company company) {
         String sql = "INSERT INTO companies (name, registration_number, tax_number, address, " +
-                "contact_email, contact_phone, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)";
+                "contact_email, contact_phone, logo_path, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         
         try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -78,6 +79,7 @@ public class CompanyService {
             pstmt.setString(PARAM_ADDRESS, company.getAddress());
             pstmt.setString(PARAM_CONTACT_EMAIL, company.getContactEmail());
             pstmt.setString(PARAM_CONTACT_PHONE, company.getContactPhone());
+            pstmt.setString(PARAM_LOGO_PATH, company.getLogoPath());
             pstmt.setTimestamp(PARAM_CREATED_AT, Timestamp.valueOf(LocalDateTime.now()));
             
             int affectedRows = pstmt.executeUpdate();
@@ -183,6 +185,7 @@ public class CompanyService {
                 company.setAddress(rs.getString("address"));
                 company.setContactEmail(rs.getString("contact_email"));
                 company.setContactPhone(rs.getString("contact_phone"));
+                company.setLogoPath(rs.getString("logo_path"));
                 company.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
                 companies.add(company);
             }
@@ -213,6 +216,7 @@ public class CompanyService {
                 company.setAddress(rs.getString("address"));
                 company.setContactEmail(rs.getString("contact_email"));
                 company.setContactPhone(rs.getString("contact_phone"));
+                company.setLogoPath(rs.getString("logo_path"));
                 company.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
                 return company;
             } else {
@@ -236,7 +240,7 @@ public class CompanyService {
         }
         
         String sql = "UPDATE companies SET name = ?, registration_number = ?, tax_number = ?, " +
-                "address = ?, contact_email = ?, contact_phone = ?, updated_at = ? " +
+                "address = ?, contact_email = ?, contact_phone = ?, logo_path = ?, updated_at = ? " +
                 "WHERE id = ?";
         
         try (Connection conn = DriverManager.getConnection(dbUrl);
@@ -248,6 +252,7 @@ public class CompanyService {
             pstmt.setString(PARAM_ADDRESS, company.getAddress());
             pstmt.setString(PARAM_CONTACT_EMAIL, company.getContactEmail());
             pstmt.setString(PARAM_CONTACT_PHONE, company.getContactPhone());
+            pstmt.setString(PARAM_LOGO_PATH, company.getLogoPath());
             pstmt.setTimestamp(PARAM_UPDATED_AT, Timestamp.valueOf(LocalDateTime.now()));
             pstmt.setLong(PARAM_COMPANY_ID, company.getId());
             

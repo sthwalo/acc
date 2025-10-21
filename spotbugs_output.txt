@@ -1,0 +1,12 @@
+> Task :app:clean
+> Task :app:compileJava
+> Task :app:processResources
+> Task :app:classes
+
+> Task :app:spotbugsMain
+M D ICAST: Integral division result cast to double or float in fin.service.InteractiveClassificationService.showCategorizationSummary(Long, Long)  At InteractiveClassificationService.java:[line 1311]
+M D ICAST: Integral division result cast to double or float in fin.service.ClassificationUIHandler.showSessionSummary(int, int, int)  At ClassificationUIHandler.java:[line 314]
+SpotBugs ended with exit code 1
+
+BUILD SUCCESSFUL in 15s
+4 actionable tasks: 4 executed
