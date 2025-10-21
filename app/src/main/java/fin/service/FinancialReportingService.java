@@ -279,8 +279,12 @@ public class FinancialReportingService {
                 BigDecimal debitAmount = rs.getBigDecimal("debit_amount");
                 BigDecimal creditAmount = rs.getBigDecimal("credit_amount");
                 
-                if (debitAmount != null) grandTotalDebits = grandTotalDebits.add(debitAmount);
-                if (creditAmount != null) grandTotalCredits = grandTotalCredits.add(creditAmount);
+                if (debitAmount != null) {
+                    grandTotalDebits = grandTotalDebits.add(debitAmount);
+                }
+                if (creditAmount != null) {
+                    grandTotalCredits = grandTotalCredits.add(creditAmount);
+                }
                 
                 report.append(String.format("%-10s %-25s %-30s %15s %15s%n",
                         accountCode,
@@ -430,12 +434,16 @@ public class FinancialReportingService {
     }
     
     private String formatCurrency(BigDecimal amount) {
-        if (amount == null) return "";
+        if (amount == null) {
+            return "";
+        }
         return currencyFormat.format(amount);
     }
     
     private String centerText(String text, int width) {
-        if (text.length() >= width) return text;
+        if (text.length() >= width) {
+            return text;
+        }
         int padding = (width - text.length()) / 2;
         return " ".repeat(padding) + text + " ".repeat(width - text.length() - padding);
     }
