@@ -1308,7 +1308,7 @@ public class InteractiveClassificationService {
                 int categorized = rs.getInt("categorized_count");
                 int uncategorized = rs.getInt("uncategorized_count");
                 
-                double percentage = total > 0 ? (categorized * PERCENTAGE_MULTIPLIER / total) : 0;
+                double percentage = total > 0 ? ((double) categorized * PERCENTAGE_MULTIPLIER) / (double) total : 0;
                 
                 System.out.println("📈 Total Transactions: " + total);
                 System.out.println("✅ Categorized: " + categorized + " (" + String.format("%.1f%%", percentage) + ")");

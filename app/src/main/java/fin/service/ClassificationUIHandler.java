@@ -311,7 +311,7 @@ public class ClassificationUIHandler {
         System.out.println("⏭️  Skipped: " + skippedCount);
         
         if (processedCount > 0) {
-            double successRate = (classifiedCount * PERCENTAGE_MULTIPLIER) / processedCount;
+            double successRate = ((double) classifiedCount * PERCENTAGE_MULTIPLIER) / (double) processedCount;
             System.out.println("📈 Success rate: " + String.format("%.1f%%", successRate));
         }
         
