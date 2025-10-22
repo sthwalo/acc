@@ -29,8 +29,8 @@ public class OpeningBalanceService {
     private static final int JOURNAL_LINE_DESCRIPTION_PARAM = 5;
     private static final int JOURNAL_LINE_REFERENCE_PARAM = 6;
 
-    public OpeningBalanceService(String dbUrl) {
-        this.dbUrl = dbUrl;
+    public OpeningBalanceService(String initialDbUrl) {
+        this.dbUrl = initialDbUrl;
     }
 
     /**

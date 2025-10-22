@@ -278,9 +278,9 @@ public class PdfExportService {
         private final String companyName;
         private final String fiscalPeriodName;
         
-        public HeaderFooterPageEvent(String companyName, String fiscalPeriodName) {
-            this.companyName = companyName;
-            this.fiscalPeriodName = fiscalPeriodName;
+        public HeaderFooterPageEvent(String valueCompanyName, String valueFiscalPeriodName) {
+            this.companyName = valueCompanyName;
+            this.fiscalPeriodName = valueFiscalPeriodName;
         }
         
         @Override

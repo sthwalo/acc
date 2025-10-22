@@ -22,8 +22,8 @@ public class CashbookService {
     private static final int TOTALS_LABEL_WIDTH = 77;
     private static final int HEADER_CENTER_WIDTH = 110;
 
-    public CashbookService(FinancialDataRepository repository) {
-        this.repository = repository;
+    public CashbookService(FinancialDataRepository initialRepository) {
+        this.repository = initialRepository;
     }
 
     /**

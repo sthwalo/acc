@@ -29,9 +29,9 @@ public class ValidationResult {
         private final String field;
         private final String message;
 
-        public ValidationError(String field, String message) {
-            this.field = field;
-            this.message = message;
+        public ValidationError(String valueField, String valueMessage) {
+            this.field = valueField;
+            this.message = valueMessage;
         }
 
         public String getField() {

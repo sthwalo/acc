@@ -33,10 +33,10 @@ public class GeneralLedgerService {
      * - Maintains single responsibility principle
      * - Suppressions are configured in config/spotbugs/exclude.xml for all service constructors
      *
-     * @param repository the financial data repository for database operations
+     * @param initialRepository the financial data repository for database operations
      */
-    public GeneralLedgerService(FinancialDataRepository repository) {
-        this.repository = repository;
+    public GeneralLedgerService(FinancialDataRepository initialRepository) {
+        this.repository = initialRepository;
     }
 
     /**

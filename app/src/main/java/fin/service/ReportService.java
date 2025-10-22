@@ -30,9 +30,9 @@ public class ReportService {
     private static final int MAX_DESCRIPTION_LENGTH = 38;
     private static final int TRUNCATED_DESCRIPTION_LENGTH = 35;
     
-    public ReportService(String dbUrl, CsvImportService csvImportService) {
-        this.dbUrl = dbUrl;
-        this.csvImportService = csvImportService;
+    public ReportService(String initialDbUrl, CsvImportService initialCsvImportService) {
+        this.dbUrl = initialDbUrl;
+        this.csvImportService = initialCsvImportService;
     }
     
     /**

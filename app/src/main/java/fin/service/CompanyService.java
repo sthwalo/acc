@@ -60,8 +60,8 @@ public class CompanyService {
     private static final int PARAM_QUERY_COMPANY_ID = 1;
     private static final int PARAM_QUERY_PERIOD_NAME = 2;
     
-    public CompanyService(String dbUrl) {
-        this.dbUrl = dbUrl;
+    public CompanyService(String initialDbUrl) {
+        this.dbUrl = initialDbUrl;
     }
     
 

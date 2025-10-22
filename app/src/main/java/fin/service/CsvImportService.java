@@ -62,22 +62,22 @@ public final class CsvImportService {
     private static final int FISCAL_PERIOD_END_YEAR_START = 7; // Start index for end year in "FY2024-2025"
     private static final int MIN_SELECTED_PERIOD_LENGTH = 6;   // "FY" + 4-digit year minimum length
     
-    public CsvImportService(String dbUrl, CompanyService companyService) {
+    public CsvImportService(String initialDbUrl, CompanyService initialCompanyService) {
         // Input validation
-        if (dbUrl == null || dbUrl.trim().isEmpty()) {
+        if (initialDbUrl == null || initialDbUrl.trim().isEmpty()) {
             throw new IllegalArgumentException("Database URL is required");
         }
-        if (companyService == null) {
+        if (initialCompanyService == null) {
             throw new IllegalArgumentException("CompanyService is required");
         }
 
         // Safe field assignments first
-        this.dbUrl = dbUrl;
-        this.companyService = companyService;
+        this.dbUrl = initialDbUrl;
+        this.companyService = initialCompanyService;
 
         // Risky operation with error handling
         try {
-            this.accountService = new AccountService(dbUrl, companyService);
+            this.accountService = new AccountService(initialDbUrl, initialCompanyService);
         } catch (Exception e) {
             throw new RuntimeException("Failed to initialize AccountService", e);
         }

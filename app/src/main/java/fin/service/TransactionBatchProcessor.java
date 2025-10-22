@@ -30,13 +30,13 @@ public class TransactionBatchProcessor {
      * - Maintains separation between classification and journal entry generation
      * - Suppressions are configured in config/spotbugs/exclude.xml for all service constructors
      *
-     * @param ruleManager classification rule manager for transaction mapping
-     * @param journalGenerator journal entry generator for accounting entries
+     * @param initialRuleManager classification rule manager for transaction mapping
+     * @param initialJournalGenerator journal entry generator for accounting entries
      */
-    public TransactionBatchProcessor(ClassificationRuleManager ruleManager,
-                                   JournalEntryGenerator journalGenerator) {
-        this.ruleManager = ruleManager;
-        this.journalGenerator = journalGenerator;
+    public TransactionBatchProcessor(ClassificationRuleManager initialRuleManager,
+                                   JournalEntryGenerator initialJournalGenerator) {
+        this.ruleManager = initialRuleManager;
+        this.journalGenerator = initialJournalGenerator;
     }
 
     /**

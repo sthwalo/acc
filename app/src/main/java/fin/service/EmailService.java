@@ -27,18 +27,18 @@ public class EmailService {
     /**
      * Constructor with SMTP configuration
      */
-    public EmailService(String smtpHost, String smtpPort, String smtpUsername,
-                       String smtpPassword, boolean smtpAuth, boolean smtpTls, boolean smtpSsl,
-                       String fromEmail, String fromName) {
-        this.smtpHost = smtpHost;
-        this.smtpPort = smtpPort;
-        this.smtpUsername = smtpUsername;
-        this.smtpPassword = smtpPassword;
-        this.smtpAuth = smtpAuth;
-        this.smtpTls = smtpTls;
-        this.smtpSsl = smtpSsl;
-        this.fromEmail = fromEmail;
-        this.fromName = fromName;
+    public EmailService(String initialSmtpHost, String initialSmtpPort, String initialSmtpUsername,
+                       String initialSmtpPassword, boolean initialSmtpAuth, boolean initialSmtpTls, boolean initialSmtpSsl,
+                       String initialFromEmail, String initialFromName) {
+        this.smtpHost = initialSmtpHost;
+        this.smtpPort = initialSmtpPort;
+        this.smtpUsername = initialSmtpUsername;
+        this.smtpPassword = initialSmtpPassword;
+        this.smtpAuth = initialSmtpAuth;
+        this.smtpTls = initialSmtpTls;
+        this.smtpSsl = initialSmtpSsl;
+        this.fromEmail = initialFromEmail;
+        this.fromName = initialFromName;
     }
 
     /**
@@ -209,11 +209,11 @@ public class EmailService {
         public final String payslipPdfPath;
         public final String payrollPeriodName;
 
-        public EmailRequest(String toEmail, String employeeName, String payslipPdfPath, String payrollPeriodName) {
-            this.toEmail = toEmail;
-            this.employeeName = employeeName;
-            this.payslipPdfPath = payslipPdfPath;
-            this.payrollPeriodName = payrollPeriodName;
+        public EmailRequest(String valueToEmail, String valueEmployeeName, String valuePayslipPdfPath, String valuePayrollPeriodName) {
+            this.toEmail = valueToEmail;
+            this.employeeName = valueEmployeeName;
+            this.payslipPdfPath = valuePayslipPdfPath;
+            this.payrollPeriodName = valuePayrollPeriodName;
         }
     }
 
@@ -225,10 +225,10 @@ public class EmailService {
         public final int failureCount;
         public final java.util.List<String> failedEmails;
 
-        public EmailSendResult(int successCount, int failureCount, java.util.List<String> failedEmails) {
-            this.successCount = successCount;
-            this.failureCount = failureCount;
-            this.failedEmails = failedEmails;
+        public EmailSendResult(int valueSuccessCount, int valueFailureCount, java.util.List<String> valueFailedEmails) {
+            this.successCount = valueSuccessCount;
+            this.failureCount = valueFailureCount;
+            this.failedEmails = valueFailedEmails;
         }
 
         @Override

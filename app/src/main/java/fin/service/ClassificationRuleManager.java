@@ -57,18 +57,18 @@ public class ClassificationRuleManager {
         private final Timestamp createdAt;
         private final Timestamp lastUsed;
         
-        public ClassificationRule(Long id, Long companyId, String pattern, String[] keywords, 
-                                String accountCode, String accountName, int usageCount,
-                                Timestamp createdAt, Timestamp lastUsed) {
-            this.id = id;
-            this.companyId = companyId;
-            this.pattern = pattern;
-            this.keywords = keywords != null ? keywords.clone() : new String[0];
-            this.accountCode = accountCode;
-            this.accountName = accountName;
-            this.usageCount = usageCount;
-            this.createdAt = createdAt != null ? new Timestamp(createdAt.getTime()) : null;
-            this.lastUsed = lastUsed != null ? new Timestamp(lastUsed.getTime()) : null;
+        public ClassificationRule(Long valueId, Long valueCompanyId, String valuePattern, String[] valueKeywords, 
+                                String valueAccountCode, String valueAccountName, int valueUsageCount,
+                                Timestamp valueCreatedAt, Timestamp valueLastUsed) {
+            this.id = valueId;
+            this.companyId = valueCompanyId;
+            this.pattern = valuePattern;
+            this.keywords = valueKeywords != null ? valueKeywords.clone() : new String[0];
+            this.accountCode = valueAccountCode;
+            this.accountName = valueAccountName;
+            this.usageCount = valueUsageCount;
+            this.createdAt = valueCreatedAt != null ? new Timestamp(valueCreatedAt.getTime()) : null;
+            this.lastUsed = valueLastUsed != null ? new Timestamp(valueLastUsed.getTime()) : null;
         }
         
         // Getters

@@ -64,13 +64,13 @@ public class TransactionClassificationEngine {
         private final String matchingRule;
         private final boolean isAutoClassified;
         
-        public ClassificationResult(String accountCode, String accountName, double confidenceScore, 
-                                  String matchingRule, boolean isAutoClassified) {
-            this.accountCode = accountCode;
-            this.accountName = accountName;
-            this.confidenceScore = confidenceScore;
-            this.matchingRule = matchingRule;
-            this.isAutoClassified = isAutoClassified;
+        public ClassificationResult(String valueAccountCode, String valueAccountName, double valueConfidenceScore, 
+                                  String valueMatchingRule, boolean valueIsAutoClassified) {
+            this.accountCode = valueAccountCode;
+            this.accountName = valueAccountName;
+            this.confidenceScore = valueConfidenceScore;
+            this.matchingRule = valueMatchingRule;
+            this.isAutoClassified = valueIsAutoClassified;
         }
         
         // Getters

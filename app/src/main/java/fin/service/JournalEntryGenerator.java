@@ -46,9 +46,9 @@ public class JournalEntryGenerator {
     // Account code constants
     private static final int PARENT_ACCOUNT_CODE_LENGTH = 4;
 
-    public JournalEntryGenerator(String dbUrl, AccountRepository accountRepository) {
-        this.dbUrl = dbUrl;
-        this.accountRepository = accountRepository;
+    public JournalEntryGenerator(String initialDbUrl, AccountRepository initialAccountRepository) {
+        this.dbUrl = initialDbUrl;
+        this.accountRepository = initialAccountRepository;
     }
 
     /**

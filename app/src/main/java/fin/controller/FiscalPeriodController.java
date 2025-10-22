@@ -35,16 +35,16 @@ public class FiscalPeriodController {
     private final InputHandler inputHandler;
     private final OutputFormatter outputFormatter;
     
-    public FiscalPeriodController(CompanyService companyService,
-                                ApplicationState applicationState,
-                                ConsoleMenu menu,
-                                InputHandler inputHandler,
-                                OutputFormatter outputFormatter) {
-        this.companyService = companyService;
-        this.applicationState = applicationState;
-        this.menu = menu;
-        this.inputHandler = inputHandler;
-        this.outputFormatter = outputFormatter;
+    public FiscalPeriodController(CompanyService initialCompanyService,
+                                ApplicationState initialApplicationState,
+                                ConsoleMenu initialMenu,
+                                InputHandler initialInputHandler,
+                                OutputFormatter initialOutputFormatter) {
+        this.companyService = initialCompanyService;
+        this.applicationState = initialApplicationState;
+        this.menu = initialMenu;
+        this.inputHandler = initialInputHandler;
+        this.outputFormatter = initialOutputFormatter;
     }
     
     public void handleFiscalPeriods() {

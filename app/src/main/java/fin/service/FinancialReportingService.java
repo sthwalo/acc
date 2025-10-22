@@ -54,13 +54,13 @@ public class FinancialReportingService {
     private final BalanceSheetService balanceSheetService;
     private final CashFlowService cashFlowService;
 
-    public FinancialReportingService(String dbUrl) {
-        this.dbUrl = dbUrl;
+    public FinancialReportingService(String initialDbUrl) {
+        this.dbUrl = initialDbUrl;
         this.currencyFormat = NumberFormat.getCurrencyInstance(Locale.forLanguageTag("en-ZA"));
 
         // Create DataSource from dbUrl
         HikariConfig config = new HikariConfig();
-        config.setJdbcUrl(dbUrl);
+        config.setJdbcUrl(initialDbUrl);
         config.setMaximumPoolSize(MAX_CONNECTION_POOL_SIZE);
         config.setMinimumIdle(MIN_IDLE_CONNECTIONS);
         this.dataSource = new HikariDataSource(config);

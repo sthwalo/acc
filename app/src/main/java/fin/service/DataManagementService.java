@@ -55,10 +55,10 @@ public class DataManagementService {
     private static final int UPDATE_TRANSACTION_PARAM_TRANSACTION_ID = 2;
     private static final int UPDATE_TRANSACTION_PARAM_COMPANY_ID = 3;
 
-    public DataManagementService(String dbUrl, CompanyService companyService, AccountService accountService) {
-        this.dbUrl = dbUrl;
-        this.companyService = companyService;
-        this.accountService = accountService;
+    public DataManagementService(String initialDbUrl, CompanyService initialCompanyService, AccountService initialAccountService) {
+        this.dbUrl = initialDbUrl;
+        this.companyService = initialCompanyService;
+        this.accountService = initialAccountService;
     }
 
 

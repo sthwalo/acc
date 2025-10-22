@@ -58,13 +58,13 @@ public class TransactionClassificationService {
      * @param ruleManager classification rule manager for learned patterns
      * @param interactiveService interactive classification service for user input
      */
-    public TransactionClassificationService(String dbUrl,
+    public TransactionClassificationService(String initialDbUrl,
                                            ClassificationRuleManager ruleManager,
-                                           InteractiveClassificationService interactiveService) {
-        this.dbUrl = dbUrl;
-        this.accountClassificationService = new AccountClassificationService(dbUrl);
+                                           InteractiveClassificationService initialInteractiveService) {
+        this.dbUrl = initialDbUrl;
+        this.accountClassificationService = new AccountClassificationService(initialDbUrl);
         this.ruleService = null; // No longer needed - ClassificationRuleManager replaces TransactionMappingRuleService
-        this.interactiveService = interactiveService;
+        this.interactiveService = initialInteractiveService;
         
         LOGGER.info("TransactionClassificationService initialized with AccountClassificationService as single source of truth and ClassificationRuleManager for learned rules");
     }
@@ -73,13 +73,13 @@ public class TransactionClassificationService {
      * Simplified constructor for backward compatibility
      * Creates its own service dependencies
      */
-    public TransactionClassificationService(String dbUrl) {
-        this.dbUrl = dbUrl;
+    public TransactionClassificationService(String initialDbUrl) {
+        this.dbUrl = initialDbUrl;
         
         // Use AccountClassificationService as single source of truth for chart of accounts AND transaction processing
         // Standard SARS-compliant South African accounting structure (accounts 1000-9999)
-        this.accountClassificationService = new AccountClassificationService(dbUrl);
-        this.ruleService = new TransactionMappingRuleService(dbUrl);
+        this.accountClassificationService = new AccountClassificationService(initialDbUrl);
+        this.ruleService = new TransactionMappingRuleService(initialDbUrl);
         this.interactiveService = new InteractiveClassificationService();
         
         LOGGER.info("TransactionClassificationService initialized (simplified) with AccountClassificationService as single source");
