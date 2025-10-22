@@ -52,12 +52,12 @@ public class BalanceSheetService {
      * - Maintains separation between data access and business logic
      * - Suppressions are configured in config/spotbugs/exclude.xml for all service constructors
      *
-     * @param repository the financial data repository for database operations
-     * @param generalLedgerService the general ledger service for account balance calculations
+     * @param initialRepository the financial data repository for database operations
+     * @param initialGeneralLedgerService the general ledger service for account balance calculations
      */
-    public BalanceSheetService(FinancialDataRepository repository, GeneralLedgerService generalLedgerService) {
-        this.repository = repository;
-        this.generalLedgerService = generalLedgerService;
+    public BalanceSheetService(FinancialDataRepository initialRepository, GeneralLedgerService initialGeneralLedgerService) {
+        this.repository = initialRepository;
+        this.generalLedgerService = initialGeneralLedgerService;
     }
 
     /**

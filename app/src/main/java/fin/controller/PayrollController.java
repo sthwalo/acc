@@ -89,12 +89,12 @@ public class PayrollController {
     private static final int DOCUMENT_MENU_DELETE = 2;
     private static final int DOCUMENT_MENU_BACK = 3;
 
-    public PayrollController(PayrollService payrollService, PayrollReportService payrollReportService, 
-                           InputHandler inputHandler, OutputFormatter outputFormatter) {
-        this.payrollService = payrollService;
-        this.payrollReportService = payrollReportService;
-        this.inputHandler = inputHandler;
-        this.outputFormatter = outputFormatter;
+    public PayrollController(PayrollService initialPayrollService, PayrollReportService initialPayrollReportService, 
+                           InputHandler initialInputHandler, OutputFormatter initialOutputFormatter) {
+        this.payrollService = initialPayrollService;
+        this.payrollReportService = initialPayrollReportService;
+        this.inputHandler = initialInputHandler;
+        this.outputFormatter = initialOutputFormatter;
     }
 
     public void handlePayrollManagement(Long companyId) {

@@ -50,10 +50,10 @@ public class TransactionProcessingService {
     // Cache for account mappings
     private Map<String, Long> accountCache = new HashMap<>();
     
-    public TransactionProcessingService(String dbUrl) {
-        this.dbUrl = dbUrl;
-        this.accountClassificationService = new AccountClassificationService(dbUrl);
-        this.journalEntryGenerator = new JournalEntryGenerator(dbUrl, new AccountRepository(dbUrl));
+    public TransactionProcessingService(String initialDbUrl) {
+        this.dbUrl = initialDbUrl;
+        this.accountClassificationService = new AccountClassificationService(initialDbUrl);
+        this.journalEntryGenerator = new JournalEntryGenerator(initialDbUrl, new AccountRepository(initialDbUrl));
         loadAccountCache();
     }
     
@@ -651,9 +651,9 @@ public class TransactionProcessingService {
         final String accountCode;
         final String accountName;
         
-        RuleMapping(String accountCode, String accountName) {
-            this.accountCode = accountCode;
-            this.accountName = accountName;
+        RuleMapping(String valueAccountCode, String valueAccountName) {
+            this.accountCode = valueAccountCode;
+            this.accountName = valueAccountName;
         }
     }
 }

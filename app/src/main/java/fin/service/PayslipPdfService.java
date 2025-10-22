@@ -141,8 +141,8 @@ public class PayslipPdfService {
 
     private final CompanyRepository companyRepository;
 
-    public PayslipPdfService(CompanyRepository companyRepository) {
-        this.companyRepository = companyRepository;
+    public PayslipPdfService(CompanyRepository initialCompanyRepository) {
+        this.companyRepository = initialCompanyRepository;
     }
 
     /**

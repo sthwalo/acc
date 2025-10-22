@@ -172,28 +172,28 @@ public class PayrollService {
         this.emailService = null;
     }
     
-    public PayrollService(String dbUrl) {
+    public PayrollService(String initialDbUrl) {
         SARSTaxCalculator taxCalc = new SARSTaxCalculator();
         initializeTaxCalculator(taxCalc);
-        CompanyRepository companyRepo = new CompanyRepository(dbUrl);
+        CompanyRepository companyRepo = new CompanyRepository(initialDbUrl);
         PayslipPdfService pdfSvc = new PayslipPdfService(companyRepo);
         EmailService emailSvc = new EmailService();
-        this.dbUrl = dbUrl;
+        this.dbUrl = initialDbUrl;
         this.sarsTaxCalculator = taxCalc;
         this.companyRepository = companyRepo;
         this.pdfService = pdfSvc;
         this.emailService = emailSvc;
     }
 
-    public PayrollService(String dbUrl, CompanyRepository companyRepository, 
-                         PayslipPdfService pdfService, EmailService emailService) {
+    public PayrollService(String initialDbUrl, CompanyRepository initialCompanyRepository, 
+                         PayslipPdfService initialPdfService, EmailService initialEmailService) {
         SARSTaxCalculator taxCalc = new SARSTaxCalculator();
         initializeTaxCalculator(taxCalc);
-        this.dbUrl = dbUrl;
+        this.dbUrl = initialDbUrl;
         this.sarsTaxCalculator = taxCalc;
-        this.companyRepository = companyRepository;
-        this.pdfService = pdfService;
-        this.emailService = emailService;
+        this.companyRepository = initialCompanyRepository;
+        this.pdfService = initialPdfService;
+        this.emailService = initialEmailService;
     }
     
     private void initializeTaxCalculator(SARSTaxCalculator taxCalc) {

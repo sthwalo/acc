@@ -35,12 +35,12 @@ public class CashFlowService {
      * - Enables service composition for complex financial calculations
      * - Suppressions are configured in config/spotbugs/exclude.xml for all service constructors
      *
-     * @param repository the financial data repository for database operations
-     * @param incomeStatementService the income statement service for net income calculations
+     * @param initialRepository the financial data repository for database operations
+     * @param initialIncomeStatementService the income statement service for net income calculations
      */
-    public CashFlowService(FinancialDataRepository repository, IncomeStatementService incomeStatementService) {
-        this.repository = repository;
-        this.incomeStatementService = incomeStatementService;
+    public CashFlowService(FinancialDataRepository initialRepository, IncomeStatementService initialIncomeStatementService) {
+        this.repository = initialRepository;
+        this.incomeStatementService = initialIncomeStatementService;
     }
 
     /**

@@ -43,14 +43,14 @@ public final class AccountClassificationService {
     private final String dbUrl;
     private final CompanyService companyService;
     
-    public AccountClassificationService(String dbUrl) {
+    public AccountClassificationService(String initialDbUrl) {
         // Input validation
-        if (dbUrl == null || dbUrl.trim().isEmpty()) {
+        if (initialDbUrl == null || initialDbUrl.trim().isEmpty()) {
             throw new IllegalArgumentException("Database URL is required");
         }
 
         // Safe field assignment
-        this.dbUrl = dbUrl;
+        this.dbUrl = initialDbUrl;
 
         // Risky operation - wrap in try-catch or handle differently
         try {
@@ -1845,11 +1845,11 @@ public final class AccountClassificationService {
         final String description;
         final Long categoryId;
         
-        AccountDefinition(String code, String name, String description, Long categoryId) {
-            this.code = code;
-            this.name = name;
-            this.description = description;
-            this.categoryId = categoryId;
+        AccountDefinition(String initialCode, String initialName, String initialDescription, Long initialCategoryId) {
+            this.code = initialCode;
+            this.name = initialName;
+            this.description = initialDescription;
+            this.categoryId = initialCategoryId;
         }
     }
 }

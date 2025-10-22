@@ -40,9 +40,9 @@ public class IncomeStatementService {
      * @param repository the financial data repository for database operations
      * @param generalLedgerService the general ledger service for account balance calculations
      */
-    public IncomeStatementService(FinancialDataRepository repository, GeneralLedgerService generalLedgerService) {
-        this.repository = repository;
-        this.generalLedgerService = generalLedgerService;
+    public IncomeStatementService(FinancialDataRepository initialRepository, GeneralLedgerService initialGeneralLedgerService) {
+        this.repository = initialRepository;
+        this.generalLedgerService = initialGeneralLedgerService;
     }
 
     /**

@@ -60,8 +60,8 @@ public class ExcelFinancialReportService {
     
     private static final int ROW_COMPANY_HEADER_PERIOD = 3;
     
-    public ExcelFinancialReportService(String dbUrl) {
-        this.dbUrl = dbUrl;
+    public ExcelFinancialReportService(String initialDbUrl) {
+        this.dbUrl = initialDbUrl;
     }
     
     /**

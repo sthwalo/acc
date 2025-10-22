@@ -300,10 +300,10 @@ public class AuthService {
         private final String message;
         private final String sessionToken;
 
-        public AuthResult(boolean success, String message, String sessionToken) {
-            this.success = success;
-            this.message = message;
-            this.sessionToken = sessionToken;
+        public AuthResult(boolean valueSuccess, String valueMessage, String valueSessionToken) {
+            this.success = valueSuccess;
+            this.message = valueMessage;
+            this.sessionToken = valueSessionToken;
         }
 
         public boolean isSuccess() { return success; }
@@ -320,11 +320,11 @@ public class AuthService {
         private final LocalDateTime createdAt;
         private LocalDateTime lastActivity;
 
-        public Session(User user, String token, LocalDateTime createdAt) {
-            this.user = user != null ? new User(user) : null;
-            this.token = token;
-            this.createdAt = createdAt;
-            this.lastActivity = createdAt;
+        public Session(User valueUser, String valueToken, LocalDateTime valueCreatedAt) {
+            this.user = valueUser != null ? new User(valueUser) : null;
+            this.token = valueToken;
+            this.createdAt = valueCreatedAt;
+            this.lastActivity = valueCreatedAt;
         }
 
         public User getUser() { return user != null ? new User(user) : null; }

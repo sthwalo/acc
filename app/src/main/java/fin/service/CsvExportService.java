@@ -14,8 +14,8 @@ import java.util.Locale;
 public class CsvExportService {
     private final CompanyService companyService;
     
-    public CsvExportService(CompanyService companyService) {
-        this.companyService = companyService;
+    public CsvExportService(CompanyService initialCompanyService) {
+        this.companyService = initialCompanyService;
     }
     
     public void exportTransactionsToCsv(List<BankTransaction> transactions, String outputPath, Long fiscalPeriodId) {

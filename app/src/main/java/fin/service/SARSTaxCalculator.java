@@ -45,10 +45,10 @@ public class SARSTaxCalculator {
         private double upper;
         private double tax;
 
-        public TaxBracket(double lower, double upper, double tax) {
-            this.lower = lower;
-            this.upper = upper;
-            this.tax = tax;
+        public TaxBracket(double valueLower, double valueUpper, double valueTax) {
+            this.lower = valueLower;
+            this.upper = valueUpper;
+            this.tax = valueTax;
         }
 
         public double getLower() {

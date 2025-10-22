@@ -14,8 +14,8 @@ import java.io.File;
 public class InputHandler {
     private final Scanner scanner;
     
-    public InputHandler(Scanner scanner) {
-        this.scanner = scanner;
+    public InputHandler(Scanner initialScanner) {
+        this.scanner = initialScanner;
     }
     
     public String getString(String prompt) {

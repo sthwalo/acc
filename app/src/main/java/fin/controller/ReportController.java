@@ -55,22 +55,22 @@ public class ReportController {
      * - Maintains single responsibility principle in MVC architecture
      * - Suppressions are configured in config/spotbugs/exclude.xml for all controller constructors
      *
-     * @param financialReportingService the service for generating financial reports
-     * @param applicationState the application state manager
-     * @param menu the console menu for user interaction
-     * @param inputHandler the input handler for user input
-     * @param outputFormatter the output formatter for display formatting
+     * @param initialFinancialReportingService the service for generating financial reports
+     * @param initialApplicationState the application state manager
+     * @param initialMenu the console menu for user interaction
+     * @param initialInputHandler the input handler for user input
+     * @param initialOutputFormatter the output formatter for display formatting
      */
-    public ReportController(FinancialReportingService financialReportingService,
-                          ApplicationState applicationState,
-                          ConsoleMenu menu,
-                          InputHandler inputHandler,
-                          OutputFormatter outputFormatter) {
-        this.financialReportingService = financialReportingService;
-        this.applicationState = applicationState;
-        this.menu = menu;
-        this.inputHandler = inputHandler;
-        this.outputFormatter = outputFormatter;
+    public ReportController(FinancialReportingService initialFinancialReportingService,
+                          ApplicationState initialApplicationState,
+                          ConsoleMenu initialMenu,
+                          InputHandler initialInputHandler,
+                          OutputFormatter initialOutputFormatter) {
+        this.financialReportingService = initialFinancialReportingService;
+        this.applicationState = initialApplicationState;
+        this.menu = initialMenu;
+        this.inputHandler = initialInputHandler;
+        this.outputFormatter = initialOutputFormatter;
         this.reportsDir = "/Users/sthwalonyoni/FIN/reports";
     }
     

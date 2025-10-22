@@ -54,11 +54,11 @@ public class ClassificationUIHandler {
         private final boolean skipTransaction;
         private final boolean quitSession;
         
-        private UserClassificationChoice(String accountCode, String accountName, boolean skipTransaction, boolean quitSession) {
-            this.accountCode = accountCode;
-            this.accountName = accountName;
-            this.skipTransaction = skipTransaction;
-            this.quitSession = quitSession;
+        private UserClassificationChoice(String initialAccountCode, String initialAccountName, boolean initialSkipTransaction, boolean initialQuitSession) {
+            this.accountCode = initialAccountCode;
+            this.accountName = initialAccountName;
+            this.skipTransaction = initialSkipTransaction;
+            this.quitSession = initialQuitSession;
         }
         
         public static UserClassificationChoice classify(String accountCode, String accountName) {
@@ -82,11 +82,11 @@ public class ClassificationUIHandler {
     }
     
     @SuppressWarnings({"EI_EXPOSE_REP2"})
-    public ClassificationUIHandler(TransactionClassificationEngine classificationEngine, 
-                                  ClassificationRuleManager ruleManager) {
+    public ClassificationUIHandler(TransactionClassificationEngine initialClassificationEngine, 
+                                  ClassificationRuleManager initialRuleManager) {
         this.scanner = new Scanner(System.in, StandardCharsets.UTF_8);
-        this.classificationEngine = classificationEngine;
-        this.ruleManager = ruleManager;
+        this.classificationEngine = initialClassificationEngine;
+        this.ruleManager = initialRuleManager;
     }
     
     /**

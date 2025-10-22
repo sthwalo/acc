@@ -92,8 +92,8 @@ public class PayrollReportService {
     private static final float EMP201_VALUE_COLUMN_WIDTH = 100f;
     private static final float EMP201_TOTAL_LABEL_WIDTH = 470f;
 
-    public PayrollReportService(String dbUrl) {
-        this.dbUrl = dbUrl;
+    public PayrollReportService(String initialDbUrl) {
+        this.dbUrl = initialDbUrl;
     }
 
     /**
@@ -282,16 +282,16 @@ public class PayrollReportService {
         private final int totalEmployees;
         private final int periodCount;
 
-        PayrollSummaryData(BigDecimal totalGrossPay, BigDecimal totalPAYE, BigDecimal totalUIF,
-                          BigDecimal totalOtherDeductions, BigDecimal totalNetPay,
-                          int totalEmployees, int periodCount) {
-            this.totalGrossPay = totalGrossPay;
-            this.totalPAYE = totalPAYE;
-            this.totalUIF = totalUIF;
-            this.totalOtherDeductions = totalOtherDeductions;
-            this.totalNetPay = totalNetPay;
-            this.totalEmployees = totalEmployees;
-            this.periodCount = periodCount;
+        PayrollSummaryData(BigDecimal valueTotalGrossPay, BigDecimal valueTotalPAYE, BigDecimal valueTotalUIF,
+                          BigDecimal valueTotalOtherDeductions, BigDecimal valueTotalNetPay,
+                          int valueTotalEmployees, int valuePeriodCount) {
+            this.totalGrossPay = valueTotalGrossPay;
+            this.totalPAYE = valueTotalPAYE;
+            this.totalUIF = valueTotalUIF;
+            this.totalOtherDeductions = valueTotalOtherDeductions;
+            this.totalNetPay = valueTotalNetPay;
+            this.totalEmployees = valueTotalEmployees;
+            this.periodCount = valuePeriodCount;
         }
 
         public BigDecimal getTotalGrossPay() {
@@ -486,13 +486,13 @@ public class PayrollReportService {
         private final BigDecimal yearlyNet;
         private final List<Payslip> payslips;
 
-        EmployeePayrollData(BigDecimal yearlyGross, BigDecimal yearlyPAYE, BigDecimal yearlyUIF,
-                           BigDecimal yearlyNet, List<Payslip> payslips) {
-            this.yearlyGross = yearlyGross;
-            this.yearlyPAYE = yearlyPAYE;
-            this.yearlyUIF = yearlyUIF;
-            this.yearlyNet = yearlyNet;
-            this.payslips = payslips;
+        EmployeePayrollData(BigDecimal valueYearlyGross, BigDecimal valueYearlyPAYE, BigDecimal valueYearlyUIF,
+                           BigDecimal valueYearlyNet, List<Payslip> valuePayslips) {
+            this.yearlyGross = valueYearlyGross;
+            this.yearlyPAYE = valueYearlyPAYE;
+            this.yearlyUIF = valueYearlyUIF;
+            this.yearlyNet = valueYearlyNet;
+            this.payslips = valuePayslips;
         }
 
         public BigDecimal getYearlyGross() {

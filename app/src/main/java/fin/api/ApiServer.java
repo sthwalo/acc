@@ -65,18 +65,18 @@ public class ApiServer {
     private final Map<String, Object> sessionStore = new ConcurrentHashMap<>();
     
     // Constructor for modular architecture with dependency injection
-    public ApiServer(CompanyService companyService, CsvImportService csvImportService, 
-                    ReportService reportService, FinancialReportingService financialReportingService,
+    public ApiServer(CompanyService initialCompanyService, CsvImportService initialCsvImportService, 
+                    ReportService initialReportService, FinancialReportingService financialReportingService,
                     PdfExportService pdfExportService, DataManagementService dataManagementService,
-                    BankStatementProcessingService bankStatementService, 
+                    BankStatementProcessingService initialBankStatementService, 
                     TransactionClassificationService classificationService,
                     PayrollService payrollService) {
         
         // Instantiate services BEFORE field assignment (secure constructor pattern)
-        CompanyService finalCompanyService = companyService != null ? companyService : new CompanyService(DatabaseConfig.getDatabaseUrl());
-        CsvImportService finalCsvImportService = csvImportService != null ? csvImportService : new CsvImportService(DatabaseConfig.getDatabaseUrl(), finalCompanyService);
-        ReportService finalReportService = reportService != null ? reportService : new ReportService(DatabaseConfig.getDatabaseUrl(), finalCsvImportService);
-        BankStatementProcessingService finalBankStatementService = bankStatementService != null ? bankStatementService : new BankStatementProcessingService(DatabaseConfig.getDatabaseUrl());
+        CompanyService finalCompanyService = initialCompanyService != null ? initialCompanyService : new CompanyService(DatabaseConfig.getDatabaseUrl());
+        CsvImportService finalCsvImportService = initialCsvImportService != null ? initialCsvImportService : new CsvImportService(DatabaseConfig.getDatabaseUrl(), finalCompanyService);
+        ReportService finalReportService = initialReportService != null ? initialReportService : new ReportService(DatabaseConfig.getDatabaseUrl(), finalCsvImportService);
+        BankStatementProcessingService finalBankStatementService = initialBankStatementService != null ? initialBankStatementService : new BankStatementProcessingService(DatabaseConfig.getDatabaseUrl());
         
         // Create Gson AFTER service validation (no exception risk)
         Gson gsonInstance = new GsonBuilder()
