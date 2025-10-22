@@ -11,23 +11,23 @@ public class Transaction {
 
     public Transaction() {}
 
-    public Transaction(Long id, String description, java.math.BigDecimal amount, String debitCredit) {
-        this.id = id;
-        this.description = description;
-        this.amount = amount;
-        this.debitCredit = debitCredit;
+    public Transaction(Long initialId, String initialDescription, java.math.BigDecimal initialAmount, String initialDebitCredit) {
+        this.id = initialId;
+        this.description = initialDescription;
+        this.amount = initialAmount;
+        this.debitCredit = initialDebitCredit;
     }
 
     // Getters and setters
     public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public void setId(Long newId) { this.id = newId; }
 
     public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
+    public void setDescription(String newDescription) { this.description = newDescription; }
 
     public java.math.BigDecimal getAmount() { return amount; }
-    public void setAmount(java.math.BigDecimal amount) { this.amount = amount; }
+    public void setAmount(java.math.BigDecimal newAmount) { this.amount = newAmount; }
 
     public String getDebitCredit() { return debitCredit; }
-    public void setDebitCredit(String debitCredit) { this.debitCredit = debitCredit; }
+    public void setDebitCredit(String newDebitCredit) { this.debitCredit = newDebitCredit; }
 }

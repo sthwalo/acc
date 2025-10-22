@@ -20,8 +20,8 @@ public class FiscalPeriodRepository implements BaseRepository<FiscalPeriod, Long
     private static final int PARAM_IS_CLOSED = 5;
     private static final int PARAM_ID_UPDATE = 6;
 
-    public FiscalPeriodRepository(String dbUrl) {
-        this.dbUrl = dbUrl;
+    public FiscalPeriodRepository(String initialDbUrl) {
+        this.dbUrl = initialDbUrl;
     }
 
     @Override

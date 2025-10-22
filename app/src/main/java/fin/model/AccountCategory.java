@@ -20,22 +20,22 @@ public class AccountCategory {
         this.isActive = true;
     }
 
-    public AccountCategory(String name, String description, AccountType accountType, Company company) {
-        this.name = name;
-        this.description = description;
-        this.accountType = accountType;
-        if (company == null) {
+    public AccountCategory(String initialName, String initialDescription, AccountType initialAccountType, Company initialCompany) {
+        this.name = initialName;
+        this.description = initialDescription;
+        this.accountType = initialAccountType;
+        if (initialCompany == null) {
             this.company = null;
         } else {
-            this.company = new Company(company.getName());
-            this.company.setId(company.getId());
-            this.company.setRegistrationNumber(company.getRegistrationNumber());
-            this.company.setTaxNumber(company.getTaxNumber());
-            this.company.setAddress(company.getAddress());
-            this.company.setContactEmail(company.getContactEmail());
-            this.company.setContactPhone(company.getContactPhone());
-            this.company.setLogoPath(company.getLogoPath());
-            this.company.setCreatedAt(company.getCreatedAt());
+            this.company = new Company(initialCompany.getName());
+            this.company.setId(initialCompany.getId());
+            this.company.setRegistrationNumber(initialCompany.getRegistrationNumber());
+            this.company.setTaxNumber(initialCompany.getTaxNumber());
+            this.company.setAddress(initialCompany.getAddress());
+            this.company.setContactEmail(initialCompany.getContactEmail());
+            this.company.setContactPhone(initialCompany.getContactPhone());
+            this.company.setLogoPath(initialCompany.getLogoPath());
+            this.company.setCreatedAt(initialCompany.getCreatedAt());
         }
         this.isActive = true;
     }
@@ -45,32 +45,32 @@ public class AccountCategory {
         return id;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public void setId(Long newId) {
+        this.id = newId;
     }
 
     public String getName() {
         return name;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setName(String newName) {
+        this.name = newName;
     }
 
     public String getDescription() {
         return description;
     }
 
-    public void setDescription(String description) {
-        this.description = description;
+    public void setDescription(String newDescription) {
+        this.description = newDescription;
     }
 
     public AccountType getAccountType() {
         return accountType;
     }
 
-    public void setAccountType(AccountType accountType) {
-        this.accountType = accountType;
+    public void setAccountType(AccountType newAccountType) {
+        this.accountType = newAccountType;
     }
 
     public Company getCompany() {
@@ -89,19 +89,19 @@ public class AccountCategory {
         return copy;
     }
 
-    public void setCompany(Company company) {
-        if (company == null) {
+    public void setCompany(Company newCompany) {
+        if (newCompany == null) {
             this.company = null;
         } else {
-            this.company = new Company(company.getName());
-            this.company.setId(company.getId());
-            this.company.setRegistrationNumber(company.getRegistrationNumber());
-            this.company.setTaxNumber(company.getTaxNumber());
-            this.company.setAddress(company.getAddress());
-            this.company.setContactEmail(company.getContactEmail());
-            this.company.setContactPhone(company.getContactPhone());
-            this.company.setLogoPath(company.getLogoPath());
-            this.company.setCreatedAt(company.getCreatedAt());
+            this.company = new Company(newCompany.getName());
+            this.company.setId(newCompany.getId());
+            this.company.setRegistrationNumber(newCompany.getRegistrationNumber());
+            this.company.setTaxNumber(newCompany.getTaxNumber());
+            this.company.setAddress(newCompany.getAddress());
+            this.company.setContactEmail(newCompany.getContactEmail());
+            this.company.setContactPhone(newCompany.getContactPhone());
+            this.company.setLogoPath(newCompany.getLogoPath());
+            this.company.setCreatedAt(newCompany.getCreatedAt());
         }
     }
 
@@ -117,16 +117,16 @@ public class AccountCategory {
         return createdAt;
     }
 
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
+    public void setCreatedAt(LocalDateTime newCreatedAt) {
+        this.createdAt = newCreatedAt;
     }
 
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
+    public void setUpdatedAt(LocalDateTime newUpdatedAt) {
+        this.updatedAt = newUpdatedAt;
     }
 
     @Override

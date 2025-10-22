@@ -16,10 +16,10 @@ public enum AccountType {
     private final String description;
     private final char normalBalance;
 
-    AccountType(String code, String description, char normalBalance) {
-        this.code = code;
-        this.description = description;
-        this.normalBalance = normalBalance;
+    AccountType(String initialCode, String initialDescription, char initialNormalBalance) {
+        this.code = initialCode;
+        this.description = initialDescription;
+        this.normalBalance = initialNormalBalance;
     }
 
     public String getCode() {

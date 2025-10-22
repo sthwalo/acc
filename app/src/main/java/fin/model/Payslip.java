@@ -82,15 +82,15 @@ public class Payslip {
         this.updatedAt = LocalDateTime.now();
     }
     
-    public Payslip(Long companyId, Long employeeId, Long payrollPeriodId, 
-                  String payslipNumber, BigDecimal basicSalary) {
+    public Payslip(Long initialCompanyId, Long initialEmployeeId, Long initialPayrollPeriodId, 
+                  String initialPayslipNumber, BigDecimal initialBasicSalary) {
         this();
-        this.companyId = companyId;
-        this.employeeId = employeeId;
-        this.payrollPeriodId = payrollPeriodId;
-        this.payslipNumber = payslipNumber;
-        this.basicSalary = basicSalary;
-        this.grossSalary = basicSalary;
+        this.companyId = initialCompanyId;
+        this.employeeId = initialEmployeeId;
+        this.payrollPeriodId = initialPayrollPeriodId;
+        this.payslipNumber = initialPayslipNumber;
+        this.basicSalary = initialBasicSalary;
+        this.grossSalary = initialBasicSalary;
         calculateTotals();
     }
     
@@ -129,166 +129,166 @@ public class Payslip {
     
     // Getters and Setters
     public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public void setId(Long newId) { this.id = newId; }
     
     public Long getCompanyId() { return companyId; }
-    public void setCompanyId(Long companyId) { this.companyId = companyId; }
+    public void setCompanyId(Long newCompanyId) { this.companyId = newCompanyId; }
     
     public Long getEmployeeId() { return employeeId; }
-    public void setEmployeeId(Long employeeId) { this.employeeId = employeeId; }
+    public void setEmployeeId(Long newEmployeeId) { this.employeeId = newEmployeeId; }
     
     public Long getPayrollPeriodId() { return payrollPeriodId; }
-    public void setPayrollPeriodId(Long payrollPeriodId) { this.payrollPeriodId = payrollPeriodId; }
+    public void setPayrollPeriodId(Long newPayrollPeriodId) { this.payrollPeriodId = newPayrollPeriodId; }
     
     public String getPayslipNumber() { return payslipNumber; }
-    public void setPayslipNumber(String payslipNumber) { this.payslipNumber = payslipNumber; }
+    public void setPayslipNumber(String newPayslipNumber) { this.payslipNumber = newPayslipNumber; }
     
     // Salary Information
     public BigDecimal getBasicSalary() { return basicSalary; }
-    public void setBasicSalary(BigDecimal basicSalary) { 
-        this.basicSalary = basicSalary;
+    public void setBasicSalary(BigDecimal newBasicSalary) { 
+        this.basicSalary = newBasicSalary;
         calculateTotals();
     }
     
     public BigDecimal getOvertimeHours() { return overtimeHours; }
-    public void setOvertimeHours(BigDecimal overtimeHours) { 
-        this.overtimeHours = overtimeHours;
+    public void setOvertimeHours(BigDecimal newOvertimeHours) { 
+        this.overtimeHours = newOvertimeHours;
         calculateTotals();
     }
     
     public BigDecimal getOvertimeAmount() { return overtimeAmount; }
-    public void setOvertimeAmount(BigDecimal overtimeAmount) { 
-        this.overtimeAmount = overtimeAmount;
+    public void setOvertimeAmount(BigDecimal newOvertimeAmount) { 
+        this.overtimeAmount = newOvertimeAmount;
         calculateTotals();
     }
     
     // Earnings
     public BigDecimal getGrossSalary() { return grossSalary; }
-    public void setGrossSalary(BigDecimal grossSalary) { 
-        this.grossSalary = grossSalary;
+    public void setGrossSalary(BigDecimal newGrossSalary) { 
+        this.grossSalary = newGrossSalary;
         calculateTotals();
     }
     
     public BigDecimal getHousingAllowance() { return housingAllowance; }
-    public void setHousingAllowance(BigDecimal housingAllowance) { 
-        this.housingAllowance = housingAllowance;
+    public void setHousingAllowance(BigDecimal newHousingAllowance) { 
+        this.housingAllowance = newHousingAllowance;
         calculateTotals();
     }
     
     public BigDecimal getTransportAllowance() { return transportAllowance; }
-    public void setTransportAllowance(BigDecimal transportAllowance) { 
-        this.transportAllowance = transportAllowance;
+    public void setTransportAllowance(BigDecimal newTransportAllowance) { 
+        this.transportAllowance = newTransportAllowance;
         calculateTotals();
     }
     
     public BigDecimal getMedicalAllowance() { return medicalAllowance; }
-    public void setMedicalAllowance(BigDecimal medicalAllowance) { 
-        this.medicalAllowance = medicalAllowance;
+    public void setMedicalAllowance(BigDecimal newMedicalAllowance) { 
+        this.medicalAllowance = newMedicalAllowance;
         calculateTotals();
     }
     
     public BigDecimal getOtherAllowances() { return otherAllowances; }
-    public void setOtherAllowances(BigDecimal otherAllowances) { 
-        this.otherAllowances = otherAllowances;
+    public void setOtherAllowances(BigDecimal newOtherAllowances) { 
+        this.otherAllowances = newOtherAllowances;
         calculateTotals();
     }
     
     public BigDecimal getCommission() { return commission; }
-    public void setCommission(BigDecimal commission) { 
-        this.commission = commission;
+    public void setCommission(BigDecimal newCommission) { 
+        this.commission = newCommission;
         calculateTotals();
     }
     
     public BigDecimal getBonus() { return bonus; }
-    public void setBonus(BigDecimal bonus) { 
-        this.bonus = bonus;
+    public void setBonus(BigDecimal newBonus) { 
+        this.bonus = newBonus;
         calculateTotals();
     }
     
     public BigDecimal getTotalEarnings() { return totalEarnings; }
-    public void setTotalEarnings(BigDecimal totalEarnings) { this.totalEarnings = totalEarnings; }
+    public void setTotalEarnings(BigDecimal newTotalEarnings) { this.totalEarnings = newTotalEarnings; }
     
     // Deductions
     public BigDecimal getPayeeTax() { return payeeTax; }
-    public void setPayeeTax(BigDecimal payeeTax) { 
-        this.payeeTax = payeeTax;
+    public void setPayeeTax(BigDecimal newPayeeTax) { 
+        this.payeeTax = newPayeeTax;
         calculateTotals();
     }
     
     public BigDecimal getUifEmployee() { return uifEmployee; }
-    public void setUifEmployee(BigDecimal uifEmployee) { 
-        this.uifEmployee = uifEmployee;
+    public void setUifEmployee(BigDecimal newUifEmployee) { 
+        this.uifEmployee = newUifEmployee;
         calculateTotals();
     }
     
     public BigDecimal getUifEmployer() { return uifEmployer; }
-    public void setUifEmployer(BigDecimal uifEmployer) { this.uifEmployer = uifEmployer; }
+    public void setUifEmployer(BigDecimal newUifEmployer) { this.uifEmployer = newUifEmployer; }
     
     public BigDecimal getSdlLevy() { return sdlLevy; }
-    public void setSdlLevy(BigDecimal sdlLevy) { this.sdlLevy = sdlLevy; }
+    public void setSdlLevy(BigDecimal newSdlLevy) { this.sdlLevy = newSdlLevy; }
     
     public BigDecimal getMedicalAid() { return medicalAid; }
-    public void setMedicalAid(BigDecimal medicalAid) { 
-        this.medicalAid = medicalAid;
+    public void setMedicalAid(BigDecimal newMedicalAid) { 
+        this.medicalAid = newMedicalAid;
         calculateTotals();
     }
     
     public BigDecimal getPensionFund() { return pensionFund; }
-    public void setPensionFund(BigDecimal pensionFund) { 
-        this.pensionFund = pensionFund;
+    public void setPensionFund(BigDecimal newPensionFund) { 
+        this.pensionFund = newPensionFund;
         calculateTotals();
     }
     
     public BigDecimal getLoanDeduction() { return loanDeduction; }
-    public void setLoanDeduction(BigDecimal loanDeduction) { 
-        this.loanDeduction = loanDeduction;
+    public void setLoanDeduction(BigDecimal newLoanDeduction) { 
+        this.loanDeduction = newLoanDeduction;
         calculateTotals();
     }
     
     public BigDecimal getOtherDeductions() { return otherDeductions; }
-    public void setOtherDeductions(BigDecimal otherDeductions) { 
-        this.otherDeductions = otherDeductions;
+    public void setOtherDeductions(BigDecimal newOtherDeductions) { 
+        this.otherDeductions = newOtherDeductions;
         calculateTotals();
     }
     
     public BigDecimal getTotalDeductions() { return totalDeductions; }
-    public void setTotalDeductions(BigDecimal totalDeductions) { this.totalDeductions = totalDeductions; }
+    public void setTotalDeductions(BigDecimal newTotalDeductions) { this.totalDeductions = newTotalDeductions; }
     
     public BigDecimal getNetPay() { return netPay; }
-    public void setNetPay(BigDecimal netPay) { this.netPay = netPay; }
+    public void setNetPay(BigDecimal newNetPay) { this.netPay = newNetPay; }
     
     // Tax Certificate Info
     public BigDecimal getAnnualGross() { return annualGross; }
-    public void setAnnualGross(BigDecimal annualGross) { this.annualGross = annualGross; }
+    public void setAnnualGross(BigDecimal newAnnualGross) { this.annualGross = newAnnualGross; }
     
     public BigDecimal getAnnualPaye() { return annualPaye; }
-    public void setAnnualPaye(BigDecimal annualPaye) { this.annualPaye = annualPaye; }
+    public void setAnnualPaye(BigDecimal newAnnualPaye) { this.annualPaye = newAnnualPaye; }
     
     public BigDecimal getAnnualUif() { return annualUif; }
-    public void setAnnualUif(BigDecimal annualUif) { this.annualUif = annualUif; }
+    public void setAnnualUif(BigDecimal newAnnualUif) { this.annualUif = newAnnualUif; }
     
     // Status and Payment
     public PayslipStatus getStatus() { return status; }
-    public void setStatus(PayslipStatus status) { this.status = status; }
+    public void setStatus(PayslipStatus newStatus) { this.status = newStatus; }
     
     public PaymentMethod getPaymentMethod() { return paymentMethod; }
-    public void setPaymentMethod(PaymentMethod paymentMethod) { this.paymentMethod = paymentMethod; }
+    public void setPaymentMethod(PaymentMethod newPaymentMethod) { this.paymentMethod = newPaymentMethod; }
     
     public LocalDate getPaymentDate() { return paymentDate; }
-    public void setPaymentDate(LocalDate paymentDate) { this.paymentDate = paymentDate; }
+    public void setPaymentDate(LocalDate newPaymentDate) { this.paymentDate = newPaymentDate; }
     
     public String getPaymentReference() { return paymentReference; }
-    public void setPaymentReference(String paymentReference) { this.paymentReference = paymentReference; }
+    public void setPaymentReference(String newPaymentReference) { this.paymentReference = newPaymentReference; }
     
     // Audit Fields
     public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public void setCreatedAt(LocalDateTime newCreatedAt) { this.createdAt = newCreatedAt; }
     
     public LocalDateTime getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    public void setUpdatedAt(LocalDateTime newUpdatedAt) { this.updatedAt = newUpdatedAt; }
     
     public String getCreatedBy() { return createdBy; }
-    public void setCreatedBy(String createdBy) { this.createdBy = createdBy; }
+    public void setCreatedBy(String newCreatedBy) { this.createdBy = newCreatedBy; }
     
     @Override
     public String toString() {

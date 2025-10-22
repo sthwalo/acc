@@ -14,23 +14,23 @@ public class BatchProcessingStatistics {
 
     public BatchProcessingStatistics() {}
 
-    public BatchProcessingStatistics(long totalTransactions, long classifiedTransactions, long unclassifiedTransactions) {
-        this.totalTransactions = totalTransactions;
-        this.classifiedTransactions = classifiedTransactions;
-        this.unclassifiedTransactions = unclassifiedTransactions;
-        this.classificationRate = totalTransactions > 0 ? (double) classifiedTransactions / totalTransactions * PERCENTAGE_MULTIPLIER : 0.0;
+    public BatchProcessingStatistics(long initialTotalTransactions, long initialClassifiedTransactions, long initialUnclassifiedTransactions) {
+        this.totalTransactions = initialTotalTransactions;
+        this.classifiedTransactions = initialClassifiedTransactions;
+        this.unclassifiedTransactions = initialUnclassifiedTransactions;
+        this.classificationRate = initialTotalTransactions > 0 ? (double) initialClassifiedTransactions / initialTotalTransactions * PERCENTAGE_MULTIPLIER : 0.0;
     }
 
     // Getters and setters
     public long getTotalTransactions() { return totalTransactions; }
-    public void setTotalTransactions(long totalTransactions) { this.totalTransactions = totalTransactions; }
+    public void setTotalTransactions(long newTotalTransactions) { this.totalTransactions = newTotalTransactions; }
 
     public long getClassifiedTransactions() { return classifiedTransactions; }
-    public void setClassifiedTransactions(long classifiedTransactions) { this.classifiedTransactions = classifiedTransactions; }
+    public void setClassifiedTransactions(long newClassifiedTransactions) { this.classifiedTransactions = newClassifiedTransactions; }
 
     public long getUnclassifiedTransactions() { return unclassifiedTransactions; }
-    public void setUnclassifiedTransactions(long unclassifiedTransactions) { this.unclassifiedTransactions = unclassifiedTransactions; }
+    public void setUnclassifiedTransactions(long newUnclassifiedTransactions) { this.unclassifiedTransactions = newUnclassifiedTransactions; }
 
     public double getClassificationRate() { return classificationRate; }
-    public void setClassificationRate(double classificationRate) { this.classificationRate = classificationRate; }
+    public void setClassificationRate(double newClassificationRate) { this.classificationRate = newClassificationRate; }
 }

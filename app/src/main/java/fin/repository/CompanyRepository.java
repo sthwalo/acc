@@ -47,8 +47,8 @@ public class CompanyRepository implements BaseRepository<Company, Long> {
     private static final int PREPARED_STATEMENT_PARAM_7 = 7;
     private static final int PREPARED_STATEMENT_PARAM_8 = 8;
 
-    public CompanyRepository(String dbUrl) {
-        this.dbUrl = dbUrl;
+    public CompanyRepository(String initialDbUrl) {
+        this.dbUrl = initialDbUrl;
     }
 
     @Override

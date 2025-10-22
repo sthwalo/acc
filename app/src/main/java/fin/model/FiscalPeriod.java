@@ -15,11 +15,11 @@ public class FiscalPeriod {
     // Constructors, getters, and setters
     public FiscalPeriod() {}
     
-    public FiscalPeriod(Long companyId, String periodName, LocalDate startDate, LocalDate endDate) {
-        this.companyId = companyId;
-        this.periodName = periodName;
-        this.startDate = startDate;
-        this.endDate = endDate;
+    public FiscalPeriod(Long initialCompanyId, String initialPeriodName, LocalDate initialStartDate, LocalDate initialEndDate) {
+        this.companyId = initialCompanyId;
+        this.periodName = initialPeriodName;
+        this.startDate = initialStartDate;
+        this.endDate = initialEndDate;
         this.isClosed = false;
         this.createdAt = LocalDateTime.now();
     }
@@ -44,25 +44,25 @@ public class FiscalPeriod {
     
     // Getters and setters
     public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public void setId(Long newId) { this.id = newId; }
     
     public Long getCompanyId() { return companyId; }
-    public void setCompanyId(Long companyId) { this.companyId = companyId; }
+    public void setCompanyId(Long newCompanyId) { this.companyId = newCompanyId; }
     
     public String getPeriodName() { return periodName; }
-    public void setPeriodName(String periodName) { this.periodName = periodName; }
+    public void setPeriodName(String newPeriodName) { this.periodName = newPeriodName; }
     
     public LocalDate getStartDate() { return startDate; }
-    public void setStartDate(LocalDate startDate) { this.startDate = startDate; }
+    public void setStartDate(LocalDate newStartDate) { this.startDate = newStartDate; }
     
     public LocalDate getEndDate() { return endDate; }
-    public void setEndDate(LocalDate endDate) { this.endDate = endDate; }
+    public void setEndDate(LocalDate newEndDate) { this.endDate = newEndDate; }
     
     public boolean isClosed() { return isClosed; }
     public void setClosed(boolean closed) { isClosed = closed; }
     
     public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public void setCreatedAt(LocalDateTime newCreatedAt) { this.createdAt = newCreatedAt; }
     
     @Override
     public String toString() {

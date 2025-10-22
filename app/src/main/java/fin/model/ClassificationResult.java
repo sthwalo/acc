@@ -10,19 +10,19 @@ public class ClassificationResult {
 
     public ClassificationResult() {}
 
-    public ClassificationResult(String accountCode, String accountName, String classificationReason) {
-        this.accountCode = accountCode;
-        this.accountName = accountName;
-        this.classificationReason = classificationReason;
+    public ClassificationResult(String initialAccountCode, String initialAccountName, String initialClassificationReason) {
+        this.accountCode = initialAccountCode;
+        this.accountName = initialAccountName;
+        this.classificationReason = initialClassificationReason;
     }
 
     // Getters and setters
     public String getAccountCode() { return accountCode; }
-    public void setAccountCode(String accountCode) { this.accountCode = accountCode; }
+    public void setAccountCode(String newAccountCode) { this.accountCode = newAccountCode; }
 
     public String getAccountName() { return accountName; }
-    public void setAccountName(String accountName) { this.accountName = accountName; }
+    public void setAccountName(String newAccountName) { this.accountName = newAccountName; }
 
     public String getClassificationReason() { return classificationReason; }
-    public void setClassificationReason(String classificationReason) { this.classificationReason = classificationReason; }
+    public void setClassificationReason(String newClassificationReason) { this.classificationReason = newClassificationReason; }
 }

@@ -34,35 +34,35 @@ public class TransactionMappingRule {
         this.updatedAt = LocalDateTime.now();
     }
 
-    public TransactionMappingRule(Company company, String ruleName, MatchType matchType, 
-                                String matchValue, Account account) {
+    public TransactionMappingRule(Company initialCompany, String initialRuleName, MatchType initialMatchType, 
+                                String initialMatchValue, Account initialAccount) {
         this();
-        if (company == null) {
+        if (initialCompany == null) {
             this.company = null;
         } else {
-            this.company = new Company(company.getName());
-            this.company.setId(company.getId());
-            this.company.setRegistrationNumber(company.getRegistrationNumber());
-            this.company.setTaxNumber(company.getTaxNumber());
-            this.company.setAddress(company.getAddress());
-            this.company.setContactEmail(company.getContactEmail());
-            this.company.setContactPhone(company.getContactPhone());
-            this.company.setLogoPath(company.getLogoPath());
-            this.company.setCreatedAt(company.getCreatedAt());
+            this.company = new Company(initialCompany.getName());
+            this.company.setId(initialCompany.getId());
+            this.company.setRegistrationNumber(initialCompany.getRegistrationNumber());
+            this.company.setTaxNumber(initialCompany.getTaxNumber());
+            this.company.setAddress(initialCompany.getAddress());
+            this.company.setContactEmail(initialCompany.getContactEmail());
+            this.company.setContactPhone(initialCompany.getContactPhone());
+            this.company.setLogoPath(initialCompany.getLogoPath());
+            this.company.setCreatedAt(initialCompany.getCreatedAt());
         }
-        this.ruleName = ruleName;
-        this.matchType = matchType;
-        this.matchValue = matchValue;
-        if (account == null) {
+        this.ruleName = initialRuleName;
+        this.matchType = initialMatchType;
+        this.matchValue = initialMatchValue;
+        if (initialAccount == null) {
             this.account = null;
         } else {
-            this.account = new Account(account.getAccountCode(), account.getAccountName(),
-                                     account.getCategory(), account.getCompany(),
-                                     account.getDescription());
-            this.account.setId(account.getId());
-            this.account.setActive(account.isActive());
-            this.account.setCreatedAt(account.getCreatedAt());
-            this.account.setUpdatedAt(account.getUpdatedAt());
+            this.account = new Account(initialAccount.getAccountCode(), initialAccount.getAccountName(),
+                                     initialAccount.getCategory(), initialAccount.getCompany(),
+                                     initialAccount.getDescription());
+            this.account.setId(initialAccount.getId());
+            this.account.setActive(initialAccount.isActive());
+            this.account.setCreatedAt(initialAccount.getCreatedAt());
+            this.account.setUpdatedAt(initialAccount.getUpdatedAt());
         }
     }
 
@@ -71,8 +71,8 @@ public class TransactionMappingRule {
         return id;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public void setId(Long newId) {
+        this.id = newId;
     }
 
     public Company getCompany() {
@@ -91,19 +91,19 @@ public class TransactionMappingRule {
         return copy;
     }
 
-    public void setCompany(Company company) {
-        if (company == null) {
+    public void setCompany(Company newCompany) {
+        if (newCompany == null) {
             this.company = null;
         } else {
-            this.company = new Company(company.getName());
-            this.company.setId(company.getId());
-            this.company.setRegistrationNumber(company.getRegistrationNumber());
-            this.company.setTaxNumber(company.getTaxNumber());
-            this.company.setAddress(company.getAddress());
-            this.company.setContactEmail(company.getContactEmail());
-            this.company.setContactPhone(company.getContactPhone());
-            this.company.setLogoPath(company.getLogoPath());
-            this.company.setCreatedAt(company.getCreatedAt());
+            this.company = new Company(newCompany.getName());
+            this.company.setId(newCompany.getId());
+            this.company.setRegistrationNumber(newCompany.getRegistrationNumber());
+            this.company.setTaxNumber(newCompany.getTaxNumber());
+            this.company.setAddress(newCompany.getAddress());
+            this.company.setContactEmail(newCompany.getContactEmail());
+            this.company.setContactPhone(newCompany.getContactPhone());
+            this.company.setLogoPath(newCompany.getLogoPath());
+            this.company.setCreatedAt(newCompany.getCreatedAt());
         }
     }
 
@@ -111,32 +111,32 @@ public class TransactionMappingRule {
         return ruleName;
     }
 
-    public void setRuleName(String ruleName) {
-        this.ruleName = ruleName;
+    public void setRuleName(String newRuleName) {
+        this.ruleName = newRuleName;
     }
 
     public String getDescription() {
         return description;
     }
 
-    public void setDescription(String description) {
-        this.description = description;
+    public void setDescription(String newDescription) {
+        this.description = newDescription;
     }
 
     public MatchType getMatchType() {
         return matchType;
     }
 
-    public void setMatchType(MatchType matchType) {
-        this.matchType = matchType;
+    public void setMatchType(MatchType newMatchType) {
+        this.matchType = newMatchType;
     }
 
     public String getMatchValue() {
         return matchValue;
     }
 
-    public void setMatchValue(String matchValue) {
-        this.matchValue = matchValue;
+    public void setMatchValue(String newMatchValue) {
+        this.matchValue = newMatchValue;
     }
 
     public Account getAccount() {
@@ -153,17 +153,17 @@ public class TransactionMappingRule {
         return copy;
     }
 
-    public void setAccount(Account account) {
-        if (account == null) {
+    public void setAccount(Account newAccount) {
+        if (newAccount == null) {
             this.account = null;
         } else {
-            this.account = new Account(account.getAccountCode(), account.getAccountName(),
-                                     account.getCategory(), account.getCompany(),
-                                     account.getDescription());
-            this.account.setId(account.getId());
-            this.account.setActive(account.isActive());
-            this.account.setCreatedAt(account.getCreatedAt());
-            this.account.setUpdatedAt(account.getUpdatedAt());
+            this.account = new Account(newAccount.getAccountCode(), newAccount.getAccountName(),
+                                     newAccount.getCategory(), newAccount.getCompany(),
+                                     newAccount.getDescription());
+            this.account.setId(newAccount.getId());
+            this.account.setActive(newAccount.isActive());
+            this.account.setCreatedAt(newAccount.getCreatedAt());
+            this.account.setUpdatedAt(newAccount.getUpdatedAt());
         }
     }
 
@@ -179,37 +179,37 @@ public class TransactionMappingRule {
         return priority;
     }
 
-    public void setPriority(int priority) {
-        this.priority = priority;
+    public void setPriority(int newPriority) {
+        this.priority = newPriority;
     }
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
+    public void setCreatedAt(LocalDateTime newCreatedAt) {
+        this.createdAt = newCreatedAt;
     }
 
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
+    public void setUpdatedAt(LocalDateTime newUpdatedAt) {
+        this.updatedAt = newUpdatedAt;
     }
 
     /**
      * Checks if the given transaction description matches this rule.
-     * @param description The transaction description to check
+     * @param transactionDescription The transaction description to check
      * @return true if the description matches the rule, false otherwise
      */
-    public boolean matches(String description) {
-        if (description == null || !isActive) {
+    public boolean matches(String transactionDescription) {
+        if (transactionDescription == null || !isActive) {
             return false;
         }
 
-        String desc = description.trim().toUpperCase();
+        String desc = transactionDescription.trim().toUpperCase();
         String matchVal = matchValue.trim().toUpperCase();
 
         switch (matchType) {

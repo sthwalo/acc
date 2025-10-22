@@ -15,16 +15,16 @@ public class AccountBalance {
     private final BigDecimal periodCredits;
     private final BigDecimal closingBalance;
 
-    public AccountBalance(String accountCode, String accountName, String normalBalance,
-                         BigDecimal openingBalance, BigDecimal periodDebits, BigDecimal periodCredits, 
-                         BigDecimal closingBalance) {
-        this.accountCode = accountCode;
-        this.accountName = accountName;
-        this.normalBalance = normalBalance;
-        this.openingBalance = openingBalance != null ? openingBalance : BigDecimal.ZERO;
-        this.periodDebits = periodDebits != null ? periodDebits : BigDecimal.ZERO;
-        this.periodCredits = periodCredits != null ? periodCredits : BigDecimal.ZERO;
-        this.closingBalance = closingBalance != null ? closingBalance : BigDecimal.ZERO;
+    public AccountBalance(String initialAccountCode, String initialAccountName, String initialNormalBalance,
+                         BigDecimal initialOpeningBalance, BigDecimal initialPeriodDebits, BigDecimal initialPeriodCredits, 
+                         BigDecimal initialClosingBalance) {
+        this.accountCode = initialAccountCode;
+        this.accountName = initialAccountName;
+        this.normalBalance = initialNormalBalance;
+        this.openingBalance = initialOpeningBalance != null ? initialOpeningBalance : BigDecimal.ZERO;
+        this.periodDebits = initialPeriodDebits != null ? initialPeriodDebits : BigDecimal.ZERO;
+        this.periodCredits = initialPeriodCredits != null ? initialPeriodCredits : BigDecimal.ZERO;
+        this.closingBalance = initialClosingBalance != null ? initialClosingBalance : BigDecimal.ZERO;
     }
 
     public String getAccountCode() {

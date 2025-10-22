@@ -33,13 +33,13 @@ public class User {
         this.updatedAt = LocalDateTime.now();
     }
 
-    public User(String email, String firstName, String lastName, String role, Long companyId) {
+    public User(String initialEmail, String initialFirstName, String initialLastName, String initialRole, Long initialCompanyId) {
         this();
-        this.email = email;
-        this.firstName = firstName;
-        this.lastName = lastName;
-        this.role = role;
-        this.companyId = companyId;
+        this.email = initialEmail;
+        this.firstName = initialFirstName;
+        this.lastName = initialLastName;
+        this.role = initialRole;
+        this.companyId = initialCompanyId;
     }
 
     /**
@@ -66,50 +66,50 @@ public class User {
 
     // Getters and Setters
     public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public void setId(Long newId) { this.id = newId; }
 
     public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
+    public void setEmail(String newEmail) { this.email = newEmail; }
 
     public String getPasswordHash() { return passwordHash; }
-    public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
+    public void setPasswordHash(String newPasswordHash) { this.passwordHash = newPasswordHash; }
 
     public String getSalt() { return salt; }
-    public void setSalt(String salt) { this.salt = salt; }
+    public void setSalt(String newSalt) { this.salt = newSalt; }
 
     public String getFirstName() { return firstName; }
-    public void setFirstName(String firstName) { this.firstName = firstName; }
+    public void setFirstName(String newFirstName) { this.firstName = newFirstName; }
 
     public String getLastName() { return lastName; }
-    public void setLastName(String lastName) { this.lastName = lastName; }
+    public void setLastName(String newLastName) { this.lastName = newLastName; }
 
     public String getFullName() {
         return (firstName != null ? firstName : "") + " " + (lastName != null ? lastName : "");
     }
 
     public String getRole() { return role; }
-    public void setRole(String role) { this.role = role; }
+    public void setRole(String newRole) { this.role = newRole; }
 
     public Long getCompanyId() { return companyId; }
-    public void setCompanyId(Long companyId) { this.companyId = companyId; }
+    public void setCompanyId(Long newCompanyId) { this.companyId = newCompanyId; }
 
     public boolean isActive() { return isActive; }
     public void setActive(boolean active) { isActive = active; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public void setCreatedAt(LocalDateTime newCreatedAt) { this.createdAt = newCreatedAt; }
 
     public LocalDateTime getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    public void setUpdatedAt(LocalDateTime newUpdatedAt) { this.updatedAt = newUpdatedAt; }
 
     public String getCreatedBy() { return createdBy; }
-    public void setCreatedBy(String createdBy) { this.createdBy = createdBy; }
+    public void setCreatedBy(String newCreatedBy) { this.createdBy = newCreatedBy; }
 
     public String getUpdatedBy() { return updatedBy; }
-    public void setUpdatedBy(String updatedBy) { this.updatedBy = updatedBy; }
+    public void setUpdatedBy(String newUpdatedBy) { this.updatedBy = newUpdatedBy; }
 
     public LocalDateTime getLastLoginAt() { return lastLoginAt; }
-    public void setLastLoginAt(LocalDateTime lastLoginAt) { this.lastLoginAt = lastLoginAt; }
+    public void setLastLoginAt(LocalDateTime newLastLoginAt) { this.lastLoginAt = newLastLoginAt; }
 
     // Utility methods
     public boolean isAdmin() {

@@ -88,22 +88,22 @@ public class DataManagementController {
     private final InputHandler inputHandler;
     private final OutputFormatter outputFormatter;
     
-    public DataManagementController(DataManagementService dataManagementService,
-                                  TransactionClassificationService classificationService,
-                                  CsvExportService csvExportService,
-                                  CsvImportService csvImportService,
-                                  ApplicationState applicationState,
-                                  ConsoleMenu menu,
-                                  InputHandler inputHandler,
-                                  OutputFormatter outputFormatter) {
-        this.dataManagementService = dataManagementService;
-        this.classificationService = classificationService;
-        this.csvExportService = csvExportService;
-        this.csvImportService = csvImportService;
-        this.applicationState = applicationState;
-        this.menu = menu;
-        this.inputHandler = inputHandler;
-        this.outputFormatter = outputFormatter;
+    public DataManagementController(DataManagementService initialDataManagementService,
+                                  TransactionClassificationService initialClassificationService,
+                                  CsvExportService initialCsvExportService,
+                                  CsvImportService initialCsvImportService,
+                                  ApplicationState initialApplicationState,
+                                  ConsoleMenu initialMenu,
+                                  InputHandler initialInputHandler,
+                                  OutputFormatter initialOutputFormatter) {
+        this.dataManagementService = initialDataManagementService;
+        this.classificationService = initialClassificationService;
+        this.csvExportService = initialCsvExportService;
+        this.csvImportService = initialCsvImportService;
+        this.applicationState = initialApplicationState;
+        this.menu = initialMenu;
+        this.inputHandler = initialInputHandler;
+        this.outputFormatter = initialOutputFormatter;
     }
     
     public void handleDataManagement() {
@@ -404,15 +404,15 @@ public class DataManagementController {
             }
             
             // Enhanced: Pagination for all transactions
-            final int TRANSACTIONS_PER_PAGE = 50;
-            int totalPages = (int) Math.ceil((double) transactions.size() / TRANSACTIONS_PER_PAGE);
+            final int transactionsPerPage = 50;
+            int totalPages = (int) Math.ceil((double) transactions.size() / transactionsPerPage);
             int currentPage = 1;
             
             while (true) {
                 outputFormatter.printSubHeader("Transactions (Page " + currentPage + "/" + totalPages + ")");
                 
-                int startIdx = (currentPage - 1) * TRANSACTIONS_PER_PAGE;
-                int endIdx = Math.min(startIdx + TRANSACTIONS_PER_PAGE, transactions.size());
+                int startIdx = (currentPage - 1) * transactionsPerPage;
+                int endIdx = Math.min(startIdx + transactionsPerPage, transactions.size());
                 
                 for (int i = startIdx; i < endIdx; i++) {
                     BankTransaction tx = transactions.get(i);
@@ -457,7 +457,7 @@ public class DataManagementController {
                             applicationState.getCurrentCompany().getId(),
                             applicationState.getCurrentFiscalPeriod().getId());
                         transactions = filterTransactions(allTransactions, filterChoice);
-                        totalPages = (int) Math.ceil((double) transactions.size() / TRANSACTIONS_PER_PAGE);
+                        totalPages = (int) Math.ceil((double) transactions.size() / transactionsPerPage);
                         
                         // Stay on same page if possible
                         if (currentPage > totalPages) {

@@ -62,38 +62,38 @@ public class ParsedTransaction {
         private BigDecimal balance;
         private boolean hasServiceFee;
 
-        public Builder type(TransactionType type) {
-            this.type = type;
+        public Builder type(TransactionType newType) {
+            this.type = newType;
             return this;
         }
 
-        public Builder description(String description) {
-            this.description = description;
+        public Builder description(String newDescription) {
+            this.description = newDescription;
             return this;
         }
 
-        public Builder amount(BigDecimal amount) {
-            this.amount = amount;
+        public Builder amount(BigDecimal newAmount) {
+            this.amount = newAmount;
             return this;
         }
 
-        public Builder date(LocalDate date) {
-            this.date = date;
+        public Builder date(LocalDate newDate) {
+            this.date = newDate;
             return this;
         }
 
-        public Builder reference(String reference) {
-            this.reference = reference;
+        public Builder reference(String newReference) {
+            this.reference = newReference;
             return this;
         }
 
-        public Builder balance(BigDecimal balance) {
-            this.balance = balance;
+        public Builder balance(BigDecimal newBalance) {
+            this.balance = newBalance;
             return this;
         }
 
-        public Builder hasServiceFee(boolean hasServiceFee) {
-            this.hasServiceFee = hasServiceFee;
+        public Builder hasServiceFee(boolean newHasServiceFee) {
+            this.hasServiceFee = newHasServiceFee;
             return this;
         }
 

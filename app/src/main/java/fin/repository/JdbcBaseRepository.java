@@ -13,8 +13,8 @@ public abstract class JdbcBaseRepository {
     private static final Logger LOGGER = Logger.getLogger(JdbcBaseRepository.class.getName());
     protected final String dbUrl;
 
-    protected JdbcBaseRepository(String dbUrl) {
-        this.dbUrl = dbUrl;
+    protected JdbcBaseRepository(String initialDbUrl) {
+        this.dbUrl = initialDbUrl;
     }
 
     /**
