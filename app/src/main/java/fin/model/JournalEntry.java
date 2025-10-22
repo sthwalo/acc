@@ -31,15 +31,15 @@ public class JournalEntry {
         this.updatedAt = LocalDateTime.now();
     }
     
-    public JournalEntry(String reference, LocalDate entryDate, String description, 
-                       Long fiscalPeriodId, Long companyId, String createdBy) {
+    public JournalEntry(String initialReference, LocalDate initialEntryDate, String initialDescription, 
+                       Long initialFiscalPeriodId, Long initialCompanyId, String initialCreatedBy) {
         this();
-        this.reference = reference;
-        this.entryDate = entryDate;
-        this.description = description;
-        this.fiscalPeriodId = fiscalPeriodId;
-        this.companyId = companyId;
-        this.createdBy = createdBy;
+        this.reference = initialReference;
+        this.entryDate = initialEntryDate;
+        this.description = initialDescription;
+        this.fiscalPeriodId = initialFiscalPeriodId;
+        this.companyId = initialCompanyId;
+        this.createdBy = initialCreatedBy;
     }
     
     /**
@@ -80,88 +80,88 @@ public class JournalEntry {
         return id;
     }
     
-    public void setId(Long id) {
-        this.id = id;
+    public void setId(Long newId) {
+        this.id = newId;
     }
     
     public String getReference() {
         return reference;
     }
     
-    public void setReference(String reference) {
-        this.reference = reference;
+    public void setReference(String newReference) {
+        this.reference = newReference;
     }
     
     public LocalDate getEntryDate() {
         return entryDate;
     }
     
-    public void setEntryDate(LocalDate entryDate) {
-        this.entryDate = entryDate;
+    public void setEntryDate(LocalDate newEntryDate) {
+        this.entryDate = newEntryDate;
     }
     
     public String getDescription() {
         return description;
     }
     
-    public void setDescription(String description) {
-        this.description = description;
+    public void setDescription(String newDescription) {
+        this.description = newDescription;
     }
     
     public Long getTransactionTypeId() {
         return transactionTypeId;
     }
     
-    public void setTransactionTypeId(Long transactionTypeId) {
-        this.transactionTypeId = transactionTypeId;
+    public void setTransactionTypeId(Long newTransactionTypeId) {
+        this.transactionTypeId = newTransactionTypeId;
     }
     
     public Long getFiscalPeriodId() {
         return fiscalPeriodId;
     }
     
-    public void setFiscalPeriodId(Long fiscalPeriodId) {
-        this.fiscalPeriodId = fiscalPeriodId;
+    public void setFiscalPeriodId(Long newFiscalPeriodId) {
+        this.fiscalPeriodId = newFiscalPeriodId;
     }
     
     public Long getCompanyId() {
         return companyId;
     }
     
-    public void setCompanyId(Long companyId) {
-        this.companyId = companyId;
+    public void setCompanyId(Long newCompanyId) {
+        this.companyId = newCompanyId;
     }
     
     public String getCreatedBy() {
         return createdBy;
     }
     
-    public void setCreatedBy(String createdBy) {
-        this.createdBy = createdBy;
+    public void setCreatedBy(String newCreatedBy) {
+        this.createdBy = newCreatedBy;
     }
     
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
     
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
+    public void setCreatedAt(LocalDateTime newCreatedAt) {
+        this.createdAt = newCreatedAt;
     }
     
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
     }
     
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
+    public void setUpdatedAt(LocalDateTime newUpdatedAt) {
+        this.updatedAt = newUpdatedAt;
     }
     
     public List<JournalEntryLine> getLines() {
         return new ArrayList<>(lines);
     }
     
-    public void setLines(List<JournalEntryLine> lines) {
-        this.lines = new ArrayList<>(lines);
+    public void setLines(List<JournalEntryLine> newLines) {
+        this.lines = new ArrayList<>(newLines);
     }
     
     @Override

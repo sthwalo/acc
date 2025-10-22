@@ -13,11 +13,11 @@ public class AccountInfo {
     public AccountInfo() {
     }
 
-    public AccountInfo(String accountCode, String accountName, String normalBalance, String accountType) {
-        this.accountCode = accountCode;
-        this.accountName = accountName;
-        this.normalBalance = normalBalance;
-        this.accountType = accountType;
+    public AccountInfo(String initialAccountCode, String initialAccountName, String initialNormalBalance, String initialAccountType) {
+        this.accountCode = initialAccountCode;
+        this.accountName = initialAccountName;
+        this.normalBalance = initialNormalBalance;
+        this.accountType = initialAccountType;
     }
 
     // Getters and Setters
@@ -25,32 +25,32 @@ public class AccountInfo {
         return accountCode;
     }
 
-    public void setAccountCode(String accountCode) {
-        this.accountCode = accountCode;
+    public void setAccountCode(String newAccountCode) {
+        this.accountCode = newAccountCode;
     }
 
     public String getAccountName() {
         return accountName;
     }
 
-    public void setAccountName(String accountName) {
-        this.accountName = accountName;
+    public void setAccountName(String newAccountName) {
+        this.accountName = newAccountName;
     }
 
     public String getNormalBalance() {
         return normalBalance;
     }
 
-    public void setNormalBalance(String normalBalance) {
-        this.normalBalance = normalBalance;
+    public void setNormalBalance(String newNormalBalance) {
+        this.normalBalance = newNormalBalance;
     }
 
     public String getAccountType() {
         return accountType;
     }
 
-    public void setAccountType(String accountType) {
-        this.accountType = accountType;
+    public void setAccountType(String newAccountType) {
+        this.accountType = newAccountType;
     }
 
     @Override

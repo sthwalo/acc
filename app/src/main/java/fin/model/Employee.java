@@ -87,15 +87,15 @@ public class Employee {
         this.updatedAt = LocalDateTime.now();
     }
     
-    public Employee(Long companyId, String employeeNumber, String firstName, String lastName, 
-                   String position, BigDecimal basicSalary) {
+    public Employee(Long initialCompanyId, String initialEmployeeNumber, String initialFirstName, String initialLastName, 
+                   String initialPosition, BigDecimal initialBasicSalary) {
         this();
-        this.companyId = companyId;
-        this.employeeNumber = employeeNumber;
-        this.firstName = firstName;
-        this.lastName = lastName;
-        this.position = position;
-        this.basicSalary = basicSalary;
+        this.companyId = initialCompanyId;
+        this.employeeNumber = initialEmployeeNumber;
+        this.firstName = initialFirstName;
+        this.lastName = initialLastName;
+        this.position = initialPosition;
+        this.basicSalary = initialBasicSalary;
     }
     
     // Calculated properties
@@ -113,123 +113,123 @@ public class Employee {
     
     // Getters and Setters
     public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public void setId(Long newId) { this.id = newId; }
     
     public Long getCompanyId() { return companyId; }
-    public void setCompanyId(Long companyId) { this.companyId = companyId; }
+    public void setCompanyId(Long newCompanyId) { this.companyId = newCompanyId; }
     
     public String getEmployeeNumber() { return employeeNumber; }
-    public void setEmployeeNumber(String employeeNumber) { this.employeeNumber = employeeNumber; }
+    public void setEmployeeNumber(String newEmployeeNumber) { this.employeeNumber = newEmployeeNumber; }
     
     public String getTitle() { return title; }
-    public void setTitle(String title) { this.title = title; }
+    public void setTitle(String newTitle) { this.title = newTitle; }
     
     public String getFirstName() { return firstName; }
-    public void setFirstName(String firstName) { this.firstName = firstName; }
+    public void setFirstName(String newFirstName) { this.firstName = newFirstName; }
     
     public String getSecondName() { return secondName; }
-    public void setSecondName(String secondName) { this.secondName = secondName; }
+    public void setSecondName(String newSecondName) { this.secondName = newSecondName; }
     
     public String getLastName() { return lastName; }
-    public void setLastName(String lastName) { this.lastName = lastName; }
+    public void setLastName(String newLastName) { this.lastName = newLastName; }
     
     public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
+    public void setEmail(String newEmail) { this.email = newEmail; }
     
     public String getPhone() { return phone; }
-    public void setPhone(String phone) { this.phone = phone; }
+    public void setPhone(String newPhone) { this.phone = newPhone; }
     
     public String getPosition() { return position; }
-    public void setPosition(String position) { this.position = position; }
+    public void setPosition(String newPosition) { this.position = newPosition; }
     
     public String getDepartment() { return department; }
-    public void setDepartment(String department) { this.department = department; }
+    public void setDepartment(String newDepartment) { this.department = newDepartment; }
     
     public LocalDate getHireDate() { return hireDate; }
-    public void setHireDate(LocalDate hireDate) { this.hireDate = hireDate; }
+    public void setHireDate(LocalDate newHireDate) { this.hireDate = newHireDate; }
     
     public LocalDate getTerminationDate() { return terminationDate; }
-    public void setTerminationDate(LocalDate terminationDate) { this.terminationDate = terminationDate; }
+    public void setTerminationDate(LocalDate newTerminationDate) { this.terminationDate = newTerminationDate; }
     
     public boolean isActive() { return isActive; }
-    public void setActive(boolean active) { isActive = active; }
+    public void setActive(boolean newActive) { isActive = newActive; }
     
     // Address Information
     public String getAddressLine1() { return addressLine1; }
-    public void setAddressLine1(String addressLine1) { this.addressLine1 = addressLine1; }
+    public void setAddressLine1(String newAddressLine1) { this.addressLine1 = newAddressLine1; }
     
     public String getAddressLine2() { return addressLine2; }
-    public void setAddressLine2(String addressLine2) { this.addressLine2 = addressLine2; }
+    public void setAddressLine2(String newAddressLine2) { this.addressLine2 = newAddressLine2; }
     
     public String getCity() { return city; }
-    public void setCity(String city) { this.city = city; }
+    public void setCity(String newCity) { this.city = newCity; }
     
     public String getProvince() { return province; }
-    public void setProvince(String province) { this.province = province; }
+    public void setProvince(String newProvince) { this.province = newProvince; }
     
     public String getPostalCode() { return postalCode; }
-    public void setPostalCode(String postalCode) { this.postalCode = postalCode; }
+    public void setPostalCode(String newPostalCode) { this.postalCode = newPostalCode; }
     
     public String getCountry() { return country; }
-    public void setCountry(String country) { this.country = country; }
+    public void setCountry(String newCountry) { this.country = newCountry; }
     
     // Banking Information
     public String getBankName() { return bankName; }
-    public void setBankName(String bankName) { this.bankName = bankName; }
+    public void setBankName(String newBankName) { this.bankName = newBankName; }
     
     public String getAccountHolderName() { return accountHolderName; }
-    public void setAccountHolderName(String accountHolderName) { this.accountHolderName = accountHolderName; }
+    public void setAccountHolderName(String newAccountHolderName) { this.accountHolderName = newAccountHolderName; }
     
     public String getAccountNumber() { return accountNumber; }
-    public void setAccountNumber(String accountNumber) { this.accountNumber = accountNumber; }
+    public void setAccountNumber(String newAccountNumber) { this.accountNumber = newAccountNumber; }
     
     public String getBranchCode() { return branchCode; }
-    public void setBranchCode(String branchCode) { this.branchCode = branchCode; }
+    public void setBranchCode(String newBranchCode) { this.branchCode = newBranchCode; }
     
     public String getAccountType() { return accountType; }
-    public void setAccountType(String accountType) { this.accountType = accountType; }
+    public void setAccountType(String newAccountType) { this.accountType = newAccountType; }
     
     // Employment Details
     public EmploymentType getEmploymentType() { return employmentType; }
-    public void setEmploymentType(EmploymentType employmentType) { this.employmentType = employmentType; }
+    public void setEmploymentType(EmploymentType newEmploymentType) { this.employmentType = newEmploymentType; }
     
     public SalaryType getSalaryType() { return salaryType; }
-    public void setSalaryType(SalaryType salaryType) { this.salaryType = salaryType; }
+    public void setSalaryType(SalaryType newSalaryType) { this.salaryType = newSalaryType; }
     
     public BigDecimal getBasicSalary() { return basicSalary; }
-    public void setBasicSalary(BigDecimal basicSalary) { this.basicSalary = basicSalary; }
+    public void setBasicSalary(BigDecimal newBasicSalary) { this.basicSalary = newBasicSalary; }
     
     public BigDecimal getOvertimeRate() { return overtimeRate; }
-    public void setOvertimeRate(BigDecimal overtimeRate) { this.overtimeRate = overtimeRate; }
+    public void setOvertimeRate(BigDecimal newOvertimeRate) { this.overtimeRate = newOvertimeRate; }
     
     // Tax Information
     public String getTaxNumber() { return taxNumber; }
-    public void setTaxNumber(String taxNumber) { this.taxNumber = taxNumber; }
+    public void setTaxNumber(String newTaxNumber) { this.taxNumber = newTaxNumber; }
     
     public String getTaxRebateCode() { return taxRebateCode; }
-    public void setTaxRebateCode(String taxRebateCode) { this.taxRebateCode = taxRebateCode; }
+    public void setTaxRebateCode(String newTaxRebateCode) { this.taxRebateCode = newTaxRebateCode; }
     
     public String getUifNumber() { return uifNumber; }
-    public void setUifNumber(String uifNumber) { this.uifNumber = uifNumber; }
+    public void setUifNumber(String newUifNumber) { this.uifNumber = newUifNumber; }
     
     public String getMedicalAidNumber() { return medicalAidNumber; }
-    public void setMedicalAidNumber(String medicalAidNumber) { this.medicalAidNumber = medicalAidNumber; }
+    public void setMedicalAidNumber(String newMedicalAidNumber) { this.medicalAidNumber = newMedicalAidNumber; }
     
     public String getPensionFundNumber() { return pensionFundNumber; }
-    public void setPensionFundNumber(String pensionFundNumber) { this.pensionFundNumber = pensionFundNumber; }
+    public void setPensionFundNumber(String newPensionFundNumber) { this.pensionFundNumber = newPensionFundNumber; }
     
     // Audit Fields
     public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public void setCreatedAt(LocalDateTime newCreatedAt) { this.createdAt = newCreatedAt; }
     
     public LocalDateTime getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    public void setUpdatedAt(LocalDateTime newUpdatedAt) { this.updatedAt = newUpdatedAt; }
     
     public String getCreatedBy() { return createdBy; }
-    public void setCreatedBy(String createdBy) { this.createdBy = createdBy; }
+    public void setCreatedBy(String newCreatedBy) { this.createdBy = newCreatedBy; }
     
     public String getUpdatedBy() { return updatedBy; }
-    public void setUpdatedBy(String updatedBy) { this.updatedBy = updatedBy; }
+    public void setUpdatedBy(String newUpdatedBy) { this.updatedBy = newUpdatedBy; }
     
     @Override
     public String toString() {

@@ -14,8 +14,8 @@ import java.time.LocalDate;
 public class BankTransactionRepository implements BaseRepository<BankTransaction, Long> {
     private final String dbUrl;
 
-    public BankTransactionRepository(String dbUrl) {
-        this.dbUrl = dbUrl;
+    public BankTransactionRepository(String initialDbUrl) {
+        this.dbUrl = initialDbUrl;
     }
 
     @Override

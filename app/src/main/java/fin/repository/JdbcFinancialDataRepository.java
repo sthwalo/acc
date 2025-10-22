@@ -21,8 +21,8 @@ public class JdbcFinancialDataRepository implements FinancialDataRepository {
     private static final int PREPARED_STATEMENT_PARAM_3 = 3;
     private static final int PREPARED_STATEMENT_PARAM_4 = 4;
 
-    public JdbcFinancialDataRepository(@SuppressWarnings("EI_EXPOSE_REP") DataSource dataSource) {
-        this.dataSource = dataSource;
+    public JdbcFinancialDataRepository(@SuppressWarnings("EI_EXPOSE_REP") DataSource initialDataSource) {
+        this.dataSource = initialDataSource;
     }
 
     @Override

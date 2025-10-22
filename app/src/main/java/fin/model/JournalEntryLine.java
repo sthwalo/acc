@@ -24,47 +24,47 @@ public class JournalEntryLine {
         return id;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public void setId(Long newId) {
+        this.id = newId;
     }
 
     public Long getJournalEntryId() {
         return journalEntryId;
     }
 
-    public void setJournalEntryId(Long journalEntryId) {
-        this.journalEntryId = journalEntryId;
+    public void setJournalEntryId(Long newJournalEntryId) {
+        this.journalEntryId = newJournalEntryId;
     }
 
     public Long getAccountId() {
         return accountId;
     }
 
-    public void setAccountId(Long accountId) {
-        this.accountId = accountId;
+    public void setAccountId(Long newAccountId) {
+        this.accountId = newAccountId;
     }
 
     public String getDescription() {
         return description;
     }
 
-    public void setDescription(String description) {
-        this.description = description;
+    public void setDescription(String newDescription) {
+        this.description = newDescription;
     }
 
     public BigDecimal getDebitAmount() {
         return debitAmount;
     }
 
-    public void setDebitAmount(BigDecimal debitAmount) {
-        this.debitAmount = debitAmount != null ? debitAmount : BigDecimal.ZERO;
+    public void setDebitAmount(BigDecimal newDebitAmount) {
+        this.debitAmount = newDebitAmount != null ? newDebitAmount : BigDecimal.ZERO;
     }
 
     public BigDecimal getCreditAmount() {
         return creditAmount;
     }
 
-    public void setCreditAmount(BigDecimal creditAmount) {
-        this.creditAmount = creditAmount != null ? creditAmount : BigDecimal.ZERO;
+    public void setCreditAmount(BigDecimal newCreditAmount) {
+        this.creditAmount = newCreditAmount != null ? newCreditAmount : BigDecimal.ZERO;
     }
 }

@@ -9,7 +9,10 @@ import java.util.Objects;
  * Value object representing monetary amounts.
  * Follows Domain-Driven Design principles for type safety and currency handling.
  */
-public record Money(BigDecimal amount, Currency currency) {
+public record Money(
+    BigDecimal amount,
+    Currency currency
+) {
     private static final Currency DEFAULT_CURRENCY = Currency.getInstance("ZAR");
 
     public Money(BigDecimal amount) {

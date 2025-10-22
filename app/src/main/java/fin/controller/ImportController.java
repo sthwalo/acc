@@ -34,18 +34,18 @@ public class ImportController {
     private final InputHandler inputHandler;
     private final OutputFormatter outputFormatter;
     
-    public ImportController(BankStatementProcessingService bankStatementService,
-                          CsvImportService csvImportService,
-                          ApplicationState applicationState,
-                          ConsoleMenu menu,
-                          InputHandler inputHandler,
-                          OutputFormatter outputFormatter) {
-        this.bankStatementService = bankStatementService;
-        this.csvImportService = csvImportService;
-        this.applicationState = applicationState;
-        this.menu = menu;
-        this.inputHandler = inputHandler;
-        this.outputFormatter = outputFormatter;
+    public ImportController(BankStatementProcessingService initialBankStatementService,
+                          CsvImportService initialCsvImportService,
+                          ApplicationState initialApplicationState,
+                          ConsoleMenu initialMenu,
+                          InputHandler initialInputHandler,
+                          OutputFormatter initialOutputFormatter) {
+        this.bankStatementService = initialBankStatementService;
+        this.csvImportService = initialCsvImportService;
+        this.applicationState = initialApplicationState;
+        this.menu = initialMenu;
+        this.inputHandler = initialInputHandler;
+        this.outputFormatter = initialOutputFormatter;
     }
     
     public void handleBankStatementImport() {

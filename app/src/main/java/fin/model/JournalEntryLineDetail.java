@@ -29,79 +29,79 @@ public class JournalEntryLineDetail {
         return lineId;
     }
 
-    public void setLineId(Long lineId) {
-        this.lineId = lineId;
+    public void setLineId(Long newLineId) {
+        this.lineId = newLineId;
     }
 
     public Long getJournalEntryId() {
         return journalEntryId;
     }
 
-    public void setJournalEntryId(Long journalEntryId) {
-        this.journalEntryId = journalEntryId;
+    public void setJournalEntryId(Long newJournalEntryId) {
+        this.journalEntryId = newJournalEntryId;
     }
 
     public LocalDate getEntryDate() {
         return entryDate;
     }
 
-    public void setEntryDate(LocalDate entryDate) {
-        this.entryDate = entryDate;
+    public void setEntryDate(LocalDate newEntryDate) {
+        this.entryDate = newEntryDate;
     }
 
     public String getReference() {
         return reference;
     }
 
-    public void setReference(String reference) {
-        this.reference = reference;
+    public void setReference(String newReference) {
+        this.reference = newReference;
     }
 
     public String getDescription() {
         return description;
     }
 
-    public void setDescription(String description) {
-        this.description = description;
+    public void setDescription(String newDescription) {
+        this.description = newDescription;
     }
 
     public Long getAccountId() {
         return accountId;
     }
 
-    public void setAccountId(Long accountId) {
-        this.accountId = accountId;
+    public void setAccountId(Long newAccountId) {
+        this.accountId = newAccountId;
     }
 
     public String getAccountCode() {
         return accountCode;
     }
 
-    public void setAccountCode(String accountCode) {
-        this.accountCode = accountCode;
+    public void setAccountCode(String newAccountCode) {
+        this.accountCode = newAccountCode;
     }
 
     public String getAccountName() {
         return accountName;
     }
 
-    public void setAccountName(String accountName) {
-        this.accountName = accountName;
+    public void setAccountName(String newAccountName) {
+        this.accountName = newAccountName;
     }
 
     public BigDecimal getDebitAmount() {
         return debitAmount;
     }
 
-    public void setDebitAmount(BigDecimal debitAmount) {
-        this.debitAmount = debitAmount != null ? debitAmount : BigDecimal.ZERO;
+    public void setDebitAmount(BigDecimal newDebitAmount) {
+        this.debitAmount = newDebitAmount != null ? newDebitAmount : BigDecimal.ZERO;
     }
 
     public BigDecimal getCreditAmount() {
         return creditAmount;
     }
 
-    public void setCreditAmount(BigDecimal creditAmount) {
-        this.creditAmount = creditAmount != null ? creditAmount : BigDecimal.ZERO;
+    public void setCreditAmount(BigDecimal newCreditAmount) {
+        this.creditAmount = newCreditAmount != null ? newCreditAmount : BigDecimal.ZERO;
     }
 }

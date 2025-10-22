@@ -21,41 +21,41 @@ public class TrialBalanceEntry {
     private final BigDecimal creditBalance;
 
     // Constructor for simple trial balance (backward compatibility)
-    public TrialBalanceEntry(String accountCode, String accountName, 
-                           BigDecimal debitBalance, BigDecimal creditBalance) {
-        this.accountCode = accountCode;
-        this.accountName = accountName;
+    public TrialBalanceEntry(String initialAccountCode, String initialAccountName, 
+                           BigDecimal initialDebitBalance, BigDecimal initialCreditBalance) {
+        this.accountCode = initialAccountCode;
+        this.accountName = initialAccountName;
         this.normalBalance = "D"; // Default to debit normal balance
-        this.debitBalance = debitBalance;
-        this.creditBalance = creditBalance;
+        this.debitBalance = initialDebitBalance;
+        this.creditBalance = initialCreditBalance;
         this.openingBalance = BigDecimal.ZERO;
-        this.periodDebits = debitBalance;
-        this.periodCredits = creditBalance;
-        this.closingBalance = debitBalance.subtract(creditBalance);
+        this.periodDebits = initialDebitBalance;
+        this.periodCredits = initialCreditBalance;
+        this.closingBalance = initialDebitBalance.subtract(initialCreditBalance);
     }
 
     // Constructor for comprehensive trial balance (assumes Debit normal balance)
-    public TrialBalanceEntry(String accountCode, String accountName, 
-                           BigDecimal openingBalance, BigDecimal periodDebits, 
-                           BigDecimal periodCredits, BigDecimal closingBalance) {
-        this(accountCode, accountName, "D", openingBalance, periodDebits, periodCredits, closingBalance);
+    public TrialBalanceEntry(String initialAccountCode, String initialAccountName, 
+                           BigDecimal initialOpeningBalance, BigDecimal initialPeriodDebits, 
+                           BigDecimal initialPeriodCredits, BigDecimal initialClosingBalance) {
+        this(initialAccountCode, initialAccountName, "D", initialOpeningBalance, initialPeriodDebits, initialPeriodCredits, initialClosingBalance);
     }
 
     // Full constructor with normal balance
-    public TrialBalanceEntry(String accountCode, String accountName, String normalBalance,
-                           BigDecimal openingBalance, BigDecimal periodDebits, 
-                           BigDecimal periodCredits, BigDecimal closingBalance) {
-        this.accountCode = accountCode;
-        this.accountName = accountName;
-        this.normalBalance = normalBalance;
-        this.openingBalance = openingBalance;
-        this.periodDebits = periodDebits;
-        this.periodCredits = periodCredits;
-        this.closingBalance = closingBalance;
+    public TrialBalanceEntry(String initialAccountCode, String initialAccountName, String initialNormalBalance,
+                           BigDecimal initialOpeningBalance, BigDecimal initialPeriodDebits, 
+                           BigDecimal initialPeriodCredits, BigDecimal initialClosingBalance) {
+        this.accountCode = initialAccountCode;
+        this.accountName = initialAccountName;
+        this.normalBalance = initialNormalBalance;
+        this.openingBalance = initialOpeningBalance;
+        this.periodDebits = initialPeriodDebits;
+        this.periodCredits = initialPeriodCredits;
+        this.closingBalance = initialClosingBalance;
         
         // Set legacy fields for backward compatibility
-        this.debitBalance = periodDebits;
-        this.creditBalance = periodCredits;
+        this.debitBalance = initialPeriodDebits;
+        this.creditBalance = initialPeriodCredits;
     }
 
     public String getAccountCode() {

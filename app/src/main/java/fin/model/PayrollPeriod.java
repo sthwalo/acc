@@ -54,14 +54,14 @@ public class PayrollPeriod {
         this.updatedAt = LocalDateTime.now();
     }
     
-    public PayrollPeriod(Long companyId, String periodName, LocalDate startDate, 
-                        LocalDate endDate, LocalDate payDate) {
+    public PayrollPeriod(Long initialCompanyId, String initialPeriodName, LocalDate initialStartDate, 
+                        LocalDate initialEndDate, LocalDate initialPayDate) {
         this();
-        this.companyId = companyId;
-        this.periodName = periodName;
-        this.startDate = startDate;
-        this.endDate = endDate;
-        this.payDate = payDate;
+        this.companyId = initialCompanyId;
+        this.periodName = initialPeriodName;
+        this.startDate = initialStartDate;
+        this.endDate = initialEndDate;
+        this.payDate = initialPayDate;
     }
     
     // Business methods
@@ -79,66 +79,66 @@ public class PayrollPeriod {
     
     // Getters and Setters
     public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public void setId(Long newId) { this.id = newId; }
     
     public Long getCompanyId() { return companyId; }
-    public void setCompanyId(Long companyId) { this.companyId = companyId; }
+    public void setCompanyId(Long newCompanyId) { this.companyId = newCompanyId; }
     
     public Long getFiscalPeriodId() { return fiscalPeriodId; }
-    public void setFiscalPeriodId(Long fiscalPeriodId) { this.fiscalPeriodId = fiscalPeriodId; }
+    public void setFiscalPeriodId(Long newFiscalPeriodId) { this.fiscalPeriodId = newFiscalPeriodId; }
     
     public String getPeriodName() { return periodName; }
-    public void setPeriodName(String periodName) { this.periodName = periodName; }
+    public void setPeriodName(String newPeriodName) { this.periodName = newPeriodName; }
     
     public LocalDate getPayDate() { return payDate; }
-    public void setPayDate(LocalDate payDate) { this.payDate = payDate; }
+    public void setPayDate(LocalDate newPayDate) { this.payDate = newPayDate; }
     
     public LocalDate getStartDate() { return startDate; }
-    public void setStartDate(LocalDate startDate) { this.startDate = startDate; }
+    public void setStartDate(LocalDate newStartDate) { this.startDate = newStartDate; }
     
     public LocalDate getEndDate() { return endDate; }
-    public void setEndDate(LocalDate endDate) { this.endDate = endDate; }
+    public void setEndDate(LocalDate newEndDate) { this.endDate = newEndDate; }
     
     public PeriodType getPeriodType() { return periodType; }
-    public void setPeriodType(PeriodType periodType) { this.periodType = periodType; }
+    public void setPeriodType(PeriodType newPeriodType) { this.periodType = newPeriodType; }
     
     public PayrollStatus getStatus() { return status; }
-    public void setStatus(PayrollStatus status) { this.status = status; }
+    public void setStatus(PayrollStatus newStatus) { this.status = newStatus; }
     
     public BigDecimal getTotalGrossPay() { return totalGrossPay; }
-    public void setTotalGrossPay(BigDecimal totalGrossPay) { this.totalGrossPay = totalGrossPay; }
+    public void setTotalGrossPay(BigDecimal newTotalGrossPay) { this.totalGrossPay = newTotalGrossPay; }
     
     public BigDecimal getTotalDeductions() { return totalDeductions; }
-    public void setTotalDeductions(BigDecimal totalDeductions) { this.totalDeductions = totalDeductions; }
+    public void setTotalDeductions(BigDecimal newTotalDeductions) { this.totalDeductions = newTotalDeductions; }
     
     public BigDecimal getTotalNetPay() { return totalNetPay; }
-    public void setTotalNetPay(BigDecimal totalNetPay) { this.totalNetPay = totalNetPay; }
+    public void setTotalNetPay(BigDecimal newTotalNetPay) { this.totalNetPay = newTotalNetPay; }
     
     public Integer getEmployeeCount() { return employeeCount; }
-    public void setEmployeeCount(Integer employeeCount) { this.employeeCount = employeeCount; }
+    public void setEmployeeCount(Integer newEmployeeCount) { this.employeeCount = newEmployeeCount; }
     
     // Approval fields
     public LocalDateTime getProcessedAt() { return processedAt; }
-    public void setProcessedAt(LocalDateTime processedAt) { this.processedAt = processedAt; }
+    public void setProcessedAt(LocalDateTime newProcessedAt) { this.processedAt = newProcessedAt; }
     
     public String getProcessedBy() { return processedBy; }
-    public void setProcessedBy(String processedBy) { this.processedBy = processedBy; }
+    public void setProcessedBy(String newProcessedBy) { this.processedBy = newProcessedBy; }
     
     public LocalDateTime getApprovedAt() { return approvedAt; }
-    public void setApprovedAt(LocalDateTime approvedAt) { this.approvedAt = approvedAt; }
+    public void setApprovedAt(LocalDateTime newApprovedAt) { this.approvedAt = newApprovedAt; }
     
     public String getApprovedBy() { return approvedBy; }
-    public void setApprovedBy(String approvedBy) { this.approvedBy = approvedBy; }
+    public void setApprovedBy(String newApprovedBy) { this.approvedBy = newApprovedBy; }
     
     // Audit fields
     public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public void setCreatedAt(LocalDateTime newCreatedAt) { this.createdAt = newCreatedAt; }
     
     public LocalDateTime getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    public void setUpdatedAt(LocalDateTime newUpdatedAt) { this.updatedAt = newUpdatedAt; }
     
     public String getCreatedBy() { return createdBy; }
-    public void setCreatedBy(String createdBy) { this.createdBy = createdBy; }
+    public void setCreatedBy(String newCreatedBy) { this.createdBy = newCreatedBy; }
     
     @Override
     public String toString() {

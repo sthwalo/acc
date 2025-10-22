@@ -32,55 +32,55 @@ public class BankTransaction {
     
     // Getters and setters
     public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public void setId(Long newId) { this.id = newId; }
     
     public Long getCompanyId() { return companyId; }
-    public void setCompanyId(Long companyId) { this.companyId = companyId; }
+    public void setCompanyId(Long newCompanyId) { this.companyId = newCompanyId; }
     
     public Long getBankAccountId() { return bankAccountId; }
-    public void setBankAccountId(Long bankAccountId) { this.bankAccountId = bankAccountId; }
+    public void setBankAccountId(Long newBankAccountId) { this.bankAccountId = newBankAccountId; }
     
     public LocalDate getTransactionDate() { return transactionDate; }
-    public void setTransactionDate(LocalDate transactionDate) { this.transactionDate = transactionDate; }
+    public void setTransactionDate(LocalDate newTransactionDate) { this.transactionDate = newTransactionDate; }
     
     public String getDetails() { return details; }
-    public void setDetails(String details) { this.details = details; }
+    public void setDetails(String newDetails) { this.details = newDetails; }
     
     public BigDecimal getDebitAmount() { return debitAmount; }
-    public void setDebitAmount(BigDecimal debitAmount) { this.debitAmount = debitAmount; }
+    public void setDebitAmount(BigDecimal newDebitAmount) { this.debitAmount = newDebitAmount; }
     
     public BigDecimal getCreditAmount() { return creditAmount; }
-    public void setCreditAmount(BigDecimal creditAmount) { this.creditAmount = creditAmount; }
+    public void setCreditAmount(BigDecimal newCreditAmount) { this.creditAmount = newCreditAmount; }
     
     public BigDecimal getBalance() { return balance; }
-    public void setBalance(BigDecimal balance) { this.balance = balance; }
+    public void setBalance(BigDecimal newBalance) { this.balance = newBalance; }
     
     public boolean isServiceFee() { return serviceFee; }
-    public void setServiceFee(boolean serviceFee) { this.serviceFee = serviceFee; }
+    public void setServiceFee(boolean newServiceFee) { this.serviceFee = newServiceFee; }
     
     public String getStatementPeriod() { return statementPeriod; }
-    public void setStatementPeriod(String statementPeriod) { this.statementPeriod = statementPeriod; }
+    public void setStatementPeriod(String newStatementPeriod) { this.statementPeriod = newStatementPeriod; }
     
     public String getSourceFile() { return sourceFile; }
-    public void setSourceFile(String sourceFile) { this.sourceFile = sourceFile; }
+    public void setSourceFile(String newSourceFile) { this.sourceFile = newSourceFile; }
     
     public Long getFiscalPeriodId() { return fiscalPeriodId; }
-    public void setFiscalPeriodId(Long fiscalPeriodId) { this.fiscalPeriodId = fiscalPeriodId; }
+    public void setFiscalPeriodId(Long newFiscalPeriodId) { this.fiscalPeriodId = newFiscalPeriodId; }
     
     public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public void setCreatedAt(LocalDateTime newCreatedAt) { this.createdAt = newCreatedAt; }
     
     public String getAccountNumber() { return accountNumber; }
-    public void setAccountNumber(String accountNumber) { this.accountNumber = accountNumber; }
+    public void setAccountNumber(String newAccountNumber) { this.accountNumber = newAccountNumber; }
     
     public String getReference() { return reference; }
-    public void setReference(String reference) { this.reference = reference; }
+    public void setReference(String newReference) { this.reference = newReference; }
     
     public String getAccountCode() { return accountCode; }
-    public void setAccountCode(String accountCode) { this.accountCode = accountCode; }
+    public void setAccountCode(String newAccountCode) { this.accountCode = newAccountCode; }
     
     public String getAccountName() { return accountName; }
-    public void setAccountName(String accountName) { this.accountName = accountName; }
+    public void setAccountName(String newAccountName) { this.accountName = newAccountName; }
     
     @Override
     public String toString() {

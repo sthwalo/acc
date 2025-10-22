@@ -126,14 +126,14 @@ public class InteractiveClassificationService {
         public String newAccount;
         public LocalDateTime timestamp;
         
-        public ChangeRecord(Long transactionId, LocalDate transactionDate, String description, 
-                          BigDecimal amount, String oldAccount, String newAccount) {
-            this.transactionId = transactionId;
-            this.transactionDate = transactionDate;
-            this.description = description;
-            this.amount = amount;
-            this.oldAccount = oldAccount;
-            this.newAccount = newAccount;
+        public ChangeRecord(Long initialTransactionId, LocalDate initialTransactionDate, String initialDescription, 
+                          BigDecimal initialAmount, String initialOldAccount, String initialNewAccount) {
+            this.transactionId = initialTransactionId;
+            this.transactionDate = initialTransactionDate;
+            this.description = initialDescription;
+            this.amount = initialAmount;
+            this.oldAccount = initialOldAccount;
+            this.newAccount = initialNewAccount;
             this.timestamp = LocalDateTime.now();
         }
         
@@ -153,13 +153,13 @@ public class InteractiveClassificationService {
         private final int usageCount;
         private double confidenceScore;
         
-        public ClassificationRule(String pattern, String[] keywords, String accountCode, 
-                                String accountName, int usageCount) {
-            this.pattern = pattern;
-            this.keywords = keywords != null ? keywords.clone() : null;
-            this.accountCode = accountCode;
-            this.accountName = accountName;
-            this.usageCount = usageCount;
+        public ClassificationRule(String initialPattern, String[] initialKeywords, String initialAccountCode, 
+                                String initialAccountName, int initialUsageCount) {
+            this.pattern = initialPattern;
+            this.keywords = initialKeywords != null ? initialKeywords.clone() : null;
+            this.accountCode = initialAccountCode;
+            this.accountName = initialAccountName;
+            this.usageCount = initialUsageCount;
         }
         
         // Getters
@@ -169,7 +169,7 @@ public class InteractiveClassificationService {
         public String getAccountName() { return accountName; }
         public int getUsageCount() { return usageCount; }
         public double getConfidenceScore() { return confidenceScore; }
-        public void setConfidenceScore(double confidenceScore) { this.confidenceScore = confidenceScore; }
+        public void setConfidenceScore(double newConfidenceScore) { this.confidenceScore = newConfidenceScore; }
     }
     
     /**
@@ -180,10 +180,10 @@ public class InteractiveClassificationService {
         private final String accountCode;
         private final String accountName;
         
-        public ClassifiedTransaction(BankTransaction transaction, String accountCode, String accountName) {
-            this.transaction = transaction;
-            this.accountCode = accountCode;
-            this.accountName = accountName;
+        public ClassifiedTransaction(BankTransaction initialTransaction, String initialAccountCode, String initialAccountName) {
+            this.transaction = initialTransaction;
+            this.accountCode = initialAccountCode;
+            this.accountName = initialAccountName;
         }
         
         public BankTransaction getTransaction() { return transaction; }

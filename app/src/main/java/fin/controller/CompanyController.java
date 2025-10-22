@@ -46,13 +46,13 @@ public class CompanyController {
      * @param inputHandler the input handler for user input
      * @param outputFormatter the output formatter for display formatting
      */
-    public CompanyController(CompanyService companyService, ApplicationState applicationState,
-                           ConsoleMenu menu, InputHandler inputHandler, OutputFormatter outputFormatter) {
-        this.companyService = companyService;
-        this.applicationState = applicationState;
-        this.menu = menu;
-        this.inputHandler = inputHandler;
-        this.outputFormatter = outputFormatter;
+    public CompanyController(CompanyService initialCompanyService, ApplicationState initialApplicationState,
+                           ConsoleMenu initialMenu, InputHandler initialInputHandler, OutputFormatter initialOutputFormatter) {
+        this.companyService = initialCompanyService;
+        this.applicationState = initialApplicationState;
+        this.menu = initialMenu;
+        this.inputHandler = initialInputHandler;
+        this.outputFormatter = initialOutputFormatter;
     }
     
     public void handleCompanySetup() {

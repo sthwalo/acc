@@ -41,8 +41,8 @@ public class Company {
     // Constructors, getters, and setters
     public Company() {}
     
-    public Company(String name) {
-        this.name = name;
+    public Company(String initialName) {
+        this.name = initialName;
         this.createdAt = LocalDateTime.now();
     }
     
@@ -68,31 +68,31 @@ public class Company {
     
     // Getters and setters
     public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public void setId(Long newId) { this.id = newId; }
     
     public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
+    public void setName(String newName) { this.name = newName; }
     
     public String getRegistrationNumber() { return registrationNumber; }
-    public void setRegistrationNumber(String registrationNumber) { this.registrationNumber = registrationNumber; }
+    public void setRegistrationNumber(String newRegistrationNumber) { this.registrationNumber = newRegistrationNumber; }
     
     public String getTaxNumber() { return taxNumber; }
-    public void setTaxNumber(String taxNumber) { this.taxNumber = taxNumber; }
+    public void setTaxNumber(String newTaxNumber) { this.taxNumber = newTaxNumber; }
     
     public String getAddress() { return address; }
-    public void setAddress(String address) { this.address = address; }
+    public void setAddress(String newAddress) { this.address = newAddress; }
     
     public String getContactEmail() { return contactEmail; }
-    public void setContactEmail(String contactEmail) { this.contactEmail = contactEmail; }
+    public void setContactEmail(String newContactEmail) { this.contactEmail = newContactEmail; }
     
     public String getContactPhone() { return contactPhone; }
-    public void setContactPhone(String contactPhone) { this.contactPhone = contactPhone; }
+    public void setContactPhone(String newContactPhone) { this.contactPhone = newContactPhone; }
     
     public String getLogoPath() { return logoPath; }
-    public void setLogoPath(String logoPath) { this.logoPath = logoPath; }
+    public void setLogoPath(String newLogoPath) { this.logoPath = newLogoPath; }
     
     public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public void setCreatedAt(LocalDateTime newCreatedAt) { this.createdAt = newCreatedAt; }
     
     @Override
     public String toString() {

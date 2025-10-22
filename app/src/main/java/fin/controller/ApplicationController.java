@@ -55,27 +55,27 @@ public class ApplicationController {
     private static final int LOG_MENU_MAX_OPTION = 5;
     
     public ApplicationController(
-        ConsoleMenu menu,
-        InputHandler inputHandler,
-        OutputFormatter outputFormatter,
-        ApplicationState applicationState,
-        CompanyController companyController,
-        FiscalPeriodController fiscalPeriodController,
-        ImportController importController,
-        ReportController reportController,
-        DataManagementController dataManagementController,
-        PayrollController payrollController
+        ConsoleMenu initialMenu,
+        InputHandler initialInputHandler,
+        OutputFormatter initialOutputFormatter,
+        ApplicationState initialApplicationState,
+        CompanyController initialCompanyController,
+        FiscalPeriodController initialFiscalPeriodController,
+        ImportController initialImportController,
+        ReportController initialReportController,
+        DataManagementController initialDataManagementController,
+        PayrollController initialPayrollController
     ) {
-        this.menu = menu;
-        this.inputHandler = inputHandler;
-        this.outputFormatter = outputFormatter;
-        this.applicationState = applicationState;
-        this.companyController = companyController;
-        this.fiscalPeriodController = fiscalPeriodController;
-        this.importController = importController;
-        this.reportController = reportController;
-        this.dataManagementController = dataManagementController;
-        this.payrollController = payrollController;
+        this.menu = initialMenu;
+        this.inputHandler = initialInputHandler;
+        this.outputFormatter = initialOutputFormatter;
+        this.applicationState = initialApplicationState;
+        this.companyController = initialCompanyController;
+        this.fiscalPeriodController = initialFiscalPeriodController;
+        this.importController = initialImportController;
+        this.reportController = initialReportController;
+        this.dataManagementController = initialDataManagementController;
+        this.payrollController = initialPayrollController;
     }
 
     /**

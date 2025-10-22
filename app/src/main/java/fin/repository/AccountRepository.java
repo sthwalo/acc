@@ -35,8 +35,8 @@ public class AccountRepository {
     private static final int CATEGORY_OPERATING_EXPENSES_COMPANY2 = 14;
     private static final int CATEGORY_FINANCE_COSTS_COMPANY2 = 16;
 
-    public AccountRepository(String jdbcUrl) {
-        this.jdbcUrl = jdbcUrl;
+    public AccountRepository(String initialJdbcUrl) {
+        this.jdbcUrl = initialJdbcUrl;
     }
 
     /**

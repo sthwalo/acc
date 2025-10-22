@@ -11,23 +11,23 @@ public class BatchProcessingResult {
 
     public BatchProcessingResult() {}
 
-    public BatchProcessingResult(int processedCount, int classifiedCount, int failedCount, boolean success) {
-        this.processedCount = processedCount;
-        this.classifiedCount = classifiedCount;
-        this.failedCount = failedCount;
-        this.success = success;
+    public BatchProcessingResult(int initialProcessedCount, int initialClassifiedCount, int initialFailedCount, boolean initialSuccess) {
+        this.processedCount = initialProcessedCount;
+        this.classifiedCount = initialClassifiedCount;
+        this.failedCount = initialFailedCount;
+        this.success = initialSuccess;
     }
 
     // Getters and setters
     public int getProcessedCount() { return processedCount; }
-    public void setProcessedCount(int processedCount) { this.processedCount = processedCount; }
+    public void setProcessedCount(int newProcessedCount) { this.processedCount = newProcessedCount; }
 
     public int getClassifiedCount() { return classifiedCount; }
-    public void setClassifiedCount(int classifiedCount) { this.classifiedCount = classifiedCount; }
+    public void setClassifiedCount(int newClassifiedCount) { this.classifiedCount = newClassifiedCount; }
 
     public int getFailedCount() { return failedCount; }
-    public void setFailedCount(int failedCount) { this.failedCount = failedCount; }
+    public void setFailedCount(int newFailedCount) { this.failedCount = newFailedCount; }
 
     public boolean isSuccess() { return success; }
-    public void setSuccess(boolean success) { this.success = success; }
+    public void setSuccess(boolean newSuccess) { this.success = newSuccess; }
 }

@@ -36,8 +36,8 @@ public class UserRepository implements BaseRepository<User, Long> {
     private static final int PARAM_UPDATED_AT_UPDATE = 13;
     private static final int PARAM_ID_UPDATE = 14;
 
-    public UserRepository(String dbUrl) {
-        this.dbUrl = dbUrl;
+    public UserRepository(String initialDbUrl) {
+        this.dbUrl = initialDbUrl;
     }
 
     @Override
