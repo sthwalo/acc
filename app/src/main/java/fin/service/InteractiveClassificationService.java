@@ -107,7 +107,6 @@ public class InteractiveClassificationService {
     private static final int JOURNAL_LINE_REFERENCE_PARAM = 6;
     private static final int JOURNAL_LINE_SOURCE_TRANSACTION_PARAM = 7;
     private static final int ACCOUNT_LOOKUP_NAME_PARAM = 1;
-    private static final int ACCOUNT_LOOKUP_CODE_PARAM = 1;
     private static final int SIMILAR_UNCATEGORIZED_COMPANY_ID_PARAM = 1;
     private static final int SIMILAR_UNCATEGORIZED_PATTERN_PARAM = 2;
     private static final int ALLOCATION_ANALYSIS_COMPANY_ID_PARAM = 1;
@@ -189,6 +188,47 @@ public class InteractiveClassificationService {
         public BankTransaction getTransaction() { return transaction; }
         public String getAccountCode() { return accountCode; }
         public String getAccountName() { return accountName; }
+    }
+
+    /**
+     * Data class for user classification input
+     */
+    public static class ClassificationInput {
+        private final String accountCode;
+        private final String accountName;
+        private final boolean shouldQuit;
+        private final boolean skip;
+
+        public ClassificationInput(String code, String name) {
+            this.accountCode = code;
+            this.accountName = name;
+            this.shouldQuit = false;
+            this.skip = false;
+        }
+
+        public ClassificationInput(boolean quitFlag, boolean skipFlag) {
+            this.accountCode = null;
+            this.accountName = null;
+            this.shouldQuit = quitFlag;
+            this.skip = skipFlag;
+        }
+
+        public String getAccountCode() { return accountCode; }
+        public String getAccountName() { return accountName; }
+        public boolean shouldQuit() { return shouldQuit; }
+        public boolean hasClassification() { return accountCode != null && accountName != null; }
+        public boolean shouldSkip() { return skip; }
+    }
+    
+    /**
+     * Data class for account allocation analysis results
+     */
+    private static class AccountAllocationData {
+        private String accountName;
+        private String accountType;
+        private int transactionCount;
+        private BigDecimal totalDebits;
+        private BigDecimal totalCredits;
     }
     
     public InteractiveClassificationService() {
@@ -777,65 +817,113 @@ public class InteractiveClassificationService {
     public void createMappingRule(Long companyId, String pattern, String accountCode, String accountName) {
         try {
             // Extract keywords for future matching
-            String[] keywords = extractKeywords(pattern);
-            
-            // Check if rule already exists
-            String checkSql = """
-                SELECT id, usage_count FROM company_classification_rules 
-                WHERE company_id = ? AND account_code = ? AND pattern ILIKE ?
-                """;
-                
-            String updateSql = """
-                UPDATE company_classification_rules 
-                SET usage_count = usage_count + 1, keywords = ?, last_used = CURRENT_TIMESTAMP
-                WHERE id = ?
-                """;
-                
-            String insertSql = """
-                INSERT INTO company_classification_rules 
-                (company_id, pattern, keywords, account_code, account_name, usage_count, created_at, last_used)
-                VALUES (?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-                """;
-            
-            try (Connection conn = getConnection()) {
-                // Check for existing rule
-                try (PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
-                    checkStmt.setLong(RULE_CHECK_COMPANY_ID_PARAM, companyId);
-                    checkStmt.setString(RULE_CHECK_ACCOUNT_CODE_PARAM, accountCode);
-                    checkStmt.setString(RULE_CHECK_PATTERN_PARAM, "%" + String.join("%", keywords) + "%");
-                    
-                    try (ResultSet rs = checkStmt.executeQuery()) {
-                        if (rs.next()) {
-                            // Update existing rule
-                            try (PreparedStatement updateStmt = conn.prepareStatement(updateSql)) {
-                                updateStmt.setString(RULE_UPDATE_KEYWORDS_PARAM, String.join(",", keywords));
-                                updateStmt.setLong(RULE_UPDATE_ID_PARAM, rs.getLong("id"));
-                                updateStmt.executeUpdate();
-                            }
-                        } else {
-                            // Insert new rule
-                            try (PreparedStatement insertStmt = conn.prepareStatement(insertSql)) {
-                                insertStmt.setLong(RULE_COMPANY_ID_PARAM, companyId);
-                                insertStmt.setString(RULE_PATTERN_PARAM, pattern);
-                                insertStmt.setString(RULE_KEYWORDS_PARAM, String.join(",", keywords));
-                                insertStmt.setString(RULE_ACCOUNT_CODE_PARAM, accountCode);
-                                insertStmt.setString(RULE_ACCOUNT_NAME_PARAM, accountName);
-                                insertStmt.executeUpdate();
-                            }
-                        }
-                    }
-                }
-                
-                // Update in-memory cache
-                companyRules.computeIfAbsent(companyId, k -> new HashMap<>())
-                    .put(accountCode + ":" + String.join(",", keywords), 
-                         new ClassificationRule(pattern, keywords, accountCode, accountName, 1));
-                
-                LOGGER.info("Created/updated rule for pattern: " + pattern + " → " + accountCode + " - " + accountName);
-            }
+            String[] keywords = extractKeywordsForRule(pattern);
+
+            // Check if rule already exists and handle accordingly
+            handleRuleCreationOrUpdate(companyId, pattern, keywords, accountCode, accountName);
+
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Error creating mapping rule", e);
         }
+    }
+
+    /**
+     * Extract keywords from pattern for rule matching
+     */
+    private String[] extractKeywordsForRule(String pattern) {
+        return extractKeywords(pattern);
+    }
+
+    /**
+     * Handle creation of new rule or update of existing rule
+     */
+    private void handleRuleCreationOrUpdate(Long companyId, String pattern, String[] keywords, String accountCode, String accountName) throws SQLException {
+        String checkSql = """
+            SELECT id, usage_count FROM company_classification_rules
+            WHERE company_id = ? AND account_code = ? AND pattern ILIKE ?
+            """;
+
+        try (Connection conn = getConnection()) {
+            // Check for existing rule
+            Long existingRuleId = checkForExistingRule(conn, checkSql, companyId, accountCode, keywords);
+
+            if (existingRuleId != null) {
+                // Update existing rule
+                updateExistingRule(conn, existingRuleId, keywords);
+            } else {
+                // Insert new rule
+                insertNewRule(conn, companyId, pattern, keywords, accountCode, accountName);
+            }
+
+            // Update in-memory cache
+            updateInMemoryCache(companyId, accountCode, keywords, pattern, accountName);
+        }
+    }
+
+    /**
+     * Check if a rule already exists for the given parameters
+     */
+    private Long checkForExistingRule(Connection conn, String checkSql, Long companyId, String accountCode, String[] keywords) throws SQLException {
+        try (PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
+            checkStmt.setLong(RULE_CHECK_COMPANY_ID_PARAM, companyId);
+            checkStmt.setString(RULE_CHECK_ACCOUNT_CODE_PARAM, accountCode);
+            checkStmt.setString(RULE_CHECK_PATTERN_PARAM, "%" + String.join("%", keywords) + "%");
+
+            try (ResultSet rs = checkStmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getLong("id");
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Update an existing rule's usage count and keywords
+     */
+    private void updateExistingRule(Connection conn, Long ruleId, String[] keywords) throws SQLException {
+        String updateSql = """
+            UPDATE company_classification_rules
+            SET usage_count = usage_count + 1, keywords = ?, last_used = CURRENT_TIMESTAMP
+            WHERE id = ?
+            """;
+
+        try (PreparedStatement updateStmt = conn.prepareStatement(updateSql)) {
+            updateStmt.setString(RULE_UPDATE_KEYWORDS_PARAM, String.join(",", keywords));
+            updateStmt.setLong(RULE_UPDATE_ID_PARAM, ruleId);
+            updateStmt.executeUpdate();
+        }
+    }
+
+    /**
+     * Insert a new classification rule
+     */
+    private void insertNewRule(Connection conn, Long companyId, String pattern, String[] keywords, String accountCode, String accountName) throws SQLException {
+        String insertSql = """
+            INSERT INTO company_classification_rules
+            (company_id, pattern, keywords, account_code, account_name, usage_count, created_at, last_used)
+            VALUES (?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            """;
+
+        try (PreparedStatement insertStmt = conn.prepareStatement(insertSql)) {
+            insertStmt.setLong(RULE_COMPANY_ID_PARAM, companyId);
+            insertStmt.setString(RULE_PATTERN_PARAM, pattern);
+            insertStmt.setString(RULE_KEYWORDS_PARAM, String.join(",", keywords));
+            insertStmt.setString(RULE_ACCOUNT_CODE_PARAM, accountCode);
+            insertStmt.setString(RULE_ACCOUNT_NAME_PARAM, accountName);
+            insertStmt.executeUpdate();
+        }
+    }
+
+    /**
+     * Update the in-memory cache with the new rule
+     */
+    private void updateInMemoryCache(Long companyId, String accountCode, String[] keywords, String pattern, String accountName) {
+        companyRules.computeIfAbsent(companyId, k -> new HashMap<>())
+            .put(accountCode + ":" + String.join(",", keywords),
+                 new ClassificationRule(pattern, keywords, accountCode, accountName, 1));
+
+        LOGGER.info("Created/updated rule for pattern: " + pattern + " → " + accountCode + " - " + accountName);
     }
     
     /**
@@ -907,76 +995,95 @@ public class InteractiveClassificationService {
         if (transactionIds == null || transactionIds.isEmpty()) {
             return 0;
         }
-        
+
         int classifiedCount = 0;
-        
-        try {
-            // Get transaction details
-            String selectSql = """
-                SELECT id, transaction_date, details, debit_amount, credit_amount 
-                FROM bank_transactions 
-                WHERE id = ANY(?)
-                """;
-                
-            String updateSql = """
-                UPDATE bank_transactions
-                SET account_code = ?, account_name = ?, classification_date = CURRENT_TIMESTAMP, classified_by = ?
-                WHERE id = ?
-                """;
-                
-            try (Connection conn = getConnection()) {
-                conn.setAutoCommit(false);
-                
-                try {
-                    // Get transaction details first
-                    Map<Long, String> transactionDetails = new HashMap<>();
-                    try (PreparedStatement stmt = conn.prepareStatement(selectSql)) {
-                        Array idArray = conn.createArrayOf("BIGINT", transactionIds.toArray());
-                        stmt.setArray(1, idArray);
-                        
-                        try (ResultSet rs = stmt.executeQuery()) {
-                            while (rs.next()) {
-                                transactionDetails.put(rs.getLong("id"), rs.getString("details"));
-                            }
-                        }
-                    }
-                    
-                    // Update transactions
-                    try (PreparedStatement stmt = conn.prepareStatement(updateSql)) {
-                        for (Long id : transactionIds) {
-                            if (transactionDetails.containsKey(id)) {
-                                stmt.setString(BATCH_UPDATE_ACCOUNT_CODE_PARAM, accountCode);
-                                stmt.setString(BATCH_UPDATE_ACCOUNT_NAME_PARAM, accountName);
-                                stmt.setString(BATCH_UPDATE_CLASSIFIED_BY_PARAM, "BATCH_CLASSIFICATION");
-                                stmt.setLong(BATCH_UPDATE_TRANSACTION_ID_PARAM, id);
-                                stmt.addBatch();
-                                
-                                // Also create rule for future similar transactions
-                                createMappingRule(companyId, transactionDetails.get(id), accountCode, accountName);
-                                
-                                classifiedCount++;
-                            }
-                        }
-                        
-                        stmt.executeBatch();
-                    }
-                    
-                    conn.commit();
-                    LOGGER.info("Batch classified " + classifiedCount + " transactions as " + accountCode + " - " + accountName);
-                    
-                } catch (SQLException e) {
-                    conn.rollback();
-                    throw e;
-                }
+
+        try (Connection conn = getConnection()) {
+            conn.setAutoCommit(false);
+
+            try {
+                // Get transaction details first
+                Map<Long, String> transactionDetails = getTransactionDetailsBatch(conn, transactionIds);
+
+                // Update transactions and create mapping rules
+                classifiedCount = updateTransactionsBatch(conn, transactionIds, transactionDetails, accountCode, accountName, companyId);
+
+                conn.commit();
+                LOGGER.info("Batch classified " + classifiedCount + " transactions as " + accountCode + " - " + accountName);
+
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
             }
-            
+
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Error batch classifying transactions", e);
         }
-        
+
         return classifiedCount;
     }
-    
+
+    /**
+     * Get transaction details for batch processing
+     */
+    private Map<Long, String> getTransactionDetailsBatch(Connection conn, List<Long> transactionIds) throws SQLException {
+        Map<Long, String> transactionDetails = new HashMap<>();
+
+        String selectSql = """
+            SELECT id, transaction_date, details, debit_amount, credit_amount
+            FROM bank_transactions
+            WHERE id = ANY(?)
+            """;
+
+        try (PreparedStatement stmt = conn.prepareStatement(selectSql)) {
+            Array idArray = conn.createArrayOf("BIGINT", transactionIds.toArray());
+            stmt.setArray(1, idArray);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    transactionDetails.put(rs.getLong("id"), rs.getString("details"));
+                }
+            }
+        }
+
+        return transactionDetails;
+    }
+
+    /**
+     * Update transactions in batch and create mapping rules
+     */
+    private int updateTransactionsBatch(Connection conn, List<Long> transactionIds, Map<Long, String> transactionDetails,
+                                       String accountCode, String accountName, Long companyId) throws SQLException {
+        int classifiedCount = 0;
+
+        String updateSql = """
+            UPDATE bank_transactions
+            SET account_code = ?, account_name = ?, classification_date = CURRENT_TIMESTAMP, classified_by = ?
+            WHERE id = ?
+            """;
+
+        try (PreparedStatement stmt = conn.prepareStatement(updateSql)) {
+            for (Long id : transactionIds) {
+                if (transactionDetails.containsKey(id)) {
+                    stmt.setString(BATCH_UPDATE_ACCOUNT_CODE_PARAM, accountCode);
+                    stmt.setString(BATCH_UPDATE_ACCOUNT_NAME_PARAM, accountName);
+                    stmt.setString(BATCH_UPDATE_CLASSIFIED_BY_PARAM, "BATCH_CLASSIFICATION");
+                    stmt.setLong(BATCH_UPDATE_TRANSACTION_ID_PARAM, id);
+                    stmt.addBatch();
+
+                    // Also create rule for future similar transactions
+                    createMappingRule(companyId, transactionDetails.get(id), accountCode, accountName);
+
+                    classifiedCount++;
+                }
+            }
+
+            stmt.executeBatch();
+        }
+
+        return classifiedCount;
+    }
+
     /**
      * Get uncategorized transactions
      */
@@ -1027,102 +1134,118 @@ public class InteractiveClassificationService {
         for (int i = 0; i < uncategorized.size(); i++) {
             BankTransaction transaction = uncategorized.get(i);
             
-            System.out.println("\n" + "=".repeat(DISPLAY_LINE_WIDTH));
-            System.out.println("TRANSACTION #" + (i + 1) + " of " + uncategorized.size());
-            System.out.println("=".repeat(DISPLAY_LINE_WIDTH));
-            
-            System.out.println("📅 Date:        " + transaction.getTransactionDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
-            System.out.println("📝 Description: " + transaction.getDetails());
-            
-            if (transaction.getDebitAmount() != null) {
-                System.out.println("💸 Debit:       " + formatCurrency(transaction.getDebitAmount()));
-            }
-            if (transaction.getCreditAmount() != null) {
-                System.out.println("💵 Credit:      " + formatCurrency(transaction.getCreditAmount()));
-            }
-            
-            System.out.println("🏷️  Status:      UNCATEGORIZED");
+            displayTransactionHeader(i + 1, uncategorized.size());
+            displayTransactionDetails(transaction);
             
             // Show intelligent account suggestions from AccountClassificationService
             showAccountSuggestions(companyId, transaction);
             
             // Get user input for classification
-            System.out.println("\n🎯 Enter account code and name (e.g., 8800 Insurance)");
-            System.out.print("   or press ENTER to skip, or 'q' to quit: ");
-            String input = scanner.nextLine().trim();
+            ClassificationInput input = getUserClassificationInput();
             
-            if (input.equalsIgnoreCase("q")) {
+            if (input.shouldQuit()) {
                 System.out.println("🛑 Exiting transaction review...");
                 break;
-            } else if (!input.isEmpty()) {
-                // Parse input that may contain " - " separator
-                String accountCode = null;
-                String accountName = null;
-                
-                if (input.contains(" - ")) {
-                    // Handle format like "9500 - Interest Expense"
-                    String[] parts = input.split(" - ", 2);
-                    if (parts.length == 2) {
-                        accountCode = parts[0].trim();
-                        accountName = parts[1].trim();
-                    }
-                } else {
-                    // Handle format like "8800 Insurance" (space separated)
-                    String[] parts = input.split("\\s+", 2);
-                    if (parts.length == 2) {
-                        accountCode = parts[0];
-                        accountName = parts[1];
-                    }
-                }
-                
-                if (accountCode != null && accountName != null) {
-                    // Look up account by code (more reliable than name matching)
-                    Long accountId = getAccountIdByCode(accountCode);
-                    if (accountId != null) {
-                        // Update the bank transaction with account classification
-                        if (updateTransactionClassification(transaction.getId(), accountCode, accountName)) {
-                            // Create journal entry for the transaction
-                            createJournalEntryForTransaction(transaction, accountId);
-
-                            // Record the change
-                            BigDecimal amount = transaction.getDebitAmount() != null ?
-                                              transaction.getDebitAmount() : transaction.getCreditAmount();
-
-                            ChangeRecord change = new ChangeRecord(
-                                transaction.getId(),
-                                transaction.getTransactionDate(),
-                                transaction.getDetails(),
-                                amount,
-                                "UNCATEGORIZED",
-                                accountName
-                            );
-
-                            changesMade.add(change);
-
-                            // Create rule for future similar transactions
-                            createMappingRule(companyId, transaction.getDetails(), accountCode, accountName);
-
-                            System.out.println("✅ Categorized as: " + accountCode + " - " + accountName);
-
-                            // Ask if user wants to apply to similar transactions
-                            System.out.print("\n🔄 Auto-categorize similar transactions? (y/n): ");
-                            String autocat = scanner.nextLine().trim().toLowerCase();
-                            if (autocat.equals("y") || autocat.equals("yes")) {
-                                autoCategorizeFromPattern(transaction, accountCode, accountName, companyId);
-                            }
-                        } else {
-                            System.out.println("❌ Failed to update transaction classification");
-                        }
-                    } else {
-                        System.out.println("❌ Account not found: " + accountName);
-                    }
-                } else {
-                    System.out.println("❌ Invalid format. Use 'code name' format (e.g., 8800 Insurance or 9500 - Interest Expense)");
-                }
+            } else if (input.hasClassification()) {
+                processTransactionClassification(transaction, input, companyId);
             }
         }
         
         showSessionSummary();
+    }
+
+    /**
+     * Display transaction header with progress information
+     */
+    private void displayTransactionHeader(int current, int total) {
+        System.out.println("\n" + "=".repeat(DISPLAY_LINE_WIDTH));
+        System.out.println("📋 TRANSACTION " + current + " of " + total);
+        System.out.println("=".repeat(DISPLAY_LINE_WIDTH));
+    }
+
+    /**
+     * Get user input for transaction classification
+     */
+    private ClassificationInput getUserClassificationInput() {
+        while (true) {
+            System.out.println("\n📝 Classification Options:");
+            System.out.println("1. Enter account code and name manually");
+            System.out.println("2. Skip this transaction");
+            System.out.println("3. Quit categorization");
+            System.out.print("Choose option (1-3): ");
+
+            String choice = scanner.nextLine().trim();
+
+            switch (choice) {
+                case "1":
+                    System.out.print("Account Code (e.g., 8100): ");
+                    String accountCode = scanner.nextLine().trim();
+                    System.out.print("Account Name (e.g., Employee Costs): ");
+                    String accountName = scanner.nextLine().trim();
+
+                    if (accountCode.isEmpty() || accountName.isEmpty()) {
+                        System.out.println("❌ Both account code and name are required.");
+                        continue;
+                    }
+
+                    return new ClassificationInput(accountCode, accountName);
+
+                case "2":
+                    return new ClassificationInput(false, true);
+
+                case "3":
+                    return new ClassificationInput(true, false);
+
+                default:
+                    System.out.println("❌ Invalid choice. Please select 1-3.");
+            }
+        }
+    }
+
+    /**
+     * Process transaction classification with user input
+     */
+    private void processTransactionClassification(BankTransaction transaction, ClassificationInput input, Long companyId) {
+        String accountCode = input.getAccountCode();
+        String accountName = input.getAccountName();
+
+        // Update transaction classification
+        if (updateTransactionClassification(transaction.getId(), accountCode, accountName)) {
+            // Create journal entry
+            Long accountId = getAccountId(accountName);
+            if (accountId != null) {
+                if (createJournalEntryForTransaction(transaction, accountId)) {
+                    // Create mapping rule for future similar transactions
+                    createMappingRule(companyId, transaction.getDetails(), accountCode, accountName);
+
+                    // Record change for session tracking
+                    BigDecimal amount = transaction.getDebitAmount() != null ?
+                                      transaction.getDebitAmount() : transaction.getCreditAmount();
+
+                    ChangeRecord change = new ChangeRecord(
+                        transaction.getId(),
+                        transaction.getTransactionDate(),
+                        transaction.getDetails(),
+                        amount,
+                        "UNCATEGORIZED",
+                        accountName
+                    );
+
+                    changesMade.add(change);
+
+                    System.out.println("✅ Transaction classified as: " + accountCode + " - " + accountName);
+
+                    // Ask about auto-categorizing similar transactions
+                    autoCategorizeFromPattern(transaction, accountCode, accountName, companyId);
+                } else {
+                    System.out.println("❌ Failed to create journal entry for transaction");
+                }
+            } else {
+                System.out.println("❌ Account not found: " + accountName);
+            }
+        } else {
+            System.out.println("❌ Failed to update transaction classification");
+        }
     }
     
     /**
@@ -1130,59 +1253,116 @@ public class InteractiveClassificationService {
      */
     private void autoCategorizeFromPattern(BankTransaction transaction, String accountCode, String accountName, Long companyId) {
         String details = transaction.getDetails();
-        
-        // Create search patterns
+
+        // Create search patterns from transaction details
+        List<String> patterns = createSearchPatterns(details);
+
+        // Process auto-categorization for each pattern
+        int totalCategorized = processPatternAutoCategorization(patterns, accountCode, accountName, companyId);
+
+        // Report results
+        reportAutoCategorizationResults(totalCategorized, accountName);
+    }
+
+    /**
+     * Create search patterns from transaction details
+     */
+    private List<String> createSearchPatterns(String details) {
         List<String> patterns = new ArrayList<>();
         patterns.add(details); // Exact match
-        
+
         // Add partial patterns
         String[] words = details.split("\\s+");
         if (words.length > 1) {
             patterns.add(String.join(" ", Arrays.copyOf(words, Math.min(words.length - 1, PARTIAL_PATTERN_WORDS)))); // First few words
         }
-        
-        // Find and categorize similar transactions
+
+        return patterns;
+    }
+
+    /**
+     * Process auto-categorization for each pattern
+     */
+    private int processPatternAutoCategorization(List<String> patterns, String accountCode, String accountName, Long companyId) {
         int totalCategorized = 0;
+
         for (String pattern : patterns) {
             List<BankTransaction> similar = findSimilarUncategorized(pattern, companyId);
-            
+
             if (!similar.isEmpty()) {
-                System.out.println("\n🔍 Found " + similar.size() + " similar transactions matching: '" + 
-                                 pattern.substring(0, Math.min(PATTERN_DISPLAY_LENGTH, pattern.length())) + "'");
-                
-                System.out.print("Auto-categorize these? (y/n): ");
-                String confirm = scanner.nextLine().trim().toLowerCase();
-                if (confirm.equals("y") || confirm.equals("yes")) {
-                    Long accountId = getAccountId(accountName);
-                    if (accountId != null) {
-                        for (BankTransaction similarTx : similar) {
-                            // Update transaction classification first
-                            if (updateTransactionClassification(similarTx.getId(), accountCode, accountName)) {
-                                // Then create journal entry
-                                if (createJournalEntryForTransaction(similarTx, accountId)) {
-                                    BigDecimal amount = similarTx.getDebitAmount() != null ? 
-                                                      similarTx.getDebitAmount() : similarTx.getCreditAmount();
-                                    
-                                    ChangeRecord change = new ChangeRecord(
-                                        similarTx.getId(),
-                                        similarTx.getTransactionDate(),
-                                        similarTx.getDetails(),
-                                        amount,
-                                        "UNCATEGORIZED",
-                                        accountName
-                                    );
-                                    
-                                    changesMade.add(change);
-                                    totalCategorized++;
-                                }
-                            }
-                        }
-                    }
+                boolean userConfirmed = getUserConfirmationForAutoCategorization(similar, pattern);
+                if (userConfirmed) {
+                    int categorized = categorizeSimilarTransactions(similar, accountCode, accountName);
+                    totalCategorized += categorized;
                     break; // Only process first matching pattern
                 }
             }
         }
-        
+
+        return totalCategorized;
+    }
+
+    /**
+     * Get user confirmation for auto-categorizing similar transactions
+     */
+    private boolean getUserConfirmationForAutoCategorization(List<BankTransaction> similar, String pattern) {
+        System.out.println("\n🔍 Found " + similar.size() + " similar transactions matching: '" +
+                         pattern.substring(0, Math.min(PATTERN_DISPLAY_LENGTH, pattern.length())) + "'");
+
+        System.out.print("Auto-categorize these? (y/n): ");
+        String confirm = scanner.nextLine().trim().toLowerCase();
+        return confirm.equals("y") || confirm.equals("yes");
+    }
+
+    /**
+     * Categorize a list of similar transactions
+     */
+    private int categorizeSimilarTransactions(List<BankTransaction> similar, String accountCode, String accountName) {
+        int categorized = 0;
+        Long accountId = getAccountId(accountName);
+
+        if (accountId != null) {
+            for (BankTransaction similarTx : similar) {
+                if (categorizeSingleTransaction(similarTx, accountCode, accountName, accountId)) {
+                    categorized++;
+                }
+            }
+        }
+
+        return categorized;
+    }
+
+    /**
+     * Categorize a single transaction and record the change
+     */
+    private boolean categorizeSingleTransaction(BankTransaction transaction, String accountCode, String accountName, Long accountId) {
+        // Update transaction classification first
+        if (updateTransactionClassification(transaction.getId(), accountCode, accountName)) {
+            // Then create journal entry
+            if (createJournalEntryForTransaction(transaction, accountId)) {
+                BigDecimal amount = transaction.getDebitAmount() != null ?
+                                  transaction.getDebitAmount() : transaction.getCreditAmount();
+
+                ChangeRecord change = new ChangeRecord(
+                    transaction.getId(),
+                    transaction.getTransactionDate(),
+                    transaction.getDetails(),
+                    amount,
+                    "UNCATEGORIZED",
+                    accountName
+                );
+
+                changesMade.add(change);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Report the results of auto-categorization
+     */
+    private void reportAutoCategorizationResults(int totalCategorized, String accountName) {
         if (totalCategorized > 0) {
             System.out.println("✨ Auto-categorized " + totalCategorized + " similar transactions as " + accountName);
         } else {
@@ -1228,11 +1408,21 @@ public class InteractiveClassificationService {
      * Analyze account allocations to show distribution of transactions
      */
     private void analyzeAccountAllocations(Long companyId, Long fiscalPeriodId) {
+        printAccountAllocationHeader();
+        List<AccountAllocationData> allocationData = getAccountAllocationData(companyId, fiscalPeriodId);
+        printAccountAllocationTable(allocationData);
+    }
+
+    private void printAccountAllocationHeader() {
         System.out.println("\n📊 ACCOUNT ALLOCATION ANALYSIS");
         System.out.println("=".repeat(SUGGESTIONS_SEPARATOR_WIDTH));
-        
+    }
+
+    private List<AccountAllocationData> getAccountAllocationData(Long companyId, Long fiscalPeriodId) {
+        List<AccountAllocationData> data = new ArrayList<>();
+
         String sql = """
-            SELECT 
+            SELECT
                 a.account_name,
                 at.name as account_type,
                 COUNT(jel.id) as transaction_count,
@@ -1247,35 +1437,43 @@ public class InteractiveClassificationService {
             GROUP BY a.account_name, at.name
             ORDER BY transaction_count DESC
             """;
-        
+
         try (Connection conn = getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            
+
             pstmt.setLong(ALLOCATION_ANALYSIS_COMPANY_ID_PARAM, companyId);
             pstmt.setLong(ALLOCATION_ANALYSIS_FISCAL_PERIOD_PARAM, fiscalPeriodId);
             ResultSet rs = pstmt.executeQuery();
-            
-            System.out.printf("%-35s %-12s %8s %15s %15s%n", 
-                            "Account", "Type", "Count", "Debits", "Credits");
-            System.out.println("-".repeat(TABLE_SEPARATOR_WIDTH));
-            
+
             while (rs.next()) {
-                String accountName = rs.getString("account_name");
-                String accountType = rs.getString("account_type");
-                int count = rs.getInt("transaction_count");
-                BigDecimal debits = rs.getBigDecimal("total_debits");
-                BigDecimal credits = rs.getBigDecimal("total_credits");
-                
-                System.out.printf("%-35s %-12s %8d %15s %15s%n",
-                                accountName.length() > ACCOUNT_NAME_DISPLAY_LENGTH ? accountName.substring(0, ACCOUNT_NAME_DISPLAY_LENGTH - ELLIPSIS_LENGTH) + "..." : accountName,
-                                accountType,
-                                count,
-                                formatCurrency(debits),
-                                formatCurrency(credits));
+                AccountAllocationData item = new AccountAllocationData();
+                item.accountName = rs.getString("account_name");
+                item.accountType = rs.getString("account_type");
+                item.transactionCount = rs.getInt("transaction_count");
+                item.totalDebits = rs.getBigDecimal("total_debits");
+                item.totalCredits = rs.getBigDecimal("total_credits");
+                data.add(item);
             }
-            
+
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Error analyzing account allocations", e);
+        }
+
+        return data;
+    }
+
+    private void printAccountAllocationTable(List<AccountAllocationData> allocationData) {
+        System.out.printf("%-35s %-12s %8s %15s %15s%n",
+                        "Account", "Type", "Count", "Debits", "Credits");
+        System.out.println("-".repeat(TABLE_SEPARATOR_WIDTH));
+
+        for (AccountAllocationData item : allocationData) {
+            System.out.printf("%-35s %-12s %8d %15s %15s%n",
+                            item.accountName.length() > ACCOUNT_NAME_DISPLAY_LENGTH ? item.accountName.substring(0, ACCOUNT_NAME_DISPLAY_LENGTH - ELLIPSIS_LENGTH) + "..." : item.accountName,
+                            item.accountType,
+                            item.transactionCount,
+                            formatCurrency(item.totalDebits),
+                            formatCurrency(item.totalCredits));
         }
     }
     
@@ -1439,87 +1637,18 @@ public class InteractiveClassificationService {
      * Helper method to create journal entry for a transaction
      */
     private boolean createJournalEntryForTransaction(BankTransaction transaction, Long accountId) {
-        String sql1 = """
-            INSERT INTO journal_entries (reference, entry_date, description, fiscal_period_id,
-                                       company_id, created_by, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-            RETURNING id
-            """;
-
-        String sql2 = """
-            INSERT INTO journal_entry_lines (journal_entry_id, account_id, debit_amount,
-                                           credit_amount, description, reference,
-                                           source_transaction_id, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-            """;
-
         try (Connection conn = getConnection()) {
             conn.setAutoCommit(false);
 
             try {
                 // Create journal entry header
-                Long journalEntryId;
-                try (PreparedStatement pstmt = conn.prepareStatement(sql1)) {
-                    pstmt.setString(JOURNAL_HEADER_REFERENCE_PARAM, "CAT-" + transaction.getId());
-                    pstmt.setDate(JOURNAL_HEADER_DATE_PARAM, java.sql.Date.valueOf(transaction.getTransactionDate()));
-                    pstmt.setString(JOURNAL_HEADER_DESCRIPTION_PARAM, "Categorized: " + transaction.getDetails());
-                    pstmt.setLong(JOURNAL_HEADER_FISCAL_PERIOD_PARAM, transaction.getFiscalPeriodId());
-                    pstmt.setLong(JOURNAL_HEADER_COMPANY_ID_PARAM, transaction.getCompanyId());
-                    pstmt.setString(JOURNAL_HEADER_CREATED_BY_PARAM, "INTERACTIVE-CATEGORIZATION");
-
-                    ResultSet rs = pstmt.executeQuery();
-                    if (rs.next()) {
-                        journalEntryId = rs.getLong("id");
-                    } else {
-                        throw new SQLException("Failed to create journal entry");
-                    }
-                }
+                Long journalEntryId = createJournalEntryHeader(conn, transaction);
 
                 // Get bank account ID
-                Long bankAccountId = getAccountId("Bank - Current Account");
-                if (bankAccountId == null) {
-                    bankAccountId = getAccountId("Bank Account");
-                }
+                Long bankAccountId = getBankAccountId();
 
                 // Create journal entry lines
-                try (PreparedStatement pstmt = conn.prepareStatement(sql2)) {
-                    // Bank account line (opposite of transaction)
-                    pstmt.setLong(JOURNAL_LINE_JOURNAL_ENTRY_ID_PARAM, journalEntryId);
-                    pstmt.setLong(JOURNAL_LINE_ACCOUNT_ID_PARAM, bankAccountId != null ? bankAccountId : accountId);
-
-                    if (transaction.getDebitAmount() != null && transaction.getDebitAmount().compareTo(BigDecimal.ZERO) > 0) {
-                        // Transaction is debit, so credit the bank account
-                        pstmt.setBigDecimal(JOURNAL_LINE_DEBIT_AMOUNT_PARAM, null);
-                        pstmt.setBigDecimal(JOURNAL_LINE_CREDIT_AMOUNT_PARAM, transaction.getDebitAmount());
-                    } else {
-                        // Transaction is credit, so debit the bank account
-                        pstmt.setBigDecimal(JOURNAL_LINE_DEBIT_AMOUNT_PARAM, transaction.getCreditAmount());
-                        pstmt.setBigDecimal(JOURNAL_LINE_CREDIT_AMOUNT_PARAM, null);
-                    }
-
-                    pstmt.setString(JOURNAL_LINE_DESCRIPTION_PARAM, "Bank Account");
-                    pstmt.setString(JOURNAL_LINE_REFERENCE_PARAM, "CAT-" + transaction.getId() + "-01");
-                    pstmt.setLong(JOURNAL_LINE_SOURCE_TRANSACTION_PARAM, transaction.getId());
-                    pstmt.executeUpdate();
-
-                    // Categorized account line (same as transaction)
-                    pstmt.setLong(JOURNAL_LINE_ACCOUNT_ID_PARAM, accountId);
-
-                    if (transaction.getDebitAmount() != null && transaction.getDebitAmount().compareTo(BigDecimal.ZERO) > 0) {
-                        // Transaction is debit, so debit the expense/asset account
-                        pstmt.setBigDecimal(JOURNAL_LINE_DEBIT_AMOUNT_PARAM, transaction.getDebitAmount());
-                        pstmt.setBigDecimal(JOURNAL_LINE_CREDIT_AMOUNT_PARAM, null);
-                    } else {
-                        // Transaction is credit, so credit the income/liability account
-                        pstmt.setBigDecimal(JOURNAL_LINE_DEBIT_AMOUNT_PARAM, null);
-                        pstmt.setBigDecimal(JOURNAL_LINE_CREDIT_AMOUNT_PARAM, transaction.getCreditAmount());
-                    }
-
-                    pstmt.setString(JOURNAL_LINE_DESCRIPTION_PARAM, "Categorized Account");
-                    pstmt.setString(JOURNAL_LINE_REFERENCE_PARAM, "CAT-" + transaction.getId() + "-02");
-                    pstmt.setLong(JOURNAL_LINE_SOURCE_TRANSACTION_PARAM, transaction.getId());
-                    pstmt.executeUpdate();
-                }
+                createJournalEntryLines(conn, journalEntryId, transaction, accountId, bankAccountId);
 
                 conn.commit();
                 return true;
@@ -1535,61 +1664,173 @@ public class InteractiveClassificationService {
         }
     }
     
+    private Long createJournalEntryHeader(Connection conn, BankTransaction transaction) throws SQLException {
+        String sql = """
+            INSERT INTO journal_entries (reference, entry_date, description, fiscal_period_id,
+                                       company_id, created_by, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            RETURNING id
+            """;
+
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(JOURNAL_HEADER_REFERENCE_PARAM, "CAT-" + transaction.getId());
+            pstmt.setDate(JOURNAL_HEADER_DATE_PARAM, java.sql.Date.valueOf(transaction.getTransactionDate()));
+            pstmt.setString(JOURNAL_HEADER_DESCRIPTION_PARAM, "Categorized: " + transaction.getDetails());
+            pstmt.setLong(JOURNAL_HEADER_FISCAL_PERIOD_PARAM, transaction.getFiscalPeriodId());
+            pstmt.setLong(JOURNAL_HEADER_COMPANY_ID_PARAM, transaction.getCompanyId());
+            pstmt.setString(JOURNAL_HEADER_CREATED_BY_PARAM, "INTERACTIVE-CATEGORIZATION");
+
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return rs.getLong("id");
+            } else {
+                throw new SQLException("Failed to create journal entry");
+            }
+        }
+    }
+    
+    private Long getBankAccountId() {
+        Long bankAccountId = getAccountId("Bank - Current Account");
+        if (bankAccountId == null) {
+            bankAccountId = getAccountId("Bank Account");
+        }
+        return bankAccountId;
+    }
+    
+    private void createJournalEntryLines(Connection conn, Long journalEntryId, BankTransaction transaction, 
+                                       Long accountId, Long bankAccountId) throws SQLException {
+        String sql = """
+            INSERT INTO journal_entry_lines (journal_entry_id, account_id, debit_amount,
+                                           credit_amount, description, reference,
+                                           source_transaction_id, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            """;
+
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            // Bank account line (opposite of transaction)
+            createBankAccountLine(pstmt, journalEntryId, transaction, bankAccountId != null ? bankAccountId : accountId);
+            
+            // Categorized account line (same as transaction)
+            createCategorizedAccountLine(pstmt, journalEntryId, transaction, accountId);
+        }
+    }
+    
+    private void createBankAccountLine(PreparedStatement pstmt, Long journalEntryId, BankTransaction transaction, 
+                                    Long bankAccountId) throws SQLException {
+        pstmt.setLong(JOURNAL_LINE_JOURNAL_ENTRY_ID_PARAM, journalEntryId);
+        pstmt.setLong(JOURNAL_LINE_ACCOUNT_ID_PARAM, bankAccountId);
+
+        if (transaction.getDebitAmount() != null && transaction.getDebitAmount().compareTo(BigDecimal.ZERO) > 0) {
+            // Transaction is debit, so credit the bank account
+            pstmt.setBigDecimal(JOURNAL_LINE_DEBIT_AMOUNT_PARAM, null);
+            pstmt.setBigDecimal(JOURNAL_LINE_CREDIT_AMOUNT_PARAM, transaction.getDebitAmount());
+        } else {
+            // Transaction is credit, so debit the bank account
+            pstmt.setBigDecimal(JOURNAL_LINE_DEBIT_AMOUNT_PARAM, transaction.getCreditAmount());
+            pstmt.setBigDecimal(JOURNAL_LINE_CREDIT_AMOUNT_PARAM, null);
+        }
+
+        pstmt.setString(JOURNAL_LINE_DESCRIPTION_PARAM, "Bank Account");
+        pstmt.setString(JOURNAL_LINE_REFERENCE_PARAM, "CAT-" + transaction.getId() + "-01");
+        pstmt.setLong(JOURNAL_LINE_SOURCE_TRANSACTION_PARAM, transaction.getId());
+        pstmt.executeUpdate();
+    }
+    
+    private void createCategorizedAccountLine(PreparedStatement pstmt, Long journalEntryId, BankTransaction transaction, 
+                                           Long accountId) throws SQLException {
+        pstmt.setLong(JOURNAL_LINE_ACCOUNT_ID_PARAM, accountId);
+
+        if (transaction.getDebitAmount() != null && transaction.getDebitAmount().compareTo(BigDecimal.ZERO) > 0) {
+            // Transaction is debit, so debit the expense/asset account
+            pstmt.setBigDecimal(JOURNAL_LINE_DEBIT_AMOUNT_PARAM, transaction.getDebitAmount());
+            pstmt.setBigDecimal(JOURNAL_LINE_CREDIT_AMOUNT_PARAM, null);
+        } else {
+            // Transaction is credit, so credit the income/liability account
+            pstmt.setBigDecimal(JOURNAL_LINE_DEBIT_AMOUNT_PARAM, null);
+            pstmt.setBigDecimal(JOURNAL_LINE_CREDIT_AMOUNT_PARAM, transaction.getCreditAmount());
+        }
+
+        pstmt.setString(JOURNAL_LINE_DESCRIPTION_PARAM, "Categorized Account");
+        pstmt.setString(JOURNAL_LINE_REFERENCE_PARAM, "CAT-" + transaction.getId() + "-02");
+        pstmt.setLong(JOURNAL_LINE_SOURCE_TRANSACTION_PARAM, transaction.getId());
+        pstmt.executeUpdate();
+    }
+    
     /**
      * Recreates journal entries for all categorized transactions that don't have journal entries
      */
     public void recreateJournalEntriesForCategorizedTransactions() {
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = getCategorizedTransactionsWithoutJournalEntriesQuery(conn);
+             ResultSet rs = pstmt.executeQuery()) {
+
+            int count = processJournalEntryRecreation(rs);
+            logRecreationResults(count);
+
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error recreating journal entries", e);
+        }
+    }
+
+    /**
+     * Get prepared statement for querying categorized transactions without journal entries
+     */
+    private PreparedStatement getCategorizedTransactionsWithoutJournalEntriesQuery(Connection conn) throws SQLException {
         String sql = """
             SELECT bt.id, bt.company_id, bt.fiscal_period_id, bt.transaction_date, bt.details,
                    bt.debit_amount, bt.credit_amount, bt.account_code, a.id as account_id
             FROM bank_transactions bt
             JOIN accounts a ON bt.account_code = a.account_code
-            WHERE bt.account_code IS NOT NULL 
+            WHERE bt.account_code IS NOT NULL
               AND bt.classification_date IS NOT NULL
               AND NOT EXISTS (
-                  SELECT 1 FROM journal_entry_lines jel 
+                  SELECT 1 FROM journal_entry_lines jel
                   WHERE jel.source_transaction_id = bt.id
               )
             ORDER BY bt.transaction_date, bt.id
             """;
 
-        try (Connection conn = getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql);
-             ResultSet rs = pstmt.executeQuery()) {
+        return conn.prepareStatement(sql);
+    }
 
-            int count = 0;
-            while (rs.next()) {
-                Long transactionId = rs.getLong("id");
-                Long companyId = rs.getLong("company_id");
-                Long fiscalPeriodId = rs.getLong("fiscal_period_id");
-                LocalDate transactionDate = rs.getDate("transaction_date").toLocalDate();
-                String details = rs.getString("details");
-                BigDecimal debitAmount = rs.getBigDecimal("debit_amount");
-                BigDecimal creditAmount = rs.getBigDecimal("credit_amount");
-                Long accountId = rs.getLong("account_id");
+    /**
+     * Process journal entry recreation for each transaction in the result set
+     */
+    private int processJournalEntryRecreation(ResultSet rs) throws SQLException {
+        int count = 0;
+        while (rs.next()) {
+            BankTransaction transaction = createTransactionFromResultSet(rs);
+            Long accountId = rs.getLong("account_id");
 
-                // Create BankTransaction object for the method
-                BankTransaction transaction = new BankTransaction();
-                transaction.setId(transactionId);
-                transaction.setCompanyId(companyId);
-                transaction.setFiscalPeriodId(fiscalPeriodId);
-                transaction.setTransactionDate(transactionDate);
-                transaction.setDetails(details);
-                transaction.setDebitAmount(debitAmount);
-                transaction.setCreditAmount(creditAmount);
-
-                // Create journal entry
-                boolean success = createJournalEntryForTransaction(transaction, accountId);
-                if (success) {
-                    count++;
-                }
+            // Create journal entry
+            boolean success = createJournalEntryForTransaction(transaction, accountId);
+            if (success) {
+                count++;
             }
-
-            LOGGER.info("Recreated journal entries for " + count + " categorized transactions");
-
-        } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Error recreating journal entries", e);
         }
+        return count;
+    }
+
+    /**
+     * Create a BankTransaction object from result set data
+     */
+    private BankTransaction createTransactionFromResultSet(ResultSet rs) throws SQLException {
+        BankTransaction transaction = new BankTransaction();
+        transaction.setId(rs.getLong("id"));
+        transaction.setCompanyId(rs.getLong("company_id"));
+        transaction.setFiscalPeriodId(rs.getLong("fiscal_period_id"));
+        transaction.setTransactionDate(rs.getDate("transaction_date").toLocalDate());
+        transaction.setDetails(rs.getString("details"));
+        transaction.setDebitAmount(rs.getBigDecimal("debit_amount"));
+        transaction.setCreditAmount(rs.getBigDecimal("credit_amount"));
+        return transaction;
+    }
+
+    /**
+     * Log the results of journal entry recreation
+     */
+    private void logRecreationResults(int count) {
+        LOGGER.info("Recreated journal entries for " + count + " categorized transactions");
     }
     
     // Helper methods
@@ -1626,29 +1867,6 @@ public class InteractiveClassificationService {
         return null;
     }
     
-    /**
-     * Get account ID by account code (more reliable for sub-accounts)
-     */
-    private Long getAccountIdByCode(String accountCode) {
-        String sql = "SELECT id FROM accounts WHERE account_code = ? AND is_active = true";
-        
-        try (Connection conn = getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            
-            pstmt.setString(ACCOUNT_LOOKUP_CODE_PARAM, accountCode);
-            ResultSet rs = pstmt.executeQuery();
-            
-            if (rs.next()) {
-                return rs.getLong("id");
-            }
-            
-        } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Error getting account ID by code", e);
-        }
-        
-        return null;
-    }
-    
     private BankTransaction mapResultSetToBankTransaction(ResultSet rs) throws SQLException {
         BankTransaction transaction = new BankTransaction();
         transaction.setId(rs.getLong("id"));
@@ -1672,68 +1890,104 @@ public class InteractiveClassificationService {
      */
     public List<String> suggestAccountsForPattern(String pattern) {
         List<String> suggestions = new ArrayList<>();
-        
+
         try {
-            String sql = """
-                SELECT cr.account_code, cr.account_name, COUNT(*) as usage_count
-                FROM company_classification_rules cr
-                WHERE LOWER(cr.pattern) LIKE ?
-                GROUP BY cr.account_code, cr.account_name
-                ORDER BY COUNT(*) DESC
-                LIMIT %d
-                """.formatted(MAX_ACCOUNT_SUGGESTIONS);
-                
-            try (Connection conn = getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(sql)) {
-                
-                stmt.setString(SUGGESTIONS_PATTERN_PARAM, "%" + pattern.toLowerCase() + "%");
-                
-                try (ResultSet rs = stmt.executeQuery()) {
-                    while (rs.next()) {
-                        suggestions.add(rs.getString("account_code") + " - " + rs.getString("account_name"));
-                    }
-                }
-            }
-            
-            // If no matches, provide generic category suggestions based on pattern analysis
+            // First try to get suggestions from database
+            suggestions = getDatabaseSuggestions(pattern);
+
+            // If no database matches, analyze pattern for generic suggestions
             if (suggestions.isEmpty()) {
-                String lowerPattern = pattern.toLowerCase();
-                
-                // Analyze pattern for common transaction types
-                if (lowerPattern.contains("fee") || lowerPattern.contains("charge") || lowerPattern.contains("commission")) {
-                    suggestions.add("Bank Charges - Financial expenses");
-                }
-                if (lowerPattern.contains("salary") || lowerPattern.contains("wage") || lowerPattern.contains("payroll")) {
-                    suggestions.add("Employee Costs - Personnel expenses");
-                }
-                if (lowerPattern.contains("insurance") || lowerPattern.contains("premium") || lowerPattern.contains("cover")) {
-                    suggestions.add("Insurance - Risk management expenses");
-                }
-                if (lowerPattern.contains("rent") || lowerPattern.contains("lease") || lowerPattern.contains("property")) {
-                    suggestions.add("Rent Expense - Property costs");
-                }
-                if (lowerPattern.contains("fuel") || lowerPattern.contains("petrol") || lowerPattern.contains("diesel")) {
-                    suggestions.add("Travel & Entertainment - Transportation costs");
-                }
-                if (lowerPattern.contains("electricity") || lowerPattern.contains("water") || lowerPattern.contains("utility")) {
-                    suggestions.add("Utilities - Operational expenses");
-                }
-                if (lowerPattern.contains("interest") || lowerPattern.contains("dividend")) {
-                    suggestions.add("Other Income - Financial income");
-                }
-                
-                // Add generic fallback suggestions if pattern analysis didn't yield results
-                if (suggestions.isEmpty()) {
-                    suggestions.add("Operating Expenses - General business costs");
-                    suggestions.add("Other Income - Miscellaneous revenue");
-                    suggestions.add("Administrative Expenses - General overhead");
-                }
+                suggestions = analyzePatternForSuggestions(pattern);
             }
-            
+
         } catch (SQLException e) {
             LOGGER.log(Level.WARNING, "Error getting account suggestions", e);
         }
-        
+
         return suggestions;
+    }
+
+    /**
+     * Get account suggestions from database classification rules
+     */
+    private List<String> getDatabaseSuggestions(String pattern) throws SQLException {
+        List<String> suggestions = new ArrayList<>();
+
+        String sql = """
+            SELECT cr.account_code, cr.account_name, COUNT(*) as usage_count
+            FROM company_classification_rules cr
+            WHERE LOWER(cr.pattern) LIKE ?
+            GROUP BY cr.account_code, cr.account_name
+            ORDER BY COUNT(*) DESC
+            LIMIT %d
+            """.formatted(MAX_ACCOUNT_SUGGESTIONS);
+
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(SUGGESTIONS_PATTERN_PARAM, "%" + pattern.toLowerCase() + "%");
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    suggestions.add(rs.getString("account_code") + " - " + rs.getString("account_name"));
+                }
+            }
+        }
+
+        return suggestions;
+    }
+
+    /**
+     * Analyze pattern and provide generic category suggestions
+     */
+    private List<String> analyzePatternForSuggestions(String pattern) {
+        List<String> suggestions = new ArrayList<>();
+        String lowerPattern = pattern.toLowerCase();
+
+        // Add pattern-based suggestions
+        addPatternBasedSuggestions(suggestions, lowerPattern);
+
+        // Add fallback suggestions if no specific matches
+        if (suggestions.isEmpty()) {
+            addFallbackSuggestions(suggestions);
+        }
+
+        return suggestions;
+    }
+
+    /**
+     * Add suggestions based on pattern analysis
+     */
+    private void addPatternBasedSuggestions(List<String> suggestions, String lowerPattern) {
+        if (lowerPattern.contains("fee") || lowerPattern.contains("charge") || lowerPattern.contains("commission")) {
+            suggestions.add("Bank Charges - Financial expenses");
+        }
+        if (lowerPattern.contains("salary") || lowerPattern.contains("wage") || lowerPattern.contains("payroll")) {
+            suggestions.add("Employee Costs - Personnel expenses");
+        }
+        if (lowerPattern.contains("insurance") || lowerPattern.contains("premium") || lowerPattern.contains("cover")) {
+            suggestions.add("Insurance - Risk management expenses");
+        }
+        if (lowerPattern.contains("rent") || lowerPattern.contains("lease") || lowerPattern.contains("property")) {
+            suggestions.add("Rent Expense - Property costs");
+        }
+        if (lowerPattern.contains("fuel") || lowerPattern.contains("petrol") || lowerPattern.contains("diesel")) {
+            suggestions.add("Travel & Entertainment - Transportation costs");
+        }
+        if (lowerPattern.contains("electricity") || lowerPattern.contains("water") || lowerPattern.contains("utility")) {
+            suggestions.add("Utilities - Operational expenses");
+        }
+        if (lowerPattern.contains("interest") || lowerPattern.contains("dividend")) {
+            suggestions.add("Other Income - Financial income");
+        }
+    }
+
+    /**
+     * Add generic fallback suggestions
+     */
+    private void addFallbackSuggestions(List<String> suggestions) {
+        suggestions.add("Operating Expenses - General business costs");
+        suggestions.add("Other Income - Miscellaneous revenue");
+        suggestions.add("Administrative Expenses - General overhead");
     }
 }

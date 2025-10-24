@@ -570,121 +570,248 @@ System.err.println("❌ Error: " + e.getMessage());
 - **Models**: PascalCase (e.g., `JournalEntry`, `BankTransaction`)
 - **Test Classes**: `*Test` suffix with descriptive method names
 
-### ⚠️ CRITICAL: Magic Number Cleanup Protocol (Established October 2025)
+### ⚠️ CRITICAL: HOLISTIC CHECKSTYLE CLEANUP APPROACH (Established October 2025)
 
-**MANDATORY PATTERN**: All magic number cleanup must follow this systematic approach:
+**MANDATORY PATTERN**: All checkstyle violations must be addressed using the holistic approach to prevent violation cascades across the entire codebase.
 
-#### 1. **Comprehensive Inventory First** (MANDATORY)
-**ALWAYS run this command BEFORE starting any magic number work:**
-```bash
-./gradlew clean checkstyleMain --no-daemon 2>&1 | grep "MagicNumber" | sort | uniq
+#### Problem Analysis
+- **Sequential fixing creates new violations**: Fixing MethodLength often introduces HiddenField/MagicNumber violations
+- **Violation cascade**: One fix generates 2-3 new violations, net increase in total violations
+- **Incomplete fixes**: Partial fixes across multiple files lead to inconsistent code quality
+
+#### Holistic Solution: Simultaneous Multi-Type Refactoring
+
+**CRITICAL RULE:** Address ALL violation types in each method simultaneously during refactoring
+
+##### For Each Method Being Refactored:
+1. **Extract Methods** (MethodLength fix)
+2. **Fix HiddenField violations immediately** (rename parameters to avoid conflicts)
+3. **Replace Magic Numbers with named constants immediately**
+4. **Add missing braces** around single-line control statements
+5. **Fix star imports** by using specific imports
+6. **Fix operator wrapping** to follow style guidelines
+7. **Add missing newlines** at end of files
+8. **Fix design for extension** issues by making methods final or adding proper javadoc
+9. **Verify all types clean** before moving to next method
+
+##### Constructor Parameter Naming Convention:
+```java
+// ❌ WRONG - Creates HiddenField violation
+public ClassificationInput(String accountCode, String accountName, boolean shouldQuit, boolean skip) {
+    this.accountCode = accountCode;  // HiddenField violation
+    this.accountCode = accountName;  // HiddenField violation
+    this.shouldQuit = shouldQuit;    // HiddenField violation
+    this.skip = skip;                // HiddenField violation
+}
+
+// ✅ CORRECT - No HiddenField violation
+public ClassificationInput(String code, String name, boolean quitFlag, boolean skipFlag) {
+    this.accountCode = code;
+    this.accountName = name;
+    this.shouldQuit = quitFlag;
+    this.skip = skipFlag;
+}
 ```
-This provides the complete list of ALL magic number violations across the entire codebase. **Never start working on individual files without this comprehensive inventory.**
 
-#### 2. **Systematic File-by-File Completion** (MANDATORY)
-- Work on **ONE file at a time only**
-- **Complete ALL magic numbers in the current file** before moving to the next
-- Replace magic numbers with **named constants** (not inline literals)
-- **Verify each file is 100% clean** using checkstyle before proceeding
-- **Only after fully completing one file and running `./gradlew clean build` to make sure everything is working**, then move to the next file in the inventory
+##### Magic Number Replacement Pattern:
+```java
+// ❌ WRONG - Magic numbers
+if (grossSalary.compareTo(new BigDecimal("41667.00")) > 0) {
+    return grossSalary.multiply(new BigDecimal("0.01"));
+}
 
-#### 3. **Documentation Updates** (MANDATORY)
-- Update task documentation **immediately after each file completion**
-- Mark files as "✅ COMPLETED" with specific magic numbers fixed
-- Update progress metrics and remaining work
-- **Never move to next file without documentation update**
+// ✅ CORRECT - Named constants
+private static final BigDecimal SDL_THRESHOLD = new BigDecimal("41667.00");
+private static final BigDecimal SDL_RATE = new BigDecimal("0.01");
 
-#### 4. **No Partial Fixes** (STRICTLY ENFORCED)
-- ❌ **DO NOT** fix some magic numbers in multiple files simultaneously
-- ❌ **DO NOT** leave files partially completed
-- ❌ **DO NOT** skip documentation updates
-- ❌ **DO NOT** work on files without comprehensive inventory
+if (grossSalary.compareTo(SDL_THRESHOLD) > 0) {
+    return grossSalary.multiply(SDL_RATE);
+}
+```
+
+##### Missing Braces Pattern:
+```java
+// ❌ WRONG - Missing braces
+if (condition)
+    doSomething();
+
+// ✅ CORRECT - Add braces
+if (condition) {
+    doSomething();
+}
+```
+
+##### Star Import Fix:
+```java
+// ❌ WRONG - Star import
+import java.util.*;
+
+// ✅ CORRECT - Specific imports
+import java.util.List;
+import java.util.Map;
+```
+
+##### Operator Wrapping Fix:
+```java
+// ❌ WRONG - Incorrect operator wrapping
+if (condition1 &&
+    condition2 ||
+    condition3) {
+    // code
+}
+
+// ✅ CORRECT - Proper operator wrapping
+if (condition1
+    && condition2
+    || condition3) {
+    // code
+}
+```
+
+##### Missing Newline Fix:
+```java
+// ❌ WRONG - Missing newline at end of file
+public class MyClass {
+}
+// (no newline)
+
+// ✅ CORRECT - Add newline at end of file
+public class MyClass {
+}
+// (newline here)
+```
+
+##### Design for Extension Fix:
+```java
+// ❌ WRONG - Method looks like designed for extension without proper javadoc
+public void myMethod() {
+    // implementation
+}
+
+// ✅ CORRECT - Make final or add proper javadoc
+/**
+ * This method is designed for extension.
+ * @param param description
+ */
+protected void myMethod() {
+    // implementation
+}
+
+// OR make final
+public final void myMethod() {
+    // implementation
+}
+```
+
+#### Systematic File-by-File Execution Protocol
+
+**MANDATORY Protocol:**
+1. **Complete comprehensive inventory** before starting any file: `./gradlew clean checkstyleMain --no-daemon 2>&1 | grep -E "(MethodLength|MagicNumber|HiddenField|NeedBraces|AvoidStarImport|OperatorWrap|NewlineAtEndOfFile|DesignForExtension)" | sort > violations_inventory.txt`
+2. **Work on ONE file at a time only**
+3. **Complete ALL violations in current file** before moving to next
+4. **Address all violation types simultaneously** during refactoring
+5. **Verify with `./gradlew clean build`** after each change
+6. **Update documentation** immediately after file completion
+7. **Get user confirmation** before proceeding to next file
+
+#### Priority File Selection Strategy
+1. **High Priority:** Core business logic (services, repositories)
+2. **Medium Priority:** Controllers, utilities
+3. **Low Priority:** Main classes, CLI tools
 
 #### Consequences of Violation:
+- Violation cascade (fixing one type creates others)
 - Incomplete fixes across multiple files
 - Inconsistent code quality
-- Difficulty tracking progress
-- Potential regressions in partially modified files
+- Wasted time on ineffective approaches
 
-**This protocol ensures systematic, complete cleanup rather than scattered partial fixes.**
+**SUCCESS REQUIRES:** Holistic simultaneous fixing, complete file resolution, regular build verification, and comprehensive documentation.
 
+### 📋 STRICT TASK DOCUMENTATION PROTOCOL (Established October 2025)
 
-### ⚠️ CRITICAL: Hidden Fields Cleanup Protocol (Established October 2025)
+**MANDATORY REQUIREMENT**: All refactoring and development work MUST use the dedicated tasks directory structure. **NO EXCEPTIONS.**
 
-**MANDATORY PATTERN**: All hidden fields cleanup must follow this systematic approach:
+#### 📁 Task Directory Structure
+- **Location:** `/docs/development/tasks/` (MANDATORY)
+- **Naming:** `TASK_[NUMBER]_[Descriptive_Name].md` (MANDATORY)
+- **Organization:** Numbered sequentially by category and priority
 
-#### 1. **Comprehensive Inventory First** (MANDATORY)
-**ALWAYS run this command BEFORE starting any hidden fields work:**
-```bash
-./gradlew clean checkstyleMain --no-daemon 2>&1 | grep "HiddenField" | sort | uniq
+#### ⚠️ CRITICAL: EXISTING FILE CHECK PROTOCOL (STRICTLY ENFORCED)
+
+**BEFORE CREATING ANY NEW TASK FILE:**
+
+1. **MANDATORY Directory Scan** (NO EXCEPTIONS):
+   ```bash
+   ls -la /docs/development/tasks/
+   ```
+
+2. **MANDATORY Content Search** (NO EXCEPTIONS):
+   ```bash
+   grep -r "TASK.*" /docs/development/tasks/ | grep -i "[relevant keywords]"
+   ```
+
+3. **MANDATORY README Review** (NO EXCEPTIONS):
+   ```bash
+   cat /docs/development/tasks/README.md
+   ```
+
+4. **MANDATORY Existing Task Check** (NO EXCEPTIONS):
+   - Check if work is already documented in existing TASK files
+   - Check if work fits within existing task scope
+   - Check if work is already completed in existing tasks
+
+#### 🚫 ABSOLUTELY FORBIDDEN (STRICT ENFORCEMENT)
+- ❌ **Creating new task files without checking existing ones**
+- ❌ **Creating redundant documentation** (same work in multiple files)
+- ❌ **Creating task files outside `/docs/development/tasks/`**
+- ❌ **Using inconsistent naming patterns**
+- ❌ **Starting work without updating existing task documentation**
+
+#### ✅ CORRECT APPROACH (MANDATORY)
+1. **ALWAYS check existing TASK files first**
+2. **Update existing TASK files** if work fits within scope
+3. **Create new TASK files ONLY** if work is genuinely new and unique
+4. **Update README.md** immediately when creating new tasks
+5. **Follow sequential numbering** within categories
+
+#### 📊 Current Task Categories (MANDATORY REFERENCE)
+- **TASK 1.x:** Critical Authentication & Session Security
+- **TASK 2.x:** High-Risk Financial Data Protection  
+- **TASK 3.x:** Medium-Risk Configuration & Documentation
+- **TASK 4.x:** SpotBugs Remediation
+- **TASK 5.x:** Checkstyle Cleanup (Magic Numbers, Missing Braces, Hidden Fields, Method Length, etc.)
+
+#### 📈 Task File Template (MANDATORY FORMAT)
+```markdown
+# TASK [NUMBER]: [Descriptive Title]
+**Status:** 🔄 IN PROGRESS | ✅ COMPLETED | ❌ BLOCKED
+**Priority:** CRITICAL | HIGH | MEDIUM | LOW
+**Files Affected:** [List all files]
+**Estimated Effort:** [Time estimate]
+
+## 🎯 Objective
+[Clear description of what this task accomplishes]
+
+## 📋 Implementation Details
+[Step-by-step implementation plan]
+
+## ✅ Success Criteria
+[Measurable outcomes]
+
+## 🧪 Testing Strategy
+[How to validate the fix]
+
+## 📚 References
+[Related documentation, issues, or dependencies]
 ```
-This provides the complete list of ALL hidden field violations across the entire codebase. **Never start working on individual files without this comprehensive inventory.**
-
-#### 2. **Systematic File-by-File Completion** (MANDATORY)
-- Work on **ONE file at a time only**
-- **Complete ALL hidden fields in the current file** before moving to the next
-- Rename parameters and local variables to avoid field conflicts using consistent naming patterns
-- **Verify each file is 100% clean** using checkstyle before proceeding
-- **Only after fully completing one file and running `./gradlew clean build` to make sure everything is working**, then move to the next file in the inventory
-
-#### 3. **Documentation Updates** (MANDATORY)
-- Update task documentation **immediately after each file completion**
-- Mark files as "✅ COMPLETED" with specific hidden fields fixed
-- Update progress metrics and remaining work
-- **Never move to next file without documentation update**
-
-#### 4. **No Partial Fixes** (STRICTLY ENFORCED)
-- ❌ **DO NOT** fix some hidden fields in multiple files simultaneously
-- ❌ **DO NOT** leave files partially completed
-- ❌ **DO NOT** skip documentation updates
-- ❌ **DO NOT** work on files without comprehensive inventory
 
 #### Consequences of Violation:
-- Incomplete fixes across multiple files
-- Inconsistent code quality
-- Difficulty tracking progress
-- Potential regressions in partially modified files
+- **IMMEDIATE STOP**: Work cannot proceed without proper task documentation
+- **Documentation Cleanup**: Redundant files must be consolidated
+- **Process Review**: Protocol violations require process improvement
+- **Quality Impact**: Inconsistent documentation leads to confusion and errors
 
-**This protocol ensures systematic, complete cleanup rather than scattered partial fixes.**
-
-
-### ⚠️ CRITICAL: Missing Braces Cleanup Protocol (Established October 2025)
-
-**MANDATORY PATTERN**: All missing braces cleanup must follow this systematic approach:
-
-#### 1. **Comprehensive Inventory First** (MANDATORY)
-**ALWAYS run this command BEFORE starting any missing braces work:**
-```bash
-./gradlew clean checkstyleMain --no-daemon 2>&1 | grep "NeedBraces" | sort | uniq
-```
-This provides the complete list of ALL missing braces violations across the entire codebase. **Never start working on individual files without this comprehensive inventory.**
-
-#### 2. **Systematic File-by-File Completion** (MANDATORY)
-- Work on **ONE file at a time only**
-- **Complete ALL missing braces in the current file** before moving to the next
-- Add curly braces `{}` around single-line `if`, `else`, `for`, `while`, and `do-while` statements
-- **Verify each file is 100% clean** using checkstyle before proceeding
-- **Only after fully completing one file and running `./gradlew clean build` to make sure everything is working**, then move to the next file in the inventory
-
-#### 3. **Documentation Updates** (MANDATORY)
-- Update task documentation **immediately after each file completion**
-- Mark files as "✅ COMPLETED" with specific missing braces fixed
-- Update progress metrics and remaining work
-- **Never move to next file without documentation update**
-
-#### 4. **No Partial Fixes** (STRICTLY ENFORCED)
-- ❌ **DO NOT** fix some missing braces in multiple files simultaneously
-- ❌ **DO NOT** leave files partially completed
-- ❌ **DO NOT** skip documentation updates
-- ❌ **DO NOT** work on files without comprehensive inventory
-
-#### Consequences of Violation:
-- Incomplete fixes across multiple files
-- Inconsistent code quality
-- Difficulty tracking progress
-- Potential regressions in partially modified files
-
-**This protocol ensures systematic, complete cleanup rather than scattered partial fixes.**
+**SUCCESS REQUIRES:** Comprehensive existing file checks, proper task categorization, consistent documentation format, and immediate README updates.
 
 Remember: This system processes real financial data with 7,156+ transactions. Always validate operations and maintain data integrity through proper transaction handling and balance verification.
 
@@ -858,7 +985,19 @@ Actual:    R24,537.81 (incorrect GL)
 
 ## 🩹 Recent Updates & Features
 
-### October 2025: SDL & Payroll Reprocessing
+### October 2025: Budget Generation and Strategic Planning (IN PROGRESS)
+**Budget Generation System - STARTING NOW ✅**
+- Comprehensive budget creation and management for organizations
+- Strategic planning with vision, mission, goals, and priorities
+- Multi-year financial projections and growth modeling
+- Integration with existing company data (**all companies in the system**)
+- Budget vs actual variance analysis and reporting
+- Revenue streams: Tuition fees, grants, fundraising
+- Expense categories: Staff salaries, infrastructure, curriculum, community engagement
+- Year-by-year budget allocation planning (60/20/10/10 → 50/20/15/15 progression)
+- Strategic priorities: Academic Excellence, Student Well-being, Community Engagement, Infrastructure Development
+- Implementation: TASK 6.1 in `/docs/development/tasks/TASK_6.1_Budget_Generation_Strategic_Planning.md`
+
 **SDL (Skills Development Levy) - COMPLETED ✅**
 - Automatic 1% SDL calculation on payroll > R500k/year (R41,667/month threshold)
 - Added `payslips.sdl_levy` database column with migration

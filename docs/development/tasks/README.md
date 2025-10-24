@@ -1,7 +1,7 @@
 # Development Tasks Directory
 **Status:** 📋 Documentation Complete - Ready for Implementation
-**Total Tasks:** 12 (6 EI_EXPOSE_REP + 6 SpotBugs Remediation)
-**Risk Distribution:** 4 Critical, 2 High, 3 Medium, 3 Low
+**Total Tasks:** 13 (6 EI_EXPOSE_REP + 6 SpotBugs Remediation + 1 New Feature)
+**Risk Distribution:** 4 Critical, 2 High, 3 Medium, 4 Low
 
 ## 📋 Task Overview
 
@@ -12,6 +12,8 @@ This directory contains detailed documentation for fixing security vulnerabiliti
 - **TASK 2.x:** High-Risk Financial Data Protection (2 tasks)
 - **TASK 3.x:** Medium-Risk Configuration & Documentation (2 tasks)
 - **TASK 4.x:** SpotBugs Remediation (5 tasks) - **NEW**
+- **TASK 5.x:** Checkstyle Cleanup (8 tasks) - **NEW**
+- **TASK 6.x:** New Feature Development (1 task) - **NEW**
 
 ## 📁 Task Files
 
@@ -85,6 +87,13 @@ This directory contains detailed documentation for fixing security vulnerabiliti
     - **Files:** TestConfiguration.java, DatabaseTest.java
     - **Fix:** Replace generic Exception catching with specific SQLException in test files
 
+### New Feature Development
+13. **[TASK 6.1: Budget Generation and Strategic Planning](TASK_6.1_Budget_Generation_Strategic_Planning.md)**
+    - **Risk:** MEDIUM - New business functionality
+    - **Status:** 🔄 IN PROGRESS
+    - **Files:** New services, models, controllers, database tables
+    - **Feature:** Comprehensive budget generation and strategic planning for organizations
+
 ## 🎯 Implementation Strategy
 
 ### Phase 1: Critical Security Fixes (Tasks 1.1-1.3, 4.1-4.2)
@@ -146,10 +155,11 @@ This directory contains detailed documentation for fixing security vulnerabiliti
 
 - [x] EI_EXPOSE_REP Task Documentation Complete (6/6 files)
 - [x] SpotBugs Remediation Task Documentation Complete (6/6 files)
+- [x] Checkstyle Cleanup Task Documentation Complete (8/8 files)
 - [ ] Phase 1 Implementation (3/6 tasks completed - TASK 4.1, TASK 4.2, TASK 4.3)
 - [ ] Phase 2 Implementation (0/1 tasks)
 - [ ] Phase 3 Implementation (4/5 tasks completed - TASK 4.2, TASK 4.3, TASK 4.4, TASK 4.5, TASK 4.6)
-- [ ] Final Validation
+- [ ] New Feature Development (0/1 tasks - TASK 6.1)
 
 ## 📚 References
 
@@ -190,5 +200,9 @@ This directory contains detailed documentation for fixing security vulnerabiliti
   - ✅ TASK 4.6: Test Code Exception Handling (REC_CATCH_EXCEPTION)
 - **Remaining:** 2/7 tasks (29%)
   - 🔄 TASK 4.7: Method Complexity
-  - 🔄 TASK 4.8: Class Design Issues</content>
+  - 🔄 TASK 4.8: Class Design Issues
+
+### Phase 4: New Feature Development (Priority: MEDIUM)
+- **Completed:** 0/1 tasks (0%)
+  - 🔄 TASK 6.1: Budget Generation and Strategic Planning</content>
 <parameter name="filePath">/Users/sthwalonyoni/FIN/docs/development/tasks/TASK_3.2_Service_Dependency_Documentation.md

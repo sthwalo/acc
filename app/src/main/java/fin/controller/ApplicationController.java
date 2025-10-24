@@ -25,6 +25,7 @@ public class ApplicationController {
     private final ReportController reportController;
     private final DataManagementController dataManagementController;
     private final PayrollController payrollController;
+    private final BudgetController budgetController;
     
     // Menu option constants
     private static final int MENU_OPTION_COMPANY_SETUP = 1;
@@ -35,10 +36,11 @@ public class ApplicationController {
     private static final int MENU_OPTION_REPORT_GENERATION = 6;
     private static final int MENU_OPTION_DATA_MANAGEMENT = 7;
     private static final int MENU_OPTION_PAYROLL_MANAGEMENT = 8;
-    private static final int MENU_OPTION_DISPLAY_TIME = 9;
-    private static final int MENU_OPTION_SYSTEM_LOGS = 10;
-    private static final int MENU_OPTION_EXIT = 11;
-    private static final int MAIN_MENU_MAX_OPTION = 11;
+    private static final int MENU_OPTION_BUDGET_MANAGEMENT = 9;
+    private static final int MENU_OPTION_DISPLAY_TIME = 10;
+    private static final int MENU_OPTION_SYSTEM_LOGS = 11;
+    private static final int MENU_OPTION_EXIT = 12;
+    private static final int MAIN_MENU_MAX_OPTION = 12;
     
     // Save menu options
     private static final int SAVE_OPTION_EXPORT_CSV = 1;
@@ -64,7 +66,8 @@ public class ApplicationController {
         ImportController initialImportController,
         ReportController initialReportController,
         DataManagementController initialDataManagementController,
-        PayrollController initialPayrollController
+        PayrollController initialPayrollController,
+        BudgetController initialBudgetController
     ) {
         this.menu = initialMenu;
         this.inputHandler = initialInputHandler;
@@ -76,6 +79,7 @@ public class ApplicationController {
         this.reportController = initialReportController;
         this.dataManagementController = initialDataManagementController;
         this.payrollController = initialPayrollController;
+        this.budgetController = initialBudgetController;
     }
 
     /**
@@ -122,6 +126,14 @@ public class ApplicationController {
                     case MENU_OPTION_PAYROLL_MANAGEMENT:
                         if (applicationState.hasCurrentCompany()) {
                             payrollController.handlePayrollManagement(applicationState.getCurrentCompany().getId());
+                        } else {
+                            outputFormatter.printWarning("Please select a company first (Option 1)");
+                            inputHandler.waitForEnter();
+                        }
+                        break;
+                    case MENU_OPTION_BUDGET_MANAGEMENT:
+                        if (applicationState.hasCurrentCompany()) {
+                            budgetController.handleBudgetManagement();
                         } else {
                             outputFormatter.printWarning("Please select a company first (Option 1)");
                             inputHandler.waitForEnter();

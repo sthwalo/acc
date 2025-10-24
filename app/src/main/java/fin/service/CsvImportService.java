@@ -43,9 +43,8 @@ public final class CsvImportService {
     private static final int CSV_FIELD_BALANCE = 4;
     private static final int CSV_FIELD_SERVICE_FEE = 5;
     private static final int CSV_FIELD_ACCOUNT_NUMBER = 6;
-    private static final int CSV_FIELD_STATEMENT_PERIOD = 7;
-    private static final int CSV_FIELD_SOURCE_FILE = 8;
-    private static final int CSV_FIELD_FISCAL_PERIOD = 9;
+    private static final int CSV_FIELD_SOURCE_FILE = 7;
+    private static final int CSV_FIELD_FISCAL_PERIOD = 8;
 
     // getTransactionsByFiscalPeriod method parameters
     private static final int GET_TRANSACTIONS_FISCAL_PERIOD_ID = 1;
@@ -55,7 +54,7 @@ public final class CsvImportService {
     private static final int GET_TRANSACTIONS_FISCAL_PERIOD_ID_PARAM = 2;
 
     // CSV parsing constants
-    private static final int MIN_CSV_FIELDS = 10;  // Minimum required CSV fields
+    private static final int MIN_CSV_FIELDS = 9;  // Minimum required CSV fields
     private static final int FY_PERIOD_NAME_START_INDEX = 2;  // "FY" prefix length
     private static final int FY_PERIOD_NAME_END_INDEX = 6;    // "FY" + 4-digit year
     private static final int MIN_FISCAL_PERIOD_STR_LENGTH = 9; // "FY2024-2025" minimum length
@@ -111,53 +110,17 @@ public final class CsvImportService {
      */
     public List<BankTransaction> getTransactions(Long companyId, Long fiscalPeriodId) {
         List<BankTransaction> transactions = new ArrayList<>();
-        
+
         try (Connection connection = DriverManager.getConnection(dbUrl)) {
             String sql = "SELECT * FROM bank_transactions WHERE company_id = ? AND fiscal_period_id = ? ORDER BY transaction_date";
-            
+
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
                 statement.setLong(GET_TRANSACTIONS_COMPANY_ID, companyId);
                 statement.setLong(GET_TRANSACTIONS_FISCAL_PERIOD_ID_PARAM, fiscalPeriodId);
-                
+
                 try (ResultSet resultSet = statement.executeQuery()) {
                     while (resultSet.next()) {
-                        BankTransaction transaction = new BankTransaction();
-                        transaction.setId(resultSet.getLong("id"));
-                        transaction.setCompanyId(resultSet.getLong("company_id"));
-                        
-                        Long bankAccountId = resultSet.getObject("bank_account_id") != null ? 
-                                resultSet.getLong("bank_account_id") : null;
-                        transaction.setBankAccountId(bankAccountId);
-                        
-                        // Parse date from database
-                        String dateStr = resultSet.getString("transaction_date");
-                        if (dateStr != null) {
-                            transaction.setTransactionDate(LocalDate.parse(dateStr));
-                        }
-                        
-                        transaction.setDetails(resultSet.getString("details"));
-                        
-                        // Handle BigDecimal values
-                        BigDecimal debitAmount = resultSet.getBigDecimal("debit_amount");
-                        if (debitAmount != null) {
-                            transaction.setDebitAmount(debitAmount);
-                        }
-                        
-                        BigDecimal creditAmount = resultSet.getBigDecimal("credit_amount");
-                        if (creditAmount != null) {
-                            transaction.setCreditAmount(creditAmount);
-                        }
-                        
-                        BigDecimal balance = resultSet.getBigDecimal("balance");
-                        if (balance != null) {
-                            transaction.setBalance(balance);
-                        }
-                        
-                        transaction.setServiceFee(resultSet.getBoolean("service_fee"));
-                        transaction.setAccountNumber(resultSet.getString("account_number"));
-                        transaction.setStatementPeriod(resultSet.getString("statement_period"));
-                        transaction.setSourceFile(resultSet.getString("source_file"));
-                        
+                        BankTransaction transaction = mapResultSetToTransaction(resultSet);
                         transactions.add(transaction);
                     }
                 }
@@ -166,196 +129,284 @@ public final class CsvImportService {
             System.err.println("Error retrieving transactions: " + e.getMessage());
             e.printStackTrace();
         }
-        
+
         return transactions;
+    }
+
+    private BankTransaction mapResultSetToTransaction(ResultSet resultSet) throws SQLException {
+        BankTransaction transaction = new BankTransaction();
+        transaction.setId(resultSet.getLong("id"));
+        transaction.setCompanyId(resultSet.getLong("company_id"));
+
+        Long bankAccountId = resultSet.getObject("bank_account_id") != null ?
+                resultSet.getLong("bank_account_id") : null;
+        transaction.setBankAccountId(bankAccountId);
+
+        // Parse date from database
+        String dateStr = resultSet.getString("transaction_date");
+        if (dateStr != null) {
+            transaction.setTransactionDate(LocalDate.parse(dateStr));
+        }
+
+        transaction.setDetails(resultSet.getString("details"));
+
+        // Handle BigDecimal values
+        BigDecimal debitAmount = resultSet.getBigDecimal("debit_amount");
+        if (debitAmount != null) {
+            transaction.setDebitAmount(debitAmount);
+        }
+
+        BigDecimal creditAmount = resultSet.getBigDecimal("credit_amount");
+        if (creditAmount != null) {
+            transaction.setCreditAmount(creditAmount);
+        }
+
+        BigDecimal balance = resultSet.getBigDecimal("balance");
+        if (balance != null) {
+            transaction.setBalance(balance);
+        }
+
+        transaction.setServiceFee(resultSet.getBoolean("service_fee"));
+        transaction.setAccountNumber(resultSet.getString("account_number"));
+        transaction.setStatementPeriod(resultSet.getString("statement_period"));
+        transaction.setSourceFile(resultSet.getString("source_file"));
+
+        return transaction;
     }
     
     public List<BankTransaction> importCsvFile(String filePath, Long companyId, Long fiscalPeriodId) {
-        List<BankTransaction> transactions = new ArrayList<>();
-        FiscalPeriod selectedPeriod = companyService.getFiscalPeriodById(fiscalPeriodId);
-        if (selectedPeriod == null) {
-            throw new RuntimeException("Selected fiscal period not found: " + fiscalPeriodId);
-        }
-
-        int importedCount = 0;
-        int skippedCount = 0;
-        boolean isFY2025 = "FY2025".equals(selectedPeriod.getPeriodName());
-
+        FiscalPeriod selectedPeriod = validateFiscalPeriod(fiscalPeriodId);
+        ImportState importState = initializeImportState(selectedPeriod);
+        
         try (BufferedReader br = new BufferedReader(new FileReader(filePath, StandardCharsets.UTF_8))) {
-            String line;
-            boolean isFirstLine = true;
-
-            System.out.println("Starting import with fiscal period: " + selectedPeriod.getPeriodName() + 
-                               " (" + selectedPeriod.getStartDate() + " to " + selectedPeriod.getEndDate() + ")");
-            System.out.println("IMPORTANT: For FY2025, we will also import FY2024-2025 transactions");
-
-            while ((line = br.readLine()) != null) {
-                if (isFirstLine) {
-                    isFirstLine = false;
-                    continue; // Skip header line
-                }
-
-                String[] fields = parseCsvLine(line);
-                if (fields.length < MIN_CSV_FIELDS) continue; // Skip invalid lines (need at least 10 columns including fiscal period)
-
-                try {
-                    BankTransaction transaction = new BankTransaction();
-                    transaction.setCompanyId(companyId);
-
-                    // Parse date (DD/MM)
-                    String dateStr = fields[CSV_FIELD_DATE].trim();
-                    
-                    // Get the fiscal period from the CSV
-                    String csvFiscalPeriodStr = fields[CSV_FIELD_FISCAL_PERIOD].trim(); // FY2024-2025 format
-                    
-                    // Use fiscal year from selected period for date parsing
-                    String fiscalYear;
-                    if (selectedPeriod.getPeriodName().startsWith("FY")) {
-                        fiscalYear = selectedPeriod.getPeriodName().substring(FY_PERIOD_NAME_START_INDEX, FY_PERIOD_NAME_END_INDEX);
-                    } else {
-                        // Extract year from start date if period name format is different
-                        fiscalYear = String.valueOf(selectedPeriod.getStartDate().getYear());
-                    }
-
-                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-                    LocalDate transactionDate = LocalDate.parse(dateStr + "/" + fiscalYear, formatter);
-
-                    // Adjust year if date falls outside fiscal period
-                    if (transactionDate.isBefore(selectedPeriod.getStartDate())) {
-                        transactionDate = transactionDate.plusYears(1);
-                    } else if (transactionDate.isAfter(selectedPeriod.getEndDate())) {
-                        transactionDate = transactionDate.minusYears(1);
-                    }
-
-                    transaction.setTransactionDate(transactionDate);
-                    transaction.setDetails(fields[CSV_FIELD_DETAILS].trim());
-
-                    // Parse debit amount (if present)
-                    if (fields[CSV_FIELD_DEBIT] != null && !fields[CSV_FIELD_DEBIT].trim().isEmpty()) {
-                        String debitStr = fields[CSV_FIELD_DEBIT].replaceAll("[^\\d.]", "");
-                        if (!debitStr.isEmpty()) {
-                            transaction.setDebitAmount(new BigDecimal(debitStr));
-                        }
-                    }
-
-                    // Parse credit amount (if present)
-                    if (fields[CSV_FIELD_CREDIT] != null && !fields[CSV_FIELD_CREDIT].trim().isEmpty()) {
-                        String creditStr = fields[CSV_FIELD_CREDIT].replaceAll("[^\\d.]", "");
-                        if (!creditStr.isEmpty()) {
-                            transaction.setCreditAmount(new BigDecimal(creditStr));
-                        }
-                    }
-
-                    // Parse balance
-                    if (fields[CSV_FIELD_BALANCE] != null && !fields[CSV_FIELD_BALANCE].trim().isEmpty()) {
-                        String balanceStr = fields[CSV_FIELD_BALANCE].replaceAll("[^\\d.]", "");
-                        if (!balanceStr.isEmpty()) {
-                            transaction.setBalance(new BigDecimal(balanceStr));
-                        }
-                    }
-
-                    // Set service fee
-                    transaction.setServiceFee("Y".equalsIgnoreCase(fields[CSV_FIELD_SERVICE_FEE].trim()));
-
-                    // Set account number
-                    if (fields[CSV_FIELD_ACCOUNT_NUMBER] != null && !fields[CSV_FIELD_ACCOUNT_NUMBER].trim().isEmpty()) {
-                        String accNum = fields[CSV_FIELD_ACCOUNT_NUMBER].trim();
-                        transaction.setAccountNumber(accNum);
-                    }
-
-                    // Set statement period
-                    if (fields[CSV_FIELD_STATEMENT_PERIOD] != null && !fields[CSV_FIELD_STATEMENT_PERIOD].trim().isEmpty()) {
-                        transaction.setStatementPeriod(fields[CSV_FIELD_STATEMENT_PERIOD].trim());
-                    }
-
-                    // Set source file
-                    if (fields[CSV_FIELD_SOURCE_FILE] != null && !fields[CSV_FIELD_SOURCE_FILE].trim().isEmpty()) {
-                        transaction.setSourceFile(fields[CSV_FIELD_SOURCE_FILE].trim());
-                    }
-
-                    // IMPORTANT: Import based on fiscal period column in CSV, not just date
-                    // Check if this transaction belongs to our target fiscal period
-                    // Match by period name with flexible matching for FY formats (FY2025 vs FY2024-2025)
-                    boolean fiscalPeriodMatch = false;
-                    String selectedPeriodName = selectedPeriod.getPeriodName();
-                    
-                    // Direct match
-                    if (csvFiscalPeriodStr.equals(selectedPeriodName)) {
-                        fiscalPeriodMatch = true;
-                    } 
-                    // Special case: If CSV has FY2024-2025 and we selected FY2025 (using our flag)
-                    else if (isFY2025 && "FY2024-2025".equals(csvFiscalPeriodStr)) {
-                        fiscalPeriodMatch = true;
-                        System.out.println("Found FY2024-2025 transaction to include in FY2025: " + 
-                                          transaction.getDetails() + ", Date: " + transactionDate);
-                    }
-                    // Handle FY2025 vs FY2024-2025 format differences (general case)
-                    else if (selectedPeriodName.startsWith("FY") && csvFiscalPeriodStr.contains("-")) {
-                        // If selected is FY2025, extract the end year from FY2024-2025 to compare
-                        String csvEndYear = "";
-                        if (csvFiscalPeriodStr.length() >= MIN_FISCAL_PERIOD_STR_LENGTH) {
-                            csvEndYear = csvFiscalPeriodStr.substring(FISCAL_PERIOD_END_YEAR_START); // Get "2025" from "FY2024-2025"
-                        }
-                        
-                        // If selected period is FY2025, check if CSV has FY2024-2025
-                        if (selectedPeriodName.length() >= MIN_SELECTED_PERIOD_LENGTH && 
-                            selectedPeriodName.equals("FY" + csvEndYear)) {
-                            fiscalPeriodMatch = true;
-                            System.out.println("Pattern matched transaction: " + csvFiscalPeriodStr + 
-                                               " for period " + selectedPeriodName);
-                        }
-                    }
-
-                    // Debug: Output when period mismatches occur but we should probably include them
-                    if (!fiscalPeriodMatch && csvFiscalPeriodStr.contains("2024-2025") && selectedPeriodName.equals("FY2025")) {
-                        System.out.println("Potential match missed: CSV period=" + csvFiscalPeriodStr + 
-                                          ", Selected period=" + selectedPeriodName +
-                                          ", Transaction date=" + transactionDate);
-                    }
-
-                    // Import if period matches OR date is within range OR special case for FY2025
-                    boolean isSpecialFY2025Case = isFY2025 && "FY2024-2025".equals(csvFiscalPeriodStr);
-                    
-                    if (fiscalPeriodMatch || isSpecialFY2025Case || 
-                        (!transactionDate.isBefore(selectedPeriod.getStartDate()) && 
-                         !transactionDate.isAfter(selectedPeriod.getEndDate()))) {
-                        
-                        transaction.setFiscalPeriodId(fiscalPeriodId);
-                        transactions.add(transaction);
-                        saveTransaction(transaction);
-                        importedCount++;
-                        
-                        // Track credits total for FY2024-2025 records specifically
-                        if ("FY2024-2025".equals(csvFiscalPeriodStr) && transaction.getCreditAmount() != null) {
-                            System.out.println("Adding credit from FY2024-2025: " + transaction.getCreditAmount() + 
-                                              " - " + transaction.getDetails());
-                        }
-                    } else {
-                        skippedCount++;
-                        // Debug output for skipped FY2024-2025 transactions
-                        if ("FY2024-2025".equals(csvFiscalPeriodStr)) {
-                            System.out.println("SKIPPED FY2024-2025 transaction! " + 
-                                              "Date: " + transactionDate + 
-                                              ", Details: " + transaction.getDetails());
-                        }
-                    }
-
-                } catch (Exception e) {
-                    System.err.println("Error processing line: " + line);
-                    e.printStackTrace();
-                    // Continue processing other lines
-                }
-            }
-
-            return transactions;
-
+            processCsvLines(br, companyId, fiscalPeriodId, selectedPeriod, importState);
+            return importState.transactions;
         } catch (IOException e) {
             System.err.println("Error reading CSV file: " + e.getMessage());
             throw new RuntimeException("Failed to read CSV file", e);
         } finally {
-            System.out.println("Import summary: " + importedCount + " transactions imported, " + 
-                               skippedCount + " transactions skipped.");
+            logImportSummary(importState);
         }
+    }
+    
+    private FiscalPeriod validateFiscalPeriod(Long fiscalPeriodId) {
+        FiscalPeriod selectedPeriod = companyService.getFiscalPeriodById(fiscalPeriodId);
+        if (selectedPeriod == null) {
+            throw new RuntimeException("Selected fiscal period not found: " + fiscalPeriodId);
+        }
+        return selectedPeriod;
+    }
+    
+    private static class ImportState {
+        List<BankTransaction> transactions = new ArrayList<>();
+        int importedCount = 0;
+        int skippedCount = 0;
+        boolean isFY2025;
+    }
+    
+    private ImportState initializeImportState(FiscalPeriod selectedPeriod) {
+        ImportState state = new ImportState();
+        state.isFY2025 = "FY2025".equals(selectedPeriod.getPeriodName());
+        
+        System.out.println("Starting import with fiscal period: " + selectedPeriod.getPeriodName() + 
+                           " (" + selectedPeriod.getStartDate() + " to " + selectedPeriod.getEndDate() + ")");
+        System.out.println("IMPORTANT: For FY2025, we will also import FY2024-2025 transactions");
+        
+        return state;
+    }
+    
+    private void processCsvLines(BufferedReader br, Long companyId, Long fiscalPeriodId, 
+                                FiscalPeriod selectedPeriod, ImportState importState) throws IOException {
+        String line;
+        boolean isFirstLine = true;
+
+        while ((line = br.readLine()) != null) {
+            if (isFirstLine) {
+                isFirstLine = false;
+                continue; // Skip header line
+            }
+
+            String[] fields = parseCsvLine(line);
+            if (fields.length < MIN_CSV_FIELDS) continue; // Skip invalid lines
+
+            try {
+                BankTransaction transaction = parseTransactionFromFields(fields, companyId, selectedPeriod);
+                
+                if (shouldImportTransaction(transaction, selectedPeriod, importState)) {
+                    importValidTransaction(transaction, fiscalPeriodId, importState);
+                } else {
+                    importState.skippedCount++;
+                    logSkippedTransaction(transaction);
+                }
+
+            } catch (Exception e) {
+                System.err.println("Error processing line: " + line);
+                e.printStackTrace();
+                // Continue processing other lines
+            }
+        }
+    }
+    
+    private BankTransaction parseTransactionFromFields(String[] fields, Long companyId, FiscalPeriod selectedPeriod) {
+        BankTransaction transaction = new BankTransaction();
+        transaction.setCompanyId(companyId);
+
+        // Parse date (DD/MM)
+        String dateStr = fields[CSV_FIELD_DATE].trim();
+        String csvFiscalPeriodStr = fields[CSV_FIELD_FISCAL_PERIOD].trim();
+        
+        // Use fiscal year from selected period for date parsing
+        String fiscalYear = extractFiscalYear(selectedPeriod);
+        LocalDate transactionDate = parseTransactionDate(dateStr, fiscalYear, selectedPeriod);
+        
+        transaction.setTransactionDate(transactionDate);
+        transaction.setDetails(fields[CSV_FIELD_DETAILS].trim());
+
+        // Parse amounts
+        parseAmounts(transaction, fields);
+        
+        // Set additional fields
+        setTransactionFields(transaction, fields, csvFiscalPeriodStr);
+
+        return transaction;
+    }
+    
+    private String extractFiscalYear(FiscalPeriod selectedPeriod) {
+        if (selectedPeriod.getPeriodName().startsWith("FY")) {
+            return selectedPeriod.getPeriodName().substring(FY_PERIOD_NAME_START_INDEX, FY_PERIOD_NAME_END_INDEX);
+        } else {
+            return String.valueOf(selectedPeriod.getStartDate().getYear());
+        }
+    }
+    
+    private LocalDate parseTransactionDate(String dateStr, String fiscalYear, FiscalPeriod selectedPeriod) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        LocalDate transactionDate = LocalDate.parse(dateStr + "/" + fiscalYear, formatter);
+
+        // Adjust year if date falls outside fiscal period
+        if (transactionDate.isBefore(selectedPeriod.getStartDate())) {
+            transactionDate = transactionDate.plusYears(1);
+        } else if (transactionDate.isAfter(selectedPeriod.getEndDate())) {
+            transactionDate = transactionDate.minusYears(1);
+        }
+
+        return transactionDate;
+    }
+    
+    private void parseAmounts(BankTransaction transaction, String[] fields) {
+        // Parse debit amount
+        if (fields[CSV_FIELD_DEBIT] != null && !fields[CSV_FIELD_DEBIT].trim().isEmpty()) {
+            String debitStr = fields[CSV_FIELD_DEBIT].replaceAll("[^\\d.]", "");
+            if (!debitStr.isEmpty()) {
+                transaction.setDebitAmount(new BigDecimal(debitStr));
+            }
+        }
+
+        // Parse credit amount
+        if (fields[CSV_FIELD_CREDIT] != null && !fields[CSV_FIELD_CREDIT].trim().isEmpty()) {
+            String creditStr = fields[CSV_FIELD_CREDIT].replaceAll("[^\\d.]", "");
+            if (!creditStr.isEmpty()) {
+                transaction.setCreditAmount(new BigDecimal(creditStr));
+            }
+        }
+
+        // Parse balance
+        if (fields[CSV_FIELD_BALANCE] != null && !fields[CSV_FIELD_BALANCE].trim().isEmpty()) {
+            String balanceStr = fields[CSV_FIELD_BALANCE].replaceAll("[^\\d.]", "");
+            if (!balanceStr.isEmpty()) {
+                transaction.setBalance(new BigDecimal(balanceStr));
+            }
+        }
+    }
+    
+    private void setTransactionFields(BankTransaction transaction, String[] fields, String csvFiscalPeriodStr) {
+        // Set service fee
+        transaction.setServiceFee("Y".equalsIgnoreCase(fields[CSV_FIELD_SERVICE_FEE].trim()));
+
+        // Set account number
+        if (fields[CSV_FIELD_ACCOUNT_NUMBER] != null && !fields[CSV_FIELD_ACCOUNT_NUMBER].trim().isEmpty()) {
+            transaction.setAccountNumber(fields[CSV_FIELD_ACCOUNT_NUMBER].trim());
+        }
+
+        // Set statement period
+        transaction.setStatementPeriod(csvFiscalPeriodStr);
+
+        // Set source file
+        if (fields[CSV_FIELD_SOURCE_FILE] != null && !fields[CSV_FIELD_SOURCE_FILE].trim().isEmpty()) {
+            transaction.setSourceFile(fields[CSV_FIELD_SOURCE_FILE].trim());
+        }
+    }
+    
+    private boolean shouldImportTransaction(BankTransaction transaction, FiscalPeriod selectedPeriod, ImportState importState) {
+        String csvFiscalPeriodStr = transaction.getStatementPeriod(); // This should be set from CSV fiscal period field
+        LocalDate transactionDate = transaction.getTransactionDate();
+        
+        boolean fiscalPeriodMatch = determineFiscalPeriodMatch(csvFiscalPeriodStr, selectedPeriod, importState);
+        boolean isSpecialFY2025Case = importState.isFY2025 && "FY2024-2025".equals(csvFiscalPeriodStr);
+        boolean isDateInRange = !transactionDate.isBefore(selectedPeriod.getStartDate()) && 
+                               !transactionDate.isAfter(selectedPeriod.getEndDate());
+        
+        return fiscalPeriodMatch || isSpecialFY2025Case || isDateInRange;
+    }
+    
+    private boolean determineFiscalPeriodMatch(String csvFiscalPeriodStr, FiscalPeriod selectedPeriod, ImportState importState) {
+        String selectedPeriodName = selectedPeriod.getPeriodName();
+        
+        // Direct match
+        if (csvFiscalPeriodStr.equals(selectedPeriodName)) {
+            return true;
+        } 
+        
+        // Special case: If CSV has FY2024-2025 and we selected FY2025
+        if (importState.isFY2025 && "FY2024-2025".equals(csvFiscalPeriodStr)) {
+            System.out.println("Found FY2024-2025 transaction to include in FY2025: " + 
+                              "Date: " + importState.transactions.get(importState.transactions.size() - 1).getTransactionDate());
+            return true;
+        }
+        
+        // Handle FY2025 vs FY2024-2025 format differences (general case)
+        if (selectedPeriodName.startsWith("FY") && csvFiscalPeriodStr.contains("-")) {
+            String csvEndYear = "";
+            if (csvFiscalPeriodStr.length() >= MIN_FISCAL_PERIOD_STR_LENGTH) {
+                csvEndYear = csvFiscalPeriodStr.substring(FISCAL_PERIOD_END_YEAR_START);
+            }
+            
+            if (selectedPeriodName.length() >= MIN_SELECTED_PERIOD_LENGTH && 
+                selectedPeriodName.equals("FY" + csvEndYear)) {
+                System.out.println("Pattern matched transaction: " + csvFiscalPeriodStr + 
+                                   " for period " + selectedPeriodName);
+                return true;
+            }
+        }
+
+        return false;
+    }
+    
+    private void importValidTransaction(BankTransaction transaction, Long fiscalPeriodId, ImportState importState) {
+        transaction.setFiscalPeriodId(fiscalPeriodId);
+        importState.transactions.add(transaction);
+        saveTransaction(transaction);
+        importState.importedCount++;
+        
+        // Track credits from FY2024-2025 records specifically
+        if ("FY2024-2025".equals(transaction.getStatementPeriod()) && transaction.getCreditAmount() != null) {
+            System.out.println("Adding credit from FY2024-2025: " + transaction.getCreditAmount() + 
+                              " - " + transaction.getDetails());
+        }
+    }
+    
+    private void logSkippedTransaction(BankTransaction transaction) {
+        // Debug output for skipped FY2024-2025 transactions
+        if ("FY2024-2025".equals(transaction.getStatementPeriod())) {
+            System.out.println("SKIPPED FY2024-2025 transaction! " + 
+                              "Date: " + transaction.getTransactionDate() + 
+                              ", Details: " + transaction.getDetails());
+        }
+    }
+    
+    private void logImportSummary(ImportState importState) {
+        System.out.println("Import summary: " + importState.importedCount + " transactions imported, " + 
+                           importState.skippedCount + " transactions skipped.");
     }
     
     private String[] parseCsvLine(String line) {
@@ -390,51 +441,58 @@ public final class CsvImportService {
         try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             
-            pstmt.setLong(SAVE_TRANSACTION_COMPANY_ID, transaction.getCompanyId());
-            if (transaction.getBankAccountId() != null) {
-                pstmt.setLong(SAVE_TRANSACTION_BANK_ACCOUNT_ID, transaction.getBankAccountId());
-            } else {
-                pstmt.setNull(SAVE_TRANSACTION_BANK_ACCOUNT_ID, Types.INTEGER);
-            }
-            // Store date in ISO format
-            pstmt.setString(SAVE_TRANSACTION_DATE, transaction.getTransactionDate().format(DateTimeFormatter.ISO_LOCAL_DATE));
-            pstmt.setString(SAVE_TRANSACTION_DETAILS, transaction.getDetails());
-            if (transaction.getDebitAmount() != null) {
-                pstmt.setBigDecimal(SAVE_TRANSACTION_DEBIT_AMOUNT, transaction.getDebitAmount());
-            } else {
-                pstmt.setNull(SAVE_TRANSACTION_DEBIT_AMOUNT, Types.DECIMAL);
-            }
-            if (transaction.getCreditAmount() != null) {
-                pstmt.setBigDecimal(SAVE_TRANSACTION_CREDIT_AMOUNT, transaction.getCreditAmount());
-            } else {
-                pstmt.setNull(SAVE_TRANSACTION_CREDIT_AMOUNT, Types.DECIMAL);
-            }
-            if (transaction.getBalance() != null) {
-                pstmt.setBigDecimal(SAVE_TRANSACTION_BALANCE, transaction.getBalance());
-            } else {
-                pstmt.setNull(SAVE_TRANSACTION_BALANCE, Types.DECIMAL);
-            }
-            pstmt.setBoolean(SAVE_TRANSACTION_SERVICE_FEE, transaction.isServiceFee());
-            pstmt.setString(SAVE_TRANSACTION_STATEMENT_PERIOD, transaction.getStatementPeriod());
-            pstmt.setString(SAVE_TRANSACTION_SOURCE_FILE, transaction.getSourceFile());
-            if (transaction.getFiscalPeriodId() != null) {
-                pstmt.setLong(SAVE_TRANSACTION_FISCAL_PERIOD_ID, transaction.getFiscalPeriodId());
-            } else {
-                pstmt.setNull(SAVE_TRANSACTION_FISCAL_PERIOD_ID, Types.INTEGER);
-            }
-            pstmt.setString(SAVE_TRANSACTION_ACCOUNT_NUMBER, transaction.getAccountNumber());
-            
-            pstmt.executeUpdate();
-            
-            try (ResultSet generatedKeys = pstmt.getGeneratedKeys()) {
-                if (generatedKeys.next()) {
-                    transaction.setId(generatedKeys.getLong(1));
-                }
-            }
+            prepareStatementParameters(pstmt, transaction);
+            executeInsert(pstmt, transaction);
             
         } catch (SQLException e) {
             System.err.println("Error saving transaction: " + e.getMessage());
             // Just log the error but continue processing other transactions
+        }
+    }
+    
+    private void prepareStatementParameters(PreparedStatement pstmt, BankTransaction transaction) throws SQLException {
+        pstmt.setLong(SAVE_TRANSACTION_COMPANY_ID, transaction.getCompanyId());
+        if (transaction.getBankAccountId() != null) {
+            pstmt.setLong(SAVE_TRANSACTION_BANK_ACCOUNT_ID, transaction.getBankAccountId());
+        } else {
+            pstmt.setNull(SAVE_TRANSACTION_BANK_ACCOUNT_ID, Types.INTEGER);
+        }
+        // Store date in ISO format
+        pstmt.setString(SAVE_TRANSACTION_DATE, transaction.getTransactionDate().format(DateTimeFormatter.ISO_LOCAL_DATE));
+        pstmt.setString(SAVE_TRANSACTION_DETAILS, transaction.getDetails());
+        if (transaction.getDebitAmount() != null) {
+            pstmt.setBigDecimal(SAVE_TRANSACTION_DEBIT_AMOUNT, transaction.getDebitAmount());
+        } else {
+            pstmt.setNull(SAVE_TRANSACTION_DEBIT_AMOUNT, Types.DECIMAL);
+        }
+        if (transaction.getCreditAmount() != null) {
+            pstmt.setBigDecimal(SAVE_TRANSACTION_CREDIT_AMOUNT, transaction.getCreditAmount());
+        } else {
+            pstmt.setNull(SAVE_TRANSACTION_CREDIT_AMOUNT, Types.DECIMAL);
+        }
+        if (transaction.getBalance() != null) {
+            pstmt.setBigDecimal(SAVE_TRANSACTION_BALANCE, transaction.getBalance());
+        } else {
+            pstmt.setNull(SAVE_TRANSACTION_BALANCE, Types.DECIMAL);
+        }
+        pstmt.setBoolean(SAVE_TRANSACTION_SERVICE_FEE, transaction.isServiceFee());
+        pstmt.setString(SAVE_TRANSACTION_STATEMENT_PERIOD, transaction.getStatementPeriod());
+        pstmt.setString(SAVE_TRANSACTION_SOURCE_FILE, transaction.getSourceFile());
+        if (transaction.getFiscalPeriodId() != null) {
+            pstmt.setLong(SAVE_TRANSACTION_FISCAL_PERIOD_ID, transaction.getFiscalPeriodId());
+        } else {
+            pstmt.setNull(SAVE_TRANSACTION_FISCAL_PERIOD_ID, Types.INTEGER);
+        }
+        pstmt.setString(SAVE_TRANSACTION_ACCOUNT_NUMBER, transaction.getAccountNumber());
+    }
+    
+    private void executeInsert(PreparedStatement pstmt, BankTransaction transaction) throws SQLException {
+        pstmt.executeUpdate();
+        
+        try (ResultSet generatedKeys = pstmt.getGeneratedKeys()) {
+            if (generatedKeys.next()) {
+                transaction.setId(generatedKeys.getLong(1));
+            }
         }
     }
     

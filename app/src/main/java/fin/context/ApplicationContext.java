@@ -1,9 +1,41 @@
 package fin.context;
 
 import fin.config.DatabaseConfig;
-import fin.controller.*;
+import fin.controller.ApplicationController;
+import fin.controller.BudgetController;
+import fin.controller.CompanyController;
+import fin.controller.DataManagementController;
+import fin.controller.FiscalPeriodController;
+import fin.controller.ImportController;
+import fin.controller.PayrollController;
+import fin.controller.ReportController;
 import fin.repository.CompanyRepository;
-import fin.service.*;
+import fin.service.AccountClassificationService;
+import fin.service.AccountManagementService;
+import fin.service.BalanceSheetService;
+import fin.service.BankStatementProcessingService;
+import fin.service.BudgetReportService;
+import fin.service.BudgetService;
+import fin.service.CategoryManagementService;
+import fin.service.ClassificationRuleManager;
+import fin.service.CompanyLogoService;
+import fin.service.CompanyService;
+import fin.service.CsvExportService;
+import fin.service.CsvImportService;
+import fin.service.DataManagementService;
+import fin.service.FinancialReportingService;
+import fin.service.GeneralLedgerService;
+import fin.service.IncomeStatementService;
+import fin.service.InteractiveClassificationService;
+import fin.service.OpeningBalanceService;
+import fin.service.PayrollReportService;
+import fin.service.PayrollService;
+import fin.service.PayslipPdfService;
+import fin.service.PdfExportService;
+import fin.service.ReportService;
+import fin.service.StrategicPlanningService;
+import fin.service.TransactionClassificationService;
+import fin.service.TrialBalanceService;
 import fin.state.ApplicationState;
 import fin.ui.ConsoleMenu;
 import fin.ui.InputHandler;
@@ -172,6 +204,17 @@ public class ApplicationContext {
             BalanceSheetService balanceSheetService = new BalanceSheetService(financialDataRepository, generalLedgerService);
             register(BalanceSheetService.class, balanceSheetService);
             
+            // Strategic Planning Service (new feature for TASK 6.1)
+            StrategicPlanningService strategicPlanningService = new StrategicPlanningService(initialDbUrl, this);
+            register(StrategicPlanningService.class, strategicPlanningService);
+            
+            // Budget Service (new feature for TASK 6.1)
+            BudgetService budgetService = new BudgetService(initialDbUrl, this);
+            register(BudgetService.class, budgetService);
+
+            BudgetReportService budgetReportService = new BudgetReportService(initialDbUrl);
+            register(BudgetReportService.class, budgetReportService);
+            
             System.out.println("📦 Core services initialized");
         } catch (Exception e) {
             System.out.println("❌ Failed to initialize services: " + e.getMessage() + " - continuing with partial initialization");
@@ -206,12 +249,27 @@ public class ApplicationContext {
      * Replaces handler methods from App.java
      */
     private void initializeControllers() {
-        // Get dependencies
+        // Get common dependencies
         ConsoleMenu menu = get(ConsoleMenu.class);
         InputHandler inputHandler = get(InputHandler.class);
         OutputFormatter outputFormatter = get(OutputFormatter.class);
         ApplicationState applicationState = get(ApplicationState.class);
-        
+
+        // Initialize controllers by domain
+        initializeCompanyRelatedControllers(menu, inputHandler, outputFormatter, applicationState);
+        initializeImportRelatedControllers(menu, inputHandler, outputFormatter, applicationState);
+        initializeReportRelatedControllers(menu, inputHandler, outputFormatter, applicationState);
+        initializeDataManagementControllers(menu, inputHandler, outputFormatter, applicationState);
+        initializePayrollControllers(inputHandler, outputFormatter);
+
+        System.out.println("🎮 Domain controllers initialized");
+    }
+
+    /**
+     * Initialize company and fiscal period related controllers
+     */
+    private void initializeCompanyRelatedControllers(ConsoleMenu menu, InputHandler inputHandler,
+                                                   OutputFormatter outputFormatter, ApplicationState applicationState) {
         // Company controller
         CompanyController companyController = new CompanyController(
             get(CompanyService.class),
@@ -221,7 +279,7 @@ public class ApplicationContext {
             outputFormatter
         );
         register(CompanyController.class, companyController);
-        
+
         // Fiscal period controller
         FiscalPeriodController fiscalPeriodController = new FiscalPeriodController(
             get(CompanyService.class),
@@ -231,7 +289,13 @@ public class ApplicationContext {
             outputFormatter
         );
         register(FiscalPeriodController.class, fiscalPeriodController);
-        
+    }
+
+    /**
+     * Initialize import related controllers
+     */
+    private void initializeImportRelatedControllers(ConsoleMenu menu, InputHandler inputHandler,
+                                                  OutputFormatter outputFormatter, ApplicationState applicationState) {
         // Import controller
         ImportController importController = new ImportController(
             get(BankStatementProcessingService.class),
@@ -242,7 +306,13 @@ public class ApplicationContext {
             outputFormatter
         );
         register(ImportController.class, importController);
-        
+    }
+
+    /**
+     * Initialize report related controllers
+     */
+    private void initializeReportRelatedControllers(ConsoleMenu menu, InputHandler inputHandler,
+                                                  OutputFormatter outputFormatter, ApplicationState applicationState) {
         // Report controller
         ReportController reportController = new ReportController(
             get(FinancialReportingService.class),
@@ -252,7 +322,13 @@ public class ApplicationContext {
             outputFormatter
         );
         register(ReportController.class, reportController);
-        
+    }
+
+    /**
+     * Initialize data management controllers
+     */
+    private void initializeDataManagementControllers(ConsoleMenu menu, InputHandler inputHandler,
+                                                   OutputFormatter outputFormatter, ApplicationState applicationState) {
         // Data management controller
         DataManagementController dataManagementController = new DataManagementController(
             get(DataManagementService.class),
@@ -266,16 +342,31 @@ public class ApplicationContext {
         );
         register(DataManagementController.class, dataManagementController);
         
+        // Budget controller (new feature for TASK 6.1)
+        BudgetController budgetController = new BudgetController(
+            get(BudgetService.class),
+            get(StrategicPlanningService.class),
+            get(BudgetReportService.class),
+            applicationState,
+            menu,
+            inputHandler,
+            outputFormatter
+        );
+        register(BudgetController.class, budgetController);
+    }
+
+    /**
+     * Initialize payroll controllers
+     */
+    private void initializePayrollControllers(InputHandler inputHandler, OutputFormatter outputFormatter) {
         // Payroll controller
         PayrollController payrollController = new PayrollController(
             get(PayrollService.class),
-            get(PayrollReportService.class),  // <-- Add this missing parameter
+            get(PayrollReportService.class),
             inputHandler,
             outputFormatter
         );
         register(PayrollController.class, payrollController);
-        
-        System.out.println("🎮 Domain controllers initialized");
     }
     
     /**
@@ -293,7 +384,8 @@ public class ApplicationContext {
             get(ImportController.class),
             get(ReportController.class),
             get(DataManagementController.class),
-            get(PayrollController.class)
+            get(PayrollController.class),
+            get(BudgetController.class)
         );
         register(ApplicationController.class, applicationController);
         
