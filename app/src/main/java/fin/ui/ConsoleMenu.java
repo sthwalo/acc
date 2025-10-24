@@ -22,10 +22,11 @@ public class ConsoleMenu {
         System.out.println("6. Generate Reports");
         System.out.println("7. Data Management");
         System.out.println("8. Payroll Management");
-        System.out.println("9. Show current time");
-        System.out.println("10. System Logs");
-        System.out.println("11. Exit");
-        System.out.print("Enter your choice (1-11): ");
+        System.out.println("9. Budget Management");
+        System.out.println("10. Show current time");
+        System.out.println("11. System Logs");
+        System.out.println("12. Exit");
+        System.out.print("Enter your choice (1-12): ");
     }
 
     public void displayCompanyMenu() {
@@ -168,5 +169,45 @@ public class ConsoleMenu {
         System.out.println("4. Deduction Setup");
         System.out.println("5. Back");
         System.out.print("Enter your choice (1-5): ");
+    }
+    
+    // Budget menu methods
+    public void displayBudgetMenu() {
+        System.out.println("\n===== Budget Management =====");
+        System.out.println("1. Strategic Planning");
+        System.out.println("2. Budget Creation");
+        System.out.println("3. Budget Reports");
+        System.out.println("4. Budget vs Actual Analysis");
+        System.out.println("5. Back to Main Menu");
+        System.out.print("Enter your choice (1-5): ");
+    }
+    
+    public void displayStrategicPlanningMenu() {
+        System.out.println("\n===== Strategic Planning =====");
+        System.out.println("1. Create Strategic Plan");
+        System.out.println("2. View Strategic Plans");
+        System.out.println("3. Edit Strategic Plan");
+        System.out.println("4. Delete Strategic Plan");
+        System.out.println("5. Back to Budget Menu");
+        System.out.print("Enter your choice (1-5): ");
+    }
+    
+    public void displayBudgetCreationMenu() {
+        System.out.println("\n===== Budget Creation =====");
+        System.out.println("1. Create New Budget");
+        System.out.println("2. View Existing Budgets");
+        System.out.println("3. Edit Budget");
+        System.out.println("4. Delete Budget");
+        System.out.println("5. Back to Budget Menu");
+        System.out.print("Enter your choice (1-5): ");
+    }
+    
+    public void displayBudgetReportsMenu() {
+        System.out.println("\n===== Budget Reports =====");
+        System.out.println("1. Budget Summary Report");
+        System.out.println("2. Budget vs Actual Report");
+        System.out.println("3. Strategic Plan Report");
+        System.out.println("4. Back to Budget Menu");
+        System.out.print("Enter your choice (1-4): ");
     }
 }

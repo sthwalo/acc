@@ -57,7 +57,7 @@ class ConsoleMenuTest {
         assertTrue(output.contains("1. Company Setup"), "Should contain company setup option");
         assertTrue(output.contains("2. Fiscal Period Management"), "Should contain fiscal period option");
         assertTrue(output.contains("3. Import Bank Statement"), "Should contain import option");
-        assertTrue(output.contains("11. Exit"), "Should contain exit option");
+        assertTrue(output.contains("12. Exit"), "Should contain exit option");
     }
     
     @Test

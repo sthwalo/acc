@@ -264,7 +264,25 @@ public final class AccountClassificationService {
     private List<AccountDefinition> getStandardAccountDefinitions(Map<String, Long> categoryIds) {
         List<AccountDefinition> accounts = new ArrayList<>();
         
-        // CURRENT ASSETS (1000-1999)
+        // Add accounts by category
+        addCurrentAssetAccounts(accounts, categoryIds);
+        addNonCurrentAssetAccounts(accounts, categoryIds);
+        addCurrentLiabilityAccounts(accounts, categoryIds);
+        addNonCurrentLiabilityAccounts(accounts, categoryIds);
+        addEquityAccounts(accounts, categoryIds);
+        addOperatingRevenueAccounts(accounts, categoryIds);
+        addOtherIncomeAccounts(accounts, categoryIds);
+        addOperatingExpenseAccounts(accounts, categoryIds);
+        addAdministrativeExpenseAccounts(accounts, categoryIds);
+        addFinanceCostAccounts(accounts, categoryIds);
+        
+        return accounts;
+    }
+    
+    /**
+     * Add CURRENT ASSETS accounts (1000-1999)
+     */
+    private void addCurrentAssetAccounts(List<AccountDefinition> accounts, Map<String, Long> categoryIds) {
         Long currentAssetsId = categoryIds.get("CURRENT_ASSETS");
         accounts.add(new AccountDefinition("1000", "Petty Cash", "Cash on hand for small expenses", currentAssetsId));
         // Sub-accounts for loan receivables
@@ -282,8 +300,12 @@ public final class AccountClassificationService {
         accounts.add(new AccountDefinition("1300", "Inventory", "Stock and inventory items", currentAssetsId));
         accounts.add(new AccountDefinition("1400", "Prepaid Expenses", "Expenses paid in advance", currentAssetsId));
         accounts.add(new AccountDefinition("1500", "VAT Input", "VAT paid on purchases", currentAssetsId));
-        
-        // NON-CURRENT ASSETS (2000-2999)
+    }
+    
+    /**
+     * Add NON-CURRENT ASSETS accounts (2000-2999)
+     */
+    private void addNonCurrentAssetAccounts(List<AccountDefinition> accounts, Map<String, Long> categoryIds) {
         Long nonCurrentAssetsId = categoryIds.get("NON_CURRENT_ASSETS");
         accounts.add(new AccountDefinition("2000", "Property, Plant & Equipment", "Fixed assets at cost", nonCurrentAssetsId));
         // Sub-account for director loans
@@ -292,7 +314,12 @@ public final class AccountClassificationService {
         accounts.add(new AccountDefinition("2100", "Accumulated Depreciation", "Depreciation of fixed assets", nonCurrentAssetsId));
         accounts.add(new AccountDefinition("2200", "Investments", "Long-term investments", nonCurrentAssetsId));
         accounts.add(new AccountDefinition("2300", "Motor Vehicles", "Motor vehicles and transport equipment", nonCurrentAssetsId));
-        // CURRENT LIABILITIES (3000-3999)
+    }
+    
+    /**
+     * Add CURRENT LIABILITIES accounts (3000-3999)
+     */
+    private void addCurrentLiabilityAccounts(List<AccountDefinition> accounts, Map<String, Long> categoryIds) {
         Long currentLiabilitiesId = categoryIds.get("CURRENT_LIABILITIES");
         accounts.add(new AccountDefinition("3000", "Accounts Payable", "Money owed to suppliers", currentLiabilitiesId));
         accounts.add(new AccountDefinition("3100", "VAT Output", "VAT collected on sales", currentLiabilitiesId));
@@ -300,19 +327,31 @@ public final class AccountClassificationService {
         accounts.add(new AccountDefinition("3300", "UIF Payable", "Unemployment Insurance Fund payable", currentLiabilitiesId));
         accounts.add(new AccountDefinition("3400", "SDL Payable", "Skills Development Levy payable", currentLiabilitiesId));
         accounts.add(new AccountDefinition("3500", "Accrued Expenses", "Expenses incurred but not yet paid", currentLiabilitiesId));
-        
-        // NON-CURRENT LIABILITIES (4000-4999)
+    }
+    
+    /**
+     * Add NON-CURRENT LIABILITIES accounts (4000-4999)
+     */
+    private void addNonCurrentLiabilityAccounts(List<AccountDefinition> accounts, Map<String, Long> categoryIds) {
         Long nonCurrentLiabilitiesId = categoryIds.get("NON_CURRENT_LIABILITIES");
         accounts.add(new AccountDefinition("4000", "Long-term Loans", "Long-term debt obligations", nonCurrentLiabilitiesId));
-        
-        // EQUITY (5000-5999)
+    }
+    
+    /**
+     * Add EQUITY accounts (5000-5999)
+     */
+    private void addEquityAccounts(List<AccountDefinition> accounts, Map<String, Long> categoryIds) {
         Long equityId = categoryIds.get("EQUITY");
         accounts.add(new AccountDefinition("5000", "Share Capital", "Issued share capital", equityId));
         accounts.add(new AccountDefinition("5100", "Retained Earnings", "Accumulated profits", equityId));
         accounts.add(new AccountDefinition("5200", "Current Year Earnings", "Current year profit/loss", equityId));
         accounts.add(new AccountDefinition("5300", "Opening Balance Equity", "Temporary equity account for opening balances - Cash Flow Statement only", equityId));
-        
-        // OPERATING REVENUE (6000-6999)
+    }
+    
+    /**
+     * Add OPERATING REVENUE accounts (6000-6999)
+     */
+    private void addOperatingRevenueAccounts(List<AccountDefinition> accounts, Map<String, Long> categoryIds) {
         Long operatingRevenueId = categoryIds.get("OPERATING_REVENUE");
         accounts.add(new AccountDefinition("6000", "Sales Revenue", "Revenue from sales", operatingRevenueId));
         accounts.add(new AccountDefinition("6100", "Service Revenue", "Revenue from services", operatingRevenueId));
@@ -320,14 +359,22 @@ public final class AccountClassificationService {
         accounts.add(new AccountDefinition("6100-001", "Corobrik Service Revenue", "Service revenue from Corobrik", operatingRevenueId));
         
         accounts.add(new AccountDefinition("6200", "Other Operating Revenue", "Other operating income", operatingRevenueId));
-        
-        // OTHER INCOME (7000-7999)
+    }
+    
+    /**
+     * Add OTHER INCOME accounts (7000-7999)
+     */
+    private void addOtherIncomeAccounts(List<AccountDefinition> accounts, Map<String, Long> categoryIds) {
         Long otherIncomeId = categoryIds.get("OTHER_INCOME");
         accounts.add(new AccountDefinition("7000", "Interest Income", "Interest earned on investments", otherIncomeId));
         accounts.add(new AccountDefinition("7100", "Dividend Income", "Dividends received", otherIncomeId));
         accounts.add(new AccountDefinition("7200", "Gain on Asset Disposal", "Profit from asset sales", otherIncomeId));
-        
-        // OPERATING EXPENSES (8000-8999)
+    }
+    
+    /**
+     * Add OPERATING EXPENSES accounts (8000-8999)
+     */
+    private void addOperatingExpenseAccounts(List<AccountDefinition> accounts, Map<String, Long> categoryIds) {
         Long operatingExpensesId = categoryIds.get("OPERATING_EXPENSES");
         accounts.add(new AccountDefinition("8000", "Cost of Goods Sold", "Direct costs of products sold", operatingExpensesId));
         accounts.add(new AccountDefinition("8100", "Employee Costs", "Salaries, wages and benefits", operatingExpensesId));
@@ -365,16 +412,24 @@ public final class AccountClassificationService {
         accounts.add(new AccountDefinition("8800-999", "Other Insurance Premiums", "Other insurance providers", operatingExpensesId));
         
         accounts.add(new AccountDefinition("8900", "Repairs & Maintenance", "Equipment and facility maintenance", operatingExpensesId));
-        
-        // ADMINISTRATIVE EXPENSES (9000-9999)
+    }
+    
+    /**
+     * Add ADMINISTRATIVE EXPENSES accounts (9000-9999)
+     */
+    private void addAdministrativeExpenseAccounts(List<AccountDefinition> accounts, Map<String, Long> categoryIds) {
         Long adminExpensesId = categoryIds.get("ADMINISTRATIVE_EXPENSES");
         accounts.add(new AccountDefinition("9000", "Office Supplies", "Stationery and office materials", adminExpensesId));
         accounts.add(new AccountDefinition("9100", "Computer Expenses", "Software licenses and IT costs", adminExpensesId));
         accounts.add(new AccountDefinition("9200", "Marketing & Advertising", "Promotional and marketing costs", adminExpensesId));
         accounts.add(new AccountDefinition("9300", "Training & Development", "Staff training and development", adminExpensesId));
         accounts.add(new AccountDefinition("9400", "Depreciation", "Depreciation of fixed assets", adminExpensesId));
-        
-        // FINANCE COSTS (9500-9999)
+    }
+    
+    /**
+     * Add FINANCE COSTS accounts (9500-9999)
+     */
+    private void addFinanceCostAccounts(List<AccountDefinition> accounts, Map<String, Long> categoryIds) {
         Long financeCostsId = categoryIds.get("FINANCE_COSTS");
         accounts.add(new AccountDefinition("9500", "Interest Expense", "Interest on loans and credit", financeCostsId));
         accounts.add(new AccountDefinition("9600", "Bank Charges", "Bank fees and transaction costs", financeCostsId));
@@ -383,8 +438,6 @@ public final class AccountClassificationService {
         accounts.add(new AccountDefinition("9810", "Loan Repayments", "Loan repayment costs", financeCostsId));
         accounts.add(new AccountDefinition("9820", "PAYE Expense", "PAYE tax payments to South African Revenue Service", financeCostsId));
         accounts.add(new AccountDefinition("9900", "Pension Expenses", "Pension-related costs", financeCostsId));
-        
-        return accounts;
     }
     
     /**
@@ -393,7 +446,11 @@ public final class AccountClassificationService {
     private void analyzeTransactionPatterns(Long companyId) throws SQLException {
         System.out.println("\n🔍 Analyzing transaction patterns for account mapping...");
         
-        // Query to analyze patterns without using PostgreSQL-specific functions
+        displayTransactionPatternAnalysis(companyId);
+        displaySampleTransactions(companyId);
+    }
+    
+    private void displayTransactionPatternAnalysis(Long companyId) throws SQLException {
         String sql = """
             SELECT 
                 CASE 
@@ -422,74 +479,93 @@ public final class AccountClassificationService {
              PreparedStatement stmt = conn.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
             
-            System.out.println("\n📊 Transaction Pattern Analysis:");
-            System.out.println("=".repeat(DISPLAY_WIDTH_STANDARD));
-            System.out.printf("%-" + DISPLAY_WIDTH_CATEGORY + "s %" + DISPLAY_WIDTH_COUNT + "s %" + DISPLAY_WIDTH_AMOUNT + "s %" + DISPLAY_WIDTH_AMOUNT + "s%n", "Category", "Count", "Credits", "Debits");
-            System.out.println("-".repeat(DISPLAY_WIDTH_STANDARD));
+            printTransactionPatternHeader();
             
             while (rs.next()) {
-                String category = rs.getString("suggested_category");
-                int count = rs.getInt("transaction_count");
-                BigDecimal credits = rs.getBigDecimal("total_credits");
-                BigDecimal debits = rs.getBigDecimal("total_debits");
-                
-                System.out.printf("%-" + DISPLAY_WIDTH_CATEGORY + "s %" + DISPLAY_WIDTH_COUNT + "d %" + DISPLAY_WIDTH_AMOUNT + "s %" + DISPLAY_WIDTH_AMOUNT + "s%n", 
-                    category, count, 
-                    formatAmount(credits), 
-                    formatAmount(debits));
+                printTransactionPatternRow(rs);
             }
-            System.out.println("=" .repeat(DISPLAY_WIDTH_STANDARD));
             
-            // Also get sample transactions for each category
-            System.out.println("\n📝 Sample Transactions:");
-            System.out.println("-".repeat(DISPLAY_WIDTH_STANDARD));
+            printTransactionPatternFooter();
+        }
+    }
+    
+    private void printTransactionPatternHeader() {
+        System.out.println("\n📊 Transaction Pattern Analysis:");
+        System.out.println("=".repeat(DISPLAY_WIDTH_STANDARD));
+        System.out.printf("%-" + DISPLAY_WIDTH_CATEGORY + "s %" + DISPLAY_WIDTH_COUNT + "s %" + DISPLAY_WIDTH_AMOUNT + "s %" + DISPLAY_WIDTH_AMOUNT + "s%n", "Category", "Count", "Credits", "Debits");
+        System.out.println("-".repeat(DISPLAY_WIDTH_STANDARD));
+    }
+    
+    private void printTransactionPatternRow(ResultSet rs) throws SQLException {
+        String category = rs.getString("suggested_category");
+        int count = rs.getInt("transaction_count");
+        BigDecimal credits = rs.getBigDecimal("total_credits");
+        BigDecimal debits = rs.getBigDecimal("total_debits");
+        
+        System.out.printf("%-" + DISPLAY_WIDTH_CATEGORY + "s %" + DISPLAY_WIDTH_COUNT + "d %" + DISPLAY_WIDTH_AMOUNT + "s %" + DISPLAY_WIDTH_AMOUNT + "s%n", 
+            category, count, 
+            formatAmount(credits), 
+            formatAmount(debits));
+    }
+    
+    private void printTransactionPatternFooter() {
+        System.out.println("=" .repeat(DISPLAY_WIDTH_STANDARD));
+    }
+    
+    private void displaySampleTransactions(Long companyId) throws SQLException {
+        System.out.println("\n📝 Sample Transactions:");
+        System.out.println("-".repeat(DISPLAY_WIDTH_STANDARD));
+        
+        String sampleSql = """
+            SELECT 
+                CASE 
+                    WHEN details LIKE '%FEE%' OR details LIKE '%CHARGE%' THEN 'Bank Charges'
+                    WHEN details LIKE '%TRANSFER FROM%' OR details LIKE '%DEPOSIT%' THEN 'Deposits/Transfers In'
+                    WHEN details LIKE '%TRANSFER TO%' OR details LIKE '%PAYMENT TO%' THEN 'Payments/Transfers Out'
+                    WHEN details LIKE '%SALARY%' OR details LIKE '%WAGE%' THEN 'Employee Costs'
+                    WHEN details LIKE '%INTEREST%' THEN 'Interest'
+                    WHEN details LIKE '%RENT%' THEN 'Rent'
+                    WHEN details LIKE '%INSURANCE%' THEN 'Insurance'
+                    WHEN details LIKE '%FUEL%' OR details LIKE '%PETROL%' THEN 'Vehicle Expenses'
+                    WHEN details LIKE '%ELECTRIC%' OR details LIKE '%WATER%' OR details LIKE '%MUNICIPAL%' THEN 'Utilities'
+                    WHEN details LIKE '%TELEPHONE%' OR details LIKE '%MOBILE%' OR details LIKE '%INTERNET%' THEN 'Communication'
+                    ELSE 'Unclassified'
+                END as category,
+                details
+            FROM bank_transactions
+            WHERE details IS NOT NULL
+            ORDER BY category, details
+            LIMIT 10
+            """;
+        
+        try (Connection conn = DriverManager.getConnection(dbUrl);
+             PreparedStatement sampleStmt = conn.prepareStatement(sampleSql);
+             ResultSet sampleRs = sampleStmt.executeQuery()) {
             
-            String sampleSql = """
-                SELECT 
-                    CASE 
-                        WHEN details LIKE '%FEE%' OR details LIKE '%CHARGE%' THEN 'Bank Charges'
-                        WHEN details LIKE '%TRANSFER FROM%' OR details LIKE '%DEPOSIT%' THEN 'Deposits/Transfers In'
-                        WHEN details LIKE '%TRANSFER TO%' OR details LIKE '%PAYMENT TO%' THEN 'Payments/Transfers Out'
-                        WHEN details LIKE '%SALARY%' OR details LIKE '%WAGE%' THEN 'Employee Costs'
-                        WHEN details LIKE '%INTEREST%' THEN 'Interest'
-                        WHEN details LIKE '%RENT%' THEN 'Rent'
-                        WHEN details LIKE '%INSURANCE%' THEN 'Insurance'
-                        WHEN details LIKE '%FUEL%' OR details LIKE '%PETROL%' THEN 'Vehicle Expenses'
-                        WHEN details LIKE '%ELECTRIC%' OR details LIKE '%WATER%' OR details LIKE '%MUNICIPAL%' THEN 'Utilities'
-                        WHEN details LIKE '%TELEPHONE%' OR details LIKE '%MOBILE%' OR details LIKE '%INTERNET%' THEN 'Communication'
-                        ELSE 'Unclassified'
-                    END as category,
-                    details
-                FROM bank_transactions
-                WHERE details IS NOT NULL
-                ORDER BY category, details
-                LIMIT 10
-                """;
+            printSampleTransactions(sampleRs);
+        }
+    }
+    
+    private void printSampleTransactions(ResultSet sampleRs) throws SQLException {
+        String currentCategory = "";
+        int sampleCount = 0;
+        
+        while (sampleRs.next()) {
+            String category = sampleRs.getString("category");
+            String details = sampleRs.getString("details");
             
-            try (PreparedStatement sampleStmt = conn.prepareStatement(sampleSql);
-                 ResultSet sampleRs = sampleStmt.executeQuery()) {
-                
-                String currentCategory = "";
-                int sampleCount = 0;
-                
-                while (sampleRs.next()) {
-                    String category = sampleRs.getString("category");
-                    String details = sampleRs.getString("details");
-                    
-                    if (!category.equals(currentCategory)) {
-                        if (!currentCategory.isEmpty()) {
-                            System.out.println();
-                        }
-                        currentCategory = category;
-                        System.out.println(category + ":");
-                        sampleCount = 0;
-                    }
-                    
-                    if (sampleCount < SAMPLE_LIMIT_PER_CATEGORY) { // Limit to 3 samples per category
-                        System.out.println("  - " + details);
-                        sampleCount++;
-                    }
+            if (!category.equals(currentCategory)) {
+                if (!currentCategory.isEmpty()) {
+                    System.out.println();
                 }
+                currentCategory = category;
+                System.out.println(category + ":");
+                sampleCount = 0;
+            }
+            
+            if (sampleCount < SAMPLE_LIMIT_PER_CATEGORY) { // Limit to 3 samples per category
+                System.out.println("  - " + details);
+                sampleCount++;
             }
         }
     }
@@ -521,56 +597,68 @@ public final class AccountClassificationService {
     public void generateClassificationReport(Long companyId) {
         try {
             Company company = companyService.getCompanyById(companyId);
-            System.out.println("\n📈 ACCOUNT CLASSIFICATION REPORT");
-            System.out.println("Company: " + company.getName());
-            System.out.println("Generated: " + java.time.LocalDateTime.now());
-            System.out.println("=".repeat(DISPLAY_WIDTH_REPORT));
-            
-            // Show account categories and counts
-            String sql = """
-                SELECT 
-                    ac.name as category_name,
-                    at.name as account_type,
-                    COUNT(a.id) as account_count
-                FROM account_categories ac
-                JOIN account_types at ON ac.account_type_id = at.id
-                LEFT JOIN accounts a ON ac.id = a.category_id
-                WHERE ac.company_id = ?
-                GROUP BY ac.name, at.name, at.id
-                ORDER BY at.id, ac.name
-                """;
-            
-            try (Connection conn = DriverManager.getConnection(dbUrl);
-                 PreparedStatement stmt = conn.prepareStatement(sql)) {
-                
-                stmt.setLong(1, companyId);
-                ResultSet rs = stmt.executeQuery();
-                
-                String currentType = "";
-                while (rs.next()) {
-                    String accountType = rs.getString("account_type");
-                    String categoryName = rs.getString("category_name");
-                    int accountCount = rs.getInt("account_count");
-                    
-                    if (!accountType.equals(currentType)) {
-                        currentType = accountType;
-                        System.out.println("\n" + accountType.toUpperCase() + ":");
-                    }
-                    
-                    System.out.printf("  %-30s %3d accounts%n", categoryName, accountCount);
-                }
-            }
-            
-            // Show mapping suggestions
-            System.out.println("\n🎯 RECOMMENDED ACCOUNT MAPPINGS:");
-            System.out.println("-".repeat(DISPLAY_WIDTH_REPORT));
-            Map<String, String> suggestions = getAccountMappingSuggestions(companyId);
-            suggestions.forEach((pattern, account) -> 
-                System.out.printf("%-25s → %s%n", pattern, account));
+            printReportHeader(company);
+            displayAccountCategories(companyId);
+            displayMappingSuggestions(companyId);
             
         } catch (SQLException e) {
             System.err.println("Error generating classification report: " + e.getMessage());
         }
+    }
+    
+    private void printReportHeader(Company company) {
+        System.out.println("\n📈 ACCOUNT CLASSIFICATION REPORT");
+        System.out.println("Company: " + company.getName());
+        System.out.println("Generated: " + java.time.LocalDateTime.now());
+        System.out.println("=".repeat(DISPLAY_WIDTH_REPORT));
+    }
+    
+    private void displayAccountCategories(Long companyId) throws SQLException {
+        String sql = """
+            SELECT 
+                ac.name as category_name,
+                at.name as account_type,
+                COUNT(a.id) as account_count
+            FROM account_categories ac
+            JOIN account_types at ON ac.account_type_id = at.id
+            LEFT JOIN accounts a ON ac.id = a.category_id
+            WHERE ac.company_id = ?
+            GROUP BY ac.name, at.name, at.id
+            ORDER BY at.id, ac.name
+            """;
+        
+        try (Connection conn = DriverManager.getConnection(dbUrl);
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            stmt.setLong(1, companyId);
+            ResultSet rs = stmt.executeQuery();
+            
+            printAccountCategories(rs);
+        }
+    }
+    
+    private void printAccountCategories(ResultSet rs) throws SQLException {
+        String currentType = "";
+        while (rs.next()) {
+            String accountType = rs.getString("account_type");
+            String categoryName = rs.getString("category_name");
+            int accountCount = rs.getInt("account_count");
+            
+            if (!accountType.equals(currentType)) {
+                currentType = accountType;
+                System.out.println("\n" + accountType.toUpperCase() + ":");
+            }
+            
+            System.out.printf("  %-30s %3d accounts%n", categoryName, accountCount);
+        }
+    }
+    
+    private void displayMappingSuggestions(Long companyId) {
+        System.out.println("\n🎯 RECOMMENDED ACCOUNT MAPPINGS:");
+        System.out.println("-".repeat(DISPLAY_WIDTH_REPORT));
+        Map<String, String> suggestions = getAccountMappingSuggestions(companyId);
+        suggestions.forEach((pattern, account) -> 
+            System.out.printf("%-25s → %s%n", pattern, account));
     }
     
     private String formatAmount(BigDecimal amount) {
@@ -632,10 +720,35 @@ public final class AccountClassificationService {
     public List<TransactionMappingRule> getStandardMappingRules() {
         List<TransactionMappingRule> rules = new ArrayList<>();
         
-        // ========================================================================
-        // PRIORITY 10: CRITICAL PATTERNS (Must match before generic patterns)
-        // ========================================================================
+        // Add rules by priority level (highest to lowest)
+        addCriticalPatternsRules(rules);
+        addHighConfidencePatternsRules(rules);
+        addGenericPaymentPatternsRules(rules);
+        addFallbackPatternsRules(rules);
         
+        // Sort by priority (descending) to ensure highest priority rules are checked first
+        rules.sort((r1, r2) -> Integer.compare(r2.getPriority(), r1.getPriority()));
+        
+        return rules;
+    }
+    
+    /**
+     * Add PRIORITY 10: CRITICAL PATTERNS (Must match before generic patterns)
+     */
+    /**
+     * Add PRIORITY 10: CRITICAL PATTERNS (must match before all others)
+     */
+    private void addCriticalPatternsRules(List<TransactionMappingRule> rules) {
+        addCriticalSalaryAndLoanRules(rules);
+        addCriticalRevenueRules(rules);
+        addCriticalEmployeePaymentRules(rules);
+        addCriticalBankChargeRules(rules);
+    }
+
+    /**
+     * Add critical salary and loan repayment rules
+     */
+    private void addCriticalSalaryAndLoanRules(List<TransactionMappingRule> rules) {
         // HIGH PRIORITY: Salary payments to specific employees
         // NOTE: "INSURANCE CHAUKE" contains keyword "INSURANCE" but is actually a salary payment
         // This rule MUST come before generic insurance pattern to avoid misclassification
@@ -647,7 +760,7 @@ public final class AccountClassificationService {
             "8100", // Employee Costs
             PRIORITY_CRITICAL
         ));
-        
+
         // Loan repayments from directors/employees
         rules.add(createRule(
             "Jeffrey Maphosa Loan Repayment",
@@ -657,7 +770,7 @@ public final class AccountClassificationService {
             "4000", // Long-term Loans
             PRIORITY_CRITICAL
         ));
-        
+
         // Director reimbursements (for personal credit card expenses paid by company)
         rules.add(createRule(
             "Stone Jeffrey Maphosa Reimbursement",
@@ -667,11 +780,12 @@ public final class AccountClassificationService {
             "4000", // Long-term Loans
             PRIORITY_CRITICAL
         ));
-        
-        // ========================================================================
-        // PRIORITY 9: HIGH-CONFIDENCE PATTERNS
-        // ========================================================================
-        
+    }
+
+    /**
+     * Add critical revenue transaction rules
+     */
+    private void addCriticalRevenueRules(List<TransactionMappingRule> rules) {
         // COROBRIK customer payments (revenue)
         rules.add(createRule(
             "Corobrik Service Revenue",
@@ -681,7 +795,140 @@ public final class AccountClassificationService {
             "6100-001", // Corobrik Service Revenue
             PRIORITY_CRITICAL
         ));
-        
+    }
+
+    /**
+     * Add critical employee payment rules
+     */
+    private void addCriticalEmployeePaymentRules(List<TransactionMappingRule> rules) {
+        addCriticalDirectorPayments(rules);
+        addCriticalEmployeePayments(rules);
+        addCriticalSupplierPayments(rules);
+    }
+    
+    private void addCriticalDirectorPayments(List<TransactionMappingRule> rules) {
+        // IMMEDIATE PAYMENT - specific director payments (high priority)
+        rules.add(createRule(
+            "Immediate Payment - Jeffrey S Maphosa",
+            "Director remuneration payment to Jeffrey S Maphosa",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "IMMEDIATE PAYMENT 224812909 JEFFREY S MAPHOSA",
+            "8100-001", // Director Remuneration
+            PRIORITY_CRITICAL
+        ));
+    }
+    
+    private void addCriticalEmployeePayments(List<TransactionMappingRule> rules) {
+        addCriticalEmployeePaymentsGroup1(rules);
+        addCriticalEmployeePaymentsGroup2(rules);
+    }
+
+    private void addCriticalEmployeePaymentsGroup1(List<TransactionMappingRule> rules) {
+        // IMMEDIATE PAYMENT - specific employee payments (high priority)
+        rules.add(createRule(
+            "Immediate Payment - Katleho Mogaloa",
+            "Employee payment to Katleho Mogaloa",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "IMMEDIATE PAYMENT 226159243 KATLEHO MOGALOA",
+            "8100", // Employee Costs
+            PRIORITY_CRITICAL
+        ));
+
+        rules.add(createRule(
+            "Immediate Payment - Jordan Moyane",
+            "Employee payment to Jordan Moyane",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "IMMEDIATE PAYMENT 224812154 JORDAN MOYANE",
+            "8100", // Employee Costs
+            PRIORITY_CRITICAL
+        ));
+
+        rules.add(createRule(
+            "Immediate Payment - Sibongile Dlamini",
+            "Employee payment to Sibongile Dlamini",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "IMMEDIATE PAYMENT 224850901 SIBONGILE DLAMINI",
+            "8100", // Employee Costs
+            PRIORITY_CRITICAL
+        ));
+    }
+
+    private void addCriticalEmployeePaymentsGroup2(List<TransactionMappingRule> rules) {
+        rules.add(createRule(
+            "Immediate Payment - Mabunda IP",
+            "Employee payment to Mabunda IP",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "IMMEDIATE PAYMENT 224855113 MABUNDA IP",
+            "8100", // Employee Costs
+            PRIORITY_CRITICAL
+        ));
+
+        rules.add(createRule(
+            "Immediate Payment - Albert Zunga",
+            "Employee payment to Albert Zunga",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "IMMEDIATE PAYMENT 221599858 ALBERT ZUNGA",
+            "8100", // Employee Costs
+            PRIORITY_CRITICAL
+        ));
+
+        rules.add(createRule(
+            "Immediate Payment - Piet Mathebula",
+            "Employee payment to Piet Mathebula",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "IMMEDIATE PAYMENT 221514559 PIET MATHEBULA",
+            "8100", // Employee Costs
+            PRIORITY_CRITICAL
+        ));
+    }
+    
+    private void addCriticalSupplierPayments(List<TransactionMappingRule> rules) {
+        rules.add(createRule(
+            "Immediate Payment - Alberake Protection",
+            "Cost of goods sold - Alberake Protection",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "IMMEDIATE PAYMENT 218989372 ALBERAKE PROTECTION",
+            "8000", // Cost of Goods Sold
+            PRIORITY_CRITICAL
+        ));
+    }
+
+    /**
+     * Add critical bank charge rules
+     */
+    private void addCriticalBankChargeRules(List<TransactionMappingRule> rules) {
+        // FEE IMMEDIATE PAYMENT - bank charges (high priority)
+        rules.add(createRule(
+            "Fee Immediate Payment",
+            "Bank charges for immediate payment processing",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "FEE IMMEDIATE PAYMENT",
+            "9600", // Bank Charges
+            PRIORITY_CRITICAL
+        ));
+    }
+    
+    /**
+     * Add PRIORITY 9: HIGH-CONFIDENCE PATTERNS
+     */
+    private void addHighConfidencePatternsRules(List<TransactionMappingRule> rules) {
+        addReturnedDebitsAndInterestRules(rules);
+        addBondAndLoanRepaymentRules(rules);
+        addFuelAndTrackingRules(rules);
+        addInstantMoneyAndTransferRules(rules);
+        addEmployeePaymentRules(rules);
+        addEmployeeBenefitRules(rules);
+        addDirectorAndPensionRules(rules);
+        addAllowanceAndTaxRules(rules);
+        addCashAndReimbursementRules(rules);
+        addCommunicationAndTrackingRules(rules);
+        addLoanAndTransferRules(rules);
+        addBalanceAndVatRules(rules);
+        addProfessionalAndFuelRules(rules);
+        addSpecificIndividualPaymentRules(rules);
+    }
+
+    private void addReturnedDebitsAndInterestRules(List<TransactionMappingRule> rules) {
         // Returned debits - offset original transactions
         // NOTE: These should go to the SAME account as the original transaction
         // For now, we'll handle specific known providers
@@ -693,7 +940,7 @@ public final class AccountClassificationService {
             "8800-002", // DOTSURE Insurance Premiums (offset)
             PRIORITY_HIGH
         ));
-        
+
         // EXCESS INTEREST payments
         rules.add(createRule(
             "Excess Interest Expense",
@@ -703,7 +950,9 @@ public final class AccountClassificationService {
             "9500", // Interest Expense
             PRIORITY_HIGH
         ));
-        
+    }
+
+    private void addBondAndLoanRepaymentRules(List<TransactionMappingRule> rules) {
         // STD BANK BOND repayments (loans payable)
         rules.add(createRule(
             "STD Bank Bond Repayment",
@@ -713,7 +962,9 @@ public final class AccountClassificationService {
             "4000", // Long-term Loans (Loans Payable)
             PRIORITY_HIGH
         ));
-        
+    }
+
+    private void addFuelAndTrackingRules(List<TransactionMappingRule> rules) {
         // Fuel transfers FROM specific account
         rules.add(createRule(
             "IB Transfer From Fuel Account",
@@ -723,7 +974,7 @@ public final class AccountClassificationService {
             "8600-099", // Fuel Expenses - Other Stations
             PRIORITY_HIGH
         ));
-        
+
         // CARTRACK vehicle tracking
         rules.add(createRule(
             "Cartrack Vehicle Tracking",
@@ -733,7 +984,9 @@ public final class AccountClassificationService {
             "8500-001", // Cartrack Vehicle Tracking
             PRIORITY_HIGH
         ));
-        
+    }
+
+    private void addInstantMoneyAndTransferRules(List<TransactionMappingRule> rules) {
         // IB INSTANT MONEY CASH TO - e-wallet payments to part-time employees
         rules.add(createRule(
             "IB Instant Money Cash to Employees",
@@ -743,7 +996,7 @@ public final class AccountClassificationService {
             "8100", // Employee Costs
             PRIORITY_HIGH
         ));
-        
+
         // AUTOBANK TRANSFER TO ACCOUNT - fuel expenses
         rules.add(createRule(
             "Autobank Transfer to Fuel Account",
@@ -753,90 +1006,7 @@ public final class AccountClassificationService {
             "8600-099", // Fuel Expenses - Other Stations
             PRIORITY_HIGH
         ));
-        
-        // IMMEDIATE PAYMENT - specific employee payments (high priority)
-        rules.add(createRule(
-            "Immediate Payment - Jeffrey S Maphosa",
-            "Director remuneration payment to Jeffrey S Maphosa",
-            TransactionMappingRule.MatchType.CONTAINS,
-            "IMMEDIATE PAYMENT 224812909 JEFFREY S MAPHOSA",
-            "8100-001", // Director Remuneration
-            PRIORITY_CRITICAL
-        ));
-        
-        rules.add(createRule(
-            "Immediate Payment - Katleho Mogaloa",
-            "Employee payment to Katleho Mogaloa",
-            TransactionMappingRule.MatchType.CONTAINS,
-            "IMMEDIATE PAYMENT 226159243 KATLEHO MOGALOA",
-            "8100", // Employee Costs
-            PRIORITY_CRITICAL
-        ));
-        
-        rules.add(createRule(
-            "Immediate Payment - Jordan Moyane",
-            "Employee payment to Jordan Moyane",
-            TransactionMappingRule.MatchType.CONTAINS,
-            "IMMEDIATE PAYMENT 224812154 JORDAN MOYANE",
-            "8100", // Employee Costs
-            PRIORITY_CRITICAL
-        ));
-        
-        rules.add(createRule(
-            "Immediate Payment - Sibongile Dlamini",
-            "Employee payment to Sibongile Dlamini",
-            TransactionMappingRule.MatchType.CONTAINS,
-            "IMMEDIATE PAYMENT 224850901 SIBONGILE DLAMINI",
-            "8100", // Employee Costs
-            PRIORITY_CRITICAL
-        ));
-        
-        rules.add(createRule(
-            "Immediate Payment - Mabunda IP",
-            "Employee payment to Mabunda IP",
-            TransactionMappingRule.MatchType.CONTAINS,
-            "IMMEDIATE PAYMENT 224855113 MABUNDA IP",
-            "8100", // Employee Costs
-            PRIORITY_CRITICAL
-        ));
-        
-        rules.add(createRule(
-            "Immediate Payment - Albert Zunga",
-            "Employee payment to Albert Zunga",
-            TransactionMappingRule.MatchType.CONTAINS,
-            "IMMEDIATE PAYMENT 221599858 ALBERT ZUNGA",
-            "8100", // Employee Costs
-            PRIORITY_CRITICAL
-        ));
-        
-        rules.add(createRule(
-            "Immediate Payment - Piet Mathebula",
-            "Employee payment to Piet Mathebula",
-            TransactionMappingRule.MatchType.CONTAINS,
-            "IMMEDIATE PAYMENT 221514559 PIET MATHEBULA",
-            "8100", // Employee Costs
-            PRIORITY_CRITICAL
-        ));
-        
-        rules.add(createRule(
-            "Immediate Payment - Alberake Protection",
-            "Cost of goods sold - Alberake Protection",
-            TransactionMappingRule.MatchType.CONTAINS,
-            "IMMEDIATE PAYMENT 218989372 ALBERAKE PROTECTION",
-            "8000", // Cost of Goods Sold
-            PRIORITY_CRITICAL
-        ));
-        
-        // FEE IMMEDIATE PAYMENT - bank charges (high priority)
-        rules.add(createRule(
-            "Fee Immediate Payment",
-            "Bank charges for immediate payment processing",
-            TransactionMappingRule.MatchType.CONTAINS,
-            "FEE IMMEDIATE PAYMENT",
-            "9600", // Bank Charges
-            PRIORITY_CRITICAL
-        ));
-        
+
         // IMMEDIATE PAYMENT - generic employee payments (lower priority)
         rules.add(createRule(
             "Immediate Payment - Generic Employee",
@@ -846,8 +1016,15 @@ public final class AccountClassificationService {
             "8100", // Employee Costs
             PRIORITY_STANDARD
         ));
-        
-        // Additional employee payment patterns
+    }
+
+    private void addEmployeePaymentRules(List<TransactionMappingRule> rules) {
+        addEmployeePaymentRulesGroup1(rules);
+        addEmployeePaymentRulesGroup2(rules);
+    }
+    
+    private void addEmployeePaymentRulesGroup1(List<TransactionMappingRule> rules) {
+        // Additional employee payment patterns - Group 1
         rules.add(createRule(
             "Employee Payment - Sibongile Dlamini",
             "Employee payment to Sibongile Dlamini",
@@ -856,7 +1033,7 @@ public final class AccountClassificationService {
             "8100", // Employee Costs
             PRIORITY_HIGH
         ));
-        
+
         rules.add(createRule(
             "Employee Payment - Themba Mkhatshwa",
             "Employee payment to Themba Mkhatshwa",
@@ -865,7 +1042,7 @@ public final class AccountClassificationService {
             "8100", // Employee Costs
             PRIORITY_HIGH
         ));
-        
+
         rules.add(createRule(
             "Employee Payment - Lawrence Phogole",
             "Employee payment to Lawrence Phogole",
@@ -874,7 +1051,7 @@ public final class AccountClassificationService {
             "8100", // Employee Costs
             PRIORITY_HIGH
         ));
-        
+
         rules.add(createRule(
             "Employee Payment - Tlometsane Moraswi",
             "Employee payment to Tlometsane Moraswi",
@@ -883,7 +1060,10 @@ public final class AccountClassificationService {
             "8100", // Employee Costs
             PRIORITY_HIGH
         ));
-        
+    }
+    
+    private void addEmployeePaymentRulesGroup2(List<TransactionMappingRule> rules) {
+        // Additional employee payment patterns - Group 2
         rules.add(createRule(
             "Employee Payment - Mbhoni Miyambo",
             "Employee payment to Mbhoni Miyambo",
@@ -892,7 +1072,7 @@ public final class AccountClassificationService {
             "8100", // Employee Costs
             PRIORITY_HIGH
         ));
-        
+
         rules.add(createRule(
             "Employee Payment - Musa Nzunza",
             "Employee payment to Musa Nzunza",
@@ -901,7 +1081,7 @@ public final class AccountClassificationService {
             "8100", // Employee Costs
             PRIORITY_HIGH
         ));
-        
+
         rules.add(createRule(
             "Employee Payment - Masemola Matawaneng",
             "Employee payment to Masemola Matawaneng",
@@ -910,7 +1090,7 @@ public final class AccountClassificationService {
             "8100", // Employee Costs
             PRIORITY_HIGH
         ));
-        
+
         rules.add(createRule(
             "Employee Payment - Winners Chauke",
             "Employee payment to Winners Chauke",
@@ -919,7 +1099,57 @@ public final class AccountClassificationService {
             "8100", // Employee Costs
             PRIORITY_HIGH
         ));
-        
+    }
+
+    private void addEmployeeBenefitRules(List<TransactionMappingRule> rules) {
+        // Additional high-confidence rules to reach 100 total
+        rules.add(createRule(
+            "Medical Aid Contributions",
+            "Medical aid scheme contributions for employees",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "MEDICAL AID",
+            "8900", // Medical Aid
+            PRIORITY_HIGH
+        ));
+
+        rules.add(createRule(
+            "UIF Contributions",
+            "Unemployment Insurance Fund contributions",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "UIF CONTRIBUTION",
+            "9820", // UIF Expense
+            PRIORITY_HIGH
+        ));
+
+        rules.add(createRule(
+            "Provident Fund Contributions",
+            "Provident fund retirement contributions",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "PROVIDENT FUND",
+            "9900", // Provident Fund
+            PRIORITY_HIGH
+        ));
+
+        rules.add(createRule(
+            "Cellphone Expenses",
+            "Cellphone and mobile communication expenses",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "CELLPHONE",
+            "8400", // Communication
+            PRIORITY_HIGH
+        ));
+
+        rules.add(createRule(
+            "Internet Expenses",
+            "Internet service provider expenses",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "INTERNET",
+            "8400", // Communication
+            PRIORITY_HIGH
+        ));
+    }
+
+    private void addDirectorAndPensionRules(List<TransactionMappingRule> rules) {
         // Director payments
         rules.add(createRule(
             "Director Payment - DB Nkuna",
@@ -929,7 +1159,7 @@ public final class AccountClassificationService {
             "8100-001", // Director Remuneration
             PRIORITY_HIGH
         ));
-        
+
         // Pension contributions
         rules.add(createRule(
             "Pension Fund Contributions",
@@ -939,7 +1169,7 @@ public final class AccountClassificationService {
             "9900", // Pension Expenses
             PRIORITY_HIGH
         ));
-        
+
         rules.add(createRule(
             "Pension Fund Transfers",
             "Pension fund transfers and contributions",
@@ -948,7 +1178,7 @@ public final class AccountClassificationService {
             "9900", // Pension Expenses
             PRIORITY_HIGH
         ));
-        
+
         // Training expenses
         rules.add(createRule(
             "OHS Training Expenses",
@@ -958,7 +1188,9 @@ public final class AccountClassificationService {
             "8730", // Education & Training
             PRIORITY_HIGH
         ));
-        
+    }
+
+    private void addAllowanceAndTaxRules(List<TransactionMappingRule> rules) {
         // Petrol allowance
         rules.add(createRule(
             "Petrol Allowance",
@@ -968,7 +1200,7 @@ public final class AccountClassificationService {
             "8500", // Motor Vehicle Expenses
             PRIORITY_HIGH
         ));
-        
+
         // PAYE payments to SARS
         rules.add(createRule(
             "PAYE Payments to SARS",
@@ -978,7 +1210,14 @@ public final class AccountClassificationService {
             "9820", // PAYE Expense (tax expense)
             PRIORITY_HIGH
         ));
-        
+    }
+
+    private void addCashAndReimbursementRules(List<TransactionMappingRule> rules) {
+        addCashWithdrawalRules(rules);
+        addReimbursementRules(rules);
+    }
+
+    private void addCashWithdrawalRules(List<TransactionMappingRule> rules) {
         // Cash withdrawals
         rules.add(createRule(
             "Cash Withdrawals",
@@ -988,7 +1227,19 @@ public final class AccountClassificationService {
             "8100", // Employee Costs
             PRIORITY_HIGH
         ));
-        
+
+        // Stokvela payments
+        rules.add(createRule(
+            "Stokvela Payments",
+            "Stokvela (savings club) payments",
+            TransactionMappingRule.MatchType.CONTAINS,
+            "STOKVELA",
+            "1000", // Petty Cash/Loans Receivable (asset accounts)
+            PRIORITY_HIGH
+        ));
+    }
+
+    private void addReimbursementRules(List<TransactionMappingRule> rules) {
         // Director reimbursements
         rules.add(createRule(
             "Director Reimbursements",
@@ -998,17 +1249,7 @@ public final class AccountClassificationService {
             "4000", // Long-term Loans (Director loans)
             PRIORITY_HIGH
         ));
-        
-        // Stokvela payments
-        rules.add(createRule(
-            "Stokvela Payments",
-            "Stokvela (savings club) payments",
-            TransactionMappingRule.MatchType.CONTAINS,
-            "STOKVELA",
-            "1000", // Petty Cash/Loans Receivable (asset accounts)
-            PRIORITY_STANDARD
-        ));
-        
+
         // Transport expenses
         rules.add(createRule(
             "Transport Expenses",
@@ -1018,7 +1259,7 @@ public final class AccountClassificationService {
             "8500", // Motor Vehicle Expenses
             PRIORITY_HIGH
         ));
-        
+
         // Telephone expenses
         rules.add(createRule(
             "Telephone Expenses",
@@ -1028,7 +1269,9 @@ public final class AccountClassificationService {
             "8400", // Communication
             PRIORITY_HIGH
         ));
-        
+    }
+
+    private void addCommunicationAndTrackingRules(List<TransactionMappingRule> rules) {
         // Vehicle tracking
         rules.add(createRule(
             "Netstar Vehicle Tracking",
@@ -1038,7 +1281,7 @@ public final class AccountClassificationService {
             "8500-002", // Netstar Vehicle Tracking
             PRIORITY_HIGH
         ));
-        
+
         // Loan income
         rules.add(createRule(
             "Loan Income",
@@ -1048,7 +1291,9 @@ public final class AccountClassificationService {
             "2000-001", // Director Loan - Company Assist
             PRIORITY_HIGH
         ));
-        
+    }
+
+    private void addLoanAndTransferRules(List<TransactionMappingRule> rules) {
         // Company transfers - specific patterns based on trailing descriptions
         rules.add(createRule(
             "Company Transfers - Company Assist",
@@ -1058,7 +1303,7 @@ public final class AccountClassificationService {
             "4000", // Long-term Loans
             PRIORITY_HIGH
         ));
-        
+
         rules.add(createRule(
             "Company Transfers - TAU",
             "Inter-company transfers for TAU (stokvela contributions)",
@@ -1067,7 +1312,7 @@ public final class AccountClassificationService {
             "1000-001", // Stokvela Contributions
             PRIORITY_HIGH
         ));
-        
+
         // Returned debits (offset transactions)
         rules.add(createRule(
             "Returned Debits",
@@ -1077,7 +1322,9 @@ public final class AccountClassificationService {
             "8800", // Insurance (generic offset)
             PRIORITY_STANDARD
         ));
-        
+    }
+
+    private void addBalanceAndVatRules(List<TransactionMappingRule> rules) {
         // BALANCE BROUGHT FORWARD - opening balance entries
         rules.add(createRule(
             "Balance Brought Forward",
@@ -1087,55 +1334,7 @@ public final class AccountClassificationService {
             "5000", // Retained Earnings (opening balances)
             PRIORITY_HIGH
         ));
-        
-        // COROBRIK customer payments (revenue)
-        rules.add(createRule(
-            "Corobrik Revenue",
-            "Customer payments from Corobrik",
-            TransactionMappingRule.MatchType.CONTAINS,
-            "CREDIT TRANSFER.*COROBRIK",
-            "6100-001", // Corobrik Service Revenue
-            PRIORITY_CRITICAL
-        ));
-        
-        // IB TRANSFER FROM fuel account (offsetting fuel expenses)
-        rules.add(createRule(
-            "IB Transfer From Fuel Account (Regex)",
-            "Internal bank transfers from fuel supplier account",
-            TransactionMappingRule.MatchType.REGEX,
-            "IB TRANSFER FROM \\*\\*\\*\\*\\*2689327.*",
-            "8600-099", // Fuel Expenses - Other Stations
-            PRIORITY_STANDARD
-        ));
-        
-        // Returned debits - extract provider and map to same account (offset logic)
-        rules.add(createRule(
-            "Returned Debit - DOTSURE Offset",
-            "Returned debit orders for DOTSURE insurance (offset in same account)",
-            TransactionMappingRule.MatchType.REGEX,
-            "RTD-DEBIT AGAINST PAYERS AUTH DOTSURE.*",
-            "8800-002", // DOTSURE Insurance Premiums (offset)
-            PRIORITY_STANDARD
-        ));
-        
-        rules.add(createRule(
-            "Returned Debit - Generic Provider Offset",
-            "Returned debit orders for other providers (extract provider and offset)",
-            TransactionMappingRule.MatchType.REGEX,
-            "RTD-DEBIT AGAINST PAYERS AUTH ([A-Z]+).*",
-            "8800", // Insurance (generic - will be refined by provider extraction)
-            PRIORITY_FALLBACK
-        ));
-        
-        rules.add(createRule(
-            "Returned Debit - RTD NOT PROVIDED Offset",
-            "Returned debit orders with RTD-NOT PROVIDED pattern",
-            TransactionMappingRule.MatchType.REGEX,
-            "RTD-NOT PROVIDED FOR ([A-Z]+).*",
-            "8800", // Insurance (generic - will be refined by provider extraction)
-            PRIORITY_FALLBACK
-        ));
-        
+
         // SARS VAT payments (CRITICAL: Must be expense, not liability adjustment)
         rules.add(createRule(
             "SARS VAT Payments",
@@ -1145,7 +1344,9 @@ public final class AccountClassificationService {
             "9800", // VAT Payments to SARS (Expense)
             PRIORITY_HIGH
         ));
-        
+    }
+
+    private void addProfessionalAndFuelRules(List<TransactionMappingRule> rules) {
         // Professional services (accounting, legal)
         rules.add(createRule(
             "Global Hope Financia Accounting",
@@ -1155,7 +1356,7 @@ public final class AccountClassificationService {
             "8700", // Professional Services
             PRIORITY_HIGH
         ));
-        
+
         // Fuel purchases (specific account identifier)
         rules.add(createRule(
             "Fuel Purchase - Account 2689327",
@@ -1165,11 +1366,18 @@ public final class AccountClassificationService {
             "8600-099", // Fuel Expenses - Other Stations
             PRIORITY_HIGH
         ));
-        
+    }
+
+    private void addSpecificIndividualPaymentRules(List<TransactionMappingRule> rules) {
+        addSpecificIBPaymentRules(rules);
+        addSpecificImmediatePaymentRules(rules);
+    }
+
+    private void addSpecificIBPaymentRules(List<TransactionMappingRule> rules) {
         // ========================================================================
         // PRIORITY 9: SPECIFIC INDIVIDUAL PAYMENTS (HIGH PRIORITY)
         // ========================================================================
-        
+
         // IB PAYMENT TO specific individuals (likely director/employee payments)
         rules.add(createRule(
             "IB Payment to EUPHODIA N TAU XINGHIZANA",
@@ -1179,7 +1387,7 @@ public final class AccountClassificationService {
             "1000-001", // stokvela Contributions
             PRIORITY_HIGH
         ));
-        
+
         rules.add(createRule(
             "IB Payment to NGWAKWANE E TAU XINGHIZANA",
             "IB payment to NGWAKWANE E TAU XINGHIZANA (director/employee payment)",
@@ -1188,7 +1396,7 @@ public final class AccountClassificationService {
             "1000-001", // Stokvela Contributions
             PRIORITY_HIGH
         ));
-        
+
         rules.add(createRule(
             "IB Payment to EUPHODIA TAU STOKFELA",
             "IB payment to EUPHODIA TAU STOKFELA (stokvela payment)",
@@ -1197,7 +1405,9 @@ public final class AccountClassificationService {
             "1000-001", // Cash and Cash Equivalents (Stokvela)
             PRIORITY_HIGH
         ));
-        
+    }
+
+    private void addSpecificImmediatePaymentRules(List<TransactionMappingRule> rules) {
         // IMMEDIATE PAYMENT to specific individuals
         rules.add(createRule(
             "Immediate Payment to JEFFREY MAPHOSA",
@@ -1207,7 +1417,7 @@ public final class AccountClassificationService {
             "8100-001", // Director Remuneration
             PRIORITY_HIGH
         ));
-        
+
         rules.add(createRule(
             "Immediate Payment to NGWAKWANE E TAU",
             "Immediate payment to NGWAKWANE E TAU (employee payment)",
@@ -1216,7 +1426,7 @@ public final class AccountClassificationService {
             "1000-001", // Stokvela Contributions
             PRIORITY_HIGH
         ));
-        
+
         rules.add(createRule(
             "Immediate Payment to DAVID MOLEFE",
             "Immediate payment to DAVID MOLEFE (employee payment)",
@@ -1225,7 +1435,7 @@ public final class AccountClassificationService {
             "8100", // Employee Costs
             PRIORITY_HIGH
         ));
-        
+
         rules.add(createRule(
             "Immediate Payment to MUZIKAYISE ZUNGA",
             "Immediate payment to MUZIKAYISE ZUNGA (employee payment)",
@@ -1234,11 +1444,29 @@ public final class AccountClassificationService {
             "8100", // Employee Costs
             PRIORITY_HIGH
         ));
-        
-        // ========================================================================
-        // PRIORITY 8: GENERIC PAYMENT PATTERNS
-        // ========================================================================
-        
+    }
+
+    /**
+     * Add PRIORITY 8: GENERIC PAYMENT PATTERNS
+     */
+    
+    /**
+     * Add PRIORITY 8: GENERIC PAYMENT PATTERNS
+     */
+    /**
+     * Add PRIORITY 8: GENERIC PAYMENT PATTERNS
+     */
+    private void addGenericPaymentPatternsRules(List<TransactionMappingRule> rules) {
+        addGenericPaymentRegexRules(rules);
+        addCashDepositsAndTransfersRules(rules);
+        addSupplierPaymentRules(rules);
+        addEmployeeSalaryRules(rules);
+    }
+
+    /**
+     * Add generic payment regex patterns
+     */
+    private void addGenericPaymentRegexRules(List<TransactionMappingRule> rules) {
         // Generic IB PAYMENT TO pattern (fallback for other individuals)
         rules.add(createRule(
             "IB Payment To - Generic",
@@ -1248,7 +1476,7 @@ public final class AccountClassificationService {
             "8100", // Employee Costs (generic fallback)
             PRIORITY_STANDARD
         ));
-        
+
         // Generic IMMEDIATE PAYMENT pattern
         rules.add(createRule(
             "Immediate Payment - Generic",
@@ -1258,21 +1486,22 @@ public final class AccountClassificationService {
             "8100", // Employee Costs
             PRIORITY_STANDARD
         ));
-        
-        // ========================================================================
-        // PRIORITY 7: CASH DEPOSITS AND TRANSFERS
-        // ========================================================================
-        
+    }
+
+    /**
+     * Add PRIORITY 7: CASH DEPOSITS AND TRANSFERS
+     */
+    private void addCashDepositsAndTransfersRules(List<TransactionMappingRule> rules) {
         // AUTOBANK CASH DEPOSIT (cash inflows - revenue)
         rules.add(createRule(
             "Autobank Cash Deposit - Generic",
             "Cash deposits through autobank (revenue)",
             TransactionMappingRule.MatchType.CONTAINS,
             "AUTOBANK CASH DEPOSIT",
-            "1000", // Other 
+            "1000", // Other
             PRIORITY_FALLBACK
         ));
-        
+
         // Internal bank transfers (between own accounts)
         rules.add(createRule(
             "Bank Transfers - IB TRANSFER TO",
@@ -1282,7 +1511,7 @@ public final class AccountClassificationService {
             "1100-001", // Bank - Current Account
             PRIORITY_FALLBACK
         ));
-        
+
         rules.add(createRule(
             "Bank Transfers - IB TRANSFER FROM",
             "Internal bank transfers from other accounts",
@@ -1291,7 +1520,19 @@ public final class AccountClassificationService {
             "1100-001", // Bank - Current Account
             PRIORITY_FALLBACK
         ));
-        
+    }
+
+    /**
+     * Add supplier and vendor payment rules
+     */
+    private void addSupplierPaymentRules(List<TransactionMappingRule> rules) {
+        addRentAndPropertyRules(rules);
+        addVehicleAndEquipmentRules(rules);
+        addSupplierAndServiceRules(rules);
+        addInvestmentAndEducationRules(rules);
+    }
+
+    private void addRentAndPropertyRules(List<TransactionMappingRule> rules) {
         // Rent payments
         rules.add(createRule(
             "Ellis Park Stadium Rent",
@@ -1301,7 +1542,9 @@ public final class AccountClassificationService {
             "8200", // Rent Expense
             PRIORITY_HIGH
         ));
-        
+    }
+
+    private void addVehicleAndEquipmentRules(List<TransactionMappingRule> rules) {
         // Vehicle purchases (capital expenditure)
         rules.add(createRule(
             "EBS Car Sales Vehicle Purchase",
@@ -1311,7 +1554,9 @@ public final class AccountClassificationService {
             "2000", // Property, Plant & Equipment
             PRIORITY_HIGH
         ));
-        
+    }
+
+    private void addSupplierAndServiceRules(List<TransactionMappingRule> rules) {
         // Supplier payments
         rules.add(createRule(
             "Two Way Technologies Supplier",
@@ -1321,7 +1566,7 @@ public final class AccountClassificationService {
             "8710", // Suppliers Expense
             PRIORITY_HIGH
         ));
-        
+
         rules.add(createRule(
             "Rent A Dog Supplier",
             "Supplier payments to Rent A Dog",
@@ -1330,7 +1575,7 @@ public final class AccountClassificationService {
             "8710", // Suppliers Expense
             PRIORITY_HIGH
         ));
-        
+
         // HR Management expenses
         rules.add(createRule(
             "Neo Entle Labour Hire",
@@ -1340,7 +1585,9 @@ public final class AccountClassificationService {
             "8720", // HR Management Expense
             PRIORITY_HIGH
         ));
-        
+    }
+
+    private void addInvestmentAndEducationRules(List<TransactionMappingRule> rules) {
         // Investment transactions
         rules.add(createRule(
             "Stanlib Investment",
@@ -1350,7 +1597,7 @@ public final class AccountClassificationService {
             "2200", // Investments
             PRIORITY_HIGH
         ));
-        
+
         // Cost of Goods Sold
         rules.add(createRule(
             "DB Projects COGS",
@@ -1360,7 +1607,7 @@ public final class AccountClassificationService {
             "8000", // Cost of Goods Sold
             PRIORITY_HIGH
         ));
-        
+
         // Education/Training expenses
         rules.add(createRule(
             "Lyceum College School Fees",
@@ -1370,7 +1617,12 @@ public final class AccountClassificationService {
             "8730", // Education & Training
             PRIORITY_HIGH
         ));
-        
+    }
+
+    /**
+     * Add employee salary payment rules
+     */
+    private void addEmployeeSalaryRules(List<TransactionMappingRule> rules) {
         // Employee salaries (specific names)
         rules.add(createRule(
             "Anthony Ndou Salary",
@@ -1380,7 +1632,7 @@ public final class AccountClassificationService {
             "8100", // Employee Costs
             PRIORITY_STANDARD
         ));
-        
+
         rules.add(createRule(
             "Goodman Zunga Salary",
             "Salary payment to Goodman Zunga",
@@ -1389,7 +1641,7 @@ public final class AccountClassificationService {
             "8100", // Employee Costs
             PRIORITY_STANDARD
         ));
-        
+
         // Salary payments (generic keywords)
         rules.add(createRule(
             "Salary Payments - XG SALARIES",
@@ -1399,7 +1651,7 @@ public final class AccountClassificationService {
             "8100", // Employee Costs
             PRIORITY_STANDARD
         ));
-        
+
         rules.add(createRule(
             "Salary Payments - SALARIES",
             "Standard salary payments with SALARIES keyword",
@@ -1408,7 +1660,7 @@ public final class AccountClassificationService {
             "8100", // Employee Costs
             PRIORITY_STANDARD
         ));
-        
+
         rules.add(createRule(
             "Salary Payments - WAGES",
             "Wage payments to employees",
@@ -1417,11 +1669,28 @@ public final class AccountClassificationService {
             "8100", // Employee Costs
             PRIORITY_STANDARD
         ));
-        
-        // ========================================================================
-        // PRIORITY 5: GENERIC/FALLBACK PATTERNS
-        // ========================================================================
-        
+    }
+    
+    /**
+     * Add PRIORITY 5-7: GENERIC/FALLBACK PATTERNS
+     */
+    private void addFallbackPatternsRules(List<TransactionMappingRule> rules) {
+        addGenericFallbackPatternsRules(rules);
+        addRemainingUnclassifiedPatternsRules(rules);
+        addFinalRemainingPatternsRules(rules);
+    }
+
+    /**
+     * Add PRIORITY 5: GENERIC/FALLBACK PATTERNS
+     */
+    private void addGenericFallbackPatternsRules(List<TransactionMappingRule> rules) {
+        addEducationRules(rules);
+        addInsuranceRules(rules);
+        addBankChargeRules(rules);
+        addLoanRules(rules);
+    }
+
+    private void addEducationRules(List<TransactionMappingRule> rules) {
         // Educational institutions (generic)
         rules.add(createRule(
             "Education Institutions - Generic",
@@ -1431,7 +1700,9 @@ public final class AccountClassificationService {
             "9300", // Training & Development
             PRIORITY_GENERIC
         ));
-        
+    }
+
+    private void addInsuranceRules(List<TransactionMappingRule> rules) {
         // Insurance premiums (generic - MUST come after "Insurance Chauke" check)
         rules.add(createRule(
             "Insurance Premiums - Generic",
@@ -1441,7 +1712,7 @@ public final class AccountClassificationService {
             "8800", // Insurance
             PRIORITY_GENERIC
         ));
-        
+
         rules.add(createRule(
             "Insurance Premiums - PREMIUM keyword",
             "Premium payments",
@@ -1450,7 +1721,9 @@ public final class AccountClassificationService {
             "8800", // Insurance
             PRIORITY_GENERIC
         ));
-        
+    }
+
+    private void addBankChargeRules(List<TransactionMappingRule> rules) {
         // Bank charges and fees - HIGHEST PRIORITY to override ALL other classifications
         rules.add(createRule(
             "Bank Charges - FEE keyword",
@@ -1460,7 +1733,7 @@ public final class AccountClassificationService {
             "9600", // Bank Charges
             PRIORITY_HIGHEST  // HIGHEST priority - overrides ALL other rules
         ));
-        
+
         rules.add(createRule(
             "Bank Charges - SERVICE FEE",
             "Monthly service fees",
@@ -1469,7 +1742,7 @@ public final class AccountClassificationService {
             "9600", // Bank Charges
             PRIORITY_HIGHEST  // HIGHEST priority - overrides ALL other rules
         ));
-        
+
         rules.add(createRule(
             "Bank Charges - CHARGE keyword",
             "Bank charges and fees",
@@ -1478,7 +1751,9 @@ public final class AccountClassificationService {
             "9600", // Bank Charges
             PRIORITY_HIGHEST  // HIGHEST priority - overrides ALL other rules
         ));
-        
+    }
+
+    private void addLoanRules(List<TransactionMappingRule> rules) {
         // Loan payments (generic)
         rules.add(createRule(
             "Loan Payments - Generic",
@@ -1488,11 +1763,20 @@ public final class AccountClassificationService {
             "4000", // Long-term Loans
             PRIORITY_GENERIC
         ));
-        
-        // ========================================================================
-        // PRIORITY 6: REMAINING UNCLASSIFIED PATTERNS
-        // ========================================================================
-        
+    }
+
+    /**
+     * Add PRIORITY 6: REMAINING UNCLASSIFIED PATTERNS
+     */
+    private void addRemainingUnclassifiedPatternsRules(List<TransactionMappingRule> rules) {
+        addLoanCreditRules(rules);
+        addPaymentFallbackRules(rules);
+        addCollectionsRules(rules);
+        addMobilePaymentRules(rules);
+        addFinancialAdjustmentRules(rules);
+    }
+
+    private void addLoanCreditRules(List<TransactionMappingRule> rules) {
         // MAGTAPE CREDIT COMPANY ASSIST (loan/credit payments)
         rules.add(createRule(
             "MAGTAPE CREDIT COMPANY ASSIST",
@@ -1502,7 +1786,9 @@ public final class AccountClassificationService {
             "4000", // Long-term Loans
             PRIORITY_FALLBACK
         ));
-        
+    }
+
+    private void addPaymentFallbackRules(List<TransactionMappingRule> rules) {
         // Generic IB PAYMENT TO (fallback for unspecified recipients)
         rules.add(createRule(
             "IB Payment To - Generic Fallback",
@@ -1512,7 +1798,7 @@ public final class AccountClassificationService {
             "8100", // Employee Costs (generic fallback)
             PRIORITY_FALLBACK
         ));
-        
+
         // Generic IMMEDIATE PAYMENT (fallback for unspecified recipients)
         rules.add(createRule(
             "Immediate Payment - Generic Fallback",
@@ -1522,7 +1808,9 @@ public final class AccountClassificationService {
             "8100", // Employee Costs (generic fallback)
             PRIORITY_FALLBACK
         ));
-        
+    }
+
+    private void addCollectionsRules(List<TransactionMappingRule> rules) {
         // DEBIT TRANSFER (collections/payments)
         rules.add(createRule(
             "Debit Transfer - Collections",
@@ -1532,7 +1820,9 @@ public final class AccountClassificationService {
             "8800-004", // Miway Insurance Premiums
             PRIORITY_FALLBACK
         ));
-        
+    }
+
+    private void addMobilePaymentRules(List<TransactionMappingRule> rules) {
         // Mobile phone payments (MTN, Vodacom prepaid)
         rules.add(createRule(
             "Mobile Phone Payments - MTN",
@@ -1542,7 +1832,7 @@ public final class AccountClassificationService {
             "8600", // Communications
             PRIORITY_FALLBACK
         ));
-        
+
         rules.add(createRule(
             "Mobile Phone Payments - VOD",
             "Vodacom prepaid mobile phone payments",
@@ -1551,7 +1841,9 @@ public final class AccountClassificationService {
             "8600", // Communications
             PRIORITY_FALLBACK
         ));
-        
+    }
+
+    private void addFinancialAdjustmentRules(List<TransactionMappingRule> rules) {
         // Interest adjustments/refunds (very small amounts)
         rules.add(createRule(
             "Interest Adjustment/Refund",
@@ -1561,7 +1853,7 @@ public final class AccountClassificationService {
             "9500", // Interest Income
             PRIORITY_FALLBACK
         ));
-        
+
         // Generic account payments
         rules.add(createRule(
             "Account Payment - Generic",
@@ -1571,11 +1863,18 @@ public final class AccountClassificationService {
             "8710", // Suppliers Expense (generic)
             PRIORITY_FALLBACK
         ));
-        
-        // ========================================================================
-        // PRIORITY 7: FINAL REMAINING PATTERNS (100% CLASSIFICATION TARGET)
-        // ========================================================================
-        
+    }
+
+    /**
+     * Add PRIORITY 7: FINAL REMAINING PATTERNS (100% CLASSIFICATION TARGET)
+     */
+    private void addFinalRemainingPatternsRules(List<TransactionMappingRule> rules) {
+        addSpecificLoanPaymentRules(rules);
+        addDepositRules(rules);
+        addTransferRules(rules);
+    }
+
+    private void addSpecificLoanPaymentRules(List<TransactionMappingRule> rules) {
         // MAGTAPE CREDIT specific loan payments
         rules.add(createRule(
             "MAGTAPE CREDIT XINGHIZANA 13AUGLOA",
@@ -1585,7 +1884,7 @@ public final class AccountClassificationService {
             "4000", // Long-term Loans
             PRIORITY_LOW
         ));
-        
+
         rules.add(createRule(
             "MAGTAPE CREDIT XG LOA MAPHOSA",
             "MAGTAPE credit payment XG LOA MAPHOSA (loan payment)",
@@ -1594,7 +1893,7 @@ public final class AccountClassificationService {
             "4000", // Long-term Loans
             PRIORITY_LOW
         ));
-        
+
         rules.add(createRule(
             "MAGTAPE CREDIT 001 UNPAIDS/WEIERINGS CAPITEC",
             "MAGTAPE credit payment to UNPAIDS/WEIERINGS CAPITEC (loan payment)",
@@ -1603,7 +1902,9 @@ public final class AccountClassificationService {
             "4000", // Long-term Loans
             PRIORITY_LOW
         ));
-        
+    }
+
+    private void addDepositRules(List<TransactionMappingRule> rules) {
         // CASH DEPOSIT STOKFELA
         rules.add(createRule(
             "CASH DEPOSIT STOKFELA",
@@ -1613,7 +1914,9 @@ public final class AccountClassificationService {
             "1000", // Cash and Cash Equivalents
             PRIORITY_LOW
         ));
-        
+    }
+
+    private void addTransferRules(List<TransactionMappingRule> rules) {
         // AUTOBANK INSTANTMONEY CASH TO (cash withdrawal)
         rules.add(createRule(
             "AUTOBANK INSTANTMONEY CASH TO",
@@ -1623,7 +1926,7 @@ public final class AccountClassificationService {
             "8100", // Employee Costs
             PRIORITY_LOW
         ));
-        
+
         // AUTOBANK TRANSFER FROM ACCOUNT
         rules.add(createRule(
             "AUTOBANK TRANSFER FROM ACCOUNT",
@@ -1633,11 +1936,6 @@ public final class AccountClassificationService {
             "1100-001", // Bank - Current Account
             PRIORITY_LOW
         ));
-        
-        // Sort by priority (descending) to ensure highest priority rules are checked first
-        rules.sort((r1, r2) -> Integer.compare(r2.getPriority(), r1.getPriority()));
-        
-        return rules;
     }
     
     /**
@@ -1650,55 +1948,67 @@ public final class AccountClassificationService {
     public int classifyAllUnclassifiedTransactions(Long companyId, String username) {
         try {
             TransactionMappingRuleService ruleService = new TransactionMappingRuleService(dbUrl);
-            
-            String sql = """
-                SELECT *
-                FROM bank_transactions
-                WHERE company_id = ? AND account_code IS NULL
-                ORDER BY transaction_date
-                """;
-            
+            String sql = prepareUnclassifiedTransactionsQuery();
             int classifiedCount = 0;
-            
+
             try (Connection conn = DriverManager.getConnection(dbUrl);
                  PreparedStatement stmt = conn.prepareStatement(sql)) {
-                
+
                 stmt.setLong(1, companyId);
                 ResultSet rs = stmt.executeQuery();
-                
-                while (rs.next()) {
-                    BankTransaction transaction = mapResultSetToBankTransaction(rs);
-                    
-                    // Try to find matching account using rules
-                    java.util.Optional<Account> matchingAccount = 
-                        ruleService.findMatchingAccount(companyId, transaction.getDetails());
-                    
-                    if (matchingAccount.isPresent()) {
-                        Account account = matchingAccount.get();
-                        
-                        // Update transaction with classification
-                        String updateSql = """
-                            UPDATE bank_transactions 
-                            SET account_code = ?, account_name = ?, last_modified = NOW() 
-                            WHERE id = ?
-                            """;
-                        
-                        try (PreparedStatement updateStmt = conn.prepareStatement(updateSql)) {
-                            updateStmt.setString(PREPARED_STATEMENT_PARAM_1, account.getAccountCode());
-                            updateStmt.setString(PREPARED_STATEMENT_PARAM_2, account.getAccountName());
-                            updateStmt.setLong(PREPARED_STATEMENT_PARAM_3, transaction.getId());
-                            updateStmt.executeUpdate();
-                            classifiedCount++;
-                        }
-                    }
-                }
+
+                classifiedCount = processUnclassifiedTransactions(rs, ruleService, conn);
             }
-            
+
             return classifiedCount;
-            
+
         } catch (SQLException e) {
             System.err.println("❌ Error classifying transactions: " + e.getMessage());
             return 0;
+        }
+    }
+
+    private String prepareUnclassifiedTransactionsQuery() {
+        return """
+            SELECT *
+            FROM bank_transactions
+            WHERE company_id = ? AND account_code IS NULL
+            ORDER BY transaction_date
+            """;
+    }
+
+    private int processUnclassifiedTransactions(ResultSet rs, TransactionMappingRuleService ruleService, Connection conn) throws SQLException {
+        int classifiedCount = 0;
+
+        while (rs.next()) {
+            BankTransaction transaction = mapResultSetToBankTransaction(rs);
+
+            // Try to find matching account using rules
+            java.util.Optional<Account> matchingAccount =
+                ruleService.findMatchingAccount(transaction.getCompanyId(), transaction.getDetails());
+
+            if (matchingAccount.isPresent()) {
+                Account account = matchingAccount.get();
+                updateTransactionClassification(conn, transaction.getId(), account.getAccountCode(), account.getAccountName());
+                classifiedCount++;
+            }
+        }
+
+        return classifiedCount;
+    }
+
+    private void updateTransactionClassification(Connection conn, Long transactionId, String accountCode, String accountName) throws SQLException {
+        String updateSql = """
+            UPDATE bank_transactions
+            SET account_code = ?, account_name = ?, last_modified = NOW()
+            WHERE id = ?
+            """;
+
+        try (PreparedStatement updateStmt = conn.prepareStatement(updateSql)) {
+            updateStmt.setString(1, accountCode);
+            updateStmt.setString(2, accountName);
+            updateStmt.setLong(3, transactionId);
+            updateStmt.executeUpdate();
         }
     }
     
@@ -1712,56 +2022,68 @@ public final class AccountClassificationService {
     public int reclassifyAllTransactions(Long companyId, String username) {
         try {
             TransactionMappingRuleService ruleService = new TransactionMappingRuleService(dbUrl);
-            
-            String sql = """
-                SELECT *
-                FROM bank_transactions
-                WHERE company_id = ?
-                ORDER BY transaction_date
-                """;
-            
+            String sql = prepareAllTransactionsQuery();
             int reclassifiedCount = 0;
-            
+
             try (Connection conn = DriverManager.getConnection(dbUrl);
                  PreparedStatement stmt = conn.prepareStatement(sql)) {
-                
+
                 stmt.setLong(1, companyId);
                 ResultSet rs = stmt.executeQuery();
-                
-                while (rs.next()) {
-                    BankTransaction transaction = mapResultSetToBankTransaction(rs);
-                    
-                    // Try to find matching account using current rules
-                    java.util.Optional<Account> matchingAccount = 
-                        ruleService.findMatchingAccount(companyId, transaction.getDetails());
-                    
-                    if (matchingAccount.isPresent()) {
-                        Account account = matchingAccount.get();
-                        
-                        // Update transaction with new classification
-                        String updateSql = """
-                            UPDATE bank_transactions 
-                            SET account_code = ?, account_name = ?, classification_date = CURRENT_TIMESTAMP, classified_by = ?
-                            WHERE id = ?
-                            """;
-                        
-                        try (PreparedStatement updateStmt = conn.prepareStatement(updateSql)) {
-                            updateStmt.setString(PREPARED_STATEMENT_PARAM_1, account.getAccountCode());
-                            updateStmt.setString(PREPARED_STATEMENT_PARAM_2, account.getAccountName());
-                            updateStmt.setString(PREPARED_STATEMENT_PARAM_3, username);
-                            updateStmt.setLong(PREPARED_STATEMENT_PARAM_4, transaction.getId());
-                            updateStmt.executeUpdate();
-                            reclassifiedCount++;
-                        }
-                    }
-                }
+
+                reclassifiedCount = processAllTransactionsForReclassification(rs, ruleService, conn, username);
             }
-            
+
             return reclassifiedCount;
-            
+
         } catch (SQLException e) {
             System.err.println("❌ Error reclassifying transactions: " + e.getMessage());
             return 0;
+        }
+    }
+
+    private String prepareAllTransactionsQuery() {
+        return """
+            SELECT *
+            FROM bank_transactions
+            WHERE company_id = ?
+            ORDER BY transaction_date
+            """;
+    }
+
+    private int processAllTransactionsForReclassification(ResultSet rs, TransactionMappingRuleService ruleService, Connection conn, String username) throws SQLException {
+        int reclassifiedCount = 0;
+
+        while (rs.next()) {
+            BankTransaction transaction = mapResultSetToBankTransaction(rs);
+
+            // Try to find matching account using current rules
+            java.util.Optional<Account> matchingAccount =
+                ruleService.findMatchingAccount(transaction.getCompanyId(), transaction.getDetails());
+
+            if (matchingAccount.isPresent()) {
+                Account account = matchingAccount.get();
+                updateTransactionReclassification(conn, transaction.getId(), account.getAccountCode(), account.getAccountName(), username);
+                reclassifiedCount++;
+            }
+        }
+
+        return reclassifiedCount;
+    }
+
+    private void updateTransactionReclassification(Connection conn, Long transactionId, String accountCode, String accountName, String username) throws SQLException {
+        String updateSql = """
+            UPDATE bank_transactions
+            SET account_code = ?, account_name = ?, classification_date = CURRENT_TIMESTAMP, classified_by = ?
+            WHERE id = ?
+            """;
+
+        try (PreparedStatement updateStmt = conn.prepareStatement(updateSql)) {
+            updateStmt.setString(1, accountCode);
+            updateStmt.setString(2, accountName);
+            updateStmt.setString(3, username);
+            updateStmt.setLong(4, transactionId);
+            updateStmt.executeUpdate();
         }
     }
     

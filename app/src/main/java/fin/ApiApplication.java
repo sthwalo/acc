@@ -28,15 +28,7 @@ public class ApiApplication {
             // Start API server with access to all services
             fin.api.ApiServer apiServer = new fin.api.ApiServer(
                 context.get(fin.service.CompanyService.class),
-                context.get(fin.service.CsvImportService.class),
-                context.get(fin.service.ReportService.class),
-                context.get(fin.service.FinancialReportingService.class),
-                context.get(fin.service.PdfExportService.class),
-                context.get(fin.service.DataManagementService.class),
-                context.get(fin.service.BankStatementProcessingService.class),
-
-                context.get(fin.service.TransactionClassificationService.class),
-                context.get(fin.service.PayrollService.class)
+                context.get(fin.service.BankStatementProcessingService.class)
             );
 
             apiServer.start();
