@@ -37,11 +37,11 @@ public class PdfFormattingUtils {
     public static final float LINE_SPACING_TINY = 12f;
 
     // Colors (RGB values 0.0-1.0)
-    public static final float[] COLOR_BLACK = {0, 0, 0};
-    public static final float[] COLOR_BLUE = {0.2f, 0.4f, 0.8f};
-    public static final float[] COLOR_LIGHT_BLUE = {0.9f, 0.95f, 1.0f};
-    public static final float[] COLOR_LIGHT_GRAY = {0.9f, 0.9f, 0.9f};
-    public static final float[] COLOR_DARK_GRAY = {0.3f, 0.3f, 0.3f};
+    static final float[] COLOR_BLACK = {0, 0, 0};
+    static final float[] COLOR_BLUE = {0.2f, 0.4f, 0.8f};
+    static final float[] COLOR_LIGHT_BLUE = {0.9f, 0.95f, 1.0f};
+    static final float[] COLOR_LIGHT_GRAY = {0.9f, 0.9f, 0.9f};
+    static final float[] COLOR_DARK_GRAY = {0.3f, 0.3f, 0.3f};
 
     /**
      * Draw a professional header section with title and company information

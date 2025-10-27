@@ -5,11 +5,13 @@ import fin.controller.ApplicationController;
 import fin.controller.BudgetController;
 import fin.controller.CompanyController;
 import fin.controller.DataManagementController;
+import fin.controller.DepreciationController;
 import fin.controller.FiscalPeriodController;
 import fin.controller.ImportController;
 import fin.controller.PayrollController;
 import fin.controller.ReportController;
 import fin.repository.CompanyRepository;
+import fin.repository.DepreciationRepository;
 import fin.service.AccountClassificationService;
 import fin.service.AccountManagementService;
 import fin.service.BalanceSheetService;
@@ -23,6 +25,7 @@ import fin.service.CompanyService;
 import fin.service.CsvExportService;
 import fin.service.CsvImportService;
 import fin.service.DataManagementService;
+import fin.service.DepreciationService;
 import fin.service.FinancialReportingService;
 import fin.service.GeneralLedgerService;
 import fin.service.IncomeStatementService;
@@ -97,129 +100,173 @@ public class ApplicationContext {
      */
     private void initializeServices(String initialDbUrl) {
         try {
-            // Core services
-            CompanyService companyService = new CompanyService(initialDbUrl);
-            register(CompanyService.class, companyService);
-            
-            // Company logo service (depends on CompanyService)
-            CompanyLogoService companyLogoService = new CompanyLogoService(initialDbUrl);
-            register(CompanyLogoService.class, companyLogoService);
-            
-            CsvImportService csvImportService = new CsvImportService(initialDbUrl, companyService);
-            register(CsvImportService.class, csvImportService);
-            
-            ReportService reportService = new ReportService(initialDbUrl, csvImportService);
-            register(ReportService.class, reportService);
-            
-            FinancialReportingService financialReportingService = new FinancialReportingService(initialDbUrl);
-            register(FinancialReportingService.class, financialReportingService);
-            
-            PdfExportService pdfExportService = new PdfExportService();
-            register(PdfExportService.class, pdfExportService);
-            
-            DataManagementService dataManagementService = new DataManagementService(
-                initialDbUrl, companyService, csvImportService.getAccountService());
-            register(DataManagementService.class, dataManagementService);
-            
-            BankStatementProcessingService bankStatementService = new BankStatementProcessingService(initialDbUrl);
-            register(BankStatementProcessingService.class, bankStatementService);
-            
-            InteractiveClassificationService interactiveClassificationService = new InteractiveClassificationService();
-            register(InteractiveClassificationService.class, interactiveClassificationService);
-            
-            // Transaction Classification Service (unified entry point)
-            // Create specialized services needed for TransactionClassificationService
-            CategoryManagementService categoryManagementService = new CategoryManagementService(initialDbUrl);
-            register(CategoryManagementService.class, categoryManagementService);
-            
-            AccountManagementService accountManagementService = new AccountManagementService(initialDbUrl);
-            register(AccountManagementService.class, accountManagementService);
-            
-            // CONSOLIDATION: Replace TransactionMappingRuleService with ClassificationRuleManager
-            // ClassificationRuleManager handles both standard and company-specific learned rules
-            ClassificationRuleManager classificationRuleManager = new ClassificationRuleManager();
-            register(ClassificationRuleManager.class, classificationRuleManager);
-            
-            // Phase 4: ChartOfAccountsService removed - AccountClassificationService is single source of truth
-            // AccountService now uses AccountClassificationService directly
-            AccountClassificationService accountClassificationService = new AccountClassificationService(initialDbUrl);
-            register(AccountClassificationService.class, accountClassificationService);
-            
-            // REMOVED: TransactionMappingService - consolidated into AccountClassificationService
-            
-            // NOTE: TransactionClassificationService uses AccountClassificationService as single source of truth
-            TransactionClassificationService transactionClassificationService = new TransactionClassificationService(
-                initialDbUrl,
-                classificationRuleManager,  // Updated to use ClassificationRuleManager instead of TransactionMappingRuleService
-                interactiveClassificationService
-            );
-            register(TransactionClassificationService.class, transactionClassificationService);
-            
-            CsvExportService csvExportService = new CsvExportService(companyService);
-            register(CsvExportService.class, csvExportService);
-            
-            // Payroll service dependencies
-            CompanyRepository companyRepository = new CompanyRepository(initialDbUrl);
-            register(CompanyRepository.class, companyRepository);
-            
-            PayslipPdfService payslipPdfService = new PayslipPdfService(companyRepository);
-            register(PayslipPdfService.class, payslipPdfService);
-            
-            // Payroll service
-            PayrollService payrollService = new PayrollService(initialDbUrl, companyRepository, payslipPdfService, null);
-            register(PayrollService.class, payrollService);
-            
-            // Payroll report service
-            PayrollReportService payrollReportService = new PayrollReportService(initialDbUrl);
-            register(PayrollReportService.class, payrollReportService);
-            
-            // Opening Balance service
-            OpeningBalanceService openingBalanceService = new OpeningBalanceService(initialDbUrl);
-            register(OpeningBalanceService.class, openingBalanceService);
-            
-            // Financial Data Repository (needed by GL and TB services)
-            // Create DataSource for repository (same pattern as FinancialReportingService)
-            com.zaxxer.hikari.HikariConfig config = new com.zaxxer.hikari.HikariConfig();
-            config.setJdbcUrl(initialDbUrl);
-            config.setMaximumPoolSize(DATABASE_MAX_POOL_SIZE);
-            config.setMinimumIdle(DATABASE_MIN_IDLE);
-            com.zaxxer.hikari.HikariDataSource repositoryDataSource = new com.zaxxer.hikari.HikariDataSource(config);
-            
-            fin.repository.FinancialDataRepository financialDataRepository = new fin.repository.JdbcFinancialDataRepository(repositoryDataSource);
-            register(fin.repository.FinancialDataRepository.class, financialDataRepository);
-            
-            // General Ledger Service
-            GeneralLedgerService generalLedgerService = new GeneralLedgerService(financialDataRepository);
-            register(GeneralLedgerService.class, generalLedgerService);
-            
-            // Trial Balance Service (depends on General Ledger)
-            TrialBalanceService trialBalanceService = new TrialBalanceService(financialDataRepository, generalLedgerService);
-            register(TrialBalanceService.class, trialBalanceService);
-            
-            // Income Statement Service (depends on General Ledger for TB data)
-            IncomeStatementService incomeStatementService = new IncomeStatementService(financialDataRepository, generalLedgerService);
-            register(IncomeStatementService.class, incomeStatementService);
-            
-            // Balance Sheet Service (depends on General Ledger for TB data)
-            BalanceSheetService balanceSheetService = new BalanceSheetService(financialDataRepository, generalLedgerService);
-            register(BalanceSheetService.class, balanceSheetService);
-            
-            // Strategic Planning Service (new feature for TASK 6.1)
-            StrategicPlanningService strategicPlanningService = new StrategicPlanningService(initialDbUrl, this);
-            register(StrategicPlanningService.class, strategicPlanningService);
-            
-            // Budget Service (new feature for TASK 6.1)
-            BudgetService budgetService = new BudgetService(initialDbUrl, this);
-            register(BudgetService.class, budgetService);
-
-            BudgetReportService budgetReportService = new BudgetReportService(initialDbUrl);
-            register(BudgetReportService.class, budgetReportService);
+            initializeCoreServices(initialDbUrl);
+            initializeTransactionClassificationServices(initialDbUrl);
+            initializePayrollServices(initialDbUrl);
+            initializeFinancialServices(initialDbUrl);
+            initializeNewFeatureServices(initialDbUrl);
+            initializeDepreciationServices(initialDbUrl);
             
             System.out.println("📦 Core services initialized");
         } catch (Exception e) {
             System.out.println("❌ Failed to initialize services: " + e.getMessage() + " - continuing with partial initialization");
             // Don't throw exception - allow constructor to complete
         }
+    }
+    
+    /**
+     * Initialize core business services
+     */
+    private void initializeCoreServices(String initialDbUrl) {
+        // Core services
+        CompanyService companyService = new CompanyService(initialDbUrl);
+        register(CompanyService.class, companyService);
+        
+        // Company logo service (depends on CompanyService)
+        CompanyLogoService companyLogoService = new CompanyLogoService(initialDbUrl);
+        register(CompanyLogoService.class, companyLogoService);
+        
+        CsvImportService csvImportService = new CsvImportService(initialDbUrl, companyService);
+        register(CsvImportService.class, csvImportService);
+        
+        ReportService reportService = new ReportService(initialDbUrl, csvImportService);
+        register(ReportService.class, reportService);
+        
+        FinancialReportingService financialReportingService = new FinancialReportingService(initialDbUrl);
+        register(FinancialReportingService.class, financialReportingService);
+        
+        PdfExportService pdfExportService = new PdfExportService();
+        register(PdfExportService.class, pdfExportService);
+        
+        DataManagementService dataManagementService = new DataManagementService(
+            initialDbUrl, companyService, csvImportService.getAccountService());
+        register(DataManagementService.class, dataManagementService);
+        
+        BankStatementProcessingService bankStatementService = new BankStatementProcessingService(initialDbUrl);
+        register(BankStatementProcessingService.class, bankStatementService);
+        
+        InteractiveClassificationService interactiveClassificationService = new InteractiveClassificationService();
+        register(InteractiveClassificationService.class, interactiveClassificationService);
+    }
+    
+    /**
+     * Initialize transaction classification services
+     */
+    private void initializeTransactionClassificationServices(String initialDbUrl) {
+        // Transaction Classification Service (unified entry point)
+        // Create specialized services needed for TransactionClassificationService
+        CategoryManagementService categoryManagementService = new CategoryManagementService(initialDbUrl);
+        register(CategoryManagementService.class, categoryManagementService);
+        
+        AccountManagementService accountManagementService = new AccountManagementService(initialDbUrl);
+        register(AccountManagementService.class, accountManagementService);
+        
+        // CONSOLIDATION: Replace TransactionMappingRuleService with ClassificationRuleManager
+        // ClassificationRuleManager handles both standard and company-specific learned rules
+        ClassificationRuleManager classificationRuleManager = new ClassificationRuleManager();
+        register(ClassificationRuleManager.class, classificationRuleManager);
+        
+        // Phase 4: ChartOfAccountsService removed - AccountClassificationService is single source of truth
+        // AccountService now uses AccountClassificationService directly
+        AccountClassificationService accountClassificationService = new AccountClassificationService(initialDbUrl);
+        register(AccountClassificationService.class, accountClassificationService);
+        
+        // REMOVED: TransactionMappingService - consolidated into AccountClassificationService
+        
+        // NOTE: TransactionClassificationService uses AccountClassificationService as single source of truth
+        TransactionClassificationService transactionClassificationService = new TransactionClassificationService(
+            initialDbUrl,
+            classificationRuleManager,  // Updated to use ClassificationRuleManager instead of TransactionMappingRuleService
+            get(InteractiveClassificationService.class)
+        );
+        register(TransactionClassificationService.class, transactionClassificationService);
+        
+        CsvExportService csvExportService = new CsvExportService(get(CompanyService.class));
+        register(CsvExportService.class, csvExportService);
+    }
+    
+    /**
+     * Initialize payroll services
+     */
+    private void initializePayrollServices(String initialDbUrl) {
+        // Payroll service dependencies
+        CompanyRepository companyRepository = new CompanyRepository(initialDbUrl);
+        register(CompanyRepository.class, companyRepository);
+        
+        PayslipPdfService payslipPdfService = new PayslipPdfService(companyRepository);
+        register(PayslipPdfService.class, payslipPdfService);
+        
+        // Payroll service
+        PayrollService payrollService = new PayrollService(initialDbUrl, companyRepository, payslipPdfService, null);
+        register(PayrollService.class, payrollService);
+        
+        // Payroll report service
+        PayrollReportService payrollReportService = new PayrollReportService(initialDbUrl);
+        register(PayrollReportService.class, payrollReportService);
+        
+        // Opening Balance service
+        OpeningBalanceService openingBalanceService = new OpeningBalanceService(initialDbUrl);
+        register(OpeningBalanceService.class, openingBalanceService);
+    }
+    
+    /**
+     * Initialize financial services
+     */
+    private void initializeFinancialServices(String initialDbUrl) {
+        // Financial Data Repository (needed by GL and TB services)
+        // Create DataSource for repository (same pattern as FinancialReportingService)
+        com.zaxxer.hikari.HikariConfig config = new com.zaxxer.hikari.HikariConfig();
+        config.setJdbcUrl(initialDbUrl);
+        config.setMaximumPoolSize(DATABASE_MAX_POOL_SIZE);
+        config.setMinimumIdle(DATABASE_MIN_IDLE);
+        com.zaxxer.hikari.HikariDataSource repositoryDataSource = new com.zaxxer.hikari.HikariDataSource(config);
+        
+        fin.repository.FinancialDataRepository financialDataRepository = new fin.repository.JdbcFinancialDataRepository(repositoryDataSource);
+        register(fin.repository.FinancialDataRepository.class, financialDataRepository);
+        
+        // General Ledger Service
+        GeneralLedgerService generalLedgerService = new GeneralLedgerService(financialDataRepository);
+        register(GeneralLedgerService.class, generalLedgerService);
+        
+        // Trial Balance Service (depends on General Ledger)
+        TrialBalanceService trialBalanceService = new TrialBalanceService(financialDataRepository, generalLedgerService);
+        register(TrialBalanceService.class, trialBalanceService);
+        
+        // Income Statement Service (depends on General Ledger for TB data)
+        IncomeStatementService incomeStatementService = new IncomeStatementService(financialDataRepository, generalLedgerService);
+        register(IncomeStatementService.class, incomeStatementService);
+        
+        // Balance Sheet Service (depends on General Ledger for TB data)
+        BalanceSheetService balanceSheetService = new BalanceSheetService(financialDataRepository, generalLedgerService);
+        register(BalanceSheetService.class, balanceSheetService);
+    }
+    
+    /**
+     * Initialize new feature services
+     */
+    private void initializeNewFeatureServices(String initialDbUrl) {
+        // Strategic Planning Service (new feature for TASK 6.1)
+        StrategicPlanningService strategicPlanningService = new StrategicPlanningService(initialDbUrl, this);
+        register(StrategicPlanningService.class, strategicPlanningService);
+        
+        // Budget Service (new feature for TASK 6.1)
+        BudgetService budgetService = new BudgetService(initialDbUrl, this);
+        register(BudgetService.class, budgetService);
+
+        BudgetReportService budgetReportService = new BudgetReportService(initialDbUrl);
+        register(BudgetReportService.class, budgetReportService);
+    }
+    
+    /**
+     * Initialize depreciation services
+     */
+    private void initializeDepreciationServices(String initialDbUrl) {
+        // Depreciation Service (new feature)
+        DepreciationRepository depreciationRepository = new DepreciationRepository(initialDbUrl);
+        register(DepreciationRepository.class, depreciationRepository);
+        
+        DepreciationService depreciationService = new DepreciationService(depreciationRepository);
+        register(DepreciationService.class, depreciationService);
     }
     
     /**
@@ -261,6 +308,7 @@ public class ApplicationContext {
         initializeReportRelatedControllers(menu, inputHandler, outputFormatter, applicationState);
         initializeDataManagementControllers(menu, inputHandler, outputFormatter, applicationState);
         initializePayrollControllers(inputHandler, outputFormatter);
+        initializeDepreciationControllers(menu, inputHandler, outputFormatter, applicationState);
 
         System.out.println("🎮 Domain controllers initialized");
     }
@@ -370,6 +418,20 @@ public class ApplicationContext {
     }
     
     /**
+     * Initialize depreciation controllers
+     */
+    private void initializeDepreciationControllers(ConsoleMenu menu, InputHandler inputHandler,
+                                                 OutputFormatter outputFormatter, ApplicationState applicationState) {
+        // Depreciation controller
+        DepreciationController depreciationController = new DepreciationController(
+            get(DepreciationService.class),
+            applicationState,
+            inputHandler
+        );
+        register(DepreciationController.class, depreciationController);
+    }
+    
+    /**
      * Initialize main application controller
      * Replaces main method logic from App.java
      */
@@ -385,7 +447,8 @@ public class ApplicationContext {
             get(ReportController.class),
             get(DataManagementController.class),
             get(PayrollController.class),
-            get(BudgetController.class)
+            get(BudgetController.class),
+            get(DepreciationController.class)
         );
         register(ApplicationController.class, applicationController);
         

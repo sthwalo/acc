@@ -28,34 +28,25 @@ public class PayslipPdfService {
         private final float marginTop;
         private final float contentWidth;
 
-        PdfDimensions(float pageWidth, float pageHeight, float marginLeft, float marginRight, float marginTop, float contentWidth) {
-            this.pageWidth = pageWidth;
-            this.pageHeight = pageHeight;
-            this.marginLeft = marginLeft;
-            this.marginRight = marginRight;
-            this.marginTop = marginTop;
-            this.contentWidth = contentWidth;
+        PdfDimensions(float width, float height, float leftMargin, float rightMargin, float topMargin,
+                     float widthContent) {
+            this.pageWidth = width;
+            this.pageHeight = height;
+            this.marginLeft = leftMargin;
+            this.marginRight = rightMargin;
+            this.marginTop = topMargin;
+            this.contentWidth = widthContent;
         }
-
-        public float getPageWidth() { return pageWidth; }
-        public float getPageHeight() { return pageHeight; }
-        public float getMarginLeft() { return marginLeft; }
-        public float getMarginRight() { return marginRight; }
-        public float getMarginTop() { return marginTop; }
-        public float getContentWidth() { return contentWidth; }
     }
 
     private static class FontPair {
         private final Pointer regularFont;
         private final Pointer boldFont;
 
-        FontPair(Pointer regularFont, Pointer boldFont) {
-            this.regularFont = regularFont;
-            this.boldFont = boldFont;
+        FontPair(Pointer font, Pointer fontBold) {
+            this.regularFont = font;
+            this.boldFont = fontBold;
         }
-
-        public Pointer getRegularFont() { return regularFont; }
-        public Pointer getBoldFont() { return boldFont; }
     }
 
     // Page layout constants
@@ -115,7 +106,7 @@ public class PayslipPdfService {
     private static final float EARNINGS_DEDUCTIONS_ROW_SPACING = 30f;
     private static final float EARNINGS_DEDUCTIONS_TOTAL_SPACING = 35f;
     private static final float EARNINGS_DEDUCTIONS_TOTAL_HEIGHT = 20f;
-    private static final float EARNINGS_DEDUCTIONS_BOTTOM_SPACING = 70f;
+    private static final float EARNINGS_DEDUCTIONS_BOTTOM_SPACING = 40f;
 
     // Net pay section constants
     private static final float NET_PAY_SECTION_HEIGHT = 40f;
@@ -129,9 +120,9 @@ public class PayslipPdfService {
     private static final float FOOTER_LINE_SPACING = 15f;
 
     // Additional constants for earnings/deductions section
-    private static final float EARNINGS_DEDUCTIONS_TOTAL_ROW_SPACING = 35f;
+    private static final float EARNINGS_DEDUCTIONS_TOTAL_ROW_SPACING = 95f;
     private static final float EARNINGS_DEDUCTIONS_TOTAL_ROW_HEIGHT = 20f;
-    private static final float EARNINGS_DEDUCTIONS_SECTION_BOTTOM_SPACING = 70f;
+    private static final float EARNINGS_DEDUCTIONS_SECTION_BOTTOM_SPACING = 30f;
 
     // Table layout constants for earnings/deductions section
     private static final float EARNINGS_DEDUCTIONS_TABLE_OUTER_BORDER_SPACING = 20f;
@@ -189,19 +180,13 @@ public class PayslipPdfService {
         private final Pointer font;
         private final Pointer boldFont;
 
-        DrawingContext(Pointer page, float marginLeft, float contentWidth, Pointer font, Pointer boldFont) {
-            this.page = page;
-            this.marginLeft = marginLeft;
-            this.contentWidth = contentWidth;
-            this.font = font;
-            this.boldFont = boldFont;
+        DrawingContext(Pointer pagePtr, float leftMargin, float widthContent, Pointer fontPtr, Pointer fontBold) {
+            this.page = pagePtr;
+            this.marginLeft = leftMargin;
+            this.contentWidth = widthContent;
+            this.font = fontPtr;
+            this.boldFont = fontBold;
         }
-
-        public Pointer getPage() { return page; }
-        public float getMarginLeft() { return marginLeft; }
-        public float getContentWidth() { return contentWidth; }
-        public Pointer getFont() { return font; }
-        public Pointer getBoldFont() { return boldFont; }
     }
 
     private static class HeaderDrawingContext {
@@ -213,26 +198,17 @@ public class PayslipPdfService {
         private final float contentWidth;
         private final Pointer boldFont;
 
-        HeaderDrawingContext(Pointer page, Company company, Pointer logo, float pageWidth, float marginLeft, float contentWidth, Pointer boldFont) {
-            this.page = page;
-            this.company = company;
-            this.logo = logo;
-            this.pageWidth = pageWidth;
-            this.marginLeft = marginLeft;
-            this.contentWidth = contentWidth;
-            this.boldFont = boldFont;
+        HeaderDrawingContext(Pointer pagePtr, Company companyData, Pointer logoPtr, float width,
+                           float leftMargin, float widthContent, Pointer fontBold) {
+            this.page = pagePtr;
+            this.company = companyData;
+            this.logo = logoPtr;
+            this.pageWidth = width;
+            this.marginLeft = leftMargin;
+            this.contentWidth = widthContent;
+            this.boldFont = fontBold;
         }
-
-        public Pointer getPage() { return page; }
-        public Company getCompany() { return company; }
-        public Pointer getLogo() { return logo; }
-        public float getPageWidth() { return pageWidth; }
-        public float getMarginLeft() { return marginLeft; }
-        public float getContentWidth() { return contentWidth; }
-        public Pointer getBoldFont() { return boldFont; }
-    }
-
-    public PayslipPdfService(CompanyRepository initialCompanyRepository) {
+    }    public PayslipPdfService(CompanyRepository initialCompanyRepository) {
         this.companyRepository = initialCompanyRepository;
     }
 
@@ -270,25 +246,19 @@ public class PayslipPdfService {
     }
 
     private static void generatePayslipPDF(Payslip payslip, Employee employee, Company company, PayrollPeriod payrollPeriod, String filename) {
-        Pointer pdf = initializePdf();
-        Pointer page = addPdfPage(pdf);
-        setupPageSize(page);
-
+        Pointer pdf = initializePdfDocument();
+        Pointer page = setupPdfPage(pdf);
         PdfDimensions dimensions = calculatePageDimensions();
-        Pointer font = loadFonts(pdf).getRegularFont();
-        Pointer boldFont = loadFonts(pdf).getBoldFont();
-
+        FontPair fonts = loadFonts(pdf);
         Pointer logo = loadCompanyLogo(pdf, company);
 
-        float yPosition = dimensions.pageHeight - dimensions.marginTop;
+        PayslipContentData contentData = new PayslipContentData(company, logo, employee, payslip, payrollPeriod);
+        drawPayslipContent(page, contentData, dimensions, fonts.regularFont, fonts.boldFont);
 
-        yPosition = drawContentSections(page, company, logo, employee, payslip, payrollPeriod, dimensions, font, boldFont, yPosition);
-
-        savePdf(pdf, filename);
-        cleanupPdf(pdf);
+        saveAndCleanupPdf(pdf, filename);
     }
 
-    private static Pointer initializePdf() {
+    private static Pointer initializePdfDocument() {
         Pointer pdf = Libharu.INSTANCE.HPDF_New(null, null);
         if (pdf == null) {
             throw new RuntimeException("Failed to create PDF document");
@@ -296,16 +266,13 @@ public class PayslipPdfService {
         return pdf;
     }
 
-    private static Pointer addPdfPage(Pointer pdf) {
+    private static Pointer setupPdfPage(Pointer pdf) {
         Pointer page = Libharu.INSTANCE.HPDF_AddPage(pdf);
         if (page == null) {
             throw new RuntimeException("Failed to add page");
         }
-        return page;
-    }
-
-    private static void setupPageSize(Pointer page) {
         Libharu.INSTANCE.HPDF_Page_SetSize(page, Libharu.HPDF_PAGE_SIZE_A4, Libharu.HPDF_PAGE_PORTRAIT);
+        return page;
     }
 
     private static PdfDimensions calculatePageDimensions() {
@@ -334,47 +301,51 @@ public class PayslipPdfService {
         return null;
     }
 
-    private static float drawContentSections(Pointer page, Company company, Pointer logo, Employee employee,
-                                           Payslip payslip, PayrollPeriod payrollPeriod, PdfDimensions dimensions,
-                                           Pointer font, Pointer boldFont, float yPosition) {
+    private static void drawPayslipContent(Pointer page, PayslipContentData contentData, PdfDimensions dimensions,
+                                         Pointer font, Pointer boldFont) {
+        float yPosition = dimensions.pageHeight - dimensions.marginTop;
+
         // Draw header section with enhanced styling
-        HeaderDrawingContext headerContext = new HeaderDrawingContext(page, company, logo, dimensions.pageWidth,
+        HeaderDrawingContext headerContext = new HeaderDrawingContext(page, contentData.company, contentData.logo, dimensions.pageWidth,
                                                                      dimensions.marginLeft, dimensions.contentWidth, boldFont);
         yPosition = drawHeaderSection(headerContext, yPosition);
 
         // Draw employee details section with borders
         DrawingContext context = new DrawingContext(page, dimensions.marginLeft, dimensions.contentWidth, font, boldFont);
-        yPosition = drawEmployeeDetailsSection(context, employee, payslip, payrollPeriod, yPosition);
+        yPosition = drawEmployeeDetailsSection(context, contentData.employee, contentData.payslip, contentData.payrollPeriod, yPosition);
 
         // Draw earnings and deductions section with tables
-        yPosition = drawEarningsDeductionsSection(page, payslip, yPosition, dimensions.marginLeft,
+        yPosition = drawEarningsDeductionsSection(page, contentData.payslip, yPosition, dimensions.marginLeft,
                                                 dimensions.contentWidth, font, boldFont);
 
         // Draw net pay section with enhanced styling
-        yPosition = drawNetPaySection(page, payslip, yPosition, dimensions.marginLeft, dimensions.contentWidth, boldFont);
+        yPosition = drawNetPaySection(page, contentData.payslip, yPosition, dimensions.marginLeft, dimensions.contentWidth, boldFont);
 
         // Draw footer with enhanced styling
         drawFooterSection(page, yPosition, dimensions.marginLeft, dimensions.pageWidth, dimensions.marginRight, font);
-
-        return yPosition;
     }
 
-    private static void savePdf(Pointer pdf, String filename) {
+    private static void saveAndCleanupPdf(Pointer pdf, String filename) {
         int result = Libharu.INSTANCE.HPDF_SaveToFile(pdf, filename);
         if (result != 0) {
             throw new RuntimeException("Failed to save PDF, error code: " + result);
         }
-    }
-
-    private static void cleanupPdf(Pointer pdf) {
         Libharu.INSTANCE.HPDF_Free(pdf);
     }
 
     private static float drawHeaderSection(HeaderDrawingContext context, float yPosition) {
+        // Draw header border
         drawHeaderBorder(context.page, context.marginLeft, yPosition, context.contentWidth);
+
+        // Draw company logo
         yPosition = drawCompanyLogo(context, yPosition);
+
+        // Draw payslip title
         yPosition = drawPayslipTitle(context, yPosition);
+
+        // Draw company name
         yPosition = drawCompanyName(context, yPosition);
+
         return yPosition - HEADER_BOTTOM_SPACING;
     }
 
@@ -437,9 +408,15 @@ public class PayslipPdfService {
     }
 
     private static float drawEmployeeDetailsSection(DrawingContext context, Employee employee, Payslip payslip, PayrollPeriod payrollPeriod, float yPosition) {
+        // Draw employee section background
         drawEmployeeSectionBackground(context.page, context.marginLeft, yPosition, context.contentWidth);
+
+        // Draw employee section header
         drawEmployeeSectionHeader(context, yPosition);
+
+        // Draw employee details rows
         yPosition = drawEmployeeDetailsRows(context, employee, payslip, payrollPeriod, yPosition);
+
         return yPosition - EMPLOYEE_SECTION_BOTTOM_SPACING;
     }
 
@@ -478,8 +455,9 @@ public class PayslipPdfService {
         float rowHeight = EMPLOYEE_ROW_HEIGHT;
 
         // Row 1: Employee Code and Pay Date
-        drawEmployeeDetailRow(context, col1X, col2X, labelWidth, yPosition, "Employee Code:", employee.getEmployeeNumber(),
-                            "Pay Date:", payrollPeriod.getPayDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+        EmployeeDetailRowData row1Data = new EmployeeDetailRowData("Employee Code:", employee.getEmployeeNumber(),
+                                                                 "Pay Date:", payrollPeriod.getPayDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+        drawEmployeeDetailRow(context, col1X, col2X, labelWidth, yPosition, row1Data);
         yPosition -= rowHeight;
 
         // Row 2: Employee Name and Pay Period
@@ -487,8 +465,9 @@ public class PayslipPdfService {
         if (fullName.length() > MAX_NAME_LENGTH) {
             fullName = fullName.substring(0, NAME_TRUNCATE_LENGTH) + "...";
         }
-        drawEmployeeDetailRow(context, col1X, col2X, labelWidth, yPosition, "Employee Name:", fullName,
-                            "Pay Period:", payrollPeriod.getPeriodName());
+        EmployeeDetailRowData row2Data = new EmployeeDetailRowData("Employee Name:", fullName,
+                                                                 "Pay Period:", payrollPeriod.getPeriodName());
+        drawEmployeeDetailRow(context, col1X, col2X, labelWidth, yPosition, row2Data);
         yPosition -= rowHeight;
 
         // Row 3: Tax Number and Employment Date
@@ -496,91 +475,139 @@ public class PayslipPdfService {
         String hireDate = employee.getHireDate() != null
             ? employee.getHireDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
             : "Not Provided";
-        drawEmployeeDetailRow(context, col1X, col2X, labelWidth, yPosition, "Tax Number:", taxNumber,
-                            "Employment Date:", hireDate);
+        EmployeeDetailRowData row3Data = new EmployeeDetailRowData("Tax Number:", taxNumber,
+                                                                 "Employment Date:", hireDate);
+        drawEmployeeDetailRow(context, col1X, col2X, labelWidth, yPosition, row3Data);
 
         return yPosition;
     }
 
     private static void drawEmployeeDetailRow(DrawingContext context, float col1X, float col2X, float labelWidth,
-                                            float yPosition, String label1, String value1, String label2, String value2) {
+                                            float yPosition, EmployeeDetailRowData rowData) {
         // Left column
         Libharu.INSTANCE.HPDF_Page_SetFontAndSize(context.page, context.font, FONT_SIZE_NORMAL);
         Libharu.INSTANCE.HPDF_Page_BeginText(context.page);
-        Libharu.INSTANCE.HPDF_Page_TextOut(context.page, col1X, yPosition, label1);
+        Libharu.INSTANCE.HPDF_Page_TextOut(context.page, col1X, yPosition, rowData.label1);
         Libharu.INSTANCE.HPDF_Page_EndText(context.page);
 
         Libharu.INSTANCE.HPDF_Page_SetFontAndSize(context.page, context.boldFont, FONT_SIZE_NORMAL);
         Libharu.INSTANCE.HPDF_Page_BeginText(context.page);
-        Libharu.INSTANCE.HPDF_Page_TextOut(context.page, col1X + labelWidth, yPosition, value1);
+        Libharu.INSTANCE.HPDF_Page_TextOut(context.page, col1X + labelWidth, yPosition, rowData.value1);
         Libharu.INSTANCE.HPDF_Page_EndText(context.page);
 
         // Right column
         Libharu.INSTANCE.HPDF_Page_SetFontAndSize(context.page, context.font, FONT_SIZE_NORMAL);
         Libharu.INSTANCE.HPDF_Page_BeginText(context.page);
-        Libharu.INSTANCE.HPDF_Page_TextOut(context.page, col2X, yPosition, label2);
+        Libharu.INSTANCE.HPDF_Page_TextOut(context.page, col2X, yPosition, rowData.label2);
         Libharu.INSTANCE.HPDF_Page_EndText(context.page);
 
         Libharu.INSTANCE.HPDF_Page_SetFontAndSize(context.page, context.boldFont, FONT_SIZE_NORMAL);
         Libharu.INSTANCE.HPDF_Page_BeginText(context.page);
-        Libharu.INSTANCE.HPDF_Page_TextOut(context.page, col2X + labelWidth, yPosition, value2);
+        Libharu.INSTANCE.HPDF_Page_TextOut(context.page, col2X + labelWidth, yPosition, rowData.value2);
         Libharu.INSTANCE.HPDF_Page_EndText(context.page);
     }
 
     private static float drawEarningsDeductionsSection(Pointer page, Payslip payslip, float yPosition,
                                                      float marginLeft, float contentWidth, Pointer font, Pointer boldFont) {
+        EarningsDeductionsLayout layout = calculateEarningsDeductionsLayout(marginLeft, contentWidth, yPosition);
+
+        // Draw table structure and borders
+        drawEarningsDeductionsTableStructure(page, layout);
+
+        // Draw section headers
+        drawEarningsDeductionsHeaders(page, layout, boldFont);
+
+        // Draw table column headers
+        drawEarningsDeductionsTableHeaders(page, layout, boldFont);
+
+        // Draw earnings table content
+        float rowY = drawEarningsTable(page, payslip, layout, font, boldFont);
+
+        // Draw deductions table content
+        drawDeductionsTable(page, payslip, layout, font, boldFont);
+
+        // Draw totals section
+        rowY = drawEarningsDeductionsTotals(page, payslip, layout, rowY, boldFont);
+
+        // Calculate final position
+        return calculateEarningsDeductionsFinalPosition(rowY);
+    }
+
+    private static class EarningsDeductionsLayout {
+        private final float columnWidth;
+        private final float leftColumnX;
+        private final float rightColumnX;
+        private final float tableTopY;
+        private final float tableHeight;
+
+        EarningsDeductionsLayout(float width, float leftX, float rightX, float topY, float height) {
+            this.columnWidth = width;
+            this.leftColumnX = leftX;
+            this.rightColumnX = rightX;
+            this.tableTopY = topY;
+            this.tableHeight = height;
+        }
+    }
+
+    private static class PayslipContentData {
+        private final Company company;
+        private final Pointer logo;
+        private final Employee employee;
+        private final Payslip payslip;
+        private final PayrollPeriod payrollPeriod;
+
+        PayslipContentData(Company companyData, Pointer logoData, Employee employeeData, Payslip payslipData, PayrollPeriod periodData) {
+            this.company = companyData;
+            this.logo = logoData;
+            this.employee = employeeData;
+            this.payslip = payslipData;
+            this.payrollPeriod = periodData;
+        }
+    }
+
+    private static class EmployeeDetailRowData {
+        private final String label1;
+        private final String value1;
+        private final String label2;
+        private final String value2;
+
+        EmployeeDetailRowData(String lbl1, String val1, String lbl2, String val2) {
+            this.label1 = lbl1;
+            this.value1 = val1;
+            this.label2 = lbl2;
+            this.value2 = val2;
+        }
+    }
+
+    private static EarningsDeductionsLayout calculateEarningsDeductionsLayout(float marginLeft, float contentWidth, float yPosition) {
         float columnWidth = (contentWidth - EARNINGS_DEDUCTIONS_TABLE_SPACING) / 2;
         float leftColumnX = marginLeft;
         float rightColumnX = marginLeft + columnWidth + EARNINGS_DEDUCTIONS_TABLE_SPACING;
         float tableTopY = yPosition - EARNINGS_DEDUCTIONS_TABLE_TOP_OFFSET;
         float tableHeight = EARNINGS_DEDUCTIONS_TABLE_HEIGHT;
 
-        // Draw table structure and borders
-        drawEarningsDeductionsTableStructure(page, leftColumnX, rightColumnX, columnWidth, tableTopY, tableHeight);
-
-        // Draw section headers
-        drawEarningsDeductionsHeaders(page, leftColumnX, rightColumnX, columnWidth, tableTopY, boldFont);
-
-        // Draw table column headers
-        drawEarningsDeductionsTableHeaders(page, leftColumnX, rightColumnX, columnWidth, tableTopY, boldFont);
-
-        // Draw earnings table content
-        float rowY = drawEarningsTable(page, payslip, leftColumnX, columnWidth, tableTopY, font, boldFont);
-
-        // Draw deductions table content
-        drawDeductionsTable(page, payslip, rightColumnX, columnWidth, tableTopY, font, boldFont);
-
-        // Draw totals section
-        rowY = drawEarningsDeductionsTotals(page, payslip, leftColumnX, rightColumnX, columnWidth, rowY, boldFont);
-
-        // Calculate final position
-        yPosition = rowY - EARNINGS_DEDUCTIONS_BOTTOM_SPACING;
-        yPosition -= EARNINGS_DEDUCTIONS_SECTION_BOTTOM_SPACING;
-
-        return yPosition;
+        return new EarningsDeductionsLayout(columnWidth, leftColumnX, rightColumnX, tableTopY, tableHeight);
     }
 
-    private static void drawEarningsDeductionsTableStructure(Pointer page, float leftColumnX, float rightColumnX,
-                                                            float columnWidth, float tableTopY, float tableHeight) {
+    private static void drawEarningsDeductionsTableStructure(Pointer page, EarningsDeductionsLayout layout) {
         // Outer border for both tables
-        Libharu.INSTANCE.HPDF_Page_Rectangle(page, leftColumnX, tableTopY - tableHeight,
-                                           columnWidth * 2 + EARNINGS_DEDUCTIONS_TABLE_OUTER_BORDER_SPACING, tableHeight);
+        Libharu.INSTANCE.HPDF_Page_Rectangle(page, layout.leftColumnX, layout.tableTopY - layout.tableHeight,
+                                           layout.columnWidth * 2 + EARNINGS_DEDUCTIONS_TABLE_OUTER_BORDER_SPACING, layout.tableHeight);
         Libharu.INSTANCE.HPDF_Page_Stroke(page);
     }
 
-    private static void drawEarningsDeductionsHeaders(Pointer page, float leftColumnX, float rightColumnX,
-                                                     float columnWidth, float tableTopY, Pointer boldFont) {
+    private static void drawEarningsDeductionsHeaders(Pointer page, EarningsDeductionsLayout layout, Pointer boldFont) {
         // Section headers with subtle gray backgrounds
         Libharu.INSTANCE.HPDF_Page_SetRGBFill(page, COLOR_LIGHT_GRAY_HEADER[0], COLOR_LIGHT_GRAY_HEADER[1], COLOR_LIGHT_GRAY_HEADER[2]);
-        Libharu.INSTANCE.HPDF_Page_Rectangle(page, leftColumnX + EARNINGS_DEDUCTIONS_RECTANGLE_INSET,
-                                           tableTopY + EARNINGS_DEDUCTIONS_SECTION_HEADER_OFFSET,
-                                           columnWidth - EARNINGS_DEDUCTIONS_RECTANGLE_WIDTH_REDUCTION,
+        Libharu.INSTANCE.HPDF_Page_Rectangle(page, layout.leftColumnX + EARNINGS_DEDUCTIONS_RECTANGLE_INSET,
+                                           layout.tableTopY + EARNINGS_DEDUCTIONS_SECTION_HEADER_OFFSET,
+                                           layout.columnWidth - EARNINGS_DEDUCTIONS_RECTANGLE_WIDTH_REDUCTION,
                                            EARNINGS_DEDUCTIONS_SECTION_HEADER_HEIGHT);
         Libharu.INSTANCE.HPDF_Page_Fill(page);
 
-        Libharu.INSTANCE.HPDF_Page_Rectangle(page, rightColumnX + EARNINGS_DEDUCTIONS_RECTANGLE_INSET,
-                                           tableTopY + EARNINGS_DEDUCTIONS_SECTION_HEADER_OFFSET,
-                                           columnWidth - EARNINGS_DEDUCTIONS_RECTANGLE_WIDTH_REDUCTION,
+        Libharu.INSTANCE.HPDF_Page_Rectangle(page, layout.rightColumnX + EARNINGS_DEDUCTIONS_RECTANGLE_INSET,
+                                           layout.tableTopY + EARNINGS_DEDUCTIONS_SECTION_HEADER_OFFSET,
+                                           layout.columnWidth - EARNINGS_DEDUCTIONS_RECTANGLE_WIDTH_REDUCTION,
                                            EARNINGS_DEDUCTIONS_SECTION_HEADER_HEIGHT);
         Libharu.INSTANCE.HPDF_Page_Fill(page);
         Libharu.INSTANCE.HPDF_Page_SetRGBFill(page, COLOR_BLACK[0], COLOR_BLACK[1], COLOR_BLACK[2]);
@@ -588,67 +615,66 @@ public class PayslipPdfService {
         // Section header text
         Libharu.INSTANCE.HPDF_Page_SetFontAndSize(page, boldFont, FONT_SIZE_SECTION_HEADER);
         Libharu.INSTANCE.HPDF_Page_BeginText(page);
-        Libharu.INSTANCE.HPDF_Page_TextOut(page, leftColumnX + EARNINGS_DEDUCTIONS_HEADER_TEXT_OFFSET,
-                                         tableTopY + EARNINGS_DEDUCTIONS_HEADER_Y_OFFSET, "EARNINGS");
-        Libharu.INSTANCE.HPDF_Page_TextOut(page, rightColumnX + EARNINGS_DEDUCTIONS_HEADER_TEXT_OFFSET,
-                                         tableTopY + EARNINGS_DEDUCTIONS_HEADER_Y_OFFSET, "DEDUCTIONS");
+        Libharu.INSTANCE.HPDF_Page_TextOut(page, layout.leftColumnX + EARNINGS_DEDUCTIONS_HEADER_TEXT_OFFSET,
+                                         layout.tableTopY + EARNINGS_DEDUCTIONS_HEADER_Y_OFFSET, "EARNINGS");
+        Libharu.INSTANCE.HPDF_Page_TextOut(page, layout.rightColumnX + EARNINGS_DEDUCTIONS_HEADER_TEXT_OFFSET,
+                                         layout.tableTopY + EARNINGS_DEDUCTIONS_HEADER_Y_OFFSET, "DEDUCTIONS");
         Libharu.INSTANCE.HPDF_Page_EndText(page);
     }
 
-    private static void drawEarningsDeductionsTableHeaders(Pointer page, float leftColumnX, float rightColumnX,
-                                                          float columnWidth, float tableTopY, Pointer boldFont) {
+    private static void drawEarningsDeductionsTableHeaders(Pointer page, EarningsDeductionsLayout layout, Pointer boldFont) {
         // Table header text
         Libharu.INSTANCE.HPDF_Page_SetFontAndSize(page, boldFont, FONT_SIZE_NORMAL);
         Libharu.INSTANCE.HPDF_Page_BeginText(page);
-        Libharu.INSTANCE.HPDF_Page_TextOut(page, leftColumnX + EARNINGS_DEDUCTIONS_HEADER_TEXT_OFFSET,
-                                         tableTopY - EARNINGS_DEDUCTIONS_TABLE_HEADER_Y_OFFSET, "Description");
-        Libharu.INSTANCE.HPDF_Page_TextOut(page, leftColumnX + columnWidth - EARNINGS_DEDUCTIONS_AMOUNT_COLUMN_OFFSET,
-                                         tableTopY - EARNINGS_DEDUCTIONS_TABLE_HEADER_Y_OFFSET, "Amount");
-        Libharu.INSTANCE.HPDF_Page_TextOut(page, rightColumnX + EARNINGS_DEDUCTIONS_HEADER_TEXT_OFFSET,
-                                         tableTopY - EARNINGS_DEDUCTIONS_TABLE_HEADER_Y_OFFSET, "Description");
-        Libharu.INSTANCE.HPDF_Page_TextOut(page, rightColumnX + columnWidth - EARNINGS_DEDUCTIONS_AMOUNT_COLUMN_OFFSET,
-                                         tableTopY - EARNINGS_DEDUCTIONS_TABLE_HEADER_Y_OFFSET, "Amount");
+        Libharu.INSTANCE.HPDF_Page_TextOut(page, layout.leftColumnX + EARNINGS_DEDUCTIONS_HEADER_TEXT_OFFSET,
+                                         layout.tableTopY - EARNINGS_DEDUCTIONS_TABLE_HEADER_Y_OFFSET, "Description");
+        Libharu.INSTANCE.HPDF_Page_TextOut(page, layout.leftColumnX + layout.columnWidth - EARNINGS_DEDUCTIONS_AMOUNT_COLUMN_OFFSET,
+                                         layout.tableTopY - EARNINGS_DEDUCTIONS_TABLE_HEADER_Y_OFFSET, "Amount");
+        Libharu.INSTANCE.HPDF_Page_TextOut(page, layout.rightColumnX + EARNINGS_DEDUCTIONS_HEADER_TEXT_OFFSET,
+                                         layout.tableTopY - EARNINGS_DEDUCTIONS_TABLE_HEADER_Y_OFFSET, "Description");
+        Libharu.INSTANCE.HPDF_Page_TextOut(page, layout.rightColumnX + layout.columnWidth - EARNINGS_DEDUCTIONS_AMOUNT_COLUMN_OFFSET,
+                                         layout.tableTopY - EARNINGS_DEDUCTIONS_TABLE_HEADER_Y_OFFSET, "Amount");
         Libharu.INSTANCE.HPDF_Page_EndText(page);
 
         // Table header border (thicker)
         Libharu.INSTANCE.HPDF_Page_SetLineWidth(page, LINE_WIDTH_THICK);
-        Libharu.INSTANCE.HPDF_Page_MoveTo(page, leftColumnX, tableTopY - EARNINGS_DEDUCTIONS_TABLE_HEADER_BORDER_Y_OFFSET);
-        Libharu.INSTANCE.HPDF_Page_LineTo(page, leftColumnX + columnWidth * 2 + EARNINGS_DEDUCTIONS_TABLE_OUTER_BORDER_SPACING,
-                                        tableTopY - EARNINGS_DEDUCTIONS_TABLE_HEADER_BORDER_Y_OFFSET);
+        Libharu.INSTANCE.HPDF_Page_MoveTo(page, layout.leftColumnX, layout.tableTopY - EARNINGS_DEDUCTIONS_TABLE_HEADER_BORDER_Y_OFFSET);
+        Libharu.INSTANCE.HPDF_Page_LineTo(page, layout.leftColumnX + layout.columnWidth * 2 + EARNINGS_DEDUCTIONS_TABLE_OUTER_BORDER_SPACING,
+                                        layout.tableTopY - EARNINGS_DEDUCTIONS_TABLE_HEADER_BORDER_Y_OFFSET);
         Libharu.INSTANCE.HPDF_Page_Stroke(page);
         Libharu.INSTANCE.HPDF_Page_SetLineWidth(page, LINE_WIDTH_MEDIUM);
     }
 
-    private static float drawEarningsTable(Pointer page, Payslip payslip, float leftColumnX, float columnWidth,
-                                         float tableTopY, Pointer font, Pointer boldFont) {
-        float rowY = tableTopY - EARNINGS_DEDUCTIONS_ROW_START_Y_OFFSET;
+    private static float drawEarningsTable(Pointer page, Payslip payslip, EarningsDeductionsLayout layout,
+                                         Pointer font, Pointer boldFont) {
+        float rowY = layout.tableTopY - EARNINGS_DEDUCTIONS_ROW_START_Y_OFFSET;
 
         // Basic Salary row
         Libharu.INSTANCE.HPDF_Page_SetFontAndSize(page, font, FONT_SIZE_SMALL);
         Libharu.INSTANCE.HPDF_Page_BeginText(page);
-        Libharu.INSTANCE.HPDF_Page_TextOut(page, leftColumnX + EARNINGS_DEDUCTIONS_HEADER_TEXT_OFFSET, rowY, "Basic Salary");
+        Libharu.INSTANCE.HPDF_Page_TextOut(page, layout.leftColumnX + EARNINGS_DEDUCTIONS_HEADER_TEXT_OFFSET, rowY, "Basic Salary");
         Libharu.INSTANCE.HPDF_Page_EndText(page);
         Libharu.INSTANCE.HPDF_Page_SetFontAndSize(page, boldFont, FONT_SIZE_SMALL);
         Libharu.INSTANCE.HPDF_Page_BeginText(page);
-        Libharu.INSTANCE.HPDF_Page_TextOut(page, leftColumnX + columnWidth - EARNINGS_DEDUCTIONS_AMOUNT_COLUMN_OFFSET, rowY,
+        Libharu.INSTANCE.HPDF_Page_TextOut(page, layout.leftColumnX + layout.columnWidth - EARNINGS_DEDUCTIONS_AMOUNT_COLUMN_OFFSET, rowY,
                                          String.format("R %.2f", payslip.getBasicSalary()));
         Libharu.INSTANCE.HPDF_Page_EndText(page);
 
         return rowY;
     }
 
-    private static void drawDeductionsTable(Pointer page, Payslip payslip, float rightColumnX, float columnWidth,
-                                          float tableTopY, Pointer font, Pointer boldFont) {
-        float rowY = tableTopY - EARNINGS_DEDUCTIONS_ROW_START_Y_OFFSET;
+    private static void drawDeductionsTable(Pointer page, Payslip payslip, EarningsDeductionsLayout layout,
+                                          Pointer font, Pointer boldFont) {
+        float rowY = layout.tableTopY - EARNINGS_DEDUCTIONS_ROW_START_Y_OFFSET;
 
         // PAYE row
         Libharu.INSTANCE.HPDF_Page_SetFontAndSize(page, font, FONT_SIZE_SMALL);
         Libharu.INSTANCE.HPDF_Page_BeginText(page);
-        Libharu.INSTANCE.HPDF_Page_TextOut(page, rightColumnX + EARNINGS_DEDUCTIONS_HEADER_TEXT_OFFSET, rowY, "PAYE");
+        Libharu.INSTANCE.HPDF_Page_TextOut(page, layout.rightColumnX + EARNINGS_DEDUCTIONS_HEADER_TEXT_OFFSET, rowY, "PAYE");
         Libharu.INSTANCE.HPDF_Page_EndText(page);
         Libharu.INSTANCE.HPDF_Page_SetFontAndSize(page, boldFont, FONT_SIZE_SMALL);
         Libharu.INSTANCE.HPDF_Page_BeginText(page);
-        Libharu.INSTANCE.HPDF_Page_TextOut(page, rightColumnX + columnWidth - EARNINGS_DEDUCTIONS_AMOUNT_COLUMN_OFFSET, rowY,
+        Libharu.INSTANCE.HPDF_Page_TextOut(page, layout.rightColumnX + layout.columnWidth - EARNINGS_DEDUCTIONS_AMOUNT_COLUMN_OFFSET, rowY,
                                          String.format("R %.2f", payslip.getPayeeTax()));
         Libharu.INSTANCE.HPDF_Page_EndText(page);
 
@@ -656,11 +682,11 @@ public class PayslipPdfService {
         rowY -= EMPLOYEE_ROW_HEIGHT;
         Libharu.INSTANCE.HPDF_Page_SetFontAndSize(page, font, FONT_SIZE_SMALL);
         Libharu.INSTANCE.HPDF_Page_BeginText(page);
-        Libharu.INSTANCE.HPDF_Page_TextOut(page, rightColumnX + EARNINGS_DEDUCTIONS_HEADER_TEXT_OFFSET, rowY, "UIF");
+        Libharu.INSTANCE.HPDF_Page_TextOut(page, layout.rightColumnX + EARNINGS_DEDUCTIONS_HEADER_TEXT_OFFSET, rowY, "UIF");
         Libharu.INSTANCE.HPDF_Page_EndText(page);
         Libharu.INSTANCE.HPDF_Page_SetFontAndSize(page, boldFont, FONT_SIZE_SMALL);
         Libharu.INSTANCE.HPDF_Page_BeginText(page);
-        Libharu.INSTANCE.HPDF_Page_TextOut(page, rightColumnX + columnWidth - EARNINGS_DEDUCTIONS_AMOUNT_COLUMN_OFFSET, rowY,
+        Libharu.INSTANCE.HPDF_Page_TextOut(page, layout.rightColumnX + layout.columnWidth - EARNINGS_DEDUCTIONS_AMOUNT_COLUMN_OFFSET, rowY,
                                          String.format("R %.2f", payslip.getUifEmployee()));
         Libharu.INSTANCE.HPDF_Page_EndText(page);
 
@@ -668,29 +694,29 @@ public class PayslipPdfService {
         rowY -= EMPLOYEE_ROW_HEIGHT;
         Libharu.INSTANCE.HPDF_Page_SetFontAndSize(page, font, FONT_SIZE_SMALL);
         Libharu.INSTANCE.HPDF_Page_BeginText(page);
-        Libharu.INSTANCE.HPDF_Page_TextOut(page, rightColumnX + EARNINGS_DEDUCTIONS_HEADER_TEXT_OFFSET, rowY, "Medical Aid");
+        Libharu.INSTANCE.HPDF_Page_TextOut(page, layout.rightColumnX + EARNINGS_DEDUCTIONS_HEADER_TEXT_OFFSET, rowY, "Medical Aid");
         Libharu.INSTANCE.HPDF_Page_EndText(page);
         Libharu.INSTANCE.HPDF_Page_SetFontAndSize(page, boldFont, FONT_SIZE_SMALL);
         Libharu.INSTANCE.HPDF_Page_BeginText(page);
-        Libharu.INSTANCE.HPDF_Page_TextOut(page, rightColumnX + columnWidth - EARNINGS_DEDUCTIONS_AMOUNT_COLUMN_OFFSET, rowY,
+        Libharu.INSTANCE.HPDF_Page_TextOut(page, layout.rightColumnX + layout.columnWidth - EARNINGS_DEDUCTIONS_AMOUNT_COLUMN_OFFSET, rowY,
                                          String.format("R %.2f", payslip.getMedicalAid()));
         Libharu.INSTANCE.HPDF_Page_EndText(page);
     }
 
-    private static float drawEarningsDeductionsTotals(Pointer page, Payslip payslip, float leftColumnX, float rightColumnX,
-                                                     float columnWidth, float rowY, Pointer boldFont) {
+    private static float drawEarningsDeductionsTotals(Pointer page, Payslip payslip, EarningsDeductionsLayout layout,
+                                                     float rowY, Pointer boldFont) {
         // Total rows with subtle highlight
         rowY -= EARNINGS_DEDUCTIONS_TOTAL_ROW_SPACING;
         Libharu.INSTANCE.HPDF_Page_SetRGBFill(page, COLOR_VERY_LIGHT_GRAY[0], COLOR_VERY_LIGHT_GRAY[1], COLOR_VERY_LIGHT_GRAY[2]);
-        Libharu.INSTANCE.HPDF_Page_Rectangle(page, leftColumnX + EARNINGS_DEDUCTIONS_RECTANGLE_INSET,
+        Libharu.INSTANCE.HPDF_Page_Rectangle(page, layout.leftColumnX + EARNINGS_DEDUCTIONS_RECTANGLE_INSET,
                                            rowY - EARNINGS_DEDUCTIONS_TOTAL_BACKGROUND_Y_OFFSET,
-                                           columnWidth - EARNINGS_DEDUCTIONS_RECTANGLE_WIDTH_REDUCTION,
+                                           layout.columnWidth - EARNINGS_DEDUCTIONS_RECTANGLE_WIDTH_REDUCTION,
                                            EARNINGS_DEDUCTIONS_TOTAL_ROW_HEIGHT);
         Libharu.INSTANCE.HPDF_Page_Fill(page);
 
-        Libharu.INSTANCE.HPDF_Page_Rectangle(page, rightColumnX + EARNINGS_DEDUCTIONS_RECTANGLE_INSET,
+        Libharu.INSTANCE.HPDF_Page_Rectangle(page, layout.rightColumnX + EARNINGS_DEDUCTIONS_RECTANGLE_INSET,
                                            rowY - EARNINGS_DEDUCTIONS_TOTAL_BACKGROUND_Y_OFFSET,
-                                           columnWidth - EARNINGS_DEDUCTIONS_RECTANGLE_WIDTH_REDUCTION,
+                                           layout.columnWidth - EARNINGS_DEDUCTIONS_RECTANGLE_WIDTH_REDUCTION,
                                            EARNINGS_DEDUCTIONS_TOTAL_ROW_HEIGHT);
         Libharu.INSTANCE.HPDF_Page_Fill(page);
         Libharu.INSTANCE.HPDF_Page_SetRGBFill(page, COLOR_BLACK[0], COLOR_BLACK[1], COLOR_BLACK[2]);
@@ -701,23 +727,29 @@ public class PayslipPdfService {
         BigDecimal totalEarnings = calculateTotalEarnings(payslip);
         BigDecimal totalDeductions = calculateTotalDeductions(payslip);
 
-        Libharu.INSTANCE.HPDF_Page_TextOut(page, leftColumnX + EARNINGS_DEDUCTIONS_TOTAL_TEXT_OFFSET, rowY, "Total Earnings");
-        Libharu.INSTANCE.HPDF_Page_TextOut(page, leftColumnX + columnWidth - EARNINGS_DEDUCTIONS_TOTAL_AMOUNT_OFFSET, rowY,
+        Libharu.INSTANCE.HPDF_Page_TextOut(page, layout.leftColumnX + EARNINGS_DEDUCTIONS_TOTAL_TEXT_OFFSET, rowY, "Total Earnings");
+        Libharu.INSTANCE.HPDF_Page_TextOut(page, layout.leftColumnX + layout.columnWidth - EARNINGS_DEDUCTIONS_TOTAL_AMOUNT_OFFSET, rowY,
                                          String.format("R %.2f", totalEarnings));
-        Libharu.INSTANCE.HPDF_Page_TextOut(page, rightColumnX + EARNINGS_DEDUCTIONS_TOTAL_TEXT_OFFSET, rowY, "Total Deductions");
-        Libharu.INSTANCE.HPDF_Page_TextOut(page, rightColumnX + columnWidth - EARNINGS_DEDUCTIONS_TOTAL_AMOUNT_OFFSET, rowY,
+        Libharu.INSTANCE.HPDF_Page_TextOut(page, layout.rightColumnX + EARNINGS_DEDUCTIONS_TOTAL_TEXT_OFFSET, rowY, "Total Deductions");
+        Libharu.INSTANCE.HPDF_Page_TextOut(page, layout.rightColumnX + layout.columnWidth - EARNINGS_DEDUCTIONS_TOTAL_AMOUNT_OFFSET, rowY,
                                          String.format("R %.2f", totalDeductions));
         Libharu.INSTANCE.HPDF_Page_EndText(page);
 
         // Thick border under total rows
         Libharu.INSTANCE.HPDF_Page_SetLineWidth(page, LINE_WIDTH_THICK);
-        Libharu.INSTANCE.HPDF_Page_MoveTo(page, leftColumnX, rowY - EARNINGS_DEDUCTIONS_TOTAL_BORDER_Y_OFFSET);
-        Libharu.INSTANCE.HPDF_Page_LineTo(page, leftColumnX + columnWidth * 2 + EARNINGS_DEDUCTIONS_TABLE_OUTER_BORDER_SPACING,
+        Libharu.INSTANCE.HPDF_Page_MoveTo(page, layout.leftColumnX, rowY - EARNINGS_DEDUCTIONS_TOTAL_BORDER_Y_OFFSET);
+        Libharu.INSTANCE.HPDF_Page_LineTo(page, layout.leftColumnX + layout.columnWidth * 2 + EARNINGS_DEDUCTIONS_TABLE_OUTER_BORDER_SPACING,
                                         rowY - EARNINGS_DEDUCTIONS_TOTAL_BORDER_Y_OFFSET);
         Libharu.INSTANCE.HPDF_Page_Stroke(page);
         Libharu.INSTANCE.HPDF_Page_SetLineWidth(page, LINE_WIDTH_MEDIUM);
 
         return rowY;
+    }
+
+    private static float calculateEarningsDeductionsFinalPosition(float rowY) {
+        float yPosition = rowY - EARNINGS_DEDUCTIONS_BOTTOM_SPACING;
+        yPosition -= EARNINGS_DEDUCTIONS_SECTION_BOTTOM_SPACING;
+        return yPosition;
     }
 
     private static BigDecimal calculateTotalEarnings(Payslip payslip) {

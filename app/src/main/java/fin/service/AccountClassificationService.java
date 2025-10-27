@@ -1,10 +1,21 @@
 package fin.service;
 
-import fin.model.*;
-
-import java.sql.*;
-import java.util.*;
+import fin.model.Account;
+import fin.model.BankTransaction;
+import fin.model.Company;
+import fin.model.TransactionMappingRule;
 import java.math.BigDecimal;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Service for classifying and categorizing accounts based on transaction analysis.
@@ -20,6 +31,14 @@ public final class AccountClassificationService {
     private static final int DISPLAY_WIDTH_AMOUNT = 15;
     private static final int DISPLAY_WIDTH_ACCOUNT = 30;
     private static final int DISPLAY_WIDTH_PATTERN = 25;
+    
+    // Prepared statement parameter indices for SQL operations
+    private static final int SQL_PARAM_ACCOUNT_CODE = 1;
+    private static final int SQL_PARAM_ACCOUNT_NAME = 2;
+    private static final int SQL_PARAM_TRANSACTION_ID = 3;
+    private static final int SQL_PARAM_USERNAME = 3;
+    private static final int SQL_PARAM_CLASSIFIED_BY = 3;
+    private static final int SQL_PARAM_TRANSACTION_ID_RECLASSIFY = 4;
     
     // Array indices and limits
     private static final int SAMPLE_LIMIT_PER_CATEGORY = 3;
@@ -314,6 +333,10 @@ public final class AccountClassificationService {
         accounts.add(new AccountDefinition("2100", "Accumulated Depreciation", "Depreciation of fixed assets", nonCurrentAssetsId));
         accounts.add(new AccountDefinition("2200", "Investments", "Long-term investments", nonCurrentAssetsId));
         accounts.add(new AccountDefinition("2300", "Motor Vehicles", "Motor vehicles and transport equipment", nonCurrentAssetsId));
+        accounts.add(new AccountDefinition("2400", "Furniture & Fixtures", "Furniture and fixtures", nonCurrentAssetsId));
+        accounts.add(new AccountDefinition("2500", "Office Equipment", "Office equipment", nonCurrentAssetsId));
+        accounts.add(new AccountDefinition("2600", "Computer Software", "Computer software", nonCurrentAssetsId));
+        accounts.add(new AccountDefinition("2700", "Office Supplies", "Office supplies", nonCurrentAssetsId));
     }
     
     /**
@@ -502,7 +525,10 @@ public final class AccountClassificationService {
         BigDecimal credits = rs.getBigDecimal("total_credits");
         BigDecimal debits = rs.getBigDecimal("total_debits");
         
-        System.out.printf("%-" + DISPLAY_WIDTH_CATEGORY + "s %" + DISPLAY_WIDTH_COUNT + "d %" + DISPLAY_WIDTH_AMOUNT + "s %" + DISPLAY_WIDTH_AMOUNT + "s%n", 
+        System.out.printf("%-" + DISPLAY_WIDTH_CATEGORY + "s %" +
+            DISPLAY_WIDTH_COUNT + "d %" +
+            DISPLAY_WIDTH_AMOUNT + "s %" +
+            DISPLAY_WIDTH_AMOUNT + "s%n", 
             category, count, 
             formatAmount(credits), 
             formatAmount(debits));
@@ -2007,7 +2033,7 @@ public final class AccountClassificationService {
         try (PreparedStatement updateStmt = conn.prepareStatement(updateSql)) {
             updateStmt.setString(1, accountCode);
             updateStmt.setString(2, accountName);
-            updateStmt.setLong(3, transactionId);
+            updateStmt.setLong(SQL_PARAM_TRANSACTION_ID, transactionId);
             updateStmt.executeUpdate();
         }
     }
@@ -2081,8 +2107,8 @@ public final class AccountClassificationService {
         try (PreparedStatement updateStmt = conn.prepareStatement(updateSql)) {
             updateStmt.setString(1, accountCode);
             updateStmt.setString(2, accountName);
-            updateStmt.setString(3, username);
-            updateStmt.setLong(4, transactionId);
+            updateStmt.setString(SQL_PARAM_USERNAME, username);
+            updateStmt.setLong(SQL_PARAM_TRANSACTION_ID_RECLASSIFY, transactionId);
             updateStmt.executeUpdate();
         }
     }
@@ -2162,10 +2188,10 @@ public final class AccountClassificationService {
      * Helper class for account definitions
      */
     private static class AccountDefinition {
-        final String code;
-        final String name;
-        final String description;
-        final Long categoryId;
+        private final String code;
+        private final String name;
+        private final String description;
+        private final Long categoryId;
         
         AccountDefinition(String initialCode, String initialName, String initialDescription, Long initialCategoryId) {
             this.code = initialCode;

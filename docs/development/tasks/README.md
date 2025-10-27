@@ -1,7 +1,7 @@
 # Development Tasks Directory
 **Status:** 📋 Documentation Complete - Ready for Implementation
-**Total Tasks:** 13 (6 EI_EXPOSE_REP + 6 SpotBugs Remediation + 1 New Feature)
-**Risk Distribution:** 4 Critical, 2 High, 3 Medium, 4 Low
+**Total Tasks:** 16 (6 EI_EXPOSE_REP + 6 SpotBugs Remediation + 3 Checkstyle Cleanup + 1 New Feature)
+**Risk Distribution:** 4 Critical, 2 High, 4 Medium, 4 Low
 
 ## 📋 Task Overview
 
@@ -11,8 +11,8 @@ This directory contains detailed documentation for fixing security vulnerabiliti
 - **TASK 1.x:** Critical Authentication & Session Security (4 tasks)
 - **TASK 2.x:** High-Risk Financial Data Protection (2 tasks)
 - **TASK 3.x:** Medium-Risk Configuration & Documentation (2 tasks)
-- **TASK 4.x:** SpotBugs Remediation (5 tasks) - **NEW**
-- **TASK 5.x:** Checkstyle Cleanup (8 tasks) - **NEW**
+- **TASK 4.x:** SpotBugs Remediation (6 tasks) - **NEW**
+- **TASK 5.x:** Checkstyle Cleanup (2 tasks) - **NEW**
 - **TASK 6.x:** New Feature Development (1 task) - **NEW**
 
 ## 📁 Task Files
@@ -87,8 +87,27 @@ This directory contains detailed documentation for fixing security vulnerabiliti
     - **Files:** TestConfiguration.java, DatabaseTest.java
     - **Fix:** Replace generic Exception catching with specific SQLException in test files
 
+### Checkstyle Cleanup (Phase 1 - Holistic Approach)
+13. **[TASK 5.3: Checkstyle Hidden Fields Cleanup](TASK_5.3_Checkstyle_Hidden_Fields.md)**
+    - **Risk:** MEDIUM - Code clarity and maintainability
+    - **Status:** ✅ COMPLETED
+    - **Files:** 67+ files across entire codebase
+    - **Fix:** Systematic cleanup of hidden field violations with consistent naming conventions
+
+14. **[TASK 5.4: Holistic Checkstyle Cleanup (Magic Numbers, Missing Braces, Method Length)](TASK_5.4_Holistic_Checkstyle_Cleanup.md)**
+    - **Risk:** MEDIUM - Code quality and violation prevention
+    - **Status:** ✅ COMPLETED - Budget.java (40+ violations: HiddenField, WhitespaceAround, LeftCurly, NewlineAtEndOfFile, DesignForExtension)
+    - **Files:** 126 files with violations (systematic file-by-file cleanup)
+    - **Fix:** Address all violation types simultaneously to prevent cascades (MethodLength, MagicNumber, HiddenField, NeedBraces, AvoidStarImport, etc.)
+
+15. **[TASK 5.9: Employee.java Holistic Checkstyle Cleanup](TASK_5.9_Employee_Holistic_Checkstyle_Cleanup.md)**
+    - **Risk:** MEDIUM - Code quality and violation prevention
+    - **Status:** ✅ COMPLETED
+    - **Files:** Employee.java (1 file, 50+ violations)
+    - **Fix:** Holistic cleanup addressing DesignForExtension, LeftCurly, and OperatorWrap violations simultaneously
+
 ### New Feature Development
-13. **[TASK 6.1: Budget Generation and Strategic Planning](TASK_6.1_Budget_Generation_Strategic_Planning.md)**
+16. **[TASK 6.1: Budget Generation and Strategic Planning](TASK_6.1_Budget_Generation_Strategic_Planning.md)**
     - **Risk:** MEDIUM - New business functionality
     - **Status:** 🔄 IN PROGRESS
     - **Files:** New services, models, controllers, database tables
@@ -117,8 +136,8 @@ This directory contains detailed documentation for fixing security vulnerabiliti
 |------------|-------|-------------|---------|
 | **CRITICAL** | 6 | Authentication bypass, finalizer attacks, silent errors | System compromise, data loss |
 | **HIGH** | 2 | Transaction classification manipulation | Financial reporting errors |
-| **MEDIUM** | 3 | Code quality and control flow issues | Maintenance overhead |
-| **LOW** | 2 | Field usage and architectural documentation | Code clarity |
+| **MEDIUM** | 4 | Code quality, control flow issues, checkstyle violations | Maintenance overhead, code clarity |
+| **LOW** | 3 | Field usage, architectural documentation, test code | Code clarity, testing quality |
 
 ## ✅ Success Criteria
 
@@ -159,6 +178,7 @@ This directory contains detailed documentation for fixing security vulnerabiliti
 - [ ] Phase 1 Implementation (3/6 tasks completed - TASK 4.1, TASK 4.2, TASK 4.3)
 - [ ] Phase 2 Implementation (0/1 tasks)
 - [ ] Phase 3 Implementation (4/5 tasks completed - TASK 4.2, TASK 4.3, TASK 4.4, TASK 4.5, TASK 4.6)
+- [ ] Checkstyle Cleanup (1/2 tasks completed - TASK 5.3 ✅, TASK 5.4 🔄 IN PROGRESS - Budget.java completed)
 - [ ] New Feature Development (0/1 tasks - TASK 6.1)
 
 ## 📚 References
@@ -202,7 +222,14 @@ This directory contains detailed documentation for fixing security vulnerabiliti
   - 🔄 TASK 4.7: Method Complexity
   - 🔄 TASK 4.8: Class Design Issues
 
-### Phase 4: New Feature Development (Priority: MEDIUM)
+### Phase 4: Checkstyle Cleanup (Priority: MEDIUM)
+- **Completed:** 2/3 tasks (67%)
+  - ✅ TASK 5.3: Checkstyle Hidden Fields Cleanup (428+ violations fixed across 67+ files)
+  - ✅ TASK 5.4: Holistic Checkstyle Cleanup (Magic Numbers, Missing Braces, Method Length) - Budget.java completed (40+ violations: HiddenField, WhitespaceAround, LeftCurly, NewlineAtEndOfFile, DesignForExtension)
+  - ✅ TASK 5.9: Employee.java Holistic Checkstyle Cleanup (50+ violations: DesignForExtension, LeftCurly, OperatorWrap)
+  - ✅ TASK 5.9: Employee.java Holistic Checkstyle Cleanup (50+ violations: DesignForExtension, LeftCurly, OperatorWrap)
+
+### Phase 5: New Feature Development (Priority: MEDIUM)
 - **Completed:** 0/1 tasks (0%)
   - 🔄 TASK 6.1: Budget Generation and Strategic Planning</content>
 <parameter name="filePath">/Users/sthwalonyoni/FIN/docs/development/tasks/TASK_3.2_Service_Dependency_Documentation.md

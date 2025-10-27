@@ -71,6 +71,9 @@ class ApplicationControllerTest {
     @Mock
     private BudgetController mockBudgetController;
     
+    @Mock
+    private DepreciationController mockDepreciationController;
+    
     private InputHandler inputHandler;
     private ApplicationController applicationController;
     
@@ -89,6 +92,7 @@ class ApplicationControllerTest {
         MockitoAnnotations.openMocks(this);
         
         // Setup mocks
+        doNothing().when(mockMenu).displayMainMenu();
         doNothing().when(mockCompanyController).handleCompanySetup();
         doNothing().when(mockDataManagementController).handleDataManagement();
         doNothing().when(mockReportController).handleReportGeneration();
@@ -97,9 +101,10 @@ class ApplicationControllerTest {
         doNothing().when(mockImportController).handleViewImportedData();
         doNothing().when(mockFiscalPeriodController).handleFiscalPeriods();
         doNothing().when(mockPayrollController).handlePayrollManagement(anyLong());
+        doNothing().when(mockDepreciationController).displayDepreciationMenu();
         
         // Create InputHandler with exit command
-        String exitInput = "12\ny\n"; // Exit is option 12, confirm with y
+        String exitInput = "13\ny\n"; // Exit is option 13, confirm with y
         Scanner scanner = new Scanner(new ByteArrayInputStream(exitInput.getBytes()));
         inputHandler = new InputHandler(scanner);
         
@@ -114,7 +119,8 @@ class ApplicationControllerTest {
             mockReportController,
             mockDataManagementController,
             mockPayrollController,
-            mockBudgetController
+            mockBudgetController,
+            mockDepreciationController
         );
     }    @Test
     void start_DisplaysMainMenu() {
@@ -131,7 +137,7 @@ class ApplicationControllerTest {
         doNothing().when(mockCompanyController).handleCompanySetup();
         
         // Setup input for company setup choice then exit
-        String companySetupInput = "1\n12\ny\n";
+        String companySetupInput = "1\n13\ny\n";
         Scanner scanner = new Scanner(new ByteArrayInputStream(companySetupInput.getBytes()));
         InputHandler setupInputHandler = new InputHandler(scanner);
 
@@ -146,7 +152,8 @@ class ApplicationControllerTest {
             mockReportController,
             mockDataManagementController,
             mockPayrollController,
-            mockBudgetController
+            mockBudgetController,
+            mockDepreciationController
         );
         
         // Execute
@@ -162,7 +169,7 @@ class ApplicationControllerTest {
         doNothing().when(mockDataManagementController).handleDataManagement();
         
         // Setup input for data management choice then exit
-        String dataManagementInput = "7\n12\ny\n";
+        String dataManagementInput = "7\n13\ny\n";
         Scanner scanner = new Scanner(new ByteArrayInputStream(dataManagementInput.getBytes()));
         InputHandler dataInputHandler = new InputHandler(scanner);
 
@@ -177,7 +184,8 @@ class ApplicationControllerTest {
             mockReportController,
             mockDataManagementController,
             mockPayrollController,
-            mockBudgetController
+            mockBudgetController,
+            mockDepreciationController
         );
         
         // Execute
@@ -199,8 +207,37 @@ class ApplicationControllerTest {
     }
     
     @Test
-    void applicationControllerCreation_WithAllDependencies_CreatesSuccessfully() {
-        // Test that all dependencies are properly injected
-        assertNotNull(applicationController, "ApplicationController should be created successfully");
+    void start_WithDepreciationCalculatorChoice_CallsDepreciationController() {
+        // Setup mock to do nothing when displayDepreciationMenu is called
+        doNothing().when(mockDepreciationController).displayDepreciationMenu();
+        
+        // Setup mock to return true for hasCurrentCompany
+        when(mockApplicationState.hasCurrentCompany()).thenReturn(true);
+        
+        // Setup input for depreciation calculator choice, then exit (with save prompt)
+        String depreciationInput = "10\n13\nn\ny\n";
+        Scanner scanner = new Scanner(new ByteArrayInputStream(depreciationInput.getBytes()));
+        InputHandler depreciationInputHandler = new InputHandler(scanner);
+
+        ApplicationController controllerWithDepreciation = new ApplicationController(
+            mockMenu,
+            depreciationInputHandler,
+            mockOutputFormatter,
+            mockApplicationState,
+            mockCompanyController,
+            mockFiscalPeriodController,
+            mockImportController,
+            mockReportController,
+            mockDataManagementController,
+            mockPayrollController,
+            mockBudgetController,
+            mockDepreciationController
+        );
+        
+        // Execute
+        controllerWithDepreciation.start();
+        
+        // Verify
+        verify(mockDepreciationController, times(1)).displayDepreciationMenu();
     }
 }

@@ -74,6 +74,16 @@ public class ReportController {
         this.reportsDir = "/Users/sthwalonyoni/FIN/reports";
     }
     
+    /**
+     * This method is designed for extension.
+     * Subclasses can override this method to customize the report generation menu flow.
+     * When overriding, ensure that:
+     * - Application state context is validated before proceeding with report operations
+     * - User input is properly validated and sanitized
+     * - Error handling is maintained for invalid choices and system errors
+     * - The menu loop respects user navigation choices (back/exit)
+     * - All report generation calls maintain proper error handling and user feedback
+     */
     public void handleReportGeneration() {
         try {
             applicationState.requireContext();
@@ -117,6 +127,16 @@ public class ReportController {
         }
     }
     
+    /**
+     * This method is designed for extension.
+     * Subclasses can override this method to customize cashbook report generation.
+     * When overriding, ensure that:
+     * - Reports directory existence is verified before file operations
+     * - Company and fiscal period context is properly validated
+     * - Error handling is maintained for file system and service failures
+     * - User feedback is provided for both success and failure scenarios
+     * - File location information is displayed to the user after successful generation
+     */
     public void generateCashbookReport() {
         outputFormatter.printHeader("Generating Cashbook Report");
         
@@ -137,6 +157,16 @@ public class ReportController {
         }
     }
     
+    /**
+     * This method is designed for extension.
+     * Subclasses can override this method to customize general ledger report generation.
+     * When overriding, ensure that:
+     * - Reports directory existence is verified before file operations
+     * - Company and fiscal period context is properly validated
+     * - Error handling is maintained for file system and service failures
+     * - User feedback is provided for both success and failure scenarios
+     * - File location information is displayed to the user after successful generation
+     */
     public void generateGeneralLedgerReport() {
         outputFormatter.printHeader("Generating General Ledger Report");
         
@@ -157,6 +187,16 @@ public class ReportController {
         }
     }
     
+    /**
+     * This method is designed for extension.
+     * Subclasses can override this method to customize trial balance report generation.
+     * When overriding, ensure that:
+     * - Reports directory existence is verified before file operations
+     * - Company and fiscal period context is properly validated
+     * - Error handling is maintained for file system and service failures
+     * - User feedback is provided for both success and failure scenarios
+     * - File location information is displayed to the user after successful generation
+     */
     public void generateTrialBalanceReport() {
         outputFormatter.printHeader("Generating Trial Balance Report");
         
@@ -177,6 +217,16 @@ public class ReportController {
         }
     }
     
+    /**
+     * This method is designed for extension.
+     * Subclasses can override this method to customize income statement report generation.
+     * When overriding, ensure that:
+     * - Reports directory existence is verified before file operations
+     * - Company and fiscal period context is properly validated
+     * - Error handling is maintained for file system and service failures
+     * - User feedback is provided for both success and failure scenarios
+     * - File location information is displayed to the user after successful generation
+     */
     public void generateIncomeStatementReport() {
         outputFormatter.printHeader("Generating Income Statement");
         
@@ -197,6 +247,16 @@ public class ReportController {
         }
     }
     
+    /**
+     * This method is designed for extension.
+     * Subclasses can override this method to customize balance sheet report generation.
+     * When overriding, ensure that:
+     * - Reports directory existence is verified before file operations
+     * - Company and fiscal period context is properly validated
+     * - Error handling is maintained for file system and service failures
+     * - User feedback is provided for both success and failure scenarios
+     * - File location information is displayed to the user after successful generation
+     */
     public void generateBalanceSheetReport() {
         outputFormatter.printHeader("Generating Balance Sheet");
         
@@ -217,6 +277,16 @@ public class ReportController {
         }
     }
     
+    /**
+     * This method is designed for extension.
+     * Subclasses can override this method to customize cash flow report generation.
+     * When overriding, ensure that:
+     * - Reports directory existence is verified before file operations
+     * - Company and fiscal period context is properly validated
+     * - Error handling is maintained for file system and service failures
+     * - User feedback is provided for both success and failure scenarios
+     * - File location information is displayed to the user after successful generation
+     */
     public void generateCashFlowReport() {
         outputFormatter.printHeader("Generating Cash Flow Statement");
         
@@ -237,6 +307,16 @@ public class ReportController {
         }
     }
     
+    /**
+     * This method is designed for extension.
+     * Subclasses can override this method to customize audit trail report generation.
+     * When overriding, ensure that:
+     * - Reports directory existence is verified before file operations
+     * - Company and fiscal period context is properly validated
+     * - Error handling is maintained for file system and service failures
+     * - User feedback is provided for both success and failure scenarios
+     * - File location information is displayed to the user after successful generation
+     */
     public void generateAuditTrailReport() {
         outputFormatter.printHeader("Generating Audit Trail");
         
@@ -257,6 +337,19 @@ public class ReportController {
         }
     }
     
+    /**
+     * This method is designed for extension.
+     * Subclasses can override this method to customize batch report generation.
+     * When overriding, ensure that:
+     * - Application state context is validated before batch operations
+     * - Reports directory existence is verified before file operations
+     * - User confirmation is obtained before proceeding with batch generation
+     * - Individual report failures don't stop the entire batch process
+     * - Progress feedback is provided during batch processing
+     * - Success/failure counts are tracked and reported to the user
+     * - Error handling is maintained for both individual report failures and system errors
+     * - File location information is displayed after batch completion
+     */
     public void generateAllReports() {
         outputFormatter.printHeader("Generating All Financial Reports");
         
@@ -323,6 +416,17 @@ public class ReportController {
         }
     }
     
+    /**
+     * This method is designed for extension.
+     * Subclasses can override this method to customize custom report generation menu and options.
+     * When overriding, ensure that:
+     * - Application state context is validated before custom report operations
+     * - Available custom report options are clearly presented to the user
+     * - User input is properly validated and sanitized
+     * - Error handling is maintained for invalid choices and system errors
+     * - Delegation to specific report generation methods maintains proper error handling
+     * - Menu navigation (back/exit) is properly handled
+     */
     public void generateCustomReport() {
         outputFormatter.printHeader("Generate Custom Report");
         
