@@ -26,6 +26,7 @@ public class ApplicationController {
     private final DataManagementController dataManagementController;
     private final PayrollController payrollController;
     private final BudgetController budgetController;
+    private final DepreciationController depreciationController;
     
     // Menu option constants
     private static final int MENU_OPTION_COMPANY_SETUP = 1;
@@ -37,10 +38,11 @@ public class ApplicationController {
     private static final int MENU_OPTION_DATA_MANAGEMENT = 7;
     private static final int MENU_OPTION_PAYROLL_MANAGEMENT = 8;
     private static final int MENU_OPTION_BUDGET_MANAGEMENT = 9;
-    private static final int MENU_OPTION_DISPLAY_TIME = 10;
-    private static final int MENU_OPTION_SYSTEM_LOGS = 11;
-    private static final int MENU_OPTION_EXIT = 12;
-    private static final int MAIN_MENU_MAX_OPTION = 12;
+    private static final int MENU_OPTION_DEPRECIATION_CALCULATOR = 10;
+    private static final int MENU_OPTION_DISPLAY_TIME = 11;
+    private static final int MENU_OPTION_SYSTEM_LOGS = 12;
+    private static final int MENU_OPTION_EXIT = 13;
+    private static final int MAIN_MENU_MAX_OPTION = 13;
     
     // Save menu options
     private static final int SAVE_OPTION_EXPORT_CSV = 1;
@@ -67,7 +69,8 @@ public class ApplicationController {
         ReportController initialReportController,
         DataManagementController initialDataManagementController,
         PayrollController initialPayrollController,
-        BudgetController initialBudgetController
+        BudgetController initialBudgetController,
+        DepreciationController initialDepreciationController
     ) {
         this.menu = initialMenu;
         this.inputHandler = initialInputHandler;
@@ -80,6 +83,7 @@ public class ApplicationController {
         this.dataManagementController = initialDataManagementController;
         this.payrollController = initialPayrollController;
         this.budgetController = initialBudgetController;
+        this.depreciationController = initialDepreciationController;
     }
 
     /**
@@ -138,6 +142,9 @@ public class ApplicationController {
                             outputFormatter.printWarning("Please select a company first (Option 1)");
                             inputHandler.waitForEnter();
                         }
+                        break;
+                    case MENU_OPTION_DEPRECIATION_CALCULATOR:
+                        handleDepreciationCalculator();
                         break;
                     case MENU_OPTION_DISPLAY_TIME:
                         displayCurrentTime();
@@ -413,5 +420,17 @@ public class ApplicationController {
         applicationState.clearAll();
         
         outputFormatter.printSuccess("Shutdown complete");
+    }
+    
+    /**
+     * Handle depreciation calculator menu option
+     */
+    private void handleDepreciationCalculator() {
+        if (applicationState.hasCurrentCompany()) {
+            depreciationController.displayDepreciationMenu();
+        } else {
+            outputFormatter.printWarning("Please select a company first (Option 1)");
+            inputHandler.waitForEnter();
+        }
     }
 }

@@ -1,10 +1,18 @@
 package fin.service;
 
-import fin.model.*;
+import fin.model.TransactionMappingRule;
+import fin.model.Account;
+import fin.model.AccountCategory;
+import fin.model.AccountType;
+import fin.model.Company;
 import fin.repository.JdbcBaseRepository;
 import fin.exception.TransactionMappingException;
-import java.sql.*;
-import java.util.*;
+import java.sql.SQLException;
+import java.sql.ResultSet;
+import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -27,20 +35,20 @@ public class TransactionMappingRuleService extends JdbcBaseRepository {
      */
     public void saveTransactionMappingRule(TransactionMappingRule rule) {
         String sql =
-            "INSERT INTO transaction_mapping_rules " +
-            "(company_id, rule_name, description, match_type, match_value, " +
-            "account_id, is_active, priority) " +
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?) " +
-            "ON CONFLICT(id) DO UPDATE SET " +
-            "rule_name = excluded.rule_name, " +
-            "description = excluded.description, " +
-            "match_type = excluded.match_type, " +
-            "match_value = excluded.match_value, " +
-            "account_id = excluded.account_id, " +
-            "is_active = excluded.is_active, " +
-            "priority = excluded.priority, " +
-            "updated_at = CURRENT_TIMESTAMP " +
-            "RETURNING id, created_at, updated_at";
+            "INSERT INTO transaction_mapping_rules "
+            + "(company_id, rule_name, description, match_type, match_value, "
+            + "account_id, is_active, priority) "
+            + "VALUES (?, ?, ?, ?, ?, ?, ?, ?) "
+            + "ON CONFLICT(id) DO UPDATE SET "
+            + "rule_name = excluded.rule_name, "
+            + "description = excluded.description, "
+            + "match_type = excluded.match_type, "
+            + "match_value = excluded.match_value, "
+            + "account_id = excluded.account_id, "
+            + "is_active = excluded.is_active, "
+            + "priority = excluded.priority, "
+            + "updated_at = CURRENT_TIMESTAMP "
+            + "RETURNING id, created_at, updated_at";
 
         try {
             executeQuery(sql, rs -> {
@@ -73,14 +81,14 @@ public class TransactionMappingRuleService extends JdbcBaseRepository {
         }
 
         String sql =
-            "SELECT r.*, a.account_code, a.account_name, " +
-            "c.name as category_name, t.code as type_code " +
-            "FROM transaction_mapping_rules r " +
-            "JOIN accounts a ON r.account_id = a.id " +
-            "JOIN account_categories c ON a.category_id = c.id " +
-            "JOIN account_types t ON c.account_type_id = t.id " +
-            "WHERE r.company_id = ? AND r.is_active = true " +
-            "ORDER BY r.priority DESC, r.rule_name";
+            "SELECT r.*, a.account_code, a.account_name, "
+            + "c.name as category_name, t.code as type_code "
+            + "FROM transaction_mapping_rules r "
+            + "JOIN accounts a ON r.account_id = a.id "
+            + "JOIN account_categories c ON a.category_id = c.id "
+            + "JOIN account_types t ON c.account_type_id = t.id "
+            + "WHERE r.company_id = ? AND r.is_active = true "
+            + "ORDER BY r.priority DESC, r.rule_name";
 
         try {
             List<TransactionMappingRule> rules = executeQuery(sql, rs -> buildRuleFromResultSet(rs, companyId), companyId);
@@ -153,69 +161,126 @@ public class TransactionMappingRuleService extends JdbcBaseRepository {
      * Persists standard mapping rules from AccountClassificationService to the database.
      * This method extracts the accountCode from the rule description (format: [AccountCode:XXXX])
      * and resolves the Account object before persisting.
-     * 
+     *
      * @param companyId The company ID for which to persist rules
      * @param rules List of TransactionMappingRule templates from AccountClassificationService
      * @throws TransactionMappingException if persistence fails
      */
     public void persistStandardRules(Long companyId, List<TransactionMappingRule> rules) {
-        if (rules == null || rules.isEmpty()) {
-            LOGGER.warning("No rules provided to persist");
-            return;
-        }
+        validatePersistStandardRulesInput(companyId, rules);
 
-        LOGGER.info(String.format("Persisting %d standard mapping rules for company %d", 
+        LOGGER.info(String.format("Persisting %d standard mapping rules for company %d",
             rules.size(), companyId));
 
+        PersistResults results = processRulesBatch(companyId, rules);
+
+        logPersistResults(results);
+
+        // Clear cache after bulk insert
+        clearCache(companyId);
+    }
+
+    /**
+     * Validates input parameters for persistStandardRules method.
+     */
+    private void validatePersistStandardRulesInput(Long companyId, List<TransactionMappingRule> rules) {
+        if (rules == null || rules.isEmpty()) {
+            LOGGER.warning("No rules provided to persist");
+            throw new IllegalArgumentException("Rules list cannot be null or empty");
+        }
+        if (companyId == null) {
+            throw new IllegalArgumentException("Company ID cannot be null");
+        }
+    }
+
+    /**
+     * Processes a batch of rules and returns the results.
+     */
+    private PersistResults processRulesBatch(Long companyId, List<TransactionMappingRule> rules) {
         int successCount = 0;
         int errorCount = 0;
 
         for (TransactionMappingRule rule : rules) {
-            try {
-                // 1. Extract accountCode from description [AccountCode:XXXX]
-                String accountCode = extractAccountCode(rule.getDescription());
-                if (accountCode == null) {
-                    LOGGER.warning(String.format("Could not extract account code from rule '%s'", 
-                        rule.getRuleName()));
-                    errorCount++;
-                    continue;
-                }
-
-                // 2. Resolve Company object
-                Company company = getCompanyById(companyId);
-                if (company == null) {
-                    throw new TransactionMappingException(
-                        "Company not found with ID: " + companyId);
-                }
-                rule.setCompany(company);
-
-                // 3. Resolve Account object by code
-                Account account = getAccountByCode(companyId, accountCode);
-                if (account == null) {
-                    LOGGER.warning(String.format(
-                        "Account not found for code '%s' in rule '%s'", 
-                        accountCode, rule.getRuleName()));
-                    errorCount++;
-                    continue;
-                }
-                rule.setAccount(account);
-
-                // 4. Save to database
-                saveTransactionMappingRule(rule);
+            if (processSingleRule(companyId, rule)) {
                 successCount++;
-
-            } catch (Exception e) {
-                LOGGER.log(Level.SEVERE, 
-                    String.format("Error persisting rule '%s'", rule.getRuleName()), e);
+            } else {
                 errorCount++;
             }
         }
 
-        LOGGER.info(String.format(
-            "Persisted %d rules successfully, %d errors", successCount, errorCount));
+        return new PersistResults(successCount, errorCount);
+    }
 
-        // Clear cache after bulk insert
-        clearCache(companyId);
+    /**
+     * Processes a single rule and returns true if successful.
+     */
+    private boolean processSingleRule(Long companyId, TransactionMappingRule rule) {
+        try {
+            // 1. Extract accountCode from description [AccountCode:XXXX]
+            String accountCode = extractAccountCode(rule.getDescription());
+            if (accountCode == null) {
+                LOGGER.warning(String.format("Could not extract account code from rule '%s'",
+                    rule.getRuleName()));
+                return false;
+            }
+
+            // 2. Resolve Company object
+            Company company = getCompanyById(companyId);
+            if (company == null) {
+                throw new TransactionMappingException(
+                    "Company not found with ID: " + companyId);
+            }
+            rule.setCompany(company);
+
+            // 3. Resolve Account object by code
+            Account account = getAccountByCode(companyId, accountCode);
+            if (account == null) {
+                LOGGER.warning(String.format(
+                    "Account not found for code '%s' in rule '%s'",
+                    accountCode, rule.getRuleName()));
+                return false;
+            }
+            rule.setAccount(account);
+
+            // 4. Save to database
+            saveTransactionMappingRule(rule);
+            return true;
+
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE,
+                String.format("Error persisting rule '%s'", rule.getRuleName()), e);
+            return false;
+        }
+    }
+
+    /**
+     * Logs the results of the persist operation.
+     */
+    private void logPersistResults(PersistResults results) {
+        LOGGER.info(String.format(
+            "Persisted %d rules successfully, %d errors",
+            results.successCount, results.errorCount));
+    }
+
+    /**
+     * Simple data class to hold persist operation results.
+     */
+    private static class PersistResults {
+        private final int successCount;
+        private final int errorCount;
+
+        PersistResults(int success, int errors) {
+            this.successCount = success;
+            this.errorCount = errors;
+        }
+
+        public int getSuccessCount() {
+            return successCount;
+        }
+
+        public int getErrorCount() {
+            return errorCount;
+        }
     }
 
     /**
@@ -281,12 +346,12 @@ public class TransactionMappingRuleService extends JdbcBaseRepository {
      * @return Account object or null if not found
      */
     private Account getAccountByCode(Long companyId, String accountCode) {
-        String sql = 
-            "SELECT a.*, c.name as category_name, t.code as type_code " +
-            "FROM accounts a " +
-            "JOIN account_categories c ON a.category_id = c.id " +
-            "JOIN account_types t ON c.account_type_id = t.id " +
-            "WHERE a.company_id = ? AND a.account_code = ?";
+        String sql =
+            "SELECT a.*, c.name as category_name, t.code as type_code "
+            + "FROM accounts a "
+            + "JOIN account_categories c ON a.category_id = c.id "
+            + "JOIN account_types t ON c.account_type_id = t.id "
+            + "WHERE a.company_id = ? AND a.account_code = ?";
         
         try {
             List<Account> results = executeQuery(sql, rs -> {

@@ -78,13 +78,21 @@ public class BudgetReportService {
         Files.createDirectories(reportPath.getParent());
 
         // Get company information
-        Company company = getCompanyByIdRequired(companyId);
+        Company company = getCompanyById(companyId);
+        if (company == null) {
+            System.out.println("❌ Company not found: " + companyId);
+            return;
+        }
 
         // Get budget data
         BudgetData budgetData = getBudgetData(companyId);
-
-        if (budgetData == null) {
+        if (budgetData == null || budgetData.getBudget() == null) {
             System.out.println("❌ No budget data found for company " + companyId);
+            return;
+        }
+        final Budget budget = budgetData.getBudget();
+        if (budget.getBudgetYear() == null || budget.getTotalRevenue() == null || budget.getTotalExpenses() == null) {
+            System.out.println("❌ Invalid budget data - missing required fields");
             return;
         }
 
@@ -93,12 +101,12 @@ public class BudgetReportService {
         System.out.println("BUDGET SUMMARY REPORT");
         System.out.println("========================================");
         System.out.println("Company: " + company.getName());
-        System.out.println("Budget Year: " + budgetData.budget.getBudgetYear());
-        System.out.println("Total Revenue: R" + budgetData.budget.getTotalRevenue());
-        System.out.println("Total Expenses: R" + budgetData.budget.getTotalExpenses());
-        System.out.println("Net Budget: R" + budgetData.budget.getTotalRevenue().subtract(budgetData.budget.getTotalExpenses()));
-        System.out.println("Categories: " + budgetData.categories.size());
-        System.out.println("Budget Items: " + budgetData.items.size());
+        System.out.println("Budget Year: " + budget.getBudgetYear());
+        System.out.println("Total Revenue: R" + budget.getTotalRevenue());
+        System.out.println("Total Expenses: R" + budget.getTotalExpenses());
+        System.out.println("Net Budget: R" + budget.getTotalRevenue().subtract(budget.getTotalExpenses()));
+        System.out.println("Categories: " + budgetData.getCategories().size());
+        System.out.println("Budget Items: " + budgetData.getItems().size());
 
         // Generate PDF
         try (PDDocument document = new PDDocument()) {
@@ -106,7 +114,7 @@ public class BudgetReportService {
             document.addPage(page);
 
             try (PDPageContentStream contentStream = new PDPageContentStream(document, page)) {
-                createBudgetReportHeader(contentStream, company, budgetData.budget);
+                createBudgetReportHeader(contentStream, company, budget);
                 createBudgetSummary(contentStream, budgetData);
                 createBudgetCategories(contentStream, budgetData);
                 createBudgetItems(contentStream, budgetData);
@@ -131,13 +139,21 @@ public class BudgetReportService {
         Files.createDirectories(reportPath.getParent());
 
         // Get company information
-        Company company = getCompanyByIdRequired(companyId);
+        Company company = getCompanyById(companyId);
+        if (company == null) {
+            System.out.println("❌ Company not found: " + companyId);
+            return;
+        }
 
         // Get strategic plan data
         StrategicPlanData strategicData = getStrategicPlanData(companyId);
-
-        if (strategicData == null) {
+        if (strategicData == null || strategicData.getPlan() == null) {
             System.out.println("❌ No strategic plan data found for company " + companyId);
+            return;
+        }
+        final StrategicPlan plan = strategicData.getPlan();
+        if (plan.getTitle() == null || plan.getVisionStatement() == null || plan.getMissionStatement() == null) {
+            System.out.println("❌ Invalid strategic plan data - missing required fields");
             return;
         }
 
@@ -146,12 +162,12 @@ public class BudgetReportService {
         System.out.println("STRATEGIC PLAN REPORT");
         System.out.println("========================================");
         System.out.println("Company: " + company.getName());
-        System.out.println("Plan: " + strategicData.plan.getTitle());
-        System.out.println("Vision: " + strategicData.plan.getVisionStatement());
-        System.out.println("Mission: " + strategicData.plan.getMissionStatement());
-        System.out.println("Priorities: " + strategicData.priorities.size());
-        System.out.println("Initiatives: " + strategicData.initiatives.size());
-        System.out.println("Milestones: " + strategicData.milestones.size());
+        System.out.println("Plan: " + plan.getTitle());
+        System.out.println("Vision: " + plan.getVisionStatement());
+        System.out.println("Mission: " + plan.getMissionStatement());
+        System.out.println("Priorities: " + strategicData.getPriorities().size());
+        System.out.println("Initiatives: " + strategicData.getInitiatives().size());
+        System.out.println("Milestones: " + strategicData.getMilestones().size());
 
         // Generate PDF
         try (PDDocument document = new PDDocument()) {
@@ -185,13 +201,21 @@ public class BudgetReportService {
         Files.createDirectories(reportPath.getParent());
 
         // Get company information
-        Company company = getCompanyByIdRequired(companyId);
+        Company company = getCompanyById(companyId);
+        if (company == null) {
+            System.out.println("❌ Company not found: " + companyId);
+            return;
+        }
 
         // Get budget data
         BudgetData budgetData = getBudgetData(companyId);
-
-        if (budgetData == null) {
+        if (budgetData == null || budgetData.getBudget() == null) {
             System.out.println("❌ No budget data found for company " + companyId);
+            return;
+        }
+        final Budget budget = budgetData.getBudget();
+        if (budget.getBudgetYear() == null || budget.getTotalRevenue() == null || budget.getTotalExpenses() == null) {
+            System.out.println("❌ Invalid budget data - missing required fields");
             return;
         }
 
@@ -200,7 +224,7 @@ public class BudgetReportService {
         System.out.println("BUDGET VS ACTUAL REPORT");
         System.out.println("========================================");
         System.out.println("Company: " + company.getName());
-        System.out.println("Budget Year: " + budgetData.budget.getBudgetYear());
+        System.out.println("Budget Year: " + budget.getBudgetYear());
         System.out.println("Note: Actual spending comparison feature coming soon");
         System.out.println("This report shows budgeted amounts with placeholders for actual spending");
 
@@ -210,7 +234,7 @@ public class BudgetReportService {
             document.addPage(page);
 
             try (PDPageContentStream contentStream = new PDPageContentStream(document, page)) {
-                createBudgetVsActualHeader(contentStream, company, budgetData.budget);
+                createBudgetVsActualHeader(contentStream, company, budget);
                 createBudgetVsActualSummary(contentStream, budgetData);
                 createBudgetVsActualDetails(contentStream, budgetData);
                 createFooter(contentStream);
@@ -230,11 +254,11 @@ public class BudgetReportService {
     private void createBudgetSummary(PDPageContentStream contentStream, BudgetData budgetData) throws IOException {
         // Create summary metrics for the summary box
         String[][] summaryMetrics = {
-            {"Total Revenue", "R" + budgetData.budget.getTotalRevenue().setScale(2, RoundingMode.HALF_UP)},
-            {"Total Expenses", "R" + budgetData.budget.getTotalExpenses().setScale(2, RoundingMode.HALF_UP)},
-            {"Net Budget", "R" + budgetData.budget.getTotalRevenue().subtract(budgetData.budget.getTotalExpenses()).setScale(2, RoundingMode.HALF_UP)},
-            {"Budget Categories", String.valueOf(budgetData.categories.size())},
-            {"Budget Items", String.valueOf(budgetData.items.size())}
+            {"Total Revenue", "R" + budgetData.getBudget().getTotalRevenue().setScale(2, RoundingMode.HALF_UP)},
+            {"Total Expenses", "R" + budgetData.getBudget().getTotalExpenses().setScale(2, RoundingMode.HALF_UP)},
+            {"Net Budget", "R" + budgetData.getBudget().getTotalRevenue().subtract(budgetData.getBudget().getTotalExpenses()).setScale(2, RoundingMode.HALF_UP)},
+            {"Budget Categories", String.valueOf(budgetData.getCategories().size())},
+            {"Budget Items", String.valueOf(budgetData.getItems().size())}
         };
 
         PdfFormattingUtils.drawSummaryBox(contentStream, summaryMetrics, SUMMARY_Y, 120f);
@@ -245,10 +269,10 @@ public class BudgetReportService {
 
         // Prepare table data
         String[] headers = {"Category", "Type", "Allocated Amount", "Percentage"};
-        String[][] tableData = new String[budgetData.categories.size()][];
+        String[][] tableData = new String[budgetData.getCategories().size()][];
 
-        for (int i = 0; i < budgetData.categories.size(); i++) {
-            BudgetCategory category = budgetData.categories.get(i);
+        for (int i = 0; i < budgetData.getCategories().size(); i++) {
+            BudgetCategory category = budgetData.getCategories().get(i);
             tableData[i] = new String[]{
                 category.getName(),
                 category.getCategoryType(),
@@ -265,10 +289,10 @@ public class BudgetReportService {
 
         // Prepare table data
         String[] headers = {"Description", "Annual Amount", "Notes"};
-        String[][] tableData = new String[Math.min(budgetData.items.size(), 10)][]; // Limit to 10 items to prevent overflow
+        String[][] tableData = new String[Math.min(budgetData.getItems().size(), 10)][]; // Limit to 10 items to prevent overflow
 
-        for (int i = 0; i < Math.min(budgetData.items.size(), 10); i++) {
-            BudgetItem item = budgetData.items.get(i);
+        for (int i = 0; i < Math.min(budgetData.getItems().size(), 10); i++) {
+            BudgetItem item = budgetData.getItems().get(i);
             tableData[i] = new String[]{
                 item.getDescription(),
                 "R" + item.getAnnualAmount().setScale(2, RoundingMode.HALF_UP),
@@ -280,17 +304,16 @@ public class BudgetReportService {
     }
 
     private void createStrategicReportHeader(PDPageContentStream contentStream, Company company, StrategicPlanData strategicData) throws IOException {
-        String subtitle = "Plan: " + strategicData.plan.getTitle() + " | Generated: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        String subtitle = "Plan: " + strategicData.getPlan().getTitle() + " | Generated: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         PdfFormattingUtils.drawHeaderSection(contentStream, "STRATEGIC PLAN REPORT", company.getName(), subtitle, TITLE_Y);
     }
 
     private void createStrategicVision(PDPageContentStream contentStream, StrategicPlanData strategicData) throws IOException {
         float currentY = PdfFormattingUtils.drawSectionHeader(contentStream, "VISION & MISSION", SUMMARY_Y, 80f);
 
-        // Create key-value pairs for vision and mission
         String[][] visionMission = {
-            {"Vision", strategicData.plan.getVisionStatement()},
-            {"Mission", strategicData.plan.getMissionStatement()}
+            {"Vision", strategicData.getPlan().getVisionStatement()},
+            {"Mission", strategicData.getPlan().getMissionStatement()}
         };
 
         PdfFormattingUtils.drawKeyValueList(contentStream, visionMission, currentY, 80f);
@@ -301,10 +324,10 @@ public class BudgetReportService {
 
         // Prepare table data
         String[] headers = {"Priority", "Name", "Description"};
-        String[][] tableData = new String[strategicData.priorities.size()][];
+        String[][] tableData = new String[strategicData.getPriorities().size()][];
 
-        for (int i = 0; i < strategicData.priorities.size(); i++) {
-            StrategicPriority priority = strategicData.priorities.get(i);
+        for (int i = 0; i < strategicData.getPriorities().size(); i++) {
+            StrategicPriority priority = strategicData.getPriorities().get(i);
             tableData[i] = new String[]{
                 String.valueOf(priority.getPriorityOrder()),
                 priority.getName(),
@@ -320,10 +343,10 @@ public class BudgetReportService {
 
         // Prepare table data - limit to prevent overflow
         String[] headers = {"Initiative", "Budget", "Status", "Period"};
-        String[][] tableData = new String[Math.min(strategicData.initiatives.size(), 8)][];
+        String[][] tableData = new String[Math.min(strategicData.getInitiatives().size(), 8)][];
 
-        for (int i = 0; i < Math.min(strategicData.initiatives.size(), 8); i++) {
-            StrategicInitiative initiative = strategicData.initiatives.get(i);
+        for (int i = 0; i < Math.min(strategicData.getInitiatives().size(), 8); i++) {
+            StrategicInitiative initiative = strategicData.getInitiatives().get(i);
             tableData[i] = new String[]{
                 initiative.getTitle(),
                 "R" + initiative.getBudgetAllocated().setScale(2, RoundingMode.HALF_UP),
@@ -340,10 +363,10 @@ public class BudgetReportService {
 
         // Prepare table data - limit to prevent overflow
         String[] headers = {"Milestone", "Target Date", "Status"};
-        String[][] tableData = new String[Math.min(strategicData.milestones.size(), 6)][];
+        String[][] tableData = new String[Math.min(strategicData.getMilestones().size(), 6)][];
 
-        for (int i = 0; i < Math.min(strategicData.milestones.size(), 6); i++) {
-            StrategicMilestone milestone = strategicData.milestones.get(i);
+        for (int i = 0; i < Math.min(strategicData.getMilestones().size(), 6); i++) {
+            StrategicMilestone milestone = strategicData.getMilestones().get(i);
             tableData[i] = new String[]{
                 milestone.getTitle(),
                 milestone.getTargetDate(),
@@ -369,11 +392,11 @@ public class BudgetReportService {
         contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), FONT_SIZE_SMALL);
         contentStream.beginText();
         contentStream.newLineAtOffset(PAGE_MARGIN_LEFT, TABLE_Y);
-        contentStream.showText("Budgeted Revenue: R" + budgetData.budget.getTotalRevenue().setScale(2, RoundingMode.HALF_UP));
+        contentStream.showText("Budgeted Revenue: R" + budgetData.getBudget().getTotalRevenue().setScale(2, RoundingMode.HALF_UP));
         contentStream.newLineAtOffset(0, -LINE_SPACING_NORMAL);
-        contentStream.showText("Budgeted Expenses: R" + budgetData.budget.getTotalExpenses().setScale(2, RoundingMode.HALF_UP));
+        contentStream.showText("Budgeted Expenses: R" + budgetData.getBudget().getTotalExpenses().setScale(2, RoundingMode.HALF_UP));
         contentStream.newLineAtOffset(0, -LINE_SPACING_NORMAL);
-        BigDecimal netBudget = budgetData.budget.getTotalRevenue().subtract(budgetData.budget.getTotalExpenses());
+        BigDecimal netBudget = budgetData.getBudget().getTotalRevenue().subtract(budgetData.getBudget().getTotalExpenses());
         contentStream.showText("Budgeted Net: R" + netBudget.setScale(2, RoundingMode.HALF_UP));
         contentStream.newLineAtOffset(0, -LINE_SPACING_LARGE);
         contentStream.showText("Actual Amount: [Not implemented - would compare with actual transactions]");
@@ -577,13 +600,7 @@ public class BudgetReportService {
         return new StrategicPlanData(plan, priorities, initiatives, milestones);
     }
 
-    private Company getCompanyByIdRequired(Long companyId) throws SQLException {
-        Company company = getCompanyById(companyId);
-        if (company == null) {
-            throw new IllegalArgumentException("Company not found: " + companyId);
-        }
-        return company;
-    }
+
 
     private Company getCompanyById(Long companyId) throws SQLException {
         String sql = "SELECT id, name, registration_number FROM companies WHERE id = ?";

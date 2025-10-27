@@ -2,6 +2,8 @@ package fin.model;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -54,8 +56,13 @@ public class BudgetCategory {
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 
-    public List<BudgetItem> getItems() { return items; }
-    public void setItems(List<BudgetItem> items) { this.items = items; }
+    public List<BudgetItem> getItems() {
+        return items != null ? new ArrayList<>(items) : Collections.emptyList();
+    }
+
+    public void setItems(List<BudgetItem> items) {
+        this.items = items != null ? new ArrayList<>(items) : null;
+    }
 
     @Override
     public String toString() {

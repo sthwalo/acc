@@ -106,6 +106,12 @@ public class DataManagementController {
         this.outputFormatter = initialOutputFormatter;
     }
     
+    /**
+     * Handles the data management menu and user interactions.
+     * This method is designed for extension by subclasses that need to customize
+     * the data management workflow while maintaining the core menu structure.
+     * Subclasses can override individual handler methods to customize behavior.
+     */
     public void handleDataManagement() {
         try {
             applicationState.requireCompany();
@@ -149,6 +155,11 @@ public class DataManagementController {
         }
     }
     
+    /**
+     * Handles manual invoice creation process.
+     * This method is designed for extension by subclasses that need to customize
+     * invoice creation while maintaining the core validation and service calls.
+     */
     public void handleManualInvoiceCreation() {
         outputFormatter.printHeader("Create Manual Invoice");
         
@@ -190,141 +201,207 @@ public class DataManagementController {
         }
     }
     
+    /**
+     * Handles journal entry creation process.
+     * This method is designed for extension by subclasses that need to customize
+     * journal entry creation while maintaining the core validation and service calls.
+     */
     public void handleJournalEntryCreation() {
         outputFormatter.printHeader("Create Journal Entry");
         
         try {
             applicationState.requireFiscalPeriod();
-            
-            String entryNumber = inputHandler.getString("Enter entry number");
-            LocalDate entryDate = inputHandler.getDate("Enter entry date");
-            String description = inputHandler.getString("Enter description");
-            
-            List<JournalEntryLine> lines = new ArrayList<>();
-            boolean addMoreLines = true;
-            
-            while (addMoreLines) {
-                outputFormatter.printSubHeader("Add Journal Entry Line");
-                JournalEntryLine line = new JournalEntryLine();
-                
-                outputFormatter.printInfo("Select account:");
-                line.setAccountId(selectAccount());
-                
-                if (line.getAccountId() == null) {
-                    outputFormatter.printError("Account selection is required");
-                    continue;
-                }
-                
-                line.setDescription(inputHandler.getString("Enter line description"));
-                
-                boolean isDebit = inputHandler.getBoolean("Is this a debit entry?");
-                BigDecimal amount = inputHandler.getBigDecimal("Enter amount");
-                
-                if (isDebit) {
-                    line.setDebitAmount(amount);
-                } else {
-                    line.setCreditAmount(amount);
-                }
-                
-                lines.add(line);
-                
-                addMoreLines = inputHandler.getBoolean("Add another line?");
-            }
-            
-            if (!lines.isEmpty()) {
-                dataManagementService.createJournalEntry(
-                    applicationState.getCurrentCompany().getId(),
-                    entryNumber,
-                    entryDate,
-                    description,
-                    applicationState.getCurrentFiscalPeriod().getId(),
-                    lines);
-                
-                outputFormatter.printSuccess("Journal entry created successfully!");
-            } else {
-                outputFormatter.printWarning("No journal entry lines were added");
-            }
-            
+            performJournalEntryCreation();
         } catch (IllegalStateException e) {
             outputFormatter.printError(e.getMessage());
         } catch (Exception e) {
             outputFormatter.printError("Error creating journal entry: " + e.getMessage());
         }
     }
+
+    /**
+     * Performs the core journal entry creation logic.
+     * This method can be overridden by subclasses to customize the creation process.
+     */
+    protected void performJournalEntryCreation() throws Exception {
+        JournalEntryData entryData = collectJournalEntryDetails();
+        List<JournalEntryLine> lines = collectJournalEntryLines();
+        
+        if (!lines.isEmpty()) {
+            createJournalEntryFromData(entryData, lines);
+            outputFormatter.printSuccess("Journal entry created successfully!");
+        } else {
+            outputFormatter.printWarning("No journal entry lines were added");
+        }
+    }
     
+    private JournalEntryData collectJournalEntryDetails() {
+        JournalEntryData data = new JournalEntryData();
+        data.entryNumber = inputHandler.getString("Enter entry number");
+        data.entryDate = inputHandler.getDate("Enter entry date");
+        data.description = inputHandler.getString("Enter description");
+        return data;
+    }
+    
+    private List<JournalEntryLine> collectJournalEntryLines() {
+        List<JournalEntryLine> lines = new ArrayList<>();
+        boolean addMoreLines = true;
+        
+        while (addMoreLines) {
+            JournalEntryLine line = collectSingleJournalEntryLine();
+            if (line != null) {
+                lines.add(line);
+            }
+            addMoreLines = inputHandler.getBoolean("Add another line?");
+        }
+        
+        return lines;
+    }
+    
+    private JournalEntryLine collectSingleJournalEntryLine() {
+        outputFormatter.printSubHeader("Add Journal Entry Line");
+        JournalEntryLine line = new JournalEntryLine();
+        
+        outputFormatter.printInfo("Select account:");
+        line.setAccountId(selectAccount());
+        
+        if (line.getAccountId() == null) {
+            outputFormatter.printError("Account selection is required");
+            return null;
+        }
+        
+        line.setDescription(inputHandler.getString("Enter line description"));
+        
+        boolean isDebit = inputHandler.getBoolean("Is this a debit entry?");
+        BigDecimal amount = inputHandler.getBigDecimal("Enter amount");
+        
+        if (isDebit) {
+            line.setDebitAmount(amount);
+        } else {
+            line.setCreditAmount(amount);
+        }
+        
+        return line;
+    }
+    
+    private void createJournalEntryFromData(JournalEntryData entryData, List<JournalEntryLine> lines) throws Exception {
+        dataManagementService.createJournalEntry(
+            applicationState.getCurrentCompany().getId(),
+            entryData.entryNumber,
+            entryData.entryDate,
+            entryData.description,
+            applicationState.getCurrentFiscalPeriod().getId(),
+            lines);
+    }
+    
+    private static class JournalEntryData {
+        String entryNumber;
+        LocalDate entryDate;
+        String description;
+    }
+    
+    /**
+     * Handles transaction classification menu and operations.
+     * This method is designed for extension by subclasses that need to customize
+     * the classification workflow while maintaining the core menu structure.
+     */
     public void handleTransactionClassification() {
         try {
             applicationState.requireContext();
-            
-            boolean back = false;
-            while (!back) {
-                menu.displayTransactionClassificationMenu();
-                int choice = inputHandler.getInteger("Enter your choice", 1, CLASSIFICATION_CHOICE_BACK);
-                
-                switch (choice) {
-                    case CLASSIFICATION_CHOICE_INTERACTIVE:
-                        // Interactive Classification (new transactions)
-                        classificationService.runInteractiveClassification(
-                            applicationState.getCurrentCompany().getId(),
-                            applicationState.getCurrentFiscalPeriod().getId());
-                        break;
-                    case CLASSIFICATION_CHOICE_AUTO_CLASSIFY:
-                        // Auto-Classify Unclassified Transactions
-                        int classifiedCount = classificationService.autoClassifyTransactions(
-                            applicationState.getCurrentCompany().getId(),
-                            applicationState.getCurrentFiscalPeriod().getId());
-                        if (classifiedCount > 0) {
-                            outputFormatter.printSuccess("Auto-classified " + classifiedCount + " transactions");
-                        }
-                        break;
-                    case CLASSIFICATION_CHOICE_RECLASSIFY_ALL:
-                        // Reclassify ALL Transactions (apply updated rules)
-                        int reclassifiedCount = classificationService.reclassifyAllTransactions(
-                            applicationState.getCurrentCompany().getId(),
-                            applicationState.getCurrentFiscalPeriod().getId());
-                        if (reclassifiedCount > 0) {
-                            outputFormatter.printSuccess("Reclassified " + reclassifiedCount + " transactions with updated rules");
-                        }
-                        break;
-                    case CLASSIFICATION_CHOICE_INIT_CHART:
-                        // Initialize Chart of Accounts & Mapping Rules (consolidated)
-                        handleChartOfAccountsInitialization();
-                        break;
-                    case CLASSIFICATION_CHOICE_SYNC_JOURNAL:
-                        // Sync Journal Entries (new transactions only)
-                        int syncCount = classificationService.synchronizeJournalEntries(
-                            applicationState.getCurrentCompany().getId(),
-                            applicationState.getCurrentFiscalPeriod().getId());
-                        if (syncCount > 0) {
-                            outputFormatter.printSuccess("Generated " + syncCount + " journal entries");
-                        }
-                        break;
-                    case CLASSIFICATION_CHOICE_REGENERATE_JOURNAL:
-                        // Regenerate ALL Journal Entries (after reclassification)
-                        System.out.println("\n⚠️  WARNING: This will delete and regenerate ALL journal entries!");
-                        System.out.print("Are you sure? (yes/no): ");
-                        String confirm = inputHandler.getString("Confirm");
-                        if (confirm.equalsIgnoreCase("yes")) {
-                            int regeneratedCount = classificationService.regenerateAllJournalEntries(
-                                applicationState.getCurrentCompany().getId(),
-                                applicationState.getCurrentFiscalPeriod().getId());
-                            if (regeneratedCount > 0) {
-                                outputFormatter.printSuccess("Regenerated " + regeneratedCount + " journal entries");
-                                outputFormatter.printInfo("Journal entries now reflect current transaction classifications");
-                            }
-                        } else {
-                            outputFormatter.printInfo("Operation cancelled");
-                        }
-                        break;
-                    case CLASSIFICATION_CHOICE_BACK:
-                        back = true;
-                        break;
-                    default:
-                        outputFormatter.printError("Invalid choice");
-                }
-            }
+            runClassificationMenu();
         } catch (IllegalStateException e) {
             outputFormatter.printError(e.getMessage());
+        }
+    }
+
+    /**
+     * Runs the classification menu loop.
+     * This method can be overridden by subclasses to customize menu behavior.
+     */
+    protected void runClassificationMenu() {
+        boolean back = false;
+        while (!back) {
+            menu.displayTransactionClassificationMenu();
+            int choice = inputHandler.getInteger("Enter your choice", 1, CLASSIFICATION_CHOICE_BACK);
+            back = processClassificationChoice(choice);
+        }
+    }
+
+    private boolean processClassificationChoice(int choice) {
+        switch (choice) {
+            case CLASSIFICATION_CHOICE_INTERACTIVE:
+                handleInteractiveClassification();
+                return false;
+            case CLASSIFICATION_CHOICE_AUTO_CLASSIFY:
+                handleAutoClassification();
+                return false;
+            case CLASSIFICATION_CHOICE_RECLASSIFY_ALL:
+                handleReclassification();
+                return false;
+            case CLASSIFICATION_CHOICE_INIT_CHART:
+                handleChartOfAccountsInitialization();
+                return false;
+            case CLASSIFICATION_CHOICE_SYNC_JOURNAL:
+                handleJournalSync();
+                return false;
+            case CLASSIFICATION_CHOICE_REGENERATE_JOURNAL:
+                handleJournalRegeneration();
+                return false;
+            case CLASSIFICATION_CHOICE_BACK:
+                return true;
+            default:
+                outputFormatter.printError("Invalid choice");
+                return false;
+        }
+    }
+
+    private void handleInteractiveClassification() {
+        classificationService.runInteractiveClassification(
+            applicationState.getCurrentCompany().getId(),
+            applicationState.getCurrentFiscalPeriod().getId());
+    }
+
+    private void handleAutoClassification() {
+        int classifiedCount = classificationService.autoClassifyTransactions(
+            applicationState.getCurrentCompany().getId(),
+            applicationState.getCurrentFiscalPeriod().getId());
+        if (classifiedCount > 0) {
+            outputFormatter.printSuccess("Auto-classified " + classifiedCount + " transactions");
+        }
+    }
+
+    private void handleReclassification() {
+        int reclassifiedCount = classificationService.reclassifyAllTransactions(
+            applicationState.getCurrentCompany().getId(),
+            applicationState.getCurrentFiscalPeriod().getId());
+        if (reclassifiedCount > 0) {
+            outputFormatter.printSuccess("Reclassified " + reclassifiedCount + " transactions with updated rules");
+        }
+    }
+
+    private void handleJournalSync() {
+        int syncCount = classificationService.synchronizeJournalEntries(
+            applicationState.getCurrentCompany().getId(),
+            applicationState.getCurrentFiscalPeriod().getId());
+        if (syncCount > 0) {
+            outputFormatter.printSuccess("Generated " + syncCount + " journal entries");
+        }
+    }
+
+    private void handleJournalRegeneration() {
+        System.out.println("\n⚠️  WARNING: This will delete and regenerate ALL journal entries!");
+        System.out.print("Are you sure? (yes/no): ");
+        String confirm = inputHandler.getString("Confirm");
+        if (confirm.equalsIgnoreCase("yes")) {
+            int regeneratedCount = classificationService.regenerateAllJournalEntries(
+                applicationState.getCurrentCompany().getId(),
+                applicationState.getCurrentFiscalPeriod().getId());
+            if (regeneratedCount > 0) {
+                outputFormatter.printSuccess("Regenerated " + regeneratedCount + " journal entries");
+                outputFormatter.printInfo("Journal entries now reflect current transaction classifications");
+            }
+        } else {
+            outputFormatter.printInfo("Operation cancelled");
         }
     }
     
@@ -367,115 +444,159 @@ public class DataManagementController {
         }
     }
     
+    /**
+     * Handles transaction correction process with filtering and pagination.
+     * This method is designed for extension by subclasses that need to customize
+     * transaction correction while maintaining the core workflow.
+     */
     public void handleTransactionCorrection() {
         outputFormatter.printHeader("Correct Transaction Categorization");
-        
+
         try {
             applicationState.requireFiscalPeriod();
-            
-            List<BankTransaction> allTransactions = csvImportService.getTransactions(
-                applicationState.getCurrentCompany().getId(),
-                applicationState.getCurrentFiscalPeriod().getId());
-            
-            if (allTransactions.isEmpty()) {
-                outputFormatter.printInfo("No transactions found to correct.");
-                return;
-            }
-            
-            // Enhanced: Show filtering options
-            System.out.println("\n📊 Total Transactions: " + allTransactions.size());
-            System.out.println("\nFilter Options:");
-            System.out.println("1. Show All Transactions");
-            System.out.println("2. Show Uncategorized Only");
-            System.out.println("3. Show Categorized Only");
-            System.out.println("4. Back to Data Management");
-            
-            int filterChoice = inputHandler.getInteger("Select filter option", 1, MAX_FILTER_CHOICE);
-            
-            if (filterChoice == FILTER_CHOICE_BACK) {
-                return;
-            }
-            
-            List<BankTransaction> transactions = filterTransactions(allTransactions, filterChoice);
-            
-            if (transactions.isEmpty()) {
-                outputFormatter.printInfo("No transactions match the selected filter.");
-                return;
-            }
-            
-            // Enhanced: Pagination for all transactions
-            final int transactionsPerPage = 50;
-            int totalPages = (int) Math.ceil((double) transactions.size() / transactionsPerPage);
-            int currentPage = 1;
-            
-            while (true) {
-                outputFormatter.printSubHeader("Transactions (Page " + currentPage + "/" + totalPages + ")");
-                
-                int startIdx = (currentPage - 1) * transactionsPerPage;
-                int endIdx = Math.min(startIdx + transactionsPerPage, transactions.size());
-                
-                for (int i = startIdx; i < endIdx; i++) {
-                    BankTransaction tx = transactions.get(i);
-                    String status = (tx.getAccountCode() != null && !tx.getAccountCode().isEmpty()) ? "✓" : "⚠️";
-                    System.out.printf("%d. %s [%s] %s - Amount: %s%n", 
-                        i + 1,
-                        status,
-                        tx.getTransactionDate(), 
-                        tx.getDetails().length() > MAX_DESCRIPTION_LENGTH ? tx.getDetails().substring(0, TRUNCATED_DESCRIPTION_LENGTH) + "..." : tx.getDetails(),
-                        tx.getDebitAmount() != null ? tx.getDebitAmount() : tx.getCreditAmount());
-                }
-                
-                System.out.println("\nNavigation:");
-                System.out.println("0. Go back");
-                if (currentPage > 1) {
-                    System.out.println("P. Previous page");
-                }
-                if (currentPage < totalPages) {
-                    System.out.println("N. Next page");
-                }
-                System.out.println("Or enter transaction number to correct (1-" + transactions.size() + ")");
-                
-                String input = inputHandler.getString("Your choice");
-                
-                if (input.equalsIgnoreCase("0")) {
-                    return;
-                } else if (input.equalsIgnoreCase("P") && currentPage > 1) {
-                    currentPage--;
-                    continue;
-                } else if (input.equalsIgnoreCase("N") && currentPage < totalPages) {
-                    currentPage++;
-                    continue;
-                }
-                
-                try {
-                    int txIndex = Integer.parseInt(input) - 1;
-                    if (txIndex >= 0 && txIndex < transactions.size()) {
-                        correctSingleTransaction(transactions.get(txIndex));
-                        
-                        // Refresh transactions after correction
-                        allTransactions = csvImportService.getTransactions(
-                            applicationState.getCurrentCompany().getId(),
-                            applicationState.getCurrentFiscalPeriod().getId());
-                        transactions = filterTransactions(allTransactions, filterChoice);
-                        totalPages = (int) Math.ceil((double) transactions.size() / transactionsPerPage);
-                        
-                        // Stay on same page if possible
-                        if (currentPage > totalPages) {
-                            currentPage = totalPages > 0 ? totalPages : 1;
-                        }
-                    } else {
-                        outputFormatter.printError("Invalid transaction number");
-                    }
-                } catch (NumberFormatException e) {
-                    outputFormatter.printError("Invalid input. Please enter a number or P/N/0");
-                }
-            }
-            
+            performTransactionCorrection();
         } catch (IllegalStateException e) {
             outputFormatter.printError(e.getMessage());
         } catch (Exception e) {
             outputFormatter.printError("Error correcting transaction: " + e.getMessage());
         }
+    }
+
+    /**
+     * Performs the core transaction correction logic.
+     * This method can be overridden by subclasses to customize the correction process.
+     */
+    protected void performTransactionCorrection() throws Exception {
+        List<BankTransaction> allTransactions = csvImportService.getTransactions(
+            applicationState.getCurrentCompany().getId(),
+            applicationState.getCurrentFiscalPeriod().getId());
+
+        if (allTransactions.isEmpty()) {
+            outputFormatter.printInfo("No transactions found to correct.");
+            return;
+        }
+
+        int filterChoice = setupTransactionFiltering(allTransactions.size());
+        if (filterChoice == FILTER_CHOICE_BACK) {
+            return;
+        }
+
+        List<BankTransaction> transactions = filterTransactions(allTransactions, filterChoice);
+
+        if (transactions.isEmpty()) {
+            outputFormatter.printInfo("No transactions match the selected filter.");
+            return;
+        }
+
+        handlePaginationAndCorrection(transactions, allTransactions, filterChoice);
+    }
+
+    private int setupTransactionFiltering(int totalTransactions) {
+        System.out.println("\n📊 Total Transactions: " + totalTransactions);
+        System.out.println("\nFilter Options:");
+        System.out.println("1. Show All Transactions");
+        System.out.println("2. Show Uncategorized Only");
+        System.out.println("3. Show Categorized Only");
+        System.out.println("4. Back to Data Management");
+
+        return inputHandler.getInteger("Select filter option", 1, MAX_FILTER_CHOICE);
+    }
+
+    private void handlePaginationAndCorrection(List<BankTransaction> transactions,
+                                            List<BankTransaction> allTransactions,
+                                            int filterChoice) throws Exception {
+        final int transactionsPerPage = 50;
+        int totalPages = (int) Math.ceil((double) transactions.size() / transactionsPerPage);
+        int currentPage = 1;
+
+        while (true) {
+            displayTransactionPage(transactions, currentPage, totalPages, transactionsPerPage);
+
+            String input = getUserNavigationInput(currentPage, totalPages, transactions.size());
+
+            if (input.equalsIgnoreCase("0")) {
+                return;
+            } else if (input.equalsIgnoreCase("P") && currentPage > 1) {
+                currentPage--;
+                continue;
+            } else if (input.equalsIgnoreCase("N") && currentPage < totalPages) {
+                currentPage++;
+                continue;
+            }
+
+            int txIndex = processTransactionSelection(input, transactions);
+            if (txIndex != -1) {
+                correctSingleTransaction(transactions.get(txIndex));
+                refreshTransactionData(allTransactions, filterChoice, currentPage, totalPages);
+                transactions = filterTransactions(allTransactions, filterChoice);
+                totalPages = (int) Math.ceil((double) transactions.size() / transactionsPerPage);
+
+                currentPage = adjustCurrentPageAfterRefresh(currentPage, totalPages);
+            }
+        }
+    }
+
+    private void displayTransactionPage(List<BankTransaction> transactions, int currentPage,
+                                      int totalPages, int transactionsPerPage) {
+        outputFormatter.printSubHeader("Transactions (Page " + currentPage + "/" + totalPages + ")");
+
+        int startIdx = (currentPage - 1) * transactionsPerPage;
+        int endIdx = Math.min(startIdx + transactionsPerPage, transactions.size());
+
+        for (int i = startIdx; i < endIdx; i++) {
+            BankTransaction tx = transactions.get(i);
+            String status = (tx.getAccountCode() != null && !tx.getAccountCode().isEmpty()) ? "✓" : "⚠️";
+            System.out.printf("%d. %s [%s] %s - Amount: %s%n",
+                i + 1,
+                status,
+                tx.getTransactionDate(),
+                tx.getDetails().length() > MAX_DESCRIPTION_LENGTH ? tx.getDetails().substring(0, TRUNCATED_DESCRIPTION_LENGTH) + "..." : tx.getDetails(),
+                tx.getDebitAmount() != null ? tx.getDebitAmount() : tx.getCreditAmount());
+        }
+    }
+
+    private String getUserNavigationInput(int currentPage, int totalPages, int totalTransactions) {
+        System.out.println("\nNavigation:");
+        System.out.println("0. Go back");
+        if (currentPage > 1) {
+            System.out.println("P. Previous page");
+        }
+        if (currentPage < totalPages) {
+            System.out.println("N. Next page");
+        }
+        System.out.println("Or enter transaction number to correct (1-" + totalTransactions + ")");
+
+        return inputHandler.getString("Your choice");
+    }
+
+    private int processTransactionSelection(String input, List<BankTransaction> transactions) {
+        try {
+            int txIndex = Integer.parseInt(input) - 1;
+            if (txIndex >= 0 && txIndex < transactions.size()) {
+                return txIndex;
+            } else {
+                outputFormatter.printError("Invalid transaction number");
+                return -1;
+            }
+        } catch (NumberFormatException e) {
+            outputFormatter.printError("Invalid input. Please enter a number or P/N/0");
+            return -1;
+        }
+    }
+
+    private void refreshTransactionData(List<BankTransaction> allTransactions, int filterChoice,
+                                      int currentPage, int totalPages) throws Exception {
+        allTransactions.clear();
+        allTransactions.addAll(csvImportService.getTransactions(
+            applicationState.getCurrentCompany().getId(),
+            applicationState.getCurrentFiscalPeriod().getId()));
+    }
+
+    private int adjustCurrentPageAfterRefresh(int currentPage, int newTotalPages) {
+        if (currentPage > newTotalPages) {
+            return newTotalPages > 0 ? newTotalPages : 1;
+        }
+        return currentPage;
     }
     
     private List<BankTransaction> filterTransactions(List<BankTransaction> transactions, int filterChoice) {
@@ -641,64 +762,94 @@ public class DataManagementController {
         return description.length() > MAX_DESCRIPTION_PATTERN_LENGTH ? description.substring(0, MAX_DESCRIPTION_PATTERN_LENGTH) : description;
     }
     
+    /**
+     * Handles transaction history viewing process.
+     * This method is designed for extension by subclasses that need to customize
+     * history viewing while maintaining the core workflow.
+     */
     public void handleTransactionHistory() {
         outputFormatter.printHeader("View Transaction History");
         
         try {
             applicationState.requireFiscalPeriod();
-            
-            List<BankTransaction> transactions = csvImportService.getTransactions(
-                applicationState.getCurrentCompany().getId(),
-                applicationState.getCurrentFiscalPeriod().getId());
-            
-            if (transactions.isEmpty()) {
-                outputFormatter.printInfo("No transactions found.");
-                return;
-            }
-            
-            outputFormatter.printSubHeader("Recent Transactions");
-            for (int i = 0; i < Math.min(transactions.size(), MAX_RECENT_TRANSACTIONS); i++) {
-                BankTransaction tx = transactions.get(i);
-                System.out.printf("%d. [%s] %s - Amount: %s%n", i + 1,
-                    tx.getTransactionDate(), 
-                    tx.getDetails().length() > MAX_DESCRIPTION_LENGTH ? tx.getDetails().substring(0, TRUNCATED_DESCRIPTION_LENGTH) + "..." : tx.getDetails(),
-                    tx.getDebitAmount() != null ? tx.getDebitAmount() : tx.getCreditAmount());
-            }
-            
-            int txIndex = inputHandler.getInteger("Select transaction number to view history", 1, 
-                Math.min(transactions.size(), MAX_RECENT_TRANSACTIONS)) - 1;
-            
-            BankTransaction tx = transactions.get(txIndex);
-            List<Map<String, Object>> history = 
-                dataManagementService.getTransactionCorrectionHistory(tx.getId());
-            
-            if (history.isEmpty()) {
-                outputFormatter.printInfo("No correction history found for this transaction.");
-            } else {
-                outputFormatter.printSubHeader("Correction History");
-                for (Map<String, Object> correction : history) {
-                    System.out.printf("Date: %s%n", correction.get("correctedAt"));
-                    System.out.printf("By: %s%n", correction.get("correctedBy"));
-                    System.out.printf("From: %s (%s)%n", 
-                        correction.get("originalAccountName"),
-                        correction.get("originalAccountCode"));
-                    System.out.printf("To: %s (%s)%n",
-                        correction.get("newAccountName"),
-                        correction.get("newAccountCode"));
-                    System.out.printf("Reason: %s%n", correction.get("reason"));
-                    outputFormatter.printSeparator();
-                }
-            }
-            
-            inputHandler.waitForEnter();
-            
+            performTransactionHistoryViewing();
         } catch (IllegalStateException e) {
             outputFormatter.printError(e.getMessage());
         } catch (Exception e) {
             outputFormatter.printError("Error viewing transaction history: " + e.getMessage());
         }
     }
+
+    /**
+     * Performs the core transaction history viewing logic.
+     * This method can be overridden by subclasses to customize history display.
+     */
+    protected void performTransactionHistoryViewing() throws Exception {
+        List<BankTransaction> transactions = csvImportService.getTransactions(
+            applicationState.getCurrentCompany().getId(),
+            applicationState.getCurrentFiscalPeriod().getId());
+        
+        if (transactions.isEmpty()) {
+            outputFormatter.printInfo("No transactions found.");
+            return;
+        }
+        
+        displayRecentTransactions(transactions);
+        BankTransaction selectedTransaction = selectTransactionForHistory(transactions);
+        displayTransactionCorrectionHistory(selectedTransaction);
+        
+        inputHandler.waitForEnter();
+    }
     
+    private void displayRecentTransactions(List<BankTransaction> transactions) {
+        outputFormatter.printSubHeader("Recent Transactions");
+        for (int i = 0; i < Math.min(transactions.size(), MAX_RECENT_TRANSACTIONS); i++) {
+            BankTransaction tx = transactions.get(i);
+            System.out.printf("%d. [%s] %s - Amount: %s%n", i + 1,
+                tx.getTransactionDate(), 
+                tx.getDetails().length() > MAX_DESCRIPTION_LENGTH ? tx.getDetails().substring(0, TRUNCATED_DESCRIPTION_LENGTH) + "..." : tx.getDetails(),
+                tx.getDebitAmount() != null ? tx.getDebitAmount() : tx.getCreditAmount());
+        }
+    }
+    
+    private BankTransaction selectTransactionForHistory(List<BankTransaction> transactions) {
+        int txIndex = inputHandler.getInteger("Select transaction number to view history", 1, 
+            Math.min(transactions.size(), MAX_RECENT_TRANSACTIONS)) - 1;
+        return transactions.get(txIndex);
+    }
+    
+    private void displayTransactionCorrectionHistory(BankTransaction tx) throws Exception {
+        List<Map<String, Object>> history = 
+            dataManagementService.getTransactionCorrectionHistory(tx.getId());
+        
+        if (history.isEmpty()) {
+            outputFormatter.printInfo("No correction history found for this transaction.");
+        } else {
+            displayCorrectionHistoryDetails(history);
+        }
+    }
+    
+    private void displayCorrectionHistoryDetails(List<Map<String, Object>> history) {
+        outputFormatter.printSubHeader("Correction History");
+        for (Map<String, Object> correction : history) {
+            System.out.printf("Date: %s%n", correction.get("correctedAt"));
+            System.out.printf("By: %s%n", correction.get("correctedBy"));
+            System.out.printf("From: %s (%s)%n", 
+                correction.get("originalAccountName"),
+                correction.get("originalAccountCode"));
+            System.out.printf("To: %s (%s)%n",
+                correction.get("newAccountName"),
+                correction.get("newAccountCode"));
+            System.out.printf("Reason: %s%n", correction.get("reason"));
+            outputFormatter.printSeparator();
+        }
+    }
+    
+    /**
+     * Handles data reset operations for the company.
+     * This method is designed for extension by subclasses that need to customize
+     * data reset behavior while maintaining the core confirmation and service calls.
+     */
     public void handleDataReset() {
         outputFormatter.printHeader("Reset Company Data");
         outputFormatter.printWarning("This will delete transaction data for the current company.");
@@ -734,6 +885,11 @@ public class DataManagementController {
         }
     }
     
+    /**
+     * Handles CSV export of transactions.
+     * This method is designed for extension by subclasses that need to customize
+     * export behavior while maintaining the core file generation and service calls.
+     */
     public void handleExportToCSV() {
         try {
             applicationState.requireContext();

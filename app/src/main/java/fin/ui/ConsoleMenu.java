@@ -23,10 +23,11 @@ public class ConsoleMenu {
         System.out.println("7. Data Management");
         System.out.println("8. Payroll Management");
         System.out.println("9. Budget Management");
-        System.out.println("10. Show current time");
-        System.out.println("11. System Logs");
-        System.out.println("12. Exit");
-        System.out.print("Enter your choice (1-12): ");
+        System.out.println("10. Depreciation Calculator");
+        System.out.println("11. Show current time");
+        System.out.println("12. System Logs");
+        System.out.println("13. Exit");
+        System.out.print("Enter your choice (1-13): ");
     }
 
     public void displayCompanyMenu() {

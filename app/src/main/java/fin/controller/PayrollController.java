@@ -10,6 +10,9 @@ import fin.ui.OutputFormatter;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.io.File;
 
 public class PayrollController {
     private final PayrollService payrollService;
@@ -208,88 +211,12 @@ public class PayrollController {
             Employee employee = new Employee();
             employee.setCompanyId(companyId);
 
-            // Basic Information
-            employee.setEmployeeNumber(inputHandler.getString("Enter employee number:"));
-            employee.setFirstName(inputHandler.getString("Enter first name:"));
-            employee.setLastName(inputHandler.getString("Enter last name:"));
-            employee.setEmail(inputHandler.getString("Enter email:"));
-            employee.setPhone(inputHandler.getString("Enter phone number:"));
-
-            // Employment Details
-            employee.setPosition(inputHandler.getString("Enter position:"));
-            employee.setDepartment(inputHandler.getString("Enter department:"));
-
-            // Hire Date
-            outputFormatter.printPlain("Enter hire date:");
-            int hireYear = inputHandler.getInteger("Year", MIN_YEAR, MAX_YEAR);
-            int hireMonth = inputHandler.getInteger("Month", MIN_MONTH, MAX_MONTH);
-            int hireDay = inputHandler.getInteger("Day", MIN_DAY, MAX_DAY);
-            employee.setHireDate(LocalDate.of(hireYear, hireMonth, hireDay));
-
-            // Salary Information
-            BigDecimal basicSalary = inputHandler.getBigDecimal("Enter basic salary:");
-            employee.setBasicSalary(basicSalary);
-
-            // Employment Type
-            outputFormatter.printPlain("Select employment type:");
-            outputFormatter.printPlain("1. Permanent");
-            outputFormatter.printPlain("2. Contract");
-            outputFormatter.printPlain("3. Temporary");
-            int empTypeChoice = inputHandler.getInteger("Enter choice", 1, EMPLOYMENT_TYPE_TEMPORARY);
-            switch (empTypeChoice) {
-                case EMPLOYMENT_TYPE_PERMANENT:
-                    employee.setEmploymentType(Employee.EmploymentType.PERMANENT);
-                    break;
-                case EMPLOYMENT_TYPE_CONTRACT:
-                    employee.setEmploymentType(Employee.EmploymentType.CONTRACT);
-                    break;
-                case EMPLOYMENT_TYPE_TEMPORARY:
-                    employee.setEmploymentType(Employee.EmploymentType.TEMPORARY);
-                    break;
-                default:
-                    throw new IllegalArgumentException("Invalid employment type choice: " + empTypeChoice);
-            }
-
-            // Salary Type
-            outputFormatter.printPlain("Select salary type:");
-            outputFormatter.printPlain("1. Monthly");
-            outputFormatter.printPlain("2. Weekly");
-            outputFormatter.printPlain("3. Hourly");
-            outputFormatter.printPlain("4. Daily");
-            int salaryTypeChoice = inputHandler.getInteger("Enter choice", 1, SALARY_TYPE_DAILY);
-            switch (salaryTypeChoice) {
-                case SALARY_TYPE_MONTHLY:
-                    employee.setSalaryType(Employee.SalaryType.MONTHLY);
-                    break;
-                case SALARY_TYPE_WEEKLY:
-                    employee.setSalaryType(Employee.SalaryType.WEEKLY);
-                    break;
-                case SALARY_TYPE_HOURLY:
-                    employee.setSalaryType(Employee.SalaryType.HOURLY);
-                    break;
-                case SALARY_TYPE_DAILY:
-                    employee.setSalaryType(Employee.SalaryType.DAILY);
-                    break;
-                default:
-                    throw new IllegalArgumentException("Invalid salary type choice: " + salaryTypeChoice);
-            }
-
-            // Tax Information
-            employee.setTaxNumber(inputHandler.getString("Enter tax number:"));
-
-            // Optional Banking Information
-            String addBanking = inputHandler.getString("Add banking information? (y/n):");
-            if (addBanking.toLowerCase().startsWith("y")) {
-                employee.setBankName(inputHandler.getString("Enter bank name:"));
-                employee.setAccountHolderName(inputHandler.getString("Enter account holder name:"));
-                employee.setAccountNumber(inputHandler.getString("Enter account number:"));
-                employee.setBranchCode(inputHandler.getString("Enter branch code:"));
-            }
-
-            employee.setCreatedBy("system");
-
-            Employee created = payrollService.createEmployee(employee);
-            outputFormatter.printSuccess("Employee created successfully: " + created.getEmployeeNumber() + " - " + created.getFullName());
+            collectBasicEmployeeInformation(employee);
+            collectEmploymentDetails(employee);
+            collectSalaryInformation(employee);
+            collectTaxInformation(employee);
+            collectBankingInformation(employee);
+            createEmployeeRecord(employee);
 
         } catch (Exception e) {
             outputFormatter.printError("Failed to create employee: " + e.getMessage());
@@ -298,129 +225,240 @@ public class PayrollController {
         inputHandler.waitForEnter();
     }
 
+    private void collectBasicEmployeeInformation(Employee employee) {
+        employee.setEmployeeNumber(inputHandler.getString("Enter employee number:"));
+        employee.setFirstName(inputHandler.getString("Enter first name:"));
+        employee.setLastName(inputHandler.getString("Enter last name:"));
+        employee.setEmail(inputHandler.getString("Enter email:"));
+        employee.setPhone(inputHandler.getString("Enter phone number:"));
+    }
+
+    private void collectEmploymentDetails(Employee employee) {
+        employee.setPosition(inputHandler.getString("Enter position:"));
+        employee.setDepartment(inputHandler.getString("Enter department:"));
+
+        outputFormatter.printPlain("Enter hire date:");
+        int hireYear = inputHandler.getInteger("Year", MIN_YEAR, MAX_YEAR);
+        int hireMonth = inputHandler.getInteger("Month", MIN_MONTH, MAX_MONTH);
+        int hireDay = inputHandler.getInteger("Day", MIN_DAY, MAX_DAY);
+        employee.setHireDate(LocalDate.of(hireYear, hireMonth, hireDay));
+    }
+
+    private void collectSalaryInformation(Employee employee) {
+        BigDecimal basicSalary = inputHandler.getBigDecimal("Enter basic salary:");
+        employee.setBasicSalary(basicSalary);
+
+        collectEmploymentType(employee);
+        collectSalaryType(employee);
+    }
+
+    private void collectEmploymentType(Employee employee) {
+        outputFormatter.printPlain("Select employment type:");
+        outputFormatter.printPlain("1. Permanent");
+        outputFormatter.printPlain("2. Contract");
+        outputFormatter.printPlain("3. Temporary");
+        int empTypeChoice = inputHandler.getInteger("Enter choice", 1, EMPLOYMENT_TYPE_TEMPORARY);
+        switch (empTypeChoice) {
+            case EMPLOYMENT_TYPE_PERMANENT:
+                employee.setEmploymentType(Employee.EmploymentType.PERMANENT);
+                break;
+            case EMPLOYMENT_TYPE_CONTRACT:
+                employee.setEmploymentType(Employee.EmploymentType.CONTRACT);
+                break;
+            case EMPLOYMENT_TYPE_TEMPORARY:
+                employee.setEmploymentType(Employee.EmploymentType.TEMPORARY);
+                break;
+            default:
+                throw new IllegalArgumentException("Invalid employment type choice: " + empTypeChoice);
+        }
+    }
+
+    private void collectSalaryType(Employee employee) {
+        outputFormatter.printPlain("Select salary type:");
+        outputFormatter.printPlain("1. Monthly");
+        outputFormatter.printPlain("2. Weekly");
+        outputFormatter.printPlain("3. Hourly");
+        outputFormatter.printPlain("4. Daily");
+        int salaryTypeChoice = inputHandler.getInteger("Enter choice", 1, SALARY_TYPE_DAILY);
+        switch (salaryTypeChoice) {
+            case SALARY_TYPE_MONTHLY:
+                employee.setSalaryType(Employee.SalaryType.MONTHLY);
+                break;
+            case SALARY_TYPE_WEEKLY:
+                employee.setSalaryType(Employee.SalaryType.WEEKLY);
+                break;
+            case SALARY_TYPE_HOURLY:
+                employee.setSalaryType(Employee.SalaryType.HOURLY);
+                break;
+            case SALARY_TYPE_DAILY:
+                employee.setSalaryType(Employee.SalaryType.DAILY);
+                break;
+            default:
+                throw new IllegalArgumentException("Invalid salary type choice: " + salaryTypeChoice);
+        }
+    }
+
+    private void collectTaxInformation(Employee employee) {
+        employee.setTaxNumber(inputHandler.getString("Enter tax number:"));
+    }
+
+    private void collectBankingInformation(Employee employee) {
+        String addBanking = inputHandler.getString("Add banking information? (y/n):");
+        if (addBanking.toLowerCase().startsWith("y")) {
+            employee.setBankName(inputHandler.getString("Enter bank name:"));
+            employee.setAccountHolderName(inputHandler.getString("Enter account holder name:"));
+            employee.setAccountNumber(inputHandler.getString("Enter account number:"));
+            employee.setBranchCode(inputHandler.getString("Enter branch code:"));
+        }
+    }
+
+    private void createEmployeeRecord(Employee employee) {
+        employee.setCreatedBy("system");
+        Employee created = payrollService.createEmployee(employee);
+        outputFormatter.printSuccess("Employee created successfully: " + created.getEmployeeNumber() + " - " + created.getFullName());
+    }
+
     private void updateEmployee(Long companyId) {
         outputFormatter.printHeader("Update Employee");
 
         try {
-            // Get list of employees to choose from
-            List<Employee> employees = payrollService.getActiveEmployees(companyId);
-            if (employees.isEmpty()) {
-                outputFormatter.printWarning("No active employees found.");
-                inputHandler.waitForEnter();
-                return;
+            Employee employee = selectEmployeeToUpdate(companyId);
+            if (employee == null) {
+                return; // No employees or user cancelled
             }
 
-            outputFormatter.printPlain("Select employee to update:");
-            for (int i = 0; i < employees.size(); i++) {
-                Employee emp = employees.get(i);
-                outputFormatter.printPlain((i + 1) + ". " + emp.getEmployeeNumber() + " - " + emp.getFullName());
-            }
-
-            int choice = inputHandler.getInteger("Enter employee number", 1, employees.size());
-            Employee employee = employees.get(choice - 1);
-
-            outputFormatter.printPlain("Current employee details:");
-            outputFormatter.printPlain("Name: " + employee.getFullName());
-            outputFormatter.printPlain("Position: " + employee.getPosition());
-            outputFormatter.printPlain("Department: " + employee.getDepartment());
-            outputFormatter.printPlain("Basic Salary: " + employee.getBasicSalary());
-            outputFormatter.printPlain("Email: " + employee.getEmail());
-            outputFormatter.printPlain("Tax Number: " + (employee.getTaxNumber() != null ? employee.getTaxNumber() : "Not set"));
-            outputFormatter.printPlain("UIF Number: " + (employee.getUifNumber() != null ? employee.getUifNumber() : "Not set"));
-            outputFormatter.printPlain("Medical Aid Number: " + (employee.getMedicalAidNumber() != null ? employee.getMedicalAidNumber() : "Not set"));
-            outputFormatter.printPlain("Pension Fund Number: " + (employee.getPensionFundNumber() != null ? employee.getPensionFundNumber() : "Not set"));
-            outputFormatter.printPlain("Bank Name: " + (employee.getBankName() != null ? employee.getBankName() : "Not set"));
-            outputFormatter.printPlain("Account Number: " + (employee.getAccountNumber() != null ? employee.getAccountNumber() : "Not set"));
-            outputFormatter.printPlain("Branch Code: " + (employee.getBranchCode() != null ? employee.getBranchCode() : "Not set"));
-
-            // Update basic information
-            String updateFirstName = inputHandler.getString("Enter new first name (leave empty to keep current):");
-            if (!updateFirstName.trim().isEmpty()) {
-                employee.setFirstName(updateFirstName);
-            }
-
-            String updateLastName = inputHandler.getString("Enter new last name (leave empty to keep current):");
-            if (!updateLastName.trim().isEmpty()) {
-                employee.setLastName(updateLastName);
-            }
-
-            String updateEmail = inputHandler.getString("Enter new email (leave empty to keep current):");
-            if (!updateEmail.trim().isEmpty()) {
-                employee.setEmail(updateEmail);
-            }
-
-            String updatePosition = inputHandler.getString("Enter new position (leave empty to keep current):");
-            if (!updatePosition.trim().isEmpty()) {
-                employee.setPosition(updatePosition);
-            }
-
-            String updateDepartment = inputHandler.getString("Enter new department (leave empty to keep current):");
-            if (!updateDepartment.trim().isEmpty()) {
-                employee.setDepartment(updateDepartment);
-            }
-
-            String updateSalaryStr = inputHandler.getString("Enter new basic salary (leave empty to keep current):");
-            if (!updateSalaryStr.trim().isEmpty()) {
-                try {
-                    BigDecimal newSalary = new BigDecimal(updateSalaryStr);
-                    employee.setBasicSalary(newSalary);
-                } catch (NumberFormatException e) {
-                    outputFormatter.printWarning("Invalid salary format, keeping current salary.");
-                }
-            }
-
-            // Update tax and identification information
-            String updateTaxNumber = inputHandler.getString("Enter new tax number (leave empty to keep current):");
-            if (!updateTaxNumber.trim().isEmpty()) {
-                employee.setTaxNumber(updateTaxNumber);
-            }
-
-            String updateUifNumber = inputHandler.getString("Enter new UIF number (leave empty to keep current):");
-            if (!updateUifNumber.trim().isEmpty()) {
-                employee.setUifNumber(updateUifNumber);
-            }
-
-            String updateMedicalAidNumber = inputHandler.getString("Enter new medical aid number (leave empty to keep current):");
-            if (!updateMedicalAidNumber.trim().isEmpty()) {
-                employee.setMedicalAidNumber(updateMedicalAidNumber);
-            }
-
-            String updatePensionFundNumber = inputHandler.getString("Enter new pension fund number (leave empty to keep current):");
-            if (!updatePensionFundNumber.trim().isEmpty()) {
-                employee.setPensionFundNumber(updatePensionFundNumber);
-            }
-
-            // Update banking information
-            String updateBankName = inputHandler.getString("Enter new bank name (leave empty to keep current):");
-            if (!updateBankName.trim().isEmpty()) {
-                employee.setBankName(updateBankName);
-            }
-
-            String updateAccountNumber = inputHandler.getString("Enter new account number (leave empty to keep current):");
-            if (!updateAccountNumber.trim().isEmpty()) {
-                employee.setAccountNumber(updateAccountNumber);
-            }
-
-            String updateBranchCode = inputHandler.getString("Enter new branch code (leave empty to keep current):");
-            if (!updateBranchCode.trim().isEmpty()) {
-                employee.setBranchCode(updateBranchCode);
-            }
-
-            String updateAccountHolderName = inputHandler.getString("Enter new account holder name (leave empty to keep current):");
-            if (!updateAccountHolderName.trim().isEmpty()) {
-                employee.setAccountHolderName(updateAccountHolderName);
-            }
-
-            employee.setUpdatedBy("system");
-
-            Employee updated = payrollService.updateEmployee(employee);
-            outputFormatter.printSuccess("Employee updated successfully: " + updated.getEmployeeNumber() + " - " + updated.getFullName());
+            displayCurrentEmployeeDetails(employee);
+            collectBasicInformationUpdates(employee);
+            collectTaxInformationUpdates(employee);
+            collectBankingInformationUpdates(employee);
+            performEmployeeUpdate(employee);
 
         } catch (Exception e) {
             outputFormatter.printError("Failed to update employee: " + e.getMessage());
         }
 
         inputHandler.waitForEnter();
+    }
+
+    private Employee selectEmployeeToUpdate(Long companyId) {
+        List<Employee> employees = payrollService.getActiveEmployees(companyId);
+        if (employees.isEmpty()) {
+            outputFormatter.printWarning("No active employees found.");
+            inputHandler.waitForEnter();
+            return null;
+        }
+
+        outputFormatter.printPlain("Select employee to update:");
+        for (int i = 0; i < employees.size(); i++) {
+            Employee emp = employees.get(i);
+            outputFormatter.printPlain((i + 1) + ". " + emp.getEmployeeNumber() + " - " + emp.getFullName());
+        }
+
+        int choice = inputHandler.getInteger("Enter employee number", 1, employees.size());
+        return employees.get(choice - 1);
+    }
+
+    private void displayCurrentEmployeeDetails(Employee employee) {
+        outputFormatter.printPlain("Current employee details:");
+        outputFormatter.printPlain("Name: " + employee.getFullName());
+        outputFormatter.printPlain("Position: " + employee.getPosition());
+        outputFormatter.printPlain("Department: " + employee.getDepartment());
+        outputFormatter.printPlain("Basic Salary: " + employee.getBasicSalary());
+        outputFormatter.printPlain("Email: " + employee.getEmail());
+        outputFormatter.printPlain("Tax Number: " + (employee.getTaxNumber() != null ? employee.getTaxNumber() : "Not set"));
+        outputFormatter.printPlain("UIF Number: " + (employee.getUifNumber() != null ? employee.getUifNumber() : "Not set"));
+        outputFormatter.printPlain("Medical Aid Number: " + (employee.getMedicalAidNumber() != null ? employee.getMedicalAidNumber() : "Not set"));
+        outputFormatter.printPlain("Pension Fund Number: " + (employee.getPensionFundNumber() != null ? employee.getPensionFundNumber() : "Not set"));
+        outputFormatter.printPlain("Bank Name: " + (employee.getBankName() != null ? employee.getBankName() : "Not set"));
+        outputFormatter.printPlain("Account Number: " + (employee.getAccountNumber() != null ? employee.getAccountNumber() : "Not set"));
+        outputFormatter.printPlain("Branch Code: " + (employee.getBranchCode() != null ? employee.getBranchCode() : "Not set"));
+    }
+
+    private void collectBasicInformationUpdates(Employee employee) {
+        String updateFirstName = inputHandler.getString("Enter new first name (leave empty to keep current):");
+        if (!updateFirstName.trim().isEmpty()) {
+            employee.setFirstName(updateFirstName);
+        }
+
+        String updateLastName = inputHandler.getString("Enter new last name (leave empty to keep current):");
+        if (!updateLastName.trim().isEmpty()) {
+            employee.setLastName(updateLastName);
+        }
+
+        String updateEmail = inputHandler.getString("Enter new email (leave empty to keep current):");
+        if (!updateEmail.trim().isEmpty()) {
+            employee.setEmail(updateEmail);
+        }
+
+        String updatePosition = inputHandler.getString("Enter new position (leave empty to keep current):");
+        if (!updatePosition.trim().isEmpty()) {
+            employee.setPosition(updatePosition);
+        }
+
+        String updateDepartment = inputHandler.getString("Enter new department (leave empty to keep current):");
+        if (!updateDepartment.trim().isEmpty()) {
+            employee.setDepartment(updateDepartment);
+        }
+
+        String updateSalaryStr = inputHandler.getString("Enter new basic salary (leave empty to keep current):");
+        if (!updateSalaryStr.trim().isEmpty()) {
+            try {
+                BigDecimal newSalary = new BigDecimal(updateSalaryStr);
+                employee.setBasicSalary(newSalary);
+            } catch (NumberFormatException e) {
+                outputFormatter.printWarning("Invalid salary format, keeping current salary.");
+            }
+        }
+    }
+
+    private void collectTaxInformationUpdates(Employee employee) {
+        String updateTaxNumber = inputHandler.getString("Enter new tax number (leave empty to keep current):");
+        if (!updateTaxNumber.trim().isEmpty()) {
+            employee.setTaxNumber(updateTaxNumber);
+        }
+
+        String updateUifNumber = inputHandler.getString("Enter new UIF number (leave empty to keep current):");
+        if (!updateUifNumber.trim().isEmpty()) {
+            employee.setUifNumber(updateUifNumber);
+        }
+
+        String updateMedicalAidNumber = inputHandler.getString("Enter new medical aid number (leave empty to keep current):");
+        if (!updateMedicalAidNumber.trim().isEmpty()) {
+            employee.setMedicalAidNumber(updateMedicalAidNumber);
+        }
+
+        String updatePensionFundNumber = inputHandler.getString("Enter new pension fund number (leave empty to keep current):");
+        if (!updatePensionFundNumber.trim().isEmpty()) {
+            employee.setPensionFundNumber(updatePensionFundNumber);
+        }
+    }
+
+    private void collectBankingInformationUpdates(Employee employee) {
+        String updateBankName = inputHandler.getString("Enter new bank name (leave empty to keep current):");
+        if (!updateBankName.trim().isEmpty()) {
+            employee.setBankName(updateBankName);
+        }
+
+        String updateAccountNumber = inputHandler.getString("Enter new account number (leave empty to keep current):");
+        if (!updateAccountNumber.trim().isEmpty()) {
+            employee.setAccountNumber(updateAccountNumber);
+        }
+
+        String updateBranchCode = inputHandler.getString("Enter new branch code (leave empty to keep current):");
+        if (!updateBranchCode.trim().isEmpty()) {
+            employee.setBranchCode(updateBranchCode);
+        }
+
+        String updateAccountHolderName = inputHandler.getString("Enter new account holder name (leave empty to keep current):");
+        if (!updateAccountHolderName.trim().isEmpty()) {
+            employee.setAccountHolderName(updateAccountHolderName);
+        }
+    }
+
+    private void performEmployeeUpdate(Employee employee) {
+        employee.setUpdatedBy("system");
+        Employee updated = payrollService.updateEmployee(employee);
+        outputFormatter.printSuccess("Employee updated successfully: " + updated.getEmployeeNumber() + " - " + updated.getFullName());
     }
 
     private void deleteEmployee(Long companyId) {
@@ -842,62 +880,75 @@ public class PayrollController {
         outputFormatter.printHeader("Delete Payslip Document");
 
         try {
-            // Collect all payslip documents
-            java.util.List<java.io.File> allDocuments = new java.util.ArrayList<>();
-
-            // From exports directory
-            java.io.File exportsDir = new java.io.File("exports");
-            if (exportsDir.exists() && exportsDir.isDirectory()) {
-                java.io.File[] exportFiles = exportsDir.listFiles((dir, name) -> name.startsWith("payslip_") && name.endsWith(".pdf"));
-                if (exportFiles != null) {
-                    java.util.Arrays.stream(exportFiles).forEach(allDocuments::add);
-                }
-            }
-
-            // From payslips directory
-            java.io.File payslipsDir = new java.io.File("payslips");
-            if (payslipsDir.exists() && payslipsDir.isDirectory()) {
-                java.io.File[] payslipFiles = payslipsDir.listFiles((dir, name) -> name.startsWith("payslip_") && name.endsWith(".pdf"));
-                if (payslipFiles != null) {
-                    java.util.Arrays.stream(payslipFiles).forEach(allDocuments::add);
-                }
-            }
-
+            List<File> allDocuments = collectAllPayslipDocuments();
             if (allDocuments.isEmpty()) {
                 outputFormatter.printWarning("No payslip documents found to delete.");
                 inputHandler.waitForEnter();
                 return;
             }
 
-            // Display documents for selection
-            outputFormatter.printPlain("Select document to delete:");
-            for (int i = 0; i < allDocuments.size(); i++) {
-                java.io.File doc = allDocuments.get(i);
-                outputFormatter.printPlain((i + 1) + ". " + doc.getName() + " (" + doc.getParent() + ")");
-            }
-
-            int choice = inputHandler.getInteger("Enter document number to delete", 1, allDocuments.size());
-            java.io.File selectedDoc = allDocuments.get(choice - 1);
-
-            // Confirm deletion
-            outputFormatter.printWarning("Are you sure you want to delete: " + selectedDoc.getName() + "?");
-            outputFormatter.printWarning("This action cannot be undone.");
-            String confirm = inputHandler.getString("Type 'DELETE' to confirm:");
-
-            if ("DELETE".equals(confirm.toUpperCase())) {
-                if (selectedDoc.delete()) {
-                    outputFormatter.printSuccess("Document deleted successfully: " + selectedDoc.getName());
-                } else {
-                    outputFormatter.printError("Failed to delete document: " + selectedDoc.getName());
-                }
-            } else {
-                outputFormatter.printPlain("Delete operation cancelled.");
-            }
+            File selectedDoc = displayDocumentsForSelection(allDocuments);
+            confirmDocumentDeletion(selectedDoc);
+            performDocumentDeletion(selectedDoc);
 
         } catch (Exception e) {
             outputFormatter.printError("Error deleting document: " + e.getMessage());
         }
 
         inputHandler.waitForEnter();
+    }
+
+    private List<File> collectAllPayslipDocuments() {
+        List<File> allDocuments = new ArrayList<>();
+
+        // From exports directory
+        File exportsDir = new File("exports");
+        if (exportsDir.exists() && exportsDir.isDirectory()) {
+            File[] exportFiles = exportsDir.listFiles((dir, name) -> name.startsWith("payslip_") && name.endsWith(".pdf"));
+            if (exportFiles != null) {
+                Arrays.stream(exportFiles).forEach(allDocuments::add);
+            }
+        }
+
+        // From payslips directory
+        File payslipsDir = new File("payslips");
+        if (payslipsDir.exists() && payslipsDir.isDirectory()) {
+            File[] payslipFiles = payslipsDir.listFiles((dir, name) -> name.startsWith("payslip_") && name.endsWith(".pdf"));
+            if (payslipFiles != null) {
+                Arrays.stream(payslipFiles).forEach(allDocuments::add);
+            }
+        }
+
+        return allDocuments;
+    }
+
+    private File displayDocumentsForSelection(List<File> allDocuments) {
+        outputFormatter.printPlain("Select document to delete:");
+        for (int i = 0; i < allDocuments.size(); i++) {
+            File doc = allDocuments.get(i);
+            outputFormatter.printPlain((i + 1) + ". " + doc.getName() + " (" + doc.getParent() + ")");
+        }
+
+        int choice = inputHandler.getInteger("Enter document number to delete", 1, allDocuments.size());
+        return allDocuments.get(choice - 1);
+    }
+
+    private void confirmDocumentDeletion(File selectedDoc) {
+        outputFormatter.printWarning("Are you sure you want to delete: " + selectedDoc.getName() + "?");
+        outputFormatter.printWarning("This action cannot be undone.");
+    }
+
+    private void performDocumentDeletion(File selectedDoc) {
+        String confirm = inputHandler.getString("Type 'DELETE' to confirm:");
+
+        if ("DELETE".equals(confirm.toUpperCase())) {
+            if (selectedDoc.delete()) {
+                outputFormatter.printSuccess("Document deleted successfully: " + selectedDoc.getName());
+            } else {
+                outputFormatter.printError("Failed to delete document: " + selectedDoc.getName());
+            }
+        } else {
+            outputFormatter.printPlain("Delete operation cancelled.");
+        }
     }
 }
