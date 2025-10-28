@@ -54,6 +54,20 @@ CREATE TABLE strategic_milestones (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Operational Activities Table (Monthly operational plan)
+CREATE TABLE operational_activities (
+    id SERIAL PRIMARY KEY,
+    strategic_plan_id INTEGER NOT NULL REFERENCES strategic_plans(id) ON DELETE CASCADE,
+    month_number INTEGER NOT NULL CHECK (month_number BETWEEN 1 AND 12), -- 1=Jan, 2=Feb, etc.
+    title VARCHAR(255) NOT NULL,
+    activities TEXT NOT NULL, -- Key activities and milestones for the month
+    responsible_parties VARCHAR(500), -- Who is responsible (comma-separated)
+    status VARCHAR(50) DEFAULT 'PLANNED', -- PLANNED, IN_PROGRESS, COMPLETED
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(strategic_plan_id, month_number)
+);
+
 -- Budgets Table
 CREATE TABLE budgets (
     id SERIAL PRIMARY KEY,
@@ -131,6 +145,8 @@ CREATE INDEX idx_budgets_status ON budgets(status);
 CREATE INDEX idx_budget_items_account ON budget_items(account_id);
 CREATE INDEX idx_budget_monthly_allocations_item ON budget_monthly_allocations(budget_item_id);
 CREATE INDEX idx_budget_monthly_allocations_month ON budget_monthly_allocations(month_number);
+CREATE INDEX idx_operational_activities_plan ON operational_activities(strategic_plan_id);
+CREATE INDEX idx_operational_activities_month ON operational_activities(month_number);
 
 -- Comments for documentation
 COMMENT ON TABLE strategic_plans IS 'Strategic plans with vision, mission, and goals for organizations';
@@ -142,3 +158,4 @@ COMMENT ON TABLE budget_categories IS 'Budget categories (Revenue/Expense) with 
 COMMENT ON TABLE budget_items IS 'Individual budget line items linked to chart of accounts with annual totals';
 COMMENT ON TABLE budget_monthly_allocations IS 'Monthly budget allocations and actual spending with variance tracking';
 COMMENT ON TABLE budget_projections IS 'Multi-year financial projections and growth modeling';
+COMMENT ON TABLE operational_activities IS 'Monthly operational activities and milestones aligned with strategic plan';

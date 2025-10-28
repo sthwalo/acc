@@ -69,15 +69,15 @@ INSERT INTO budget_monthly_allocations (budget_item_id, month_number, allocated_
 (2, 9, 0.00), (2, 10, 0.00), (2, 11, 0.00), (2, 12, 0.00);
 
 -- Insert Monthly Allocations for Infrastructure & Equipment
--- Smart Boards (R250,000 in January)
+-- Smart Boards and Technology (R250,000 in January)
 INSERT INTO budget_monthly_allocations (budget_item_id, month_number, allocated_amount) VALUES
 (3, 1, 250000.00), (3, 2, 0.00), (3, 3, 0.00), (3, 4, 0.00),
 (3, 5, 0.00), (3, 6, 0.00), (3, 7, 0.00), (3, 8, 0.00),
 (3, 9, 0.00), (3, 10, 0.00), (3, 11, 0.00), (3, 12, 0.00);
 
--- Facility Maintenance (R50,000 in Jan, R100,000 in Feb)
+-- Facility Maintenance (R150,000 in February)
 INSERT INTO budget_monthly_allocations (budget_item_id, month_number, allocated_amount) VALUES
-(4, 1, 50000.00), (4, 2, 100000.00), (4, 3, 0.00), (4, 4, 0.00),
+(4, 1, 0.00), (4, 2, 150000.00), (4, 3, 0.00), (4, 4, 0.00),
 (4, 5, 0.00), (4, 6, 0.00), (4, 7, 0.00), (4, 8, 0.00),
 (4, 9, 0.00), (4, 10, 0.00), (4, 11, 0.00), (4, 12, 0.00);
 
@@ -88,36 +88,54 @@ INSERT INTO budget_monthly_allocations (budget_item_id, month_number, allocated_
 (5, 9, 0.00), (5, 10, 0.00), (5, 11, 0.00), (5, 12, 0.00);
 
 -- Insert Monthly Allocations for Curriculum & Materials
--- Core Curriculum (R60,000 each in Jan-Jun, R10,000 in Jul-Aug)
+-- Core Curriculum Materials (R60,000 Jan, R40,000 Feb, R30,000 Mar-Jun, R10,000 Jul-Aug)
 INSERT INTO budget_monthly_allocations (budget_item_id, month_number, allocated_amount) VALUES
 (6, 1, 60000.00), (6, 2, 40000.00), (6, 3, 30000.00), (6, 4, 30000.00),
 (6, 5, 30000.00), (6, 6, 30000.00), (6, 7, 10000.00), (6, 8, 10000.00),
 (6, 9, 0.00), (6, 10, 0.00), (6, 11, 0.00), (6, 12, 0.00);
 
--- Educational Resources (R15,000 each in Jan-Apr)
+-- Educational Resources (R0 - not used in this simplified view)
 INSERT INTO budget_monthly_allocations (budget_item_id, month_number, allocated_amount) VALUES
-(7, 1, 15000.00), (7, 2, 15000.00), (7, 3, 15000.00), (7, 4, 15000.00),
+(7, 1, 0.00), (7, 2, 0.00), (7, 3, 0.00), (7, 4, 0.00),
 (7, 5, 0.00), (7, 6, 0.00), (7, 7, 0.00), (7, 8, 0.00),
 (7, 9, 0.00), (7, 10, 0.00), (7, 11, 0.00), (7, 12, 0.00);
 
--- Assessment Materials (R10,000 each in Feb-Apr)
+-- Assessment Materials (R0 - not used in this simplified view)
 INSERT INTO budget_monthly_allocations (budget_item_id, month_number, allocated_amount) VALUES
-(8, 1, 0.00), (8, 2, 10000.00), (8, 3, 10000.00), (8, 4, 10000.00),
+(8, 1, 0.00), (8, 2, 0.00), (8, 3, 0.00), (8, 4, 0.00),
 (8, 5, 0.00), (8, 6, 0.00), (8, 7, 0.00), (8, 8, 0.00),
 (8, 9, 0.00), (8, 10, 0.00), (8, 11, 0.00), (8, 12, 0.00);
 
--- Digital Learning Tools (R10,000 each in Mar-May)
+-- Digital Learning Tools (R0 - not used in this simplified view)
 INSERT INTO budget_monthly_allocations (budget_item_id, month_number, allocated_amount) VALUES
-(9, 1, 0.00), (9, 2, 0.00), (9, 3, 10000.00), (9, 4, 10000.00),
-(9, 5, 10000.00), (9, 6, 0.00), (9, 7, 0.00), (9, 8, 0.00),
+(9, 1, 0.00), (9, 2, 0.00), (9, 3, 0.00), (9, 4, 0.00),
+(9, 5, 0.00), (9, 6, 0.00), (9, 7, 0.00), (9, 8, 0.00),
 (9, 9, 0.00), (9, 10, 0.00), (9, 11, 0.00), (9, 12, 0.00);
 
 -- Insert Monthly Allocations for Community Engagement
--- PTA and Parent Programs (R15,000 each in Jan-Feb, R25,000 each in Mar-Jun, R15,000 in Oct, R10,000 each in Nov-Dec)
+-- PTA and Parent Programs (R15,000 Jan-Feb, R25,000 Mar-Jun, R25,000 Jul-Sep, R15,000 Oct, R10,000 Nov-Dec)
 INSERT INTO budget_monthly_allocations (budget_item_id, month_number, allocated_amount) VALUES
 (10, 1, 15000.00), (10, 2, 15000.00), (10, 3, 25000.00), (10, 4, 25000.00),
 (10, 5, 25000.00), (10, 6, 25000.00), (10, 7, 25000.00), (10, 8, 25000.00),
 (10, 9, 25000.00), (10, 10, 15000.00), (10, 11, 10000.00), (10, 12, 10000.00);
+
+-- Community Outreach (R0 - not used in this simplified view)
+INSERT INTO budget_monthly_allocations (budget_item_id, month_number, allocated_amount) VALUES
+(11, 1, 0.00), (11, 2, 0.00), (11, 3, 0.00), (11, 4, 0.00),
+(11, 5, 0.00), (11, 6, 0.00), (11, 7, 0.00), (11, 8, 0.00),
+(11, 9, 0.00), (11, 10, 0.00), (11, 11, 0.00), (11, 12, 0.00);
+
+-- Student Wellness Programs (R0 - not used in this simplified view)
+INSERT INTO budget_monthly_allocations (budget_item_id, month_number, allocated_amount) VALUES
+(12, 1, 0.00), (12, 2, 0.00), (12, 3, 0.00), (12, 4, 0.00),
+(12, 5, 0.00), (12, 6, 0.00), (12, 7, 0.00), (12, 8, 0.00),
+(12, 9, 0.00), (12, 10, 0.00), (12, 11, 0.00), (12, 12, 0.00);
+
+-- School Events and Celebrations (R0 - not used in this simplified view)
+INSERT INTO budget_monthly_allocations (budget_item_id, month_number, allocated_amount) VALUES
+(13, 1, 0.00), (13, 2, 0.00), (13, 3, 0.00), (13, 4, 0.00),
+(13, 5, 0.00), (13, 6, 0.00), (13, 7, 0.00), (13, 8, 0.00),
+(13, 9, 0.00), (13, 10, 0.00), (13, 11, 0.00), (13, 12, 0.00);
 
 -- Community Outreach (R15,000 each in Jan-Jun)
 INSERT INTO budget_monthly_allocations (budget_item_id, month_number, allocated_amount) VALUES
@@ -171,6 +189,21 @@ INSERT INTO strategic_milestones (strategic_initiative_id, title, description, t
 (1, 'Staff Training on Technology', 'Train all teachers on new technology tools', '2026-03-31', 'PENDING'),
 (2, 'Workshop 1 Completion', 'Complete first staff development workshop', '2026-03-31', 'PENDING'),
 (2, 'Workshop 2 Completion', 'Complete second staff development workshop', '2026-06-30', 'PENDING');
+
+-- Insert Monthly Operational Activities for 2026
+INSERT INTO operational_activities (strategic_plan_id, month_number, title, activities, responsible_parties, status) VALUES
+(1, 1, 'Planning & Major Procurement', 'Finalize annual plans. Major infrastructure procurement and installation begins (Smart Boards, etc.). Order core curriculum materials for the year.', 'Principal, Academic Director, Facilities Manager', 'PLANNED'),
+(1, 2, 'Implementation & Community Kick-off', 'Continue infrastructure rollout. First PTA & Community Forum meeting. Launch "Parent Connect" communication.', 'Facilities Manager, Community Liaison', 'PLANNED'),
+(1, 3, 'Training & Review', 'Conduct first major staff development workshop. Strategic Review Meeting (Q1). Launch student wellness programs.', 'HR & Training Officer, School Counselor, Academic Director', 'PLANNED'),
+(1, 4, 'Consolidation & Outreach', 'Mid-year budget review. Host first community STEAM outreach event.', 'Finance Officer, Academic Staff', 'PLANNED'),
+(1, 5, 'Sustainment', 'Monitor and support new curriculum and wellness initiatives.', 'Academic Director, School Counselor', 'PLANNED'),
+(1, 6, 'Mid-Year Development & Review', 'Conduct second staff development workshop. Strategic Review Meeting (Q2).', 'HR & Training Officer, Academic Director', 'PLANNED'),
+(1, 7, 'Evaluation & H2 Planning', 'Analyze mid-year academic data. Plan for H2 community engagement.', 'Academic Director, Principal', 'PLANNED'),
+(1, 8, 'Community Focus', 'Second PTA & Community Forum meeting. Prepare for final term and year-end.', 'Principal, PTA Executive', 'PLANNED'),
+(1, 9, 'Performance Check', 'Strategic Review Meeting (Q3). Monitor annual KPI progress.', 'Principal, Department Heads', 'PLANNED'),
+(1, 10, 'Preparation for Closure', 'Finalize curriculum delivery. Begin year-end financial consolidation and strategic plan for 2027.', 'Academic Director, Finance Officer', 'PLANNED'),
+(1, 11, 'Year-End Activities', 'Annual staff appraisal sessions. Finalize budgets and operational plans for 2027.', 'Principal, HR & Training Officer', 'PLANNED'),
+(1, 12, 'Closure & Reporting', 'Year-end finance and operations closure. Prepare annual report for stakeholders and UMALUSI.', 'Finance Officer, Principal', 'PLANNED');
 
 -- Insert budget projections for multi-year planning
 INSERT INTO budget_projections (budget_id, projection_year, growth_rate, projected_revenue, projected_expenses, assumptions) VALUES
