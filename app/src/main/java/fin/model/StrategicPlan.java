@@ -14,6 +14,10 @@ public class StrategicPlan {
     private String visionStatement;
     private String missionStatement;
     private String goals;
+    private String strategicPriorities;
+    private String implementationTimeline;
+    private String financialProjections;
+    private String budgetAllocation;
     private String status; // DRAFT, ACTIVE, ARCHIVED
     private LocalDate startDate;
     private LocalDate endDate;
@@ -49,6 +53,18 @@ public class StrategicPlan {
 
     public String getGoals() { return goals; }
     public void setGoals(String goals) { this.goals = goals; }
+
+    public String getStrategicPriorities() { return strategicPriorities; }
+    public void setStrategicPriorities(String strategicPriorities) { this.strategicPriorities = strategicPriorities; }
+
+    public String getImplementationTimeline() { return implementationTimeline; }
+    public void setImplementationTimeline(String implementationTimeline) { this.implementationTimeline = implementationTimeline; }
+
+    public String getFinancialProjections() { return financialProjections; }
+    public void setFinancialProjections(String financialProjections) { this.financialProjections = financialProjections; }
+
+    public String getBudgetAllocation() { return budgetAllocation; }
+    public void setBudgetAllocation(String budgetAllocation) { this.budgetAllocation = budgetAllocation; }
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
