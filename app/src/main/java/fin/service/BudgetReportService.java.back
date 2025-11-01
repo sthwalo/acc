@@ -53,8 +53,8 @@ public class BudgetReportService {
     private static final float FONT_SIZE_SMALL = PdfFormattingUtils.FONT_SIZE_SMALL;
 
     // Vertical Spacing - Using PdfFormattingUtils consistent spacing
-    private static final float LINE_SPACING_NORMAL = PdfFormattingUtils.FONT_SIZE_NORMAL * PdfFormattingUtils.LINE_HEIGHT_FACTOR;
-    private static final float LINE_SPACING_LARGE = PdfFormattingUtils.FONT_SIZE_HEADER * PdfFormattingUtils.LINE_HEIGHT_FACTOR;
+    private static final float LINE_SPACING_LARGE = PdfFormattingUtils.LINE_SPACING_LARGE;
+    private static final float LINE_SPACING_NORMAL = PdfFormattingUtils.LINE_SPACING_NORMAL;
 
     // Section Positions - Updated for professional layout
     private static final float TITLE_Y = PdfFormattingUtils.PAGE_HEIGHT - PdfFormattingUtils.MARGIN_TOP;
@@ -82,7 +82,6 @@ public class BudgetReportService {
         private List<PDPageContentStream> allContentStreams;
         private String footerText1;
         private String footerText2;
-        private String footerText3;
 
         public PageManager(PDDocument document) {
             this.document = document;
@@ -221,13 +220,6 @@ public class BudgetReportService {
         }
 
         /**
-         * Expose the underlying PDDocument for utilities that require it
-         */
-        public PDDocument getDocument() {
-            return document;
-        }
-
-        /**
          * Check if current page is landscape
          */
         public boolean isLandscape() {
@@ -235,21 +227,11 @@ public class BudgetReportService {
         }
 
         /**
-         * Set footer text for all pages (two parameters - backward compatibility)
+         * Set footer text for all pages
          */
         public void setFooterText(String text1, String text2) {
             this.footerText1 = text1;
             this.footerText2 = text2;
-            this.footerText3 = null; // No custom right text
-        }
-
-        /**
-         * Set footer text for all pages (three parameters - custom right text)
-         */
-        public void setFooterText(String text1, String text2, String text3) {
-            this.footerText1 = text1;
-            this.footerText2 = text2;
-            this.footerText3 = text3;
         }
 
         /**
@@ -267,7 +249,7 @@ public class BudgetReportService {
                 try {
                     // Create a new content stream for the footer (PDFBox requires this for existing pages)
                     PDPageContentStream footerStream = new PDPageContentStream(document, document.getPage(i), PDPageContentStream.AppendMode.APPEND, true, true);
-                    PdfFormattingUtils.drawFooter(footerStream, footerText1, footerText2, footerText3, i + 1, pageCount);
+                    PdfFormattingUtils.drawFooter(footerStream, footerText1, footerText2, i + 1, pageCount);
                     footerStream.close();
                 } catch (IOException e) {
                     System.err.println("Warning: Failed to draw footer on page " + (i + 1) + ": " + e.getMessage());
@@ -280,12 +262,6 @@ public class BudgetReportService {
      * Generate a comprehensive budget summary report in PDF format
      */
     public void generateBudgetSummaryReport(Long companyId) throws IOException, SQLException {
-        // Skip PDF generation during build/test mode
-        if ("true".equals(System.getProperty("TEST_MODE")) || "true".equals(System.getenv("TEST_MODE"))) {
-            System.out.println("⚠️ Skipping PDF generation in test mode for budget summary report");
-            return;
-        }
-
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
         String fileName = "budget_summary_report_" + companyId + "_" + timestamp + ".pdf";
         Path reportPath = Paths.get("reports", fileName);
@@ -345,12 +321,6 @@ public class BudgetReportService {
      * Generate strategic planning report in PDF format
      */
     public void generateStrategicPlanReport(Long companyId) throws IOException, SQLException {
-        // Skip PDF generation during build/test mode
-        if ("true".equals(System.getProperty("TEST_MODE")) || "true".equals(System.getenv("TEST_MODE"))) {
-            System.out.println("⚠️ Skipping PDF generation in test mode for strategic plan report");
-            return;
-        }
-
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
         String fileName = "strategic_plan_report_" + companyId + "_" + timestamp + ".pdf";
         Path reportPath = Paths.get("reports", fileName);
@@ -417,12 +387,6 @@ public class BudgetReportService {
      * Generate budget vs actual comparison report in PDF format
      */
     public void generateBudgetVsActualReport(Long companyId) throws IOException, SQLException {
-        // Skip PDF generation during build/test mode
-        if ("true".equals(System.getProperty("TEST_MODE")) || "true".equals(System.getenv("TEST_MODE"))) {
-            System.out.println("⚠️ Skipping PDF generation in test mode for budget vs actual report");
-            return;
-        }
-
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
         String fileName = "budget_vs_actual_report_" + companyId + "_" + timestamp + ".pdf";
         Path reportPath = Paths.get("reports", fileName);
@@ -475,9 +439,9 @@ public class BudgetReportService {
     }
 
     private void createBudgetReportHeader(PageManager pageManager, Company company, Budget budget) throws IOException {
-        String subtitle = "Budget Year: " + budget.getBudgetYear();
+        String subtitle = "Budget Year: " + budget.getBudgetYear() + " | Generated: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         float titleY = pageManager.getPageHeight() - PdfFormattingUtils.MARGIN_TOP;
-    PdfFormattingUtils.drawHeaderSection(pageManager.getContentStream(), pageManager.getDocument(), company.getLogoPath(), "BUDGET SUMMARY REPORT", company.getName(), subtitle, titleY, pageManager.getPageWidth());
+        PdfFormattingUtils.drawHeaderSection(pageManager.getContentStream(), "BUDGET SUMMARY REPORT", company.getName(), subtitle, titleY, pageManager.getPageWidth());
         pageManager.setCurrentY(titleY - 160); // Space after header
     }
 
@@ -506,7 +470,7 @@ public class BudgetReportService {
 
         pageManager.ensureSpace(200f); // Ensure space for categories section
 
-        float currentY = PdfFormattingUtils.drawSectionHeader(pageManager.getContentStream(), "BUDGET CATEGORIES", pageManager.getCurrentY(),
+        float currentY = PdfFormattingUtils.drawSectionHeader(pageManager.getContentStream(), "BUDGET CATEGORIES", pageManager.getCurrentY(), 180f,
             pageManager.getPageWidth() - PdfFormattingUtils.MARGIN_LEFT - PdfFormattingUtils.MARGIN_RIGHT);
 
         // Prepare table data
@@ -527,11 +491,11 @@ public class BudgetReportService {
         float tableHeight = (tableData.length + 1) * 20f + 20f; // Header + data rows + padding
         if (currentY - tableHeight < PdfFormattingUtils.MARGIN_BOTTOM + 50) {
             pageManager.createNewPage(pageManager.isLandscape());
-            currentY = PdfFormattingUtils.drawSectionHeader(pageManager.getContentStream(), "BUDGET CATEGORIES (Continued)", pageManager.getCurrentY(),
+            currentY = PdfFormattingUtils.drawSectionHeader(pageManager.getContentStream(), "BUDGET CATEGORIES (Continued)", pageManager.getCurrentY(), 180f,
                 pageManager.getPageWidth() - PdfFormattingUtils.MARGIN_LEFT - PdfFormattingUtils.MARGIN_RIGHT);
         }
 
-        PdfFormattingUtils.drawTable(pageManager.getContentStream(), pageManager.getDocument(), headers, tableData, currentY, 20f,
+        PdfFormattingUtils.drawTable(pageManager.getContentStream(), headers, tableData, currentY, 20f,
             pageManager.getPageWidth() - PdfFormattingUtils.MARGIN_LEFT - PdfFormattingUtils.MARGIN_RIGHT,
             PdfFormattingUtils.MARGIN_LEFT);
         pageManager.setCurrentY(currentY - tableHeight - 20); // Space after table
@@ -544,7 +508,7 @@ public class BudgetReportService {
 
         pageManager.ensureSpace(170f); // Ensure space for items section
 
-        float currentY = PdfFormattingUtils.drawSectionHeader(pageManager.getContentStream(), "BUDGET ITEMS", pageManager.getCurrentY(),
+        float currentY = PdfFormattingUtils.drawSectionHeader(pageManager.getContentStream(), "BUDGET ITEMS", pageManager.getCurrentY(), 150f,
             pageManager.getPageWidth() - PdfFormattingUtils.MARGIN_LEFT - PdfFormattingUtils.MARGIN_RIGHT);
 
         // Prepare table data - show all items, let page manager handle overflow
@@ -561,30 +525,30 @@ public class BudgetReportService {
         }
 
         // Check if table fits, if not create new page
-        float tableHeight = (tableData.length + 1) * 22f + 20f; // Increased row height for better text display
+        float tableHeight = (tableData.length + 1) * 18f + 20f; // Header + data rows + padding
         if (currentY - tableHeight < PdfFormattingUtils.MARGIN_BOTTOM + 50) {
             pageManager.createNewPage(pageManager.isLandscape());
-            currentY = PdfFormattingUtils.drawSectionHeader(pageManager.getContentStream(), "BUDGET ITEMS (Continued)", pageManager.getCurrentY(),
+            currentY = PdfFormattingUtils.drawSectionHeader(pageManager.getContentStream(), "BUDGET ITEMS (Continued)", pageManager.getCurrentY(), 150f,
                 pageManager.getPageWidth() - PdfFormattingUtils.MARGIN_LEFT - PdfFormattingUtils.MARGIN_RIGHT);
         }
 
-        PdfFormattingUtils.drawTable(pageManager.getContentStream(), pageManager.getDocument(), headers, tableData, currentY, 22f,
+        PdfFormattingUtils.drawTable(pageManager.getContentStream(), headers, tableData, currentY, 18f,
             pageManager.getPageWidth() - PdfFormattingUtils.MARGIN_LEFT - PdfFormattingUtils.MARGIN_RIGHT,
             PdfFormattingUtils.MARGIN_LEFT);
         pageManager.setCurrentY(currentY - tableHeight - 20); // Space after table
     }
 
     private void createStrategicReportHeader(PageManager pageManager, Company company, StrategicPlanData strategicData) throws IOException {
-        String subtitle = "Plan: " + strategicData.getPlan().getTitle();
+        String subtitle = "Plan: " + strategicData.getPlan().getTitle() + " | Generated: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         float titleY = pageManager.getPageHeight() - PdfFormattingUtils.MARGIN_TOP;
-    PdfFormattingUtils.drawHeaderSection(pageManager.getContentStream(), pageManager.getDocument(), company.getLogoPath(), "STRATEGIC PLAN REPORT", company.getName(), subtitle, titleY, pageManager.getPageWidth());
+        PdfFormattingUtils.drawHeaderSection(pageManager.getContentStream(), "STRATEGIC PLAN REPORT", company.getName(), subtitle, titleY, pageManager.getPageWidth());
         pageManager.setCurrentY(titleY - 160); // Space after header
     }
 
     private void createStrategicVision(PageManager pageManager, StrategicPlanData strategicData) throws IOException {
         pageManager.ensureSpace(150f); // Ensure space for vision/mission section (increased for wrapped text)
 
-        float currentY = PdfFormattingUtils.drawSectionHeader(pageManager.getContentStream(), "VISION & MISSION", pageManager.getCurrentY(),
+        float currentY = PdfFormattingUtils.drawSectionHeader(pageManager.getContentStream(), "VISION & MISSION", pageManager.getCurrentY(), 250f,
             pageManager.getPageWidth() - PdfFormattingUtils.MARGIN_LEFT - PdfFormattingUtils.MARGIN_RIGHT);
 
         // Use full-width wrapped text blocks for vision and mission statements
@@ -593,19 +557,19 @@ public class BudgetReportService {
         currentY = PdfFormattingUtils.drawWrappedTextBlock(pageManager.getContentStream(), "Vision Statement",
             strategicData.getPlan().getVisionStatement(), currentY, contentWidth);
 
-    currentY -= (PdfFormattingUtils.FONT_SIZE_TINY * PdfFormattingUtils.LINE_HEIGHT_FACTOR); 
+        currentY -= PdfFormattingUtils.LINE_SPACING_TINY; 
 
         currentY = PdfFormattingUtils.drawWrappedTextBlock(pageManager.getContentStream(), "Mission Statement",
             strategicData.getPlan().getMissionStatement(), currentY, contentWidth);
 
-    currentY -= (PdfFormattingUtils.FONT_SIZE_TINY * PdfFormattingUtils.LINE_HEIGHT_FACTOR); 
+        currentY -= PdfFormattingUtils.LINE_SPACING_TINY; 
 
         currentY = PdfFormattingUtils.drawWrappedTextBlock(pageManager.getContentStream(), "Goals", 
             strategicData.getPlan().getGoals(), currentY, contentWidth);
 
-    currentY -= (PdfFormattingUtils.FONT_SIZE_TINY * PdfFormattingUtils.LINE_HEIGHT_FACTOR);
+        currentY -= PdfFormattingUtils.LINE_SPACING_TINY;
 
-    pageManager.setCurrentY(currentY - (PdfFormattingUtils.FONT_SIZE_TINY * PdfFormattingUtils.LINE_HEIGHT_FACTOR)); 
+        pageManager.setCurrentY(currentY - PdfFormattingUtils.LINE_SPACING_TINY); 
     }
 
     private void createDetailedStrategicPriorities(PageManager pageManager, StrategicPlanData strategicData) throws IOException {
@@ -615,7 +579,7 @@ public class BudgetReportService {
 
         pageManager.ensureSpace(200f); // Ensure space for detailed priorities section
 
-        float currentY = PdfFormattingUtils.drawSectionHeader(pageManager.getContentStream(), "STRATEGIC PRIORITIES", pageManager.getCurrentY(),
+        float currentY = PdfFormattingUtils.drawSectionHeader(pageManager.getContentStream(), "STRATEGIC PRIORITIES", pageManager.getCurrentY(), 150f,
             pageManager.getPageWidth() - PdfFormattingUtils.MARGIN_LEFT - PdfFormattingUtils.MARGIN_RIGHT);
 
         // Use full-width wrapped text block for detailed strategic priorities
@@ -623,7 +587,7 @@ public class BudgetReportService {
         currentY = PdfFormattingUtils.drawWrappedTextBlock(pageManager.getContentStream(), "",
             strategicData.getPlan().getStrategicPriorities(), currentY, contentWidth);
 
-    pageManager.setCurrentY(currentY - (PdfFormattingUtils.FONT_SIZE_TINY * PdfFormattingUtils.LINE_HEIGHT_FACTOR));
+        pageManager.setCurrentY(currentY - PdfFormattingUtils.LINE_SPACING_TINY);
     }
 
     private void createImplementationTimeline(PageManager pageManager, StrategicPlanData strategicData) throws IOException {
@@ -633,7 +597,7 @@ public class BudgetReportService {
 
         pageManager.ensureSpace(150f); // Ensure space for implementation timeline section
 
-        float currentY = PdfFormattingUtils.drawSectionHeader(pageManager.getContentStream(), "IMPLEMENTATION TIMELINE", pageManager.getCurrentY(),
+        float currentY = PdfFormattingUtils.drawSectionHeader(pageManager.getContentStream(), "IMPLEMENTATION TIMELINE", pageManager.getCurrentY(), 130f,
             pageManager.getPageWidth() - PdfFormattingUtils.MARGIN_LEFT - PdfFormattingUtils.MARGIN_RIGHT);
 
         // Use full-width wrapped text block for implementation timeline
@@ -641,98 +605,25 @@ public class BudgetReportService {
         currentY = PdfFormattingUtils.drawWrappedTextBlock(pageManager.getContentStream(), "",
             strategicData.getPlan().getImplementationTimeline(), currentY, contentWidth);
 
-    pageManager.setCurrentY(currentY - (PdfFormattingUtils.FONT_SIZE_TINY * PdfFormattingUtils.LINE_HEIGHT_FACTOR));
+        pageManager.setCurrentY(currentY - PdfFormattingUtils.LINE_SPACING_TINY);
     }
 
     private void createFinancialProjections(PageManager pageManager, StrategicPlanData strategicData) throws IOException {
-        // Check if we have budget data to display
-        if (strategicData.getBudgetData() == null || strategicData.getBudgetData().getBudget() == null) {
-            // Fallback to hardcoded content if no budget data available
-            if (strategicData.getPlan().getFinancialProjections() == null || strategicData.getPlan().getFinancialProjections().isEmpty()) {
-                return;
-            }
+        if (strategicData.getPlan().getFinancialProjections() == null || strategicData.getPlan().getFinancialProjections().isEmpty()) {
+            return;
         }
 
         pageManager.ensureSpace(150f); // Ensure space for financial projections section
 
-        float currentY = PdfFormattingUtils.drawSectionHeader(pageManager.getContentStream(), "FINANCIAL PROJECTIONS", pageManager.getCurrentY(),
+        float currentY = PdfFormattingUtils.drawSectionHeader(pageManager.getContentStream(), "FINANCIAL PROJECTIONS", pageManager.getCurrentY(), 130f,
             pageManager.getPageWidth() - PdfFormattingUtils.MARGIN_LEFT - PdfFormattingUtils.MARGIN_RIGHT);
 
-        if (strategicData.getBudgetData() != null && strategicData.getBudgetData().getBudget() != null) {
-            // Use actual budget data from database - create table format
-            Budget budget = strategicData.getBudgetData().getBudget();
-            BigDecimal revenue = budget.getTotalRevenue();
-            BigDecimal expenses = budget.getTotalExpenses();
-            BigDecimal netProfit = revenue.subtract(expenses);
+        // Use full-width wrapped text block for financial projections
+        float contentWidth = pageManager.getPageWidth() - PdfFormattingUtils.MARGIN_LEFT - PdfFormattingUtils.MARGIN_RIGHT;
+        currentY = PdfFormattingUtils.drawWrappedTextBlock(pageManager.getContentStream(), "",
+            strategicData.getPlan().getFinancialProjections(), currentY, contentWidth);
 
-            // Prepare table data for financial overview
-            String[] headers = {"Category", "Amount (R)", "Percentage"};
-            List<String[]> tableRows = new ArrayList<>();
-
-            // Add main financial figures
-            tableRows.add(new String[]{"Total Revenue", revenue.setScale(2, RoundingMode.HALF_UP).toString(), "100.0%"});
-            tableRows.add(new String[]{"Total Expenses", expenses.setScale(2, RoundingMode.HALF_UP).toString(),
-                revenue.compareTo(BigDecimal.ZERO) > 0 ? expenses.divide(revenue, 4, RoundingMode.HALF_UP).multiply(new BigDecimal("100")).setScale(1, RoundingMode.HALF_UP) + "%" : "0.0%"});
-            tableRows.add(new String[]{"Net Profit", netProfit.setScale(2, RoundingMode.HALF_UP).toString(),
-                revenue.compareTo(BigDecimal.ZERO) > 0 ? netProfit.divide(revenue, 4, RoundingMode.HALF_UP).multiply(new BigDecimal("100")).setScale(1, RoundingMode.HALF_UP) + "%" : "0.0%"});
-
-            // Add revenue category breakdown
-            if (strategicData.getBudgetData().getCategories() != null && !strategicData.getBudgetData().getCategories().isEmpty()) {
-                tableRows.add(new String[]{"Revenue Breakdown", "", ""});
-
-                for (BudgetCategory category : strategicData.getBudgetData().getCategories()) {
-                    if ("Revenue".equals(category.getCategoryType()) || "Income".equals(category.getCategoryType())) {
-                        String percentage = revenue.compareTo(BigDecimal.ZERO) > 0 ?
-                            category.getTotalAllocated().divide(revenue, 4, RoundingMode.HALF_UP).multiply(new BigDecimal("100")).setScale(1, RoundingMode.HALF_UP) + "%" : "0.0%";
-                        tableRows.add(new String[]{
-                            "  " + category.getName(),
-                            category.getTotalAllocated().setScale(2, RoundingMode.HALF_UP).toString(),
-                            percentage
-                        });
-                    }
-                }
-
-                // Add expense category breakdown
-                tableRows.add(new String[]{"Expense Breakdown", "", ""});
-
-                for (BudgetCategory category : strategicData.getBudgetData().getCategories()) {
-                    if ("Expense".equals(category.getCategoryType()) || "Expenditure".equals(category.getCategoryType())) {
-                        String percentage = expenses.compareTo(BigDecimal.ZERO) > 0 ?
-                            category.getTotalAllocated().divide(expenses, 4, RoundingMode.HALF_UP).multiply(new BigDecimal("100")).setScale(1, RoundingMode.HALF_UP) + "%" : "0.0%";
-                        tableRows.add(new String[]{
-                            "  " + category.getName(),
-                            category.getTotalAllocated().setScale(2, RoundingMode.HALF_UP).toString(),
-                            percentage
-                        });
-                    }
-                }
-            }
-
-            // Convert to array for table drawing
-            String[][] tableData = tableRows.toArray(new String[0][]);
-
-            // Check if table fits, if not create new page
-            float tableHeight = (tableData.length + 1) * 22f + 20f; // Increased row height
-            if (currentY - tableHeight < PdfFormattingUtils.MARGIN_BOTTOM + 50) {
-                pageManager.createNewPage(pageManager.isLandscape());
-                currentY = PdfFormattingUtils.drawSectionHeader(pageManager.getContentStream(), "FINANCIAL PROJECTIONS (Continued)", pageManager.getCurrentY(),
-                    pageManager.getPageWidth() - PdfFormattingUtils.MARGIN_LEFT - PdfFormattingUtils.MARGIN_RIGHT);
-            }
-
-            // Draw the financial projections table
-            PdfFormattingUtils.drawTable(pageManager.getContentStream(), pageManager.getDocument(), headers, tableData, currentY, 22f,
-                pageManager.getPageWidth() - PdfFormattingUtils.MARGIN_LEFT - PdfFormattingUtils.MARGIN_RIGHT,
-                PdfFormattingUtils.MARGIN_LEFT);
-            pageManager.setCurrentY(currentY - tableHeight - 20);
-
-        } else {
-            // Fallback to wrapped text block for hardcoded content
-            float contentWidth = pageManager.getPageWidth() - PdfFormattingUtils.MARGIN_LEFT - PdfFormattingUtils.MARGIN_RIGHT;
-            String financialContent = strategicData.getPlan().getFinancialProjections();
-            currentY = PdfFormattingUtils.drawWrappedTextBlock(pageManager.getContentStream(), "",
-                financialContent, currentY, contentWidth);
-            pageManager.setCurrentY(currentY - (PdfFormattingUtils.FONT_SIZE_TINY * PdfFormattingUtils.LINE_HEIGHT_FACTOR));
-        }
+        pageManager.setCurrentY(currentY - PdfFormattingUtils.LINE_SPACING_TINY);
     }
 
     private void createBudgetAllocation(PageManager pageManager, StrategicPlanData strategicData) throws IOException {
@@ -742,7 +633,7 @@ public class BudgetReportService {
 
         pageManager.ensureSpace(120f); // Ensure space for budget allocation section
 
-        float currentY = PdfFormattingUtils.drawSectionHeader(pageManager.getContentStream(), "BUDGET ALLOCATION", pageManager.getCurrentY(),
+        float currentY = PdfFormattingUtils.drawSectionHeader(pageManager.getContentStream(), "BUDGET ALLOCATION", pageManager.getCurrentY(), 120f,
             pageManager.getPageWidth() - PdfFormattingUtils.MARGIN_LEFT - PdfFormattingUtils.MARGIN_RIGHT);
 
         // Use full-width wrapped text block for budget allocation
@@ -750,7 +641,7 @@ public class BudgetReportService {
         currentY = PdfFormattingUtils.drawWrappedTextBlock(pageManager.getContentStream(), "",
             strategicData.getPlan().getBudgetAllocation(), currentY, contentWidth);
 
-    pageManager.setCurrentY(currentY - (PdfFormattingUtils.FONT_SIZE_TINY * PdfFormattingUtils.LINE_HEIGHT_FACTOR));
+        pageManager.setCurrentY(currentY - PdfFormattingUtils.LINE_SPACING_TINY);
     }
 
     private void createStrategicPriorities(PageManager pageManager, StrategicPlanData strategicData) throws IOException {
@@ -760,7 +651,7 @@ public class BudgetReportService {
 
         pageManager.ensureSpace(140f); // Ensure space for priorities section
 
-        float currentY = PdfFormattingUtils.drawSectionHeader(pageManager.getContentStream(), "STRATEGIC PRIORITIES", pageManager.getCurrentY(),
+        float currentY = PdfFormattingUtils.drawSectionHeader(pageManager.getContentStream(), "STRATEGIC PRIORITIES", pageManager.getCurrentY(), 120f,
             pageManager.getPageWidth() - PdfFormattingUtils.MARGIN_LEFT - PdfFormattingUtils.MARGIN_RIGHT);
 
         // Prepare table data
@@ -780,11 +671,11 @@ public class BudgetReportService {
         float tableHeight = (tableData.length + 1) * 20f + 20f;
         if (currentY - tableHeight < PdfFormattingUtils.MARGIN_BOTTOM + 50) {
             pageManager.createNewPage(pageManager.isLandscape());
-            currentY = PdfFormattingUtils.drawSectionHeader(pageManager.getContentStream(), "STRATEGIC PRIORITIES (Continued)", pageManager.getCurrentY(),
+            currentY = PdfFormattingUtils.drawSectionHeader(pageManager.getContentStream(), "STRATEGIC PRIORITIES (Continued)", pageManager.getCurrentY(), 120f,
                 pageManager.getPageWidth() - PdfFormattingUtils.MARGIN_LEFT - PdfFormattingUtils.MARGIN_RIGHT);
         }
 
-        PdfFormattingUtils.drawTable(pageManager.getContentStream(), pageManager.getDocument(), headers, tableData, currentY, 20f,
+        PdfFormattingUtils.drawTable(pageManager.getContentStream(), headers, tableData, currentY, 20f,
             pageManager.getPageWidth() - PdfFormattingUtils.MARGIN_LEFT - PdfFormattingUtils.MARGIN_RIGHT,
             PdfFormattingUtils.MARGIN_LEFT);
         pageManager.setCurrentY(currentY - tableHeight - 20);
@@ -797,7 +688,7 @@ public class BudgetReportService {
 
         pageManager.ensureSpace(170f); // Ensure space for initiatives section
 
-        float currentY = PdfFormattingUtils.drawSectionHeader(pageManager.getContentStream(), "STRATEGIC INITIATIVES", pageManager.getCurrentY(),
+        float currentY = PdfFormattingUtils.drawSectionHeader(pageManager.getContentStream(), "STRATEGIC INITIATIVES", pageManager.getCurrentY(), 150f,
             pageManager.getPageWidth() - PdfFormattingUtils.MARGIN_LEFT - PdfFormattingUtils.MARGIN_RIGHT);
 
         // Prepare table data - show all initiatives, let page manager handle overflow
@@ -814,15 +705,15 @@ public class BudgetReportService {
             };
         }
 
-        // Check if table fits, if not create new page (increased row height for initiative names)
-        float tableHeight = (tableData.length + 1) * 24f + 20f; // Increased from 18f to 24f
+        // Check if table fits, if not create new page
+        float tableHeight = (tableData.length + 1) * 18f + 20f;
         if (currentY - tableHeight < PdfFormattingUtils.MARGIN_BOTTOM + 50) {
             pageManager.createNewPage(pageManager.isLandscape());
-            currentY = PdfFormattingUtils.drawSectionHeader(pageManager.getContentStream(), "STRATEGIC INITIATIVES (Continued)", pageManager.getCurrentY(),
+            currentY = PdfFormattingUtils.drawSectionHeader(pageManager.getContentStream(), "STRATEGIC INITIATIVES (Continued)", pageManager.getCurrentY(), 150f,
                 pageManager.getPageWidth() - PdfFormattingUtils.MARGIN_LEFT - PdfFormattingUtils.MARGIN_RIGHT);
         }
 
-        PdfFormattingUtils.drawTable(pageManager.getContentStream(), pageManager.getDocument(), headers, tableData, currentY, 24f, // Increased from 18f to 24f
+        PdfFormattingUtils.drawTable(pageManager.getContentStream(), headers, tableData, currentY, 18f,
             pageManager.getPageWidth() - PdfFormattingUtils.MARGIN_LEFT - PdfFormattingUtils.MARGIN_RIGHT,
             PdfFormattingUtils.MARGIN_LEFT);
         pageManager.setCurrentY(currentY - tableHeight - 20);
@@ -835,7 +726,7 @@ public class BudgetReportService {
 
         pageManager.ensureSpace(140f); // Ensure space for milestones section
 
-        float currentY = PdfFormattingUtils.drawSectionHeader(pageManager.getContentStream(), "STRATEGIC MILESTONES", pageManager.getCurrentY(),
+        float currentY = PdfFormattingUtils.drawSectionHeader(pageManager.getContentStream(), "STRATEGIC MILESTONES", pageManager.getCurrentY(), 120f,
             pageManager.getPageWidth() - PdfFormattingUtils.MARGIN_LEFT - PdfFormattingUtils.MARGIN_RIGHT);
 
         // Prepare table data - show all milestones, let page manager handle overflow
@@ -851,15 +742,15 @@ public class BudgetReportService {
             };
         }
 
-        // Check if table fits, if not create new page (increased row height for milestone names)
-        float tableHeight = (tableData.length + 1) * 22f + 20f; // Increased from 18f to 22f
+        // Check if table fits, if not create new page
+        float tableHeight = (tableData.length + 1) * 18f + 20f;
         if (currentY - tableHeight < PdfFormattingUtils.MARGIN_BOTTOM + 50) {
             pageManager.createNewPage(pageManager.isLandscape());
-            currentY = PdfFormattingUtils.drawSectionHeader(pageManager.getContentStream(), "STRATEGIC MILESTONES (Continued)", pageManager.getCurrentY(),
+            currentY = PdfFormattingUtils.drawSectionHeader(pageManager.getContentStream(), "STRATEGIC MILESTONES (Continued)", pageManager.getCurrentY(), 120f,
                 pageManager.getPageWidth() - PdfFormattingUtils.MARGIN_LEFT - PdfFormattingUtils.MARGIN_RIGHT);
         }
 
-        PdfFormattingUtils.drawTable(pageManager.getContentStream(), pageManager.getDocument(), headers, tableData, currentY, 22f, // Increased from 18f to 22f
+        PdfFormattingUtils.drawTable(pageManager.getContentStream(), headers, tableData, currentY, 18f,
             pageManager.getPageWidth() - PdfFormattingUtils.MARGIN_LEFT - PdfFormattingUtils.MARGIN_RIGHT,
             PdfFormattingUtils.MARGIN_LEFT);
         pageManager.setCurrentY(currentY - tableHeight - 20);
@@ -872,7 +763,7 @@ public class BudgetReportService {
 
         pageManager.ensureSpace(170f); // Ensure space for operational activities section
 
-        float currentY = PdfFormattingUtils.drawSectionHeader(pageManager.getContentStream(), "MONTHLY OPERATIONAL ACTIVITIES", pageManager.getCurrentY(),
+        float currentY = PdfFormattingUtils.drawSectionHeader(pageManager.getContentStream(), "MONTHLY OPERATIONAL ACTIVITIES", pageManager.getCurrentY(), 150f,
             pageManager.getPageWidth() - PdfFormattingUtils.MARGIN_LEFT - PdfFormattingUtils.MARGIN_RIGHT);
 
         // Prepare table data - show all operational activities, let page manager handle overflow
@@ -889,15 +780,15 @@ public class BudgetReportService {
             };
         }
 
-        // Check if table fits, if not create new page (increased row height for wrapping)
-        float tableHeight = (tableData.length + 1) * 35f + 20f; // Increased from 28f to 35f for better wrapping
+        // Check if table fits, if not create new page
+        float tableHeight = (tableData.length + 1) * 18f + 20f;
         if (currentY - tableHeight < PdfFormattingUtils.MARGIN_BOTTOM + 50) {
             pageManager.createNewPage(pageManager.isLandscape());
-            currentY = PdfFormattingUtils.drawSectionHeader(pageManager.getContentStream(), "MONTHLY OPERATIONAL ACTIVITIES (Continued)", pageManager.getCurrentY(),
+            currentY = PdfFormattingUtils.drawSectionHeader(pageManager.getContentStream(), "MONTHLY OPERATIONAL ACTIVITIES (Continued)", pageManager.getCurrentY(), 150f,
                 pageManager.getPageWidth() - PdfFormattingUtils.MARGIN_LEFT - PdfFormattingUtils.MARGIN_RIGHT);
         }
 
-        PdfFormattingUtils.drawTable(pageManager.getContentStream(), pageManager.getDocument(), headers, tableData, currentY, 35f, // Increased from 28f to 35f
+        PdfFormattingUtils.drawTable(pageManager.getContentStream(), headers, tableData, currentY, 18f,
             pageManager.getPageWidth() - PdfFormattingUtils.MARGIN_LEFT - PdfFormattingUtils.MARGIN_RIGHT,
             PdfFormattingUtils.MARGIN_LEFT);
         pageManager.setCurrentY(currentY - tableHeight - 20);
@@ -914,7 +805,7 @@ public class BudgetReportService {
 
         pageManager.ensureSpace(200f); // Ensure space for budget section
 
-        float currentY = PdfFormattingUtils.drawSectionHeader(pageManager.getContentStream(), "ANNUAL OPERATIONAL BUDGET", pageManager.getCurrentY(),
+        float currentY = PdfFormattingUtils.drawSectionHeader(pageManager.getContentStream(), "REVISED ANNUAL OPERATIONAL BUDGET", pageManager.getCurrentY(), 200f,
             pageManager.getPageWidth() - PdfFormattingUtils.MARGIN_LEFT - PdfFormattingUtils.MARGIN_RIGHT);
 
         // Prepare table headers
@@ -1039,27 +930,24 @@ public class BudgetReportService {
         String[][] tableData = tableRows.toArray(new String[0][]);
 
         // Check if table fits, if not create new page
-        float tableHeight = (tableData.length + 1) * 26f + 20f; // Increased from 20f to 26f for better readability
+        float tableHeight = (tableData.length + 1) * 16f + 20f; // Smaller row height for dense data
         if (currentY - tableHeight < PdfFormattingUtils.MARGIN_BOTTOM + 50) {
             pageManager.createNewPage(pageManager.isLandscape());
-            currentY = PdfFormattingUtils.drawSectionHeader(pageManager.getContentStream(), "REVISED ANNUAL OPERATIONAL BUDGET (Continued)", pageManager.getCurrentY(),
+            currentY = PdfFormattingUtils.drawSectionHeader(pageManager.getContentStream(), "REVISED ANNUAL OPERATIONAL BUDGET (Continued)", pageManager.getCurrentY(), 200f,
                 pageManager.getPageWidth() - PdfFormattingUtils.MARGIN_LEFT - PdfFormattingUtils.MARGIN_RIGHT);
         }
 
-        // Calculate custom column widths for Annual Budget table (14 columns)
-        float tableWidth = pageManager.getPageWidth() - PdfFormattingUtils.MARGIN_LEFT - PdfFormattingUtils.MARGIN_RIGHT;
-        float[] customColumnWidths = PdfFormattingUtils.calculateAnnualBudgetColumnWidths(tableWidth);
-
-        // Draw the table with custom column widths and adequate row height for wrapped text
-        PdfFormattingUtils.drawTable(pageManager.getContentStream(), pageManager.getDocument(), headers, tableData, currentY, 26f, // Increased from 20f to 26f
-            tableWidth, PdfFormattingUtils.MARGIN_LEFT, customColumnWidths);
+        // Draw the table with smaller font for dense data
+        PdfFormattingUtils.drawTable(pageManager.getContentStream(), headers, tableData, currentY, 16f,
+            pageManager.getPageWidth() - PdfFormattingUtils.MARGIN_LEFT - PdfFormattingUtils.MARGIN_RIGHT,
+            PdfFormattingUtils.MARGIN_LEFT);
         pageManager.setCurrentY(currentY - tableHeight - 20);
     }
 
     private void createBudgetVsActualHeader(PageManager pageManager, Company company, Budget budget) throws IOException {
-        String subtitle = "Budget Year: " + budget.getBudgetYear();
+        String subtitle = "Budget Year: " + budget.getBudgetYear() + " | Generated: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         float titleY = pageManager.getPageHeight() - PdfFormattingUtils.MARGIN_TOP;
-    PdfFormattingUtils.drawHeaderSection(pageManager.getContentStream(), pageManager.getDocument(), company.getLogoPath(), "BUDGET VS ACTUAL REPORT", company.getName(), subtitle, titleY, pageManager.getPageWidth());
+        PdfFormattingUtils.drawHeaderSection(pageManager.getContentStream(), "BUDGET VS ACTUAL REPORT", company.getName(), subtitle, titleY, pageManager.getPageWidth());
         pageManager.setCurrentY(titleY - 160); // Space after header
     }
 
@@ -1117,10 +1005,8 @@ public class BudgetReportService {
     }
 
     private void createFooter(PageManager pageManager) throws IOException {
-        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         pageManager.setFooterText("Generated using FIN Financial Management System",
-                                null,
-                                timestamp);
+                                "Confidential - For internal use only");
     }
 
     private BudgetData getBudgetData(Long companyId) throws SQLException {
@@ -1388,7 +1274,7 @@ public class BudgetReportService {
     }
 
     private Company getCompanyById(Long companyId) throws SQLException {
-    String sql = "SELECT id, name, registration_number, logo_path FROM companies WHERE id = ?";
+        String sql = "SELECT id, name, registration_number FROM companies WHERE id = ?";
 
         try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -1401,11 +1287,6 @@ public class BudgetReportService {
                 company.setId(rs.getLong("id"));
                 company.setName(rs.getString("name"));
                 company.setRegistrationNumber(rs.getString("registration_number"));
-                try {
-                    company.setLogoPath(rs.getString("logo_path"));
-                } catch (Exception ex) {
-                    // logo_path may not exist on older schemas - ignore
-                }
                 return company;
             }
         }

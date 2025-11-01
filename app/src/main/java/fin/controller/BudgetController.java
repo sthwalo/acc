@@ -789,10 +789,17 @@ public class BudgetController {
         try {
             Long companyId = applicationState.getCurrentCompany().getId();
 
+            // Check TEST_MODE before printing success message
+            boolean isTestMode = "true".equals(System.getProperty("TEST_MODE")) || "true".equals(System.getenv("TEST_MODE"));
+            
             budgetReportService.generateBudgetSummaryReport(companyId);
 
-            outputFormatter.printSuccess("Budget Summary PDF generated successfully!");
-            outputFormatter.printInfo("File saved to: reports/budget_summary_report.pdf");
+            if (isTestMode) {
+                outputFormatter.printInfo("⚠️ Test mode: PDF generation skipped");
+            } else {
+                outputFormatter.printSuccess("Budget Summary PDF generated successfully!");
+                outputFormatter.printInfo("File saved to: reports/budget_summary_report.pdf");
+            }
 
         } catch (Exception e) {
             outputFormatter.printError("Error generating budget summary PDF: " + e.getMessage());
@@ -810,10 +817,17 @@ public class BudgetController {
         try {
             Long companyId = applicationState.getCurrentCompany().getId();
 
+            // Check TEST_MODE before printing success message
+            boolean isTestMode = "true".equals(System.getProperty("TEST_MODE")) || "true".equals(System.getenv("TEST_MODE"));
+            
             budgetReportService.generateBudgetVsActualReport(companyId);
 
-            outputFormatter.printSuccess("Budget vs Actual PDF generated successfully!");
-            outputFormatter.printInfo("File saved to: reports/budget_vs_actual_report.pdf");
+            if (isTestMode) {
+                outputFormatter.printInfo("⚠️ Test mode: PDF generation skipped");
+            } else {
+                outputFormatter.printSuccess("Budget vs Actual PDF generated successfully!");
+                outputFormatter.printInfo("File saved to: reports/budget_vs_actual_report.pdf");
+            }
 
         } catch (Exception e) {
             outputFormatter.printError("Error generating budget vs actual PDF: " + e.getMessage());
@@ -831,10 +845,17 @@ public class BudgetController {
         try {
             Long companyId = applicationState.getCurrentCompany().getId();
 
+            // Check TEST_MODE before printing success message
+            boolean isTestMode = "true".equals(System.getProperty("TEST_MODE")) || "true".equals(System.getenv("TEST_MODE"));
+            
             budgetReportService.generateStrategicPlanReport(companyId);
 
-            outputFormatter.printSuccess("Strategic Plan PDF generated successfully!");
-            outputFormatter.printInfo("File saved to: reports/strategic_plan_report.pdf");
+            if (isTestMode) {
+                outputFormatter.printInfo("⚠️ Test mode: PDF generation skipped");
+            } else {
+                outputFormatter.printSuccess("Strategic Plan PDF generated successfully!");
+                outputFormatter.printInfo("File saved to: reports/strategic_plan_report.pdf");
+            }
 
         } catch (Exception e) {
             outputFormatter.printError("Error generating strategic plan PDF: " + e.getMessage());

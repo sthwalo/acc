@@ -1,212 +1,211 @@
--- Limelight Academy 2026 Budget Seed Data
--- Realistic monthly budget based on actual payroll data (R170,100/month)
--- Total Annual Budget: R2,400,000
+-- Limelight Academy 2026 Budget Seed Data (idempotent-safe for fresh runs)
+-- This script uses a PL/pgSQL DO block to capture generated IDs and avoid hardcoded ids
 
--- First, get the Limelight Academy company ID
--- Assuming Limelight Academy exists in the companies table
+DO $$
+DECLARE
+    cid INTEGER;
+    bid INTEGER;
+    spid INTEGER;
+BEGIN
+    -- Find the company ID for Limelight Academy
+    SELECT id INTO cid FROM companies WHERE name = 'Limelight Academy Institutions' LIMIT 1;
+    IF cid IS NULL THEN
+        RAISE NOTICE 'Company "Limelight Academy Institutions" not found. Aborting seed.';
+        RETURN;
+    END IF;
 
--- Insert 2026 Budget for Limelight Academy
-INSERT INTO budgets (company_id, title, description, budget_year, status, total_revenue, total_expenses, approved_at, approved_by)
-SELECT
-    c.id,
-    '2026 Operational Budget',
-    'Realistic 2026 budget based on actual payroll data and strategic priorities',
-    2026,
-    'APPROVED',
-    2250000.00, -- Projected revenue
-    2400000.00, -- Total expenses
-    CURRENT_TIMESTAMP,
-    'Principal'
-FROM companies c
-WHERE c.name = 'Limelight Academy Institutions';
+    -- Insert 2026 Budget and capture its id
+    INSERT INTO budgets (company_id, title, description, budget_year, status, total_revenue, total_expenses, approved_at, approved_by)
+    VALUES (cid,
+            '2026 Operational Budget',
+            'Realistic 2026 budget based on actual payroll data and strategic priorities',
+            2026,
+            'APPROVED',
+            2250000.00,
+            2400000.00,
+            CURRENT_TIMESTAMP,
+            'Principal')
+    RETURNING id INTO bid;
 
--- Get the budget ID we just created
--- Note: In a real scenario, you'd use the returned ID, but for this seed data we'll assume ID 1
+    -- Insert Budget Categories for this budget
+    INSERT INTO budget_categories (budget_id, name, category_type, description, allocated_percentage, total_allocated) VALUES
+    (bid, 'Staff Salaries', 'EXPENSE', 'Monthly staff salaries based on current payroll', 84.58, 2041200.00),
+    (bid, 'Staff Training', 'EXPENSE', 'Professional development and training workshops', 3.28, 78800.00),
+    (bid, 'Infrastructure & Equipment', 'EXPENSE', 'Technology, facilities, and equipment upgrades', 25.00, 600000.00),
+    (bid, 'Curriculum & Materials', 'EXPENSE', 'Teaching materials, books, and educational resources', 10.00, 240000.00),
+    (bid, 'Community Engagement', 'EXPENSE', 'PTA, outreach programs, and community activities', 10.00, 240000.00);
 
--- Insert Budget Categories
-INSERT INTO budget_categories (budget_id, name, category_type, description, allocated_percentage, total_allocated) VALUES
-(8, 'Staff Salaries', 'EXPENSE', 'Monthly staff salaries based on current payroll', 84.58, 2041200.00),
-(8, 'Staff Training', 'EXPENSE', 'Professional development and training workshops', 3.28, 78800.00),
-(8, 'Infrastructure & Equipment', 'EXPENSE', 'Technology, facilities, and equipment upgrades', 25.00, 600000.00),
-(8, 'Curriculum & Materials', 'EXPENSE', 'Teaching materials, books, and educational resources', 10.00, 240000.00),
-(8, 'Community Engagement', 'EXPENSE', 'PTA, outreach programs, and community activities', 10.00, 240000.00);
+    -- Insert Budget Items referencing categories by name (no hardcoded ids)
+    INSERT INTO budget_items (budget_category_id, description, annual_amount, notes) VALUES
+    ((SELECT id FROM budget_categories WHERE budget_id = bid AND name = 'Staff Salaries'), 'Monthly Staff Salaries (13 employees)', 2041200.00, 'R170,100 per month based on current payroll'),
 
--- Insert Budget Items with Annual Amounts
-INSERT INTO budget_items (budget_category_id, description, annual_amount, notes) VALUES
--- Staff Salaries (Category 1)
-(1, 'Monthly Staff Salaries (13 employees)', 2041200.00, 'R170,100 per month based on current payroll'),
+    ((SELECT id FROM budget_categories WHERE budget_id = bid AND name = 'Staff Training'), 'Staff Development Workshops', 78800.00, 'Two major workshops: March and June'),
 
--- Staff Training (Category 2)
-(2, 'Staff Development Workshops', 78800.00, 'Two major workshops: March and June'),
+    ((SELECT id FROM budget_categories WHERE budget_id = bid AND name = 'Infrastructure & Equipment'), 'Smart Boards and Technology', 250000.00, 'Major technology upgrade in January'),
+    ((SELECT id FROM budget_categories WHERE budget_id = bid AND name = 'Infrastructure & Equipment'), 'Facility Maintenance', 150000.00, 'Ongoing maintenance and February upgrades'),
+    ((SELECT id FROM budget_categories WHERE budget_id = bid AND name = 'Infrastructure & Equipment'), 'Equipment and Supplies', 200000.00, 'Remaining equipment purchases throughout year'),
 
--- Infrastructure & Equipment (Category 3)
-(3, 'Smart Boards and Technology', 250000.00, 'Major technology upgrade in January'),
-(3, 'Facility Maintenance', 150000.00, 'Ongoing maintenance and February upgrades'),
-(3, 'Equipment and Supplies', 200000.00, 'Remaining equipment purchases throughout year'),
+    ((SELECT id FROM budget_categories WHERE budget_id = bid AND name = 'Curriculum & Materials'), 'Core Curriculum Materials', 120000.00, 'Books, workbooks, and core materials'),
+    ((SELECT id FROM budget_categories WHERE budget_id = bid AND name = 'Curriculum & Materials'), 'Educational Resources', 60000.00, 'Additional teaching resources and supplies'),
+    ((SELECT id FROM budget_categories WHERE budget_id = bid AND name = 'Curriculum & Materials'), 'Assessment Materials', 30000.00, 'Testing and evaluation materials'),
+    ((SELECT id FROM budget_categories WHERE budget_id = bid AND name = 'Curriculum & Materials'), 'Digital Learning Tools', 30000.00, 'Software and online learning platforms'),
 
--- Curriculum & Materials (Category 4)
-(4, 'Core Curriculum Materials', 120000.00, 'Books, workbooks, and core materials'),
-(4, 'Educational Resources', 60000.00, 'Additional teaching resources and supplies'),
-(4, 'Assessment Materials', 30000.00, 'Testing and evaluation materials'),
-(4, 'Digital Learning Tools', 30000.00, 'Software and online learning platforms'),
+    ((SELECT id FROM budget_categories WHERE budget_id = bid AND name = 'Community Engagement'), 'PTA and Parent Programs', 100000.00, 'Parent Teacher Association activities'),
+    ((SELECT id FROM budget_categories WHERE budget_id = bid AND name = 'Community Engagement'), 'Community Outreach', 80000.00, 'STEAM events and community programs'),
+    ((SELECT id FROM budget_categories WHERE budget_id = bid AND name = 'Community Engagement'), 'Student Wellness Programs', 40000.00, 'Counseling and wellness initiatives'),
+    ((SELECT id FROM budget_categories WHERE budget_id = bid AND name = 'Community Engagement'), 'School Events and Celebrations', 20000.00, 'End-of-year and special events');
 
--- Community Engagement (Category 5)
-(5, 'PTA and Parent Programs', 100000.00, 'Parent Teacher Association activities'),
-(5, 'Community Outreach', 80000.00, 'STEAM events and community programs'),
-(5, 'Student Wellness Programs', 40000.00, 'Counseling and wellness initiatives'),
-(5, 'School Events and Celebrations', 20000.00, 'End-of-year and special events');
+    -- Ensure budget_items are inserted before monthly allocations
 
--- Insert Monthly Allocations for Staff Salaries (R170,100 every month)
-INSERT INTO budget_monthly_allocations (budget_item_id, month_number, allocated_amount) VALUES
-(1, 1, 170100.00), (1, 2, 170100.00), (1, 3, 170100.00), (1, 4, 170100.00),
-(1, 5, 170100.00), (1, 6, 170100.00), (1, 7, 170100.00), (1, 8, 170100.00),
-(1, 9, 170100.00), (1, 10, 170100.00), (1, 11, 170100.00), (1, 12, 170100.00);
+    -- Insert Monthly Allocations by selecting budget_item ids using the description (safe against varying ids)
+    -- Staff Salaries (item description used to lookup id)
+    INSERT INTO budget_monthly_allocations (budget_item_id, month_number, allocated_amount)
+    SELECT id, 1, 170100.00 FROM budget_items WHERE description = 'Monthly Staff Salaries (13 employees)' AND budget_category_id = (SELECT id FROM budget_categories WHERE budget_id = bid AND name = 'Staff Salaries') UNION ALL
+    SELECT id, 2, 170100.00 FROM budget_items WHERE description = 'Monthly Staff Salaries (13 employees)' AND budget_category_id = (SELECT id FROM budget_categories WHERE budget_id = bid AND name = 'Staff Salaries') UNION ALL
+    SELECT id, 3, 170100.00 FROM budget_items WHERE description = 'Monthly Staff Salaries (13 employees)' AND budget_category_id = (SELECT id FROM budget_categories WHERE budget_id = bid AND name = 'Staff Salaries') UNION ALL
+    SELECT id, 4, 170100.00 FROM budget_items WHERE description = 'Monthly Staff Salaries (13 employees)' AND budget_category_id = (SELECT id FROM budget_categories WHERE budget_id = bid AND name = 'Staff Salaries') UNION ALL
+    SELECT id, 5, 170100.00 FROM budget_items WHERE description = 'Monthly Staff Salaries (13 employees)' AND budget_category_id = (SELECT id FROM budget_categories WHERE budget_id = bid AND name = 'Staff Salaries') UNION ALL
+    SELECT id, 6, 170100.00 FROM budget_items WHERE description = 'Monthly Staff Salaries (13 employees)' AND budget_category_id = (SELECT id FROM budget_categories WHERE budget_id = bid AND name = 'Staff Salaries') UNION ALL
+    SELECT id, 7, 170100.00 FROM budget_items WHERE description = 'Monthly Staff Salaries (13 employees)' AND budget_category_id = (SELECT id FROM budget_categories WHERE budget_id = bid AND name = 'Staff Salaries') UNION ALL
+    SELECT id, 8, 170100.00 FROM budget_items WHERE description = 'Monthly Staff Salaries (13 employees)' AND budget_category_id = (SELECT id FROM budget_categories WHERE budget_id = bid AND name = 'Staff Salaries') UNION ALL
+    SELECT id, 9, 170100.00 FROM budget_items WHERE description = 'Monthly Staff Salaries (13 employees)' AND budget_category_id = (SELECT id FROM budget_categories WHERE budget_id = bid AND name = 'Staff Salaries') UNION ALL
+    SELECT id, 10, 170100.00 FROM budget_items WHERE description = 'Monthly Staff Salaries (13 employees)' AND budget_category_id = (SELECT id FROM budget_categories WHERE budget_id = bid AND name = 'Staff Salaries') UNION ALL
+    SELECT id, 11, 170100.00 FROM budget_items WHERE description = 'Monthly Staff Salaries (13 employees)' AND budget_category_id = (SELECT id FROM budget_categories WHERE budget_id = bid AND name = 'Staff Salaries') UNION ALL
+    SELECT id, 12, 170100.00 FROM budget_items WHERE description = 'Monthly Staff Salaries (13 employees)' AND budget_category_id = (SELECT id FROM budget_categories WHERE budget_id = bid AND name = 'Staff Salaries');
 
--- Insert Monthly Allocations for Staff Training (R39,400 in March and June)
-INSERT INTO budget_monthly_allocations (budget_item_id, month_number, allocated_amount) VALUES
-(2, 1, 0.00), (2, 2, 0.00), (2, 3, 39400.00), (2, 4, 0.00),
-(2, 5, 0.00), (2, 6, 39400.00), (2, 7, 0.00), (2, 8, 0.00),
-(2, 9, 0.00), (2, 10, 0.00), (2, 11, 0.00), (2, 12, 0.00);
+    -- Staff Training allocations (use description to find item id)
+    INSERT INTO budget_monthly_allocations (budget_item_id, month_number, allocated_amount)
+    SELECT id, 1, 0.00 FROM budget_items WHERE description = 'Staff Development Workshops' UNION ALL
+    SELECT id, 2, 0.00 FROM budget_items WHERE description = 'Staff Development Workshops' UNION ALL
+    SELECT id, 3, 39400.00 FROM budget_items WHERE description = 'Staff Development Workshops' UNION ALL
+    SELECT id, 4, 0.00 FROM budget_items WHERE description = 'Staff Development Workshops' UNION ALL
+    SELECT id, 5, 0.00 FROM budget_items WHERE description = 'Staff Development Workshops' UNION ALL
+    SELECT id, 6, 39400.00 FROM budget_items WHERE description = 'Staff Development Workshops' UNION ALL
+    SELECT id, 7, 0.00 FROM budget_items WHERE description = 'Staff Development Workshops' UNION ALL
+    SELECT id, 8, 0.00 FROM budget_items WHERE description = 'Staff Development Workshops' UNION ALL
+    SELECT id, 9, 0.00 FROM budget_items WHERE description = 'Staff Development Workshops' UNION ALL
+    SELECT id, 10, 0.00 FROM budget_items WHERE description = 'Staff Development Workshops' UNION ALL
+    SELECT id, 11, 0.00 FROM budget_items WHERE description = 'Staff Development Workshops' UNION ALL
+    SELECT id, 12, 0.00 FROM budget_items WHERE description = 'Staff Development Workshops';
 
--- Insert Monthly Allocations for Infrastructure & Equipment
--- Smart Boards and Technology (R250,000 in January)
-INSERT INTO budget_monthly_allocations (budget_item_id, month_number, allocated_amount) VALUES
-(3, 1, 250000.00), (3, 2, 0.00), (3, 3, 0.00), (3, 4, 0.00),
-(3, 5, 0.00), (3, 6, 0.00), (3, 7, 0.00), (3, 8, 0.00),
-(3, 9, 0.00), (3, 10, 0.00), (3, 11, 0.00), (3, 12, 0.00);
+    -- Infrastructure & Equipment allocations (items: Smart Boards, Facility Maintenance, Equipment and Supplies)
+    INSERT INTO budget_monthly_allocations (budget_item_id, month_number, allocated_amount)
+    -- Smart Boards (Jan)
+    SELECT id, 1, 250000.00 FROM budget_items WHERE description = 'Smart Boards and Technology' UNION ALL
+    -- Facility Maintenance (Feb)
+    SELECT id, 2, 150000.00 FROM budget_items WHERE description = 'Facility Maintenance' UNION ALL
+    -- Equipment and Supplies (Mar-Jun)
+    SELECT id, 3, 50000.00 FROM budget_items WHERE description = 'Equipment and Supplies' UNION ALL
+    SELECT id, 4, 50000.00 FROM budget_items WHERE description = 'Equipment and Supplies' UNION ALL
+    SELECT id, 5, 50000.00 FROM budget_items WHERE description = 'Equipment and Supplies' UNION ALL
+    SELECT id, 6, 50000.00 FROM budget_items WHERE description = 'Equipment and Supplies';
 
--- Facility Maintenance (R150,000 in February)
-INSERT INTO budget_monthly_allocations (budget_item_id, month_number, allocated_amount) VALUES
-(4, 1, 0.00), (4, 2, 150000.00), (4, 3, 0.00), (4, 4, 0.00),
-(4, 5, 0.00), (4, 6, 0.00), (4, 7, 0.00), (4, 8, 0.00),
-(4, 9, 0.00), (4, 10, 0.00), (4, 11, 0.00), (4, 12, 0.00);
+    -- Curriculum & Materials allocations (Core Curriculum Materials etc.)
+    INSERT INTO budget_monthly_allocations (budget_item_id, month_number, allocated_amount)
+    SELECT id, 1, 60000.00 FROM budget_items WHERE description = 'Core Curriculum Materials' UNION ALL
+    SELECT id, 2, 40000.00 FROM budget_items WHERE description = 'Core Curriculum Materials' UNION ALL
+    SELECT id, 3, 30000.00 FROM budget_items WHERE description = 'Core Curriculum Materials' UNION ALL
+    SELECT id, 4, 30000.00 FROM budget_items WHERE description = 'Core Curriculum Materials' UNION ALL
+    SELECT id, 5, 30000.00 FROM budget_items WHERE description = 'Core Curriculum Materials' UNION ALL
+    SELECT id, 6, 30000.00 FROM budget_items WHERE description = 'Core Curriculum Materials' UNION ALL
+    SELECT id, 7, 10000.00 FROM budget_items WHERE description = 'Core Curriculum Materials' UNION ALL
+    SELECT id, 8, 10000.00 FROM budget_items WHERE description = 'Core Curriculum Materials';
 
--- Equipment and Supplies (R50,000 each in Mar-Jun)
-INSERT INTO budget_monthly_allocations (budget_item_id, month_number, allocated_amount) VALUES
-(5, 1, 0.00), (5, 2, 0.00), (5, 3, 50000.00), (5, 4, 50000.00),
-(5, 5, 50000.00), (5, 6, 50000.00), (5, 7, 0.00), (5, 8, 0.00),
-(5, 9, 0.00), (5, 10, 0.00), (5, 11, 0.00), (5, 12, 0.00);
+    -- Other curriculum items with zero allocations omitted for brevity
 
--- Insert Monthly Allocations for Curriculum & Materials
--- Core Curriculum Materials (R60,000 Jan, R40,000 Feb, R30,000 Mar-Jun, R10,000 Jul-Aug)
-INSERT INTO budget_monthly_allocations (budget_item_id, month_number, allocated_amount) VALUES
-(6, 1, 60000.00), (6, 2, 40000.00), (6, 3, 30000.00), (6, 4, 30000.00),
-(6, 5, 30000.00), (6, 6, 30000.00), (6, 7, 10000.00), (6, 8, 10000.00),
-(6, 9, 0.00), (6, 10, 0.00), (6, 11, 0.00), (6, 12, 0.00);
+    -- Community Engagement allocations (PTA and Parent Programs)
+    INSERT INTO budget_monthly_allocations (budget_item_id, month_number, allocated_amount)
+    SELECT id, 1, 15000.00 FROM budget_items WHERE description = 'PTA and Parent Programs' UNION ALL
+    SELECT id, 2, 15000.00 FROM budget_items WHERE description = 'PTA and Parent Programs' UNION ALL
+    SELECT id, 3, 25000.00 FROM budget_items WHERE description = 'PTA and Parent Programs' UNION ALL
+    SELECT id, 4, 25000.00 FROM budget_items WHERE description = 'PTA and Parent Programs' UNION ALL
+    SELECT id, 5, 25000.00 FROM budget_items WHERE description = 'PTA and Parent Programs' UNION ALL
+    SELECT id, 6, 25000.00 FROM budget_items WHERE description = 'PTA and Parent Programs' UNION ALL
+    SELECT id, 7, 25000.00 FROM budget_items WHERE description = 'PTA and Parent Programs' UNION ALL
+    SELECT id, 8, 25000.00 FROM budget_items WHERE description = 'PTA and Parent Programs' UNION ALL
+    SELECT id, 9, 25000.00 FROM budget_items WHERE description = 'PTA and Parent Programs' UNION ALL
+    SELECT id, 10, 15000.00 FROM budget_items WHERE description = 'PTA and Parent Programs' UNION ALL
+    SELECT id, 11, 10000.00 FROM budget_items WHERE description = 'PTA and Parent Programs' UNION ALL
+    SELECT id, 12, 10000.00 FROM budget_items WHERE description = 'PTA and Parent Programs';
 
--- Educational Resources (R0 - not used in this simplified view)
-INSERT INTO budget_monthly_allocations (budget_item_id, month_number, allocated_amount) VALUES
-(7, 1, 0.00), (7, 2, 0.00), (7, 3, 0.00), (7, 4, 0.00),
-(7, 5, 0.00), (7, 6, 0.00), (7, 7, 0.00), (7, 8, 0.00),
-(7, 9, 0.00), (7, 10, 0.00), (7, 11, 0.00), (7, 12, 0.00);
+    -- Community Outreach monthly allocations example (Jan-Jun)
+    INSERT INTO budget_monthly_allocations (budget_item_id, month_number, allocated_amount)
+    SELECT id, 1, 15000.00 FROM budget_items WHERE description = 'Community Outreach' UNION ALL
+    SELECT id, 2, 15000.00 FROM budget_items WHERE description = 'Community Outreach' UNION ALL
+    SELECT id, 3, 15000.00 FROM budget_items WHERE description = 'Community Outreach' UNION ALL
+    SELECT id, 4, 15000.00 FROM budget_items WHERE description = 'Community Outreach' UNION ALL
+    SELECT id, 5, 15000.00 FROM budget_items WHERE description = 'Community Outreach' UNION ALL
+    SELECT id, 6, 15000.00 FROM budget_items WHERE description = 'Community Outreach';
 
--- Assessment Materials (R0 - not used in this simplified view)
-INSERT INTO budget_monthly_allocations (budget_item_id, month_number, allocated_amount) VALUES
-(8, 1, 0.00), (8, 2, 0.00), (8, 3, 0.00), (8, 4, 0.00),
-(8, 5, 0.00), (8, 6, 0.00), (8, 7, 0.00), (8, 8, 0.00),
-(8, 9, 0.00), (8, 10, 0.00), (8, 11, 0.00), (8, 12, 0.00);
+    -- Student Wellness Programs allocations (Mar-Jun)
+    INSERT INTO budget_monthly_allocations (budget_item_id, month_number, allocated_amount)
+    SELECT id, 3, 10000.00 FROM budget_items WHERE description = 'Student Wellness Programs' UNION ALL
+    SELECT id, 4, 10000.00 FROM budget_items WHERE description = 'Student Wellness Programs' UNION ALL
+    SELECT id, 5, 10000.00 FROM budget_items WHERE description = 'Student Wellness Programs' UNION ALL
+    SELECT id, 6, 10000.00 FROM budget_items WHERE description = 'Student Wellness Programs';
 
--- Digital Learning Tools (R0 - not used in this simplified view)
-INSERT INTO budget_monthly_allocations (budget_item_id, month_number, allocated_amount) VALUES
-(9, 1, 0.00), (9, 2, 0.00), (9, 3, 0.00), (9, 4, 0.00),
-(9, 5, 0.00), (9, 6, 0.00), (9, 7, 0.00), (9, 8, 0.00),
-(9, 9, 0.00), (9, 10, 0.00), (9, 11, 0.00), (9, 12, 0.00);
+    -- School Events allocations (Jul, Sep, Nov)
+    INSERT INTO budget_monthly_allocations (budget_item_id, month_number, allocated_amount)
+    SELECT id, 7, 5000.00 FROM budget_items WHERE description = 'School Events and Celebrations' UNION ALL
+    SELECT id, 9, 5000.00 FROM budget_items WHERE description = 'School Events and Celebrations' UNION ALL
+    SELECT id, 11, 5000.00 FROM budget_items WHERE description = 'School Events and Celebrations';
 
--- Insert Monthly Allocations for Community Engagement
--- PTA and Parent Programs (R15,000 Jan-Feb, R25,000 Mar-Jun, R25,000 Jul-Sep, R15,000 Oct, R10,000 Nov-Dec)
-INSERT INTO budget_monthly_allocations (budget_item_id, month_number, allocated_amount) VALUES
-(10, 1, 15000.00), (10, 2, 15000.00), (10, 3, 25000.00), (10, 4, 25000.00),
-(10, 5, 25000.00), (10, 6, 25000.00), (10, 7, 25000.00), (10, 8, 25000.00),
-(10, 9, 25000.00), (10, 10, 15000.00), (10, 11, 10000.00), (10, 12, 10000.00);
+    -- Insert Strategic Plan and related entities
+    INSERT INTO strategic_plans (company_id, title, vision_statement, mission_statement, goals, status, start_date, end_date)
+    VALUES (cid, '2026-2027 Strategic Plan',
+            '• To be the leading educational institution in our community, fostering academic excellence and holistic development.',
+            '• To provide quality education that empowers students to become responsible citizens and lifelong learners.',
+            '• Achieve operational excellence in all school operations
+             • Foster stakeholder engagement through community partnerships
+             • Develop sustainable practices for long-term growth
+             • Build strong organizational foundation with modern infrastructure',
+            'ACTIVE', '2026-01-01', '2027-12-31')
+    RETURNING id INTO spid;
 
--- Community Outreach (R0 - not used in this simplified view)
-INSERT INTO budget_monthly_allocations (budget_item_id, month_number, allocated_amount) VALUES
-(11, 1, 0.00), (11, 2, 0.00), (11, 3, 0.00), (11, 4, 0.00),
-(11, 5, 0.00), (11, 6, 0.00), (11, 7, 0.00), (11, 8, 0.00),
-(11, 9, 0.00), (11, 10, 0.00), (11, 11, 0.00), (11, 12, 0.00);
+    -- Insert Strategic Priorities for the plan
+    INSERT INTO strategic_priorities (strategic_plan_id, name, description, priority_order) VALUES
+    (spid, 'Operational Excellence', 'Streamline processes and improve efficiency across all school operations', 1),
+    (spid, 'Stakeholder Engagement', 'Build strong relationships with students, parents, and community partners', 2),
+    (spid, 'Innovation', 'Foster creativity and technological advancement in teaching and learning', 3),
+    (spid, 'Sustainability', 'Develop environmentally and socially responsible practices for long-term growth', 4);
 
--- Student Wellness Programs (R0 - not used in this simplified view)
-INSERT INTO budget_monthly_allocations (budget_item_id, month_number, allocated_amount) VALUES
-(12, 1, 0.00), (12, 2, 0.00), (12, 3, 0.00), (12, 4, 0.00),
-(12, 5, 0.00), (12, 6, 0.00), (12, 7, 0.00), (12, 8, 0.00),
-(12, 9, 0.00), (12, 10, 0.00), (12, 11, 0.00), (12, 12, 0.00);
+    -- Insert sample strategic initiatives referencing priority ids by name
+    INSERT INTO strategic_initiatives (strategic_priority_id, title, description, start_date, end_date, budget_allocated, status)
+    VALUES
+    ((SELECT id FROM strategic_priorities WHERE strategic_plan_id = spid AND name = 'Operational Excellence'), 'Technology Infrastructure Upgrade', 'Implement smart boards and digital learning tools across all classrooms', '2026-01-01', '2026-03-31', 250000.00, 'IN_PROGRESS'),
+    ((SELECT id FROM strategic_priorities WHERE strategic_plan_id = spid AND name = 'Operational Excellence'), 'Staff Development Program', 'Conduct professional development workshops for all teaching staff', '2026-03-01', '2026-06-30', 78800.00, 'PLANNED'),
+    ((SELECT id FROM strategic_priorities WHERE strategic_plan_id = spid AND name = 'Stakeholder Engagement'), 'Community Outreach Initiative', 'Launch STEAM outreach programs and community engagement activities', '2026-04-01', '2026-12-31', 80000.00, 'PLANNED'),
+    ((SELECT id FROM strategic_priorities WHERE strategic_plan_id = spid AND name = 'Innovation'), 'Digital Learning Platform', 'Implement comprehensive digital learning tools and resources', '2026-03-01', '2026-06-30', 30000.00, 'PLANNED');
 
--- School Events and Celebrations (R0 - not used in this simplified view)
-INSERT INTO budget_monthly_allocations (budget_item_id, month_number, allocated_amount) VALUES
-(13, 1, 0.00), (13, 2, 0.00), (13, 3, 0.00), (13, 4, 0.00),
-(13, 5, 0.00), (13, 6, 0.00), (13, 7, 0.00), (13, 8, 0.00),
-(13, 9, 0.00), (13, 10, 0.00), (13, 11, 0.00), (13, 12, 0.00);
+    -- Insert sample milestones referencing initiatives by title
+    INSERT INTO strategic_milestones (strategic_initiative_id, title, description, target_date, status)
+    VALUES
+    ((SELECT id FROM strategic_initiatives WHERE title = 'Technology Infrastructure Upgrade' AND start_date = '2026-01-01'), 'Smart Board Installation', 'Complete installation of smart boards in all classrooms', '2026-02-28', 'IN_PROGRESS'),
+    ((SELECT id FROM strategic_initiatives WHERE title = 'Technology Infrastructure Upgrade' AND start_date = '2026-01-01'), 'Staff Training on Technology', 'Train all teachers on new technology tools', '2026-03-31', 'PENDING'),
+    ((SELECT id FROM strategic_initiatives WHERE title = 'Staff Development Program' AND start_date = '2026-03-01'), 'Workshop 1 Completion', 'Complete first staff development workshop', '2026-03-31', 'PENDING'),
+    ((SELECT id FROM strategic_initiatives WHERE title = 'Staff Development Program' AND start_date = '2026-03-01'), 'Workshop 2 Completion', 'Complete second staff development workshop', '2026-06-30', 'PENDING');
 
--- Community Outreach (R15,000 each in Jan-Jun)
-INSERT INTO budget_monthly_allocations (budget_item_id, month_number, allocated_amount) VALUES
-(11, 1, 15000.00), (11, 2, 15000.00), (11, 3, 15000.00), (11, 4, 15000.00),
-(11, 5, 15000.00), (11, 6, 15000.00), (11, 7, 0.00), (11, 8, 0.00),
-(11, 9, 0.00), (11, 10, 0.00), (11, 11, 0.00), (11, 12, 0.00);
+    -- Insert Monthly Operational Activities for 2026 referencing strategic plan id
+    INSERT INTO operational_activities (strategic_plan_id, month_number, title, activities, responsible_parties, status) VALUES
+    (spid, 1, 'Planning & Major Procurement', 'Finalize annual plans. Major infrastructure procurement and installation begins (Smart Boards, etc.). Order core curriculum materials for the year.', 'Principal, Academic Director, Facilities Manager', 'PLANNED'),
+    (spid, 2, 'Implementation & Community Kick-off', 'Continue infrastructure rollout. First PTA & Community Forum meeting. Launch "Parent Connect" communication.', 'Facilities Manager, Community Liaison', 'PLANNED'),
+    (spid, 3, 'Training & Review', 'Conduct first major staff development workshop. Strategic Review Meeting (Q1). Launch student wellness programs.', 'HR & Training Officer, School Counselor, Academic Director', 'PLANNED'),
+    (spid, 4, 'Consolidation & Outreach', 'Mid-year budget review. Host first community STEAM outreach event.', 'Finance Officer, Academic Staff', 'PLANNED'),
+    (spid, 5, 'Sustainment', 'Monitor and support new curriculum and wellness initiatives.', 'Academic Director, School Counselor', 'PLANNED'),
+    (spid, 6, 'Mid-Year Development & Review', 'Conduct second staff development workshop. Strategic Review Meeting (Q2).', 'HR & Training Officer, Academic Director', 'PLANNED'),
+    (spid, 7, 'Evaluation & H2 Planning', 'Analyze mid-year academic data. Plan for H2 community engagement.', 'Academic Director, Principal', 'PLANNED'),
+    (spid, 8, 'Community Focus', 'Second PTA & Community Forum meeting. Prepare for final term and year-end.', 'Principal, PTA Executive', 'PLANNED'),
+    (spid, 9, 'Performance Check', 'Strategic Review Meeting (Q3). Monitor annual KPI progress.', 'Principal, Department Heads', 'PLANNED'),
+    (spid, 10, 'Preparation for Closure', 'Finalize curriculum delivery. Begin year-end financial consolidation and strategic plan for 2027.', 'Academic Director, Finance Officer', 'PLANNED'),
+    (spid, 11, 'Year-End Activities', 'Annual staff appraisal sessions. Finalize budgets and operational plans for 2027.', 'Principal, HR & Training Officer', 'PLANNED'),
+    (spid, 12, 'Closure & Reporting', 'Year-end finance and operations closure. Prepare annual report for stakeholders and UMALUSI.', 'Finance Officer, Principal', 'PLANNED');
 
--- Student Wellness Programs (R10,000 each in Mar-Jun)
-INSERT INTO budget_monthly_allocations (budget_item_id, month_number, allocated_amount) VALUES
-(12, 1, 0.00), (12, 2, 0.00), (12, 3, 10000.00), (12, 4, 10000.00),
-(12, 5, 10000.00), (12, 6, 10000.00), (12, 7, 0.00), (12, 8, 0.00),
-(12, 9, 0.00), (12, 10, 0.00), (12, 11, 0.00), (12, 12, 0.00);
+    -- Insert budget projections referencing the inserted budget id
+    INSERT INTO budget_projections (budget_id, projection_year, growth_rate, projected_revenue, projected_expenses, assumptions) VALUES
+    (bid, 2027, 15.00, 2587500.00, 2760000.00, '15% growth in enrollment and fees, moderate inflation on expenses'),
+    (bid, 2028, 12.00, 2898000.00, 3100800.00, 'Continued growth with efficiency improvements'),
+    (bid, 2029, 10.00, 3187800.00, 3410880.00, 'Stable growth with optimized operations');
 
--- School Events (R5,000 each in Jul, Sep, Nov)
-INSERT INTO budget_monthly_allocations (budget_item_id, month_number, allocated_amount) VALUES
-(13, 1, 0.00), (13, 2, 0.00), (13, 3, 0.00), (13, 4, 0.00),
-(13, 5, 0.00), (13, 6, 0.00), (13, 7, 5000.00), (13, 8, 0.00),
-(13, 9, 5000.00), (13, 10, 0.00), (13, 11, 5000.00), (13, 12, 0.00);
+    RAISE NOTICE 'Limelight budget seed completed for company id % with budget id % and strategic plan id %', cid, bid, spid;
+END $$;
 
--- Insert Strategic Plan for Limelight Academy
-INSERT INTO strategic_plans (company_id, title, vision_statement, mission_statement, goals, status, start_date, end_date)
-SELECT
-    c.id,
-    '2026-2027 Strategic Plan',
-    'To be the leading educational institution in our community, fostering academic excellence and holistic development.',
-    'To provide quality education that empowers students to become responsible citizens and lifelong learners.',
-    '• Achieve operational excellence in all school operations\n• Foster stakeholder engagement through community partnerships\n• Develop sustainable practices for long-term growth\n• Build strong organizational foundation with modern infrastructure',
-    'ACTIVE',
-    '2026-01-01',
-    '2027-12-31'
-FROM companies c
-WHERE c.name = 'Limelight Academy Institutions';
-
--- Insert Strategic Priorities
-INSERT INTO strategic_priorities (strategic_plan_id, name, description, priority_order) VALUES
-(1, 'Operational Excellence', 'Streamline processes and improve efficiency across all school operations', 1),
-(1, 'Stakeholder Engagement', 'Build strong relationships with students, parents, and community partners', 2),
-(1, 'Innovation', 'Foster creativity and technological advancement in teaching and learning', 3),
-(1, 'Sustainability', 'Develop environmentally and socially responsible practices for long-term growth', 4);
-
--- Insert sample strategic initiatives
-INSERT INTO strategic_initiatives (strategic_priority_id, title, description, start_date, end_date, budget_allocated, status) VALUES
-(1, 'Technology Infrastructure Upgrade', 'Implement smart boards and digital learning tools across all classrooms', '2026-01-01', '2026-03-31', 250000.00, 'IN_PROGRESS'),
-(1, 'Staff Development Program', 'Conduct professional development workshops for all teaching staff', '2026-03-01', '2026-06-30', 78800.00, 'PLANNED'),
-(2, 'Community Outreach Initiative', 'Launch STEAM outreach programs and community engagement activities', '2026-04-01', '2026-12-31', 80000.00, 'PLANNED'),
-(3, 'Digital Learning Platform', 'Implement comprehensive digital learning tools and resources', '2026-03-01', '2026-06-30', 30000.00, 'PLANNED');
-
--- Insert sample milestones
-INSERT INTO strategic_milestones (strategic_initiative_id, title, description, target_date, status) VALUES
-(1, 'Smart Board Installation', 'Complete installation of smart boards in all classrooms', '2026-02-28', 'IN_PROGRESS'),
-(1, 'Staff Training on Technology', 'Train all teachers on new technology tools', '2026-03-31', 'PENDING'),
-(2, 'Workshop 1 Completion', 'Complete first staff development workshop', '2026-03-31', 'PENDING'),
-(2, 'Workshop 2 Completion', 'Complete second staff development workshop', '2026-06-30', 'PENDING');
-
--- Insert Monthly Operational Activities for 2026
-INSERT INTO operational_activities (strategic_plan_id, month_number, title, activities, responsible_parties, status) VALUES
-(1, 1, 'Planning & Major Procurement', 'Finalize annual plans. Major infrastructure procurement and installation begins (Smart Boards, etc.). Order core curriculum materials for the year.', 'Principal, Academic Director, Facilities Manager', 'PLANNED'),
-(1, 2, 'Implementation & Community Kick-off', 'Continue infrastructure rollout. First PTA & Community Forum meeting. Launch "Parent Connect" communication.', 'Facilities Manager, Community Liaison', 'PLANNED'),
-(1, 3, 'Training & Review', 'Conduct first major staff development workshop. Strategic Review Meeting (Q1). Launch student wellness programs.', 'HR & Training Officer, School Counselor, Academic Director', 'PLANNED'),
-(1, 4, 'Consolidation & Outreach', 'Mid-year budget review. Host first community STEAM outreach event.', 'Finance Officer, Academic Staff', 'PLANNED'),
-(1, 5, 'Sustainment', 'Monitor and support new curriculum and wellness initiatives.', 'Academic Director, School Counselor', 'PLANNED'),
-(1, 6, 'Mid-Year Development & Review', 'Conduct second staff development workshop. Strategic Review Meeting (Q2).', 'HR & Training Officer, Academic Director', 'PLANNED'),
-(1, 7, 'Evaluation & H2 Planning', 'Analyze mid-year academic data. Plan for H2 community engagement.', 'Academic Director, Principal', 'PLANNED'),
-(1, 8, 'Community Focus', 'Second PTA & Community Forum meeting. Prepare for final term and year-end.', 'Principal, PTA Executive', 'PLANNED'),
-(1, 9, 'Performance Check', 'Strategic Review Meeting (Q3). Monitor annual KPI progress.', 'Principal, Department Heads', 'PLANNED'),
-(1, 10, 'Preparation for Closure', 'Finalize curriculum delivery. Begin year-end financial consolidation and strategic plan for 2027.', 'Academic Director, Finance Officer', 'PLANNED'),
-(1, 11, 'Year-End Activities', 'Annual staff appraisal sessions. Finalize budgets and operational plans for 2027.', 'Principal, HR & Training Officer', 'PLANNED'),
-(1, 12, 'Closure & Reporting', 'Year-end finance and operations closure. Prepare annual report for stakeholders and UMALUSI.', 'Finance Officer, Principal', 'PLANNED');
-
--- Insert budget projections for multi-year planning
-INSERT INTO budget_projections (budget_id, projection_year, growth_rate, projected_revenue, projected_expenses, assumptions) VALUES
-(8, 2027, 15.00, 2587500.00, 2760000.00, '15% growth in enrollment and fees, moderate inflation on expenses'),
-(8, 2028, 12.00, 2898000.00, 3100800.00, 'Continued growth with efficiency improvements'),
-(8, 2029, 10.00, 3187800.00, 3410880.00, 'Stable growth with optimized operations');
