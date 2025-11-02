@@ -68,7 +68,8 @@ public class CompanyService {
 
     public Company createCompany(Company company) {
         String sql = "INSERT INTO companies (name, registration_number, tax_number, address, " +
-                "contact_email, contact_phone, logo_path, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+                "contact_email, contact_phone, logo_path, bank_name, account_number, " +
+                "account_type, branch_code, vat_registered, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
         try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -80,7 +81,12 @@ public class CompanyService {
             pstmt.setString(PARAM_CONTACT_EMAIL, company.getContactEmail());
             pstmt.setString(PARAM_CONTACT_PHONE, company.getContactPhone());
             pstmt.setString(PARAM_LOGO_PATH, company.getLogoPath());
-            pstmt.setTimestamp(PARAM_CREATED_AT, Timestamp.valueOf(LocalDateTime.now()));
+            pstmt.setString(8, company.getBankName());
+            pstmt.setString(9, company.getAccountNumber());
+            pstmt.setString(10, company.getAccountType());
+            pstmt.setString(11, company.getBranchCode());
+            pstmt.setBoolean(12, company.isVatRegistered());
+            pstmt.setTimestamp(13, Timestamp.valueOf(LocalDateTime.now()));
             
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows == 0) {
@@ -186,6 +192,11 @@ public class CompanyService {
                 company.setContactEmail(rs.getString("contact_email"));
                 company.setContactPhone(rs.getString("contact_phone"));
                 company.setLogoPath(rs.getString("logo_path"));
+                company.setBankName(rs.getString("bank_name"));
+                company.setAccountNumber(rs.getString("account_number"));
+                company.setAccountType(rs.getString("account_type"));
+                company.setBranchCode(rs.getString("branch_code"));
+                company.setVatRegistered(rs.getBoolean("vat_registered"));
                 company.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
                 companies.add(company);
             }
@@ -217,6 +228,11 @@ public class CompanyService {
                 company.setContactEmail(rs.getString("contact_email"));
                 company.setContactPhone(rs.getString("contact_phone"));
                 company.setLogoPath(rs.getString("logo_path"));
+                company.setBankName(rs.getString("bank_name"));
+                company.setAccountNumber(rs.getString("account_number"));
+                company.setAccountType(rs.getString("account_type"));
+                company.setBranchCode(rs.getString("branch_code"));
+                company.setVatRegistered(rs.getBoolean("vat_registered"));
                 company.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
                 return company;
             } else {
@@ -240,8 +256,9 @@ public class CompanyService {
         }
         
         String sql = "UPDATE companies SET name = ?, registration_number = ?, tax_number = ?, " +
-                "address = ?, contact_email = ?, contact_phone = ?, logo_path = ?, updated_at = ? " +
-                "WHERE id = ?";
+                "address = ?, contact_email = ?, contact_phone = ?, logo_path = ?, " +
+                "bank_name = ?, account_number = ?, account_type = ?, branch_code = ?, " +
+                "vat_registered = ?, updated_at = ? WHERE id = ?";
         
         try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -253,8 +270,13 @@ public class CompanyService {
             pstmt.setString(PARAM_CONTACT_EMAIL, company.getContactEmail());
             pstmt.setString(PARAM_CONTACT_PHONE, company.getContactPhone());
             pstmt.setString(PARAM_LOGO_PATH, company.getLogoPath());
-            pstmt.setTimestamp(PARAM_UPDATED_AT, Timestamp.valueOf(LocalDateTime.now()));
-            pstmt.setLong(PARAM_COMPANY_ID, company.getId());
+            pstmt.setString(8, company.getBankName());
+            pstmt.setString(9, company.getAccountNumber());
+            pstmt.setString(10, company.getAccountType());
+            pstmt.setString(11, company.getBranchCode());
+            pstmt.setBoolean(12, company.isVatRegistered());
+            pstmt.setTimestamp(13, Timestamp.valueOf(LocalDateTime.now()));
+            pstmt.setLong(14, company.getId());
             
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows == 0) {

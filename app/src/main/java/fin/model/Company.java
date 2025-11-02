@@ -38,6 +38,15 @@ public class Company {
     private String logoPath;
     private LocalDateTime createdAt;
     
+    // Banking details
+    private String bankName;
+    private String accountNumber;
+    private String accountType;
+    private String branchCode;
+    
+    // VAT registration
+    private boolean vatRegistered;
+    
     // Constructors, getters, and setters
     public Company() {}
     
@@ -47,7 +56,7 @@ public class Company {
     }
     
     /**
-     * Copy constructor for defensive copying.
+    /**
      * Creates a deep copy of all Company fields to prevent external modification.
      */
     public Company(Company other) {
@@ -64,6 +73,11 @@ public class Company {
         this.contactPhone = other.contactPhone;
         this.logoPath = other.logoPath;
         this.createdAt = other.createdAt;
+        this.bankName = other.bankName;
+        this.accountNumber = other.accountNumber;
+        this.accountType = other.accountType;
+        this.branchCode = other.branchCode;
+        this.vatRegistered = other.vatRegistered;
     }
     
     // Getters and setters
@@ -94,6 +108,23 @@ public class Company {
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime newCreatedAt) { this.createdAt = newCreatedAt; }
     
+    // Banking details getters and setters
+    public String getBankName() { return bankName; }
+    public void setBankName(String newBankName) { this.bankName = newBankName; }
+    
+    public String getAccountNumber() { return accountNumber; }
+    public void setAccountNumber(String newAccountNumber) { this.accountNumber = newAccountNumber; }
+    
+    public String getAccountType() { return accountType; }
+    public void setAccountType(String newAccountType) { this.accountType = newAccountType; }
+    
+    public String getBranchCode() { return branchCode; }
+    public void setBranchCode(String newBranchCode) { this.branchCode = newBranchCode; }
+    
+    // VAT registration getters and setters
+    public boolean isVatRegistered() { return vatRegistered; }
+    public void setVatRegistered(boolean newVatRegistered) { this.vatRegistered = newVatRegistered; }
+    
     @Override
     public String toString() {
         return "Company{" +
@@ -101,6 +132,7 @@ public class Company {
                 ", name='" + name + '\'' +
                 ", registrationNumber='" + registrationNumber + '\'' +
                 ", taxNumber='" + taxNumber + '\'' +
+                ", vatRegistered=" + vatRegistered +
                 '}';
     }
 }

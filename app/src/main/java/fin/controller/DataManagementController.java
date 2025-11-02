@@ -1,3 +1,29 @@
+/*
+ * FIN Financial Management System
+ * 
+ * Copyright (c) 2024-2025 Sthwalo Holdings (Pty) Ltd.
+ * Owner: Immaculate Nyoni
+ * Contact: sthwaloe@gmail.com | +27 61 514 6185
+ * 
+ * This source code is licensed under the Apache License 2.0.
+ * Commercial use of the APPLICATION requires separate licensing.
+ * 
+ * Contains proprietary algorithms and business logic.
+ * Unauthorized commercial use is strictly prohibited.
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package fin.controller;
 
 import fin.model.Account;
@@ -7,6 +33,7 @@ import fin.service.TransactionClassificationService;
 import fin.service.CsvExportService;
 import fin.service.CsvImportService;
 import fin.service.DataManagementService;
+import fin.service.InvoicePdfService;
 import fin.state.ApplicationState;
 import fin.ui.ConsoleMenu;
 import fin.ui.InputHandler;
@@ -27,13 +54,14 @@ import java.util.Map;
 public class DataManagementController {
     // Menu choice constants
     private static final int MENU_CHOICE_MANUAL_INVOICE = 1;
-    private static final int MENU_CHOICE_JOURNAL_ENTRY = 2;
-    private static final int MENU_CHOICE_TRANSACTION_CLASSIFICATION = 3;
-    private static final int MENU_CHOICE_TRANSACTION_CORRECTION = 4;
-    private static final int MENU_CHOICE_TRANSACTION_HISTORY = 5;
-    private static final int MENU_CHOICE_DATA_RESET = 6;
-    private static final int MENU_CHOICE_EXPORT_CSV = 7;
-    private static final int MENU_CHOICE_BACK = 8;
+    private static final int MENU_CHOICE_GENERATE_INVOICE_PDF = 2;
+    private static final int MENU_CHOICE_JOURNAL_ENTRY = 3;
+    private static final int MENU_CHOICE_TRANSACTION_CLASSIFICATION = 4;
+    private static final int MENU_CHOICE_TRANSACTION_CORRECTION = 5;
+    private static final int MENU_CHOICE_TRANSACTION_HISTORY = 6;
+    private static final int MENU_CHOICE_DATA_RESET = 7;
+    private static final int MENU_CHOICE_EXPORT_CSV = 8;
+    private static final int MENU_CHOICE_BACK = 9;
     
     // Transaction classification menu choices
     private static final int CLASSIFICATION_CHOICE_INTERACTIVE = 1;
@@ -83,6 +111,7 @@ public class DataManagementController {
     private final TransactionClassificationService classificationService;
     private final CsvExportService csvExportService;
     private final CsvImportService csvImportService;
+    private final InvoicePdfService invoicePdfService;
     private final ApplicationState applicationState;
     private final ConsoleMenu menu;
     private final InputHandler inputHandler;
@@ -92,6 +121,7 @@ public class DataManagementController {
                                   TransactionClassificationService initialClassificationService,
                                   CsvExportService initialCsvExportService,
                                   CsvImportService initialCsvImportService,
+                                  InvoicePdfService initialInvoicePdfService,
                                   ApplicationState initialApplicationState,
                                   ConsoleMenu initialMenu,
                                   InputHandler initialInputHandler,
@@ -100,6 +130,7 @@ public class DataManagementController {
         this.classificationService = initialClassificationService;
         this.csvExportService = initialCsvExportService;
         this.csvImportService = initialCsvImportService;
+        this.invoicePdfService = initialInvoicePdfService;
         this.applicationState = initialApplicationState;
         this.menu = initialMenu;
         this.inputHandler = initialInputHandler;
@@ -124,6 +155,9 @@ public class DataManagementController {
                 switch (choice) {
                     case MENU_CHOICE_MANUAL_INVOICE:
                         handleManualInvoiceCreation();
+                        break;
+                    case MENU_CHOICE_GENERATE_INVOICE_PDF:
+                        handleInvoicePdfGeneration();
                         break;
                     case MENU_CHOICE_JOURNAL_ENTRY:
                         handleJournalEntryCreation();
@@ -198,6 +232,35 @@ public class DataManagementController {
             outputFormatter.printError(e.getMessage());
         } catch (Exception e) {
             outputFormatter.printError("Error creating invoice: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Handles invoice PDF generation process.
+     */
+    public void handleInvoicePdfGeneration() {
+        outputFormatter.printHeader("Generate Invoice PDF");
+        
+        try {
+            applicationState.requireFiscalPeriod();
+            
+            // Get invoice ID from user
+            String invoiceIdStr = inputHandler.getString("Enter invoice ID to generate PDF for");
+            Long invoiceId = Long.parseLong(invoiceIdStr);
+            
+            // Generate PDF
+            String outputPath = invoicePdfService.generateInvoicePdf(
+                invoiceId,
+                applicationState.getCurrentCompany(),
+                applicationState.getCurrentFiscalPeriod());
+            
+            outputFormatter.printSuccess("Invoice PDF generated successfully!");
+            outputFormatter.printInfo("PDF saved to: " + outputPath);
+            
+        } catch (IllegalStateException e) {
+            outputFormatter.printError(e.getMessage());
+        } catch (Exception e) {
+            outputFormatter.printError("Error generating invoice PDF: " + e.getMessage());
         }
     }
     
@@ -929,6 +992,27 @@ public class DataManagementController {
         
         if (accounts.isEmpty()) {
             outputFormatter.printWarning("No accounts found.");
+            outputFormatter.printInfo("Initializing chart of accounts for the company...");
+            
+            // Initialize chart of accounts
+            boolean initSuccess = classificationService.initializeChartOfAccounts(
+                applicationState.getCurrentCompany().getId());
+            
+            if (initSuccess) {
+                outputFormatter.printSuccess("Chart of accounts initialized successfully!");
+                // Clear cache to ensure new accounts are visible
+                csvImportService.getAccountService().clearCache(applicationState.getCurrentCompany().getId());
+                // Re-fetch accounts after initialization
+                accounts = csvImportService.getAccountService()
+                    .getAccountsByCompany(applicationState.getCurrentCompany().getId());
+            } else {
+                outputFormatter.printError("Failed to initialize chart of accounts.");
+                return null;
+            }
+        }
+        
+        if (accounts.isEmpty()) {
+            outputFormatter.printError("No accounts available even after initialization.");
             return null;
         }
         
