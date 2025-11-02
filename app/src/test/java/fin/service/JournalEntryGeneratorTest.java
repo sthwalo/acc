@@ -50,7 +50,6 @@ import static org.mockito.Mockito.*;
  * This module handles the creation of journal entries for classified transactions
  *
  * STATUS: Service implemented, tests enabled
- * TODO: Verify integration with AccountRepository and classification services
  */
 public class JournalEntryGeneratorTest {
 

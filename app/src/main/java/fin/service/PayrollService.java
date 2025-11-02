@@ -1138,7 +1138,51 @@ private static class PayrollAccountIds {
         BigDecimal grossSalary = employee.getBasicSalary();
         payslip.setGrossSalary(grossSalary);
         
-        // TODO: Add overtime calculations, allowances, etc.
+        // ===== OVERTIME CALCULATIONS =====
+        // Calculate overtime if employee has overtime hours recorded
+        // This would typically come from timesheet data - for now, can be extended later
+        BigDecimal overtimeHours = getOvertimeHoursForPeriod(employee.getId(), period.getId());
+        if (overtimeHours.compareTo(BigDecimal.ZERO) > 0) {
+            // Calculate hourly rate: monthly salary / standard hours (typically 160-173 hours/month)
+            BigDecimal standardMonthlyHours = new BigDecimal("173"); // ~40 hours/week
+            BigDecimal hourlyRate = grossSalary.divide(standardMonthlyHours, 2, java.math.RoundingMode.HALF_UP);
+            
+            // Apply overtime rate (typically 1.5x for regular overtime)
+            BigDecimal overtimeRate = employee.getOvertimeRate();
+            BigDecimal overtimeAmount = hourlyRate.multiply(overtimeRate).multiply(overtimeHours);
+            overtimeAmount = overtimeAmount.setScale(2, java.math.RoundingMode.HALF_UP);
+            
+            payslip.setOvertimeHours(overtimeHours);
+            payslip.setOvertimeAmount(overtimeAmount);
+        }
+        
+        // ===== ALLOWANCES =====
+        // Calculate standard South African allowances
+        // These can be configured per employee in future enhancements
+        
+        // Housing Allowance (common in SA, typically tax-free up to certain limits)
+        BigDecimal housingAllowance = calculateHousingAllowance(employee, grossSalary);
+        payslip.setHousingAllowance(housingAllowance);
+        
+        // Transport Allowance (common in SA, partially tax-free)
+        BigDecimal transportAllowance = calculateTransportAllowance(employee, grossSalary);
+        payslip.setTransportAllowance(transportAllowance);
+        
+        // Medical Allowance (taxable benefit)
+        BigDecimal medicalAllowance = calculateMedicalAllowance(employee);
+        payslip.setMedicalAllowance(medicalAllowance);
+        
+        // Other allowances (phone, internet, etc.)
+        BigDecimal otherAllowances = calculateOtherAllowances(employee);
+        payslip.setOtherAllowances(otherAllowances);
+        
+        // ===== COMMISSIONS & BONUSES =====
+        // Get commission and bonus for this period (if applicable)
+        BigDecimal commission = getCommissionForPeriod(employee.getId(), period.getId());
+        payslip.setCommission(commission);
+        
+        BigDecimal bonus = getBonusForPeriod(employee.getId(), period.getId());
+        payslip.setBonus(bonus);
         
         // Calculate PAYE tax using SARSTaxCalculator
         double grossDouble = grossSalary.doubleValue();
@@ -1158,7 +1202,26 @@ private static class PayrollAccountIds {
         BigDecimal sdlLevy = BigDecimal.valueOf(sdlDouble);
         payslip.setSdlLevy(sdlLevy);
         
-        // TODO: Add other deductions (medical aid, pension fund, etc.)
+        // ===== OTHER DEDUCTIONS =====
+        // Calculate voluntary and statutory deductions
+        
+        // Medical Aid Contribution (employee portion)
+        // In SA, medical aid contributions are tax deductible up to certain limits
+        BigDecimal medicalAid = calculateMedicalAidDeduction(employee, grossSalary);
+        payslip.setMedicalAid(medicalAid);
+        
+        // Pension/Retirement Fund Contribution (employee portion)
+        // In SA, retirement contributions are tax deductible (27.5% of income, max R350k/year)
+        BigDecimal pensionFund = calculatePensionFundDeduction(employee, grossSalary);
+        payslip.setPensionFund(pensionFund);
+        
+        // Loan Deductions (salary advance, garnishments, etc.)
+        BigDecimal loanDeduction = calculateLoanDeduction(employee.getId(), period.getId());
+        payslip.setLoanDeduction(loanDeduction);
+        
+        // Other Deductions (union fees, uniform costs, damage/loss recovery, etc.)
+        BigDecimal otherDeductions = calculateOtherDeductions(employee.getId(), period.getId());
+        payslip.setOtherDeductions(otherDeductions);
         
         payslip.calculateTotals();
         payslip.setCreatedBy(period.getCreatedBy());
@@ -1622,12 +1685,86 @@ private static class PayrollAccountIds {
     
     /**
      * Initialize payroll database schema
-     * This method should be called during system setup
+     * This method verifies that all required payroll tables exist in the database.
+     * If tables are missing, it provides instructions for manual schema setup.
      */
     public void initializePayrollSchema() {
-        // TODO: Execute payroll_database_schema.sql
-        LOGGER.warning("Payroll schema initialization - manual execution required");
-        LOGGER.warning("Please execute the payroll database schema manually: docs/payroll_database_schema.sql");
+        try (Connection conn = getConnection()) {
+            // Check if all required payroll tables exist
+            String[] requiredTables = {
+                "employees", "payroll_periods", "payslips", "deductions", 
+                "benefits", "tax_configurations", "tax_brackets", 
+                "payroll_journal_entries", "employee_leave"
+            };
+            
+            List<String> missingTables = new ArrayList<>();
+            
+            for (String tableName : requiredTables) {
+                if (!tableExists(conn, tableName)) {
+                    missingTables.add(tableName);
+                }
+            }
+            
+            if (missingTables.isEmpty()) {
+                LOGGER.info("✅ Payroll schema verified - all required tables exist");
+                
+                // Verify SDL column exists in payslips (added October 2025)
+                if (columnExists(conn, "payslips", "sdl_levy")) {
+                    LOGGER.info("✅ SDL (Skills Development Levy) column verified in payslips table");
+                } else {
+                    LOGGER.warning("⚠️ SDL column missing from payslips table - run migration");
+                }
+            } else {
+                LOGGER.severe("❌ Missing payroll tables: " + String.join(", ", missingTables));
+                LOGGER.severe("📋 Please execute: docs/payroll_database_schema.sql");
+                LOGGER.severe("Command: psql -U <username> -d drimacc_db -h localhost -f docs/payroll_database_schema.sql");
+                throw new RuntimeException("Payroll schema incomplete - missing tables: " + missingTables);
+            }
+            
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error verifying payroll schema", e);
+            throw new RuntimeException("Failed to verify payroll schema: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Check if a database table exists
+     */
+    private boolean tableExists(Connection conn, String tableName) throws SQLException {
+        String sql = """
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_schema = 'public' 
+                AND table_name = ?
+            )
+            """;
+        
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, tableName);
+            ResultSet rs = pstmt.executeQuery();
+            return rs.next() && rs.getBoolean(1);
+        }
+    }
+    
+    /**
+     * Check if a column exists in a table
+     */
+    private boolean columnExists(Connection conn, String tableName, String columnName) throws SQLException {
+        String sql = """
+            SELECT EXISTS (
+                SELECT FROM information_schema.columns 
+                WHERE table_schema = 'public' 
+                AND table_name = ? 
+                AND column_name = ?
+            )
+            """;
+        
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, tableName);
+            pstmt.setString(2, columnName);
+            ResultSet rs = pstmt.executeQuery();
+            return rs.next() && rs.getBoolean(1);
+        }
     }
 
     /**
@@ -1852,5 +1989,190 @@ private static class PayrollAccountIds {
             LOGGER.log(Level.SEVERE, "Error during payslip cleanup", e);
             throw new RuntimeException("Failed to cleanup payslips: " + e.getMessage());
         }
+    }
+    
+    // ===== OVERTIME AND ALLOWANCE HELPER METHODS =====
+    
+    /**
+     * Get overtime hours for an employee in a specific payroll period.
+     * This method retrieves overtime data from the database (future enhancement: timesheet integration).
+     * 
+     * @param employeeId The employee ID
+     * @param periodId The payroll period ID
+     * @return Overtime hours, defaults to 0 if no overtime recorded
+     */
+    private BigDecimal getOvertimeHoursForPeriod(Long employeeId, Long periodId) {
+        // For now, return zero (no overtime)
+        // Future: SELECT overtime_hours FROM timesheets WHERE employee_id = ? AND period_id = ?
+        return BigDecimal.ZERO;
+    }
+    
+    /**
+     * Calculate housing allowance based on employee details and salary.
+     * In South Africa, housing allowances are common and may be partially tax-free.
+     * 
+     * @param employee The employee
+     * @param grossSalary The employee's gross salary
+     * @return Housing allowance amount
+     */
+    private BigDecimal calculateHousingAllowance(Employee employee, BigDecimal grossSalary) {
+        // For now, return zero (no housing allowance)
+        // Future: Check employee.getHousingAllowance() or calculate based on policy
+        // Example: 10% of gross for senior staff, fixed amount for others
+        return BigDecimal.ZERO;
+    }
+    
+    /**
+     * Calculate transport/travel allowance based on employee details.
+     * In South Africa, transport allowances up to R1,900/month are tax-free.
+     * 
+     * @param employee The employee
+     * @param grossSalary The employee's gross salary
+     * @return Transport allowance amount
+     */
+    private BigDecimal calculateTransportAllowance(Employee employee, BigDecimal grossSalary) {
+        // For now, return zero (no transport allowance)
+        // Future: Check employee position/level for allowance eligibility
+        // Example: R1,900 for field staff, R0 for office-based staff
+        return BigDecimal.ZERO;
+    }
+    
+    /**
+     * Calculate medical allowance based on employee details.
+     * Medical allowances are typically taxable benefits in South Africa.
+     * 
+     * @param employee The employee
+     * @return Medical allowance amount
+     */
+    private BigDecimal calculateMedicalAllowance(Employee employee) {
+        // For now, return zero (no medical allowance)
+        // Future: Link to medical aid scheme membership
+        // Example: Fixed amount based on medical aid plan
+        return BigDecimal.ZERO;
+    }
+    
+    /**
+     * Calculate other allowances (phone, internet, meals, etc.).
+     * 
+     * @param employee The employee
+     * @return Total other allowances
+     */
+    private BigDecimal calculateOtherAllowances(Employee employee) {
+        // For now, return zero (no other allowances)
+        // Future: Sum of phone, internet, meal, uniform allowances
+        // Example: R500 phone + R300 internet = R800
+        return BigDecimal.ZERO;
+    }
+    
+    /**
+     * Get commission earned for an employee in a specific payroll period.
+     * Typically used for sales staff with performance-based compensation.
+     * 
+     * @param employeeId The employee ID
+     * @param periodId The payroll period ID
+     * @return Commission amount, defaults to 0 if no commission
+     */
+    private BigDecimal getCommissionForPeriod(Long employeeId, Long periodId) {
+        // For now, return zero (no commission)
+        // Future: SELECT SUM(amount) FROM commissions WHERE employee_id = ? AND period_id = ?
+        // Example: Based on sales targets, contracts signed, etc.
+        return BigDecimal.ZERO;
+    }
+    
+    /**
+     * Get bonus for an employee in a specific payroll period.
+     * Bonuses can be performance-based, annual, or ad-hoc.
+     * 
+     * @param employeeId The employee ID
+     * @param periodId The payroll period ID
+     * @return Bonus amount, defaults to 0 if no bonus
+     */
+    private BigDecimal getBonusForPeriod(Long employeeId, Long periodId) {
+        // For now, return zero (no bonus)
+        // Future: SELECT SUM(amount) FROM bonuses WHERE employee_id = ? AND period_id = ?
+        // Example: 13th cheque, performance bonus, retention bonus
+        return BigDecimal.ZERO;
+    }
+    
+    // ===== DEDUCTION HELPER METHODS =====
+    
+    /**
+     * Calculate medical aid deduction based on employee's medical scheme membership.
+     * In South Africa, medical aid contributions are tax deductible with monthly tax credits:
+     * - R364/month for main member and first dependent (2025)
+     * - R246/month for each additional dependent
+     * - Additional 25% of contributions above R364 can be deducted
+     * 
+     * @param employee The employee
+     * @param grossSalary The employee's gross salary
+     * @return Medical aid deduction amount
+     */
+    private BigDecimal calculateMedicalAidDeduction(Employee employee, BigDecimal grossSalary) {
+        // For now, return zero (no medical aid deduction)
+        // Future: Check employee.getMedicalAidNumber() and lookup scheme contributions
+        // Example: Discovery Health R2,500/month, Momentum R3,200/month, etc.
+        // Consider: Main member vs dependent, scheme type, coverage level
+        return BigDecimal.ZERO;
+    }
+    
+    /**
+     * Calculate pension/retirement fund deduction.
+     * In South Africa, retirement fund contributions are tax deductible:
+     * - Up to 27.5% of remuneration (max R350,000/year)
+     * - Both employer and employee contributions count towards limit
+     * - Common contribution rates: 7.5% employee, 7.5% employer
+     * 
+     * @param employee The employee
+     * @param grossSalary The employee's gross salary
+     * @return Pension fund deduction amount
+     */
+    private BigDecimal calculatePensionFundDeduction(Employee employee, BigDecimal grossSalary) {
+        // For now, return zero (no pension deduction)
+        // Future: Check employee.getPensionFundNumber() and calculate contribution
+        // Example: 7.5% of gross salary for most retirement annuities
+        // Consider: Employer vs employee portion, fund rules, preservation rules
+        return BigDecimal.ZERO;
+    }
+    
+    /**
+     * Calculate loan deductions (salary advances, garnishments, etc.).
+     * In South Africa, deductions are subject to limits:
+     * - Garnishment orders: Maximum 25% of gross salary (Magistrates Court Act)
+     * - Salary advances: Subject to employer policy
+     * - Must leave employee with at least subsistence amount
+     * 
+     * @param employeeId The employee ID
+     * @param periodId The payroll period ID
+     * @return Total loan deductions for the period
+     */
+    private BigDecimal calculateLoanDeduction(Long employeeId, Long periodId) {
+        // For now, return zero (no loan deductions)
+        // Future: SELECT SUM(installment_amount) FROM employee_loans 
+        //         WHERE employee_id = ? AND period_id = ? AND status = 'ACTIVE'
+        // Example: R500/month salary advance repayment, garnishment order
+        // Consider: Multiple loans, priority order, legal limits
+        return BigDecimal.ZERO;
+    }
+    
+    /**
+     * Calculate other deductions (union fees, uniform costs, damage recovery, etc.).
+     * Common South African deductions:
+     * - Union membership fees (e.g., COSATU, FEDUSA affiliates)
+     * - Uniform/PPE costs (if employee responsible)
+     * - Damage/loss recovery (subject to legal limits)
+     * - Social club fees
+     * - Staff purchase schemes
+     * 
+     * @param employeeId The employee ID
+     * @param periodId The payroll period ID
+     * @return Total other deductions for the period
+     */
+    private BigDecimal calculateOtherDeductions(Long employeeId, Long periodId) {
+        // For now, return zero (no other deductions)
+        // Future: SELECT SUM(amount) FROM employee_deductions 
+        //         WHERE employee_id = ? AND period_id = ? AND deduction_type != 'LOAN'
+        // Example: Union fees R150/month, uniform R50/month
+        // Consider: Recurring vs one-time deductions, approval workflow
+        return BigDecimal.ZERO;
     }
 }

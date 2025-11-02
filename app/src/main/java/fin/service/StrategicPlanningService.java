@@ -112,7 +112,11 @@ public class StrategicPlanningService {
             throw new IllegalArgumentException("Plan ID and priority name are required");
         }
 
-        // TODO: Validate plan exists - implement getStrategicPlanById in repository
+        // Validate plan exists
+        StrategicPlan plan = repository.getStrategicPlanById(planId);
+        if (plan == null) {
+            throw new IllegalArgumentException("Strategic plan not found: " + planId);
+        }
 
         StrategicPriority priority = new StrategicPriority(planId, name.trim(), order != null ? order : 1);
         priority.setDescription(description);

@@ -112,6 +112,25 @@ public class StrategicPlanningRepository {
     }
 
     /**
+     * Get strategic plan by ID
+     */
+    public StrategicPlan getStrategicPlanById(Long planId) throws SQLException {
+        String sql = "SELECT * FROM strategic_plans WHERE id = ?";
+
+        try (Connection conn = DriverManager.getConnection(dbUrl);
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setLong(1, planId);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                return mapResultSetToStrategicPlan(rs);
+            }
+            return null;
+        }
+    }
+
+    /**
      * Save a strategic priority
      */
     public StrategicPriority saveStrategicPriority(StrategicPriority priority) throws SQLException {
