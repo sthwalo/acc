@@ -106,7 +106,7 @@ class ConsoleMenuTest {
     void displayHeader_PrintsFormattedHeader() {
         String title = "Test Header";
         
-        menu.displayHeader(title);
+        ConsoleMenu.displayHeader(title);
         
         String output = outputStream.toString();
         assertTrue(output.contains(title), "Should contain the title");
@@ -115,7 +115,7 @@ class ConsoleMenuTest {
     
     @Test
     void displaySeparator_PrintsSeparator() {
-        menu.displaySeparator();
+        ConsoleMenu.displaySeparator();
         
         String output = outputStream.toString();
         assertTrue(output.contains("-"), "Should contain separator formatting");

@@ -62,7 +62,6 @@ public class TransactionClassificationService {
     
     private final String dbUrl;
     private final AccountClassificationService accountClassificationService;
-    private final TransactionMappingRuleService ruleService;
     private final InteractiveClassificationService interactiveService;
     
     /**
@@ -89,7 +88,6 @@ public class TransactionClassificationService {
                                            InteractiveClassificationService initialInteractiveService) {
         this.dbUrl = initialDbUrl;
         this.accountClassificationService = new AccountClassificationService(initialDbUrl);
-        this.ruleService = null; // No longer needed - ClassificationRuleManager replaces TransactionMappingRuleService
         this.interactiveService = initialInteractiveService;
         
         LOGGER.info("TransactionClassificationService initialized with AccountClassificationService as single source of truth and ClassificationRuleManager for learned rules");
@@ -105,7 +103,6 @@ public class TransactionClassificationService {
         // Use AccountClassificationService as single source of truth for chart of accounts AND transaction processing
         // Standard SARS-compliant South African accounting structure (accounts 1000-9999)
         this.accountClassificationService = new AccountClassificationService(initialDbUrl);
-        this.ruleService = new TransactionMappingRuleService(initialDbUrl);
         this.interactiveService = new InteractiveClassificationService();
         
         LOGGER.info("TransactionClassificationService initialized (simplified) with AccountClassificationService as single source");

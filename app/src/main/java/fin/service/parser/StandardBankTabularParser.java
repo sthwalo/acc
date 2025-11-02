@@ -35,6 +35,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -46,6 +47,7 @@ import java.util.regex.Pattern;
  * CRITICAL: Address lines from document headers should NEVER appear in transaction details!
  */
 public class StandardBankTabularParser implements TransactionParser {
+    private static final Logger LOGGER = Logger.getLogger(StandardBankTabularParser.class.getName());
     
     // Regex group indices for transaction parsing
     private static final int BALANCE_GROUP_INDEX = 3;
@@ -59,26 +61,6 @@ public class StandardBankTabularParser implements TransactionParser {
         "^[A-Z][A-Z\\s\\-:]+.*\\s+(\\d{2})\\s+(\\d{2})\\s+([\\d,]+\\.\\d{2}-?)\\s*$"
     );
     
-    // Pattern to extract amounts from compact format lines
-    private static final Pattern COMPACT_AMOUNT_PATTERN = Pattern.compile(
-        "([\\d,]+\\.\\d{2}-?)\\s+\\d{2}\\s+\\d{2}\\s+[\\d,]+\\.\\d{2}-?\\s*$"
-    );
-    
-    // Pattern to extract debit amounts (with trailing -)
-    private static final Pattern DEBIT_PATTERN = Pattern.compile(
-        "([\\d,]+\\.\\d{2})-"
-    );
-    
-    // Pattern to extract credit amounts (without trailing -)  
-    private static final Pattern CREDIT_PATTERN = Pattern.compile(
-        "([\\d,]+\\.\\d{2})(?!-)"
-    );
-    
-    // Pattern to detect service fee marker
-    private static final Pattern SERVICE_FEE_PATTERN = Pattern.compile(
-        "\\s+##\\s+"
-    );
-    
     // Pattern to identify header/footer lines to skip
     private static final Pattern SKIP_PATTERN = Pattern.compile(
         "^\\s*(?:Details\\s+Service\\s+Fee|DEBITS\\s+CREDITS\\s+DATE|" +
@@ -88,20 +70,6 @@ public class StandardBankTabularParser implements TransactionParser {
         "BizDirect Contact Centre|e-mail:|\\d+\\s+\\w+\\s+\\d{4}|" +
         "MONTHLY EMAIL VAT|Statement Frequency:|BANK STATEMENT).*$"
     );
-    
-    // Column positions for tabular format
-    private static final int DETAILS_START = 0;
-    private static final int DETAILS_END = 55;
-    private static final int SERVICE_FEE_START = 55;
-    private static final int SERVICE_FEE_END = 70;
-    private static final int DEBITS_START = 70;
-    private static final int DEBITS_END = 95;
-    private static final int CREDITS_START = 95;
-    private static final int CREDITS_END = 115;
-    private static final int DATE_START = 115;
-    private static final int DATE_END = 125;
-    private static final int BALANCE_START = 125;
-    private static final int BALANCE_END = 135;
     
     // State for multi-line transactions
     private ParsedTransaction pendingTransaction = null;
@@ -360,17 +328,6 @@ public class StandardBankTabularParser implements TransactionParser {
     }
     
     /**
-     * Extract text from specific column positions
-     */
-    private String extractColumn(String line, int start, int end) {
-        if (line.length() <= start) {
-            return "";
-        }
-        int actualEnd = Math.min(end, line.length());
-        return line.substring(start, actualEnd).trim();
-    }
-    
-    /**
      * Parse amount string to BigDecimal
      */
     private BigDecimal parseAmount(String amountStr) {
@@ -404,9 +361,9 @@ public class StandardBankTabularParser implements TransactionParser {
                 statementStartDate = LocalDate.parse(startDateStr, formatter);
                 statementEndDate = LocalDate.parse(endDateStr, formatter);
                 
-                System.out.println("📅 Extracted statement period: " + statementStartDate + " to " + statementEndDate);
+                LOGGER.info("Extracted statement period: " + statementStartDate + " to " + statementEndDate);
             } catch (Exception e) {
-                System.err.println("⚠️ Failed to parse statement period: " + e.getMessage());
+                LOGGER.warning("Failed to parse statement period: " + e.getMessage());
             }
         }
     }

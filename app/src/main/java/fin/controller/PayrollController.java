@@ -48,15 +48,10 @@ public class PayrollController {
 
     // Menu bounds constants
     private static final int MAX_PAYROLL_MENU_CHOICE = 7;
-    private static final int PAYROLL_MENU_BACK_CHOICE = 7;
     private static final int MAX_EMPLOYEE_MENU_CHOICE = 5;
-    private static final int EMPLOYEE_MENU_BACK_CHOICE = 5;
     private static final int MAX_PAYROLL_PERIOD_MENU_CHOICE = 5;
-    private static final int PAYROLL_PERIOD_MENU_BACK_CHOICE = 5;
     private static final int MAX_PAYROLL_REPORTS_MENU_CHOICE = 4;
-    private static final int PAYROLL_REPORTS_MENU_BACK_CHOICE = 4;
     private static final int MAX_DOCUMENT_MENU_CHOICE = 3;
-    private static final int DOCUMENT_MENU_BACK_CHOICE = 3;
 
     // Employment type choice constants
     private static final int EMPLOYMENT_TYPE_PERMANENT = 1;
@@ -171,26 +166,6 @@ public class PayrollController {
         System.out.println("6. Document Management");
         System.out.println("7. Back to Main Menu");
         outputFormatter.printSeparator();
-    }
-
-    private void handleCleanupPayslipsForTesting() {
-        outputFormatter.printHeader("Cleanup Payslips for Testing");
-        outputFormatter.printWarning("⚠️  This will delete ALL payslip data and reset payroll periods!");
-        outputFormatter.printWarning("This action cannot be undone.");
-        
-        if (inputHandler.getBoolean("Are you sure you want to proceed with cleanup?")) {
-            try {
-                payrollService.cleanupAllPayslipsForTesting();
-                outputFormatter.printSuccess("✅ All payslips cleaned up successfully!");
-                outputFormatter.printInfo("You can now re-run payroll processing with updated tax calculations.");
-            } catch (Exception e) {
-                outputFormatter.printError("❌ Cleanup failed: " + e.getMessage());
-            }
-        } else {
-            outputFormatter.printInfo("Cleanup cancelled.");
-        }
-        
-        inputHandler.waitForEnter("Press Enter to continue");
     }
 
     private void handleEmployeeManagement(Long companyId) {
@@ -819,20 +794,6 @@ public class PayrollController {
                     outputFormatter.printError("Invalid choice.");
             }
         }
-    }
-
-    private void handleTaxCalculations(Long companyId) {
-        outputFormatter.printHeader("Tax Calculations");
-        // TODO: Implement tax calculations logic
-        outputFormatter.printInfo("Tax calculations feature is under development.");
-        inputHandler.waitForEnter();
-    }
-
-    private void handlePayrollSettings(Long companyId) {
-        outputFormatter.printHeader("Payroll Settings");
-        // TODO: Implement payroll settings logic
-        outputFormatter.printInfo("Payroll settings feature is under development.");
-        inputHandler.waitForEnter();
     }
 
     private void handleDocumentManagement(Long companyId) {

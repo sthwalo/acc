@@ -100,7 +100,7 @@ public class FinancialReportingService {
         this.trialBalanceService = new TrialBalanceService(repository, generalLedgerService);
         this.incomeStatementService = new IncomeStatementService(repository, generalLedgerService);
         this.balanceSheetService = new BalanceSheetService(repository, generalLedgerService);
-        this.cashFlowService = new CashFlowService(repository, incomeStatementService);
+        this.cashFlowService = new CashFlowService(repository, generalLedgerService);
     }
     
     /**

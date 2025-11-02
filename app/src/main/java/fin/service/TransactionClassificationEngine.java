@@ -55,21 +55,12 @@ public class TransactionClassificationEngine {
     private final AccountClassificationService accountClassificationService;
     
     // Classification confidence thresholds
-    @SuppressWarnings("MagicNumber")
     private static final double CONFIDENCE_THRESHOLD_HIGH = 0.9;
-    @SuppressWarnings("MagicNumber")
     private static final double CONFIDENCE_THRESHOLD_MEDIUM = 0.6;
-    @SuppressWarnings("MagicNumber")
     private static final double HIGH_MATCH_SCORE = 1.0;
-    @SuppressWarnings("MagicNumber")
     private static final double LOW_MATCH_SCORE = 0.5;
-    @SuppressWarnings("MagicNumber")
     private static final double PATTERN_MATCH_SCORE = 0.8;
-    @SuppressWarnings("MagicNumber")
-    private static final double MAX_MATCH_SCORE = 1.0;
-    @SuppressWarnings("MagicNumber")
     private static final int SIGNIFICANT_KEYWORD_LENGTH = 4;
-    @SuppressWarnings("MagicNumber")
     private static final int MAX_KEYWORDS_TO_EXTRACT = 5;
     
     // Database parameter indices for similar transaction queries

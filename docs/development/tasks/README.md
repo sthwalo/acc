@@ -1,7 +1,7 @@
 # Development Tasks Directory
 **Status:** 📋 Documentation Complete - Ready for Implementation
-**Total Tasks:** 17 (6 EI_EXPOSE_REP + 6 SpotBugs Remediation + 3 Checkstyle Cleanup + 2 New Features)
-**Risk Distribution:** 4 Critical, 2 High, 4 Medium, 4 Low
+**Total Tasks:** 23 (6 EI_EXPOSE_REP + 6 SpotBugs Remediation + 3 Checkstyle Cleanup + 8 New Features/Refactoring)
+**Risk Distribution:** 4 Critical, 3 High, 7 Medium, 6 Low
 
 ## 📋 Task Overview
 
@@ -11,9 +11,9 @@ This directory contains detailed documentation for fixing security vulnerabiliti
 - **TASK 1.x:** Critical Authentication & Session Security (4 tasks)
 - **TASK 2.x:** High-Risk Financial Data Protection (2 tasks)
 - **TASK 3.x:** Medium-Risk Configuration & Documentation (2 tasks)
-- **TASK 4.x:** SpotBugs Remediation (6 tasks) - **NEW**
-- **TASK 5.x:** Checkstyle Cleanup (2 tasks) - **NEW**
-- **TASK 6.x:** New Feature Development (2 tasks) - **NEW**
+- **TASK 4.x:** SpotBugs Remediation (6 tasks)
+- **TASK 5.x:** Checkstyle Cleanup (3 tasks)
+- **TASK 6.x:** New Feature Development & Architectural Refactoring (8 tasks)
 
 ## 📁 Task Files
 
@@ -118,6 +118,50 @@ This directory contains detailed documentation for fixing security vulnerabiliti
     - **Status:** 🔄 IN PROGRESS
     - **Files:** New services, models, controllers, PDF generation
     - **Feature:** Professional invoice generation and printing with templates
+
+18. **[TASK 6.4: AccountClassificationService Architectural Refactoring](TASK_6.4_AccountClassificationService_Architectural_Refactoring.md)**
+    - **Risk:** MEDIUM - Technical debt & architectural improvement
+    - **Status:** 🔴 NOT STARTED (Created: 2025-11-02)
+    - **Files:** AccountClassificationService.java (2,230 lines), new extracted services
+    - **Fix:** Extract OutputFormatter usage, inject CompanyService, split into ChartOfAccountsService, MappingRuleGenerator, TransactionPatternAnalyzer
+
+19. **[TASK 6.5: BudgetReportService OutputFormatter Refactoring](TASK_6.5_BudgetReportService_OutputFormatter_Refactoring.md)**
+    - **Risk:** LOW - Code quality & architectural consistency
+    - **Status:** 🔴 NOT STARTED (Created: 2025-11-02)
+    - **Files:** BudgetReportService.java (1,763 lines - 11 unused items removed)
+    - **Fix:** Inject OutputFormatter, replace 40+ System.out.println calls with OutputFormatter methods
+
+20. **[TASK 6.6: InteractiveClassificationService Architectural Refactoring](TASK_6.6_InteractiveClassificationService_Architectural_Refactoring.md)**
+    - **Risk:** MEDIUM - Technical debt & architectural consistency
+    - **Status:** 🔴 NOT STARTED (Created: 2025-11-02)
+    - **Files:** InteractiveClassificationService.java (2,066 lines → <500 lines), new ClassificationEngine.java
+    - **Fix:** Inject OutputFormatter/InputHandler/ConsoleMenu, replace 194 System.out.println calls, extract business logic into ClassificationEngine service
+    - **Effort:** 15-22 hours (2-3 days)
+    - **Quick Win Completed:** ✅ Removed 4 unused constants (ELLIPSIS_LENGTH, RULE_USAGE_COUNT_PARAM, RULE_ID_PARAM, SUGGESTIONS_PATTERN_PARAM)
+
+21. **[TASK 6.7: PayrollReportService OutputFormatter Integration](TASK_6.7_PayrollReportService_OutputFormatter_Integration.md)**
+    - **Risk:** LOW - Code quality & architectural consistency
+    - **Status:** 🔴 NOT STARTED (Created: 2025-11-02)
+    - **Files:** PayrollReportService.java (824 lines), ApplicationContext.java
+    - **Fix:** Inject OutputFormatter, replace 30+ System.out.println calls with OutputFormatter methods
+    - **Effort:** 1-2 hours
+    - **Quick Win Completed:** ✅ Removed 8 debug System.out.println statements (lines 248, 286-291, 795-822)
+
+22. **[TASK 6.8: TransactionClassificationEngine Dependency Injection](TASK_6.8_TransactionClassificationEngine_Dependency_Injection.md)**
+    - **Risk:** MEDIUM - Architectural consistency & testability
+    - **Status:** 📋 PLANNED (Created: 2025-11-02)
+    - **Files:** TransactionClassificationEngine.java (356 lines), ApplicationContext.java, ClassificationUIHandler.java
+    - **Fix:** Implement dependency injection pattern, register in ApplicationContext, remove tight coupling to AccountClassificationService
+    - **Effort:** 2-3 hours
+    - **Quick Win Completed:** ✅ Removed 1 unused constant (MAX_MATCH_SCORE), removed 8 @SuppressWarnings annotations
+
+23. **[TASK 6.9: TransactionClassificationService Dependency Injection & Repository Pattern](TASK_6.9_TransactionClassificationService_Dependency_Injection_Repository_Pattern.md)**
+    - **Risk:** HIGH - Architectural consistency, testability & technical debt
+    - **Status:** 📋 PLANNED (Created: 2025-11-02)
+    - **Files:** TransactionClassificationService.java (584 lines), ApplicationContext.java, CompanyRepository.java, BankTransactionRepository.java, JournalEntryRepository.java
+    - **Fix:** Remove unused constructor parameter, inject AccountClassificationService, extract 5 JDBC helper methods into repository pattern
+    - **Effort:** 3-4 hours (Phase 1: 3-4h, Phase 3: 2-3h)
+    - **Quick Win Completed:** ✅ Removed 1 unused field (ruleService)
 
 ## 🎯 Implementation Strategy
 
@@ -235,8 +279,11 @@ This directory contains detailed documentation for fixing security vulnerabiliti
   - ✅ TASK 5.9: Employee.java Holistic Checkstyle Cleanup (50+ violations: DesignForExtension, LeftCurly, OperatorWrap)
   - ✅ TASK 5.9: Employee.java Holistic Checkstyle Cleanup (50+ violations: DesignForExtension, LeftCurly, OperatorWrap)
 
-### Phase 5: New Feature Development (Priority: MEDIUM)
-- **Completed:** 0/2 tasks (0%)
+### Phase 5: New Feature Development & Architectural Refactoring (Priority: MEDIUM-LOW)
+- **Completed:** 0/5 tasks (0%)
   - 🔄 TASK 6.1: Budget Generation and Strategic Planning
-  - 🔄 TASK 6.3: Invoice Generation and Printing System</content>
+  - 🔄 TASK 6.2: PDF Services Unification and Beautification
+  - 🔄 TASK 6.3: Invoice Generation and Printing System
+  - 🔄 TASK 6.4: AccountClassificationService Architectural Refactoring (NEW - 2025-11-02)
+  - 🔄 TASK 6.5: BudgetReportService OutputFormatter Refactoring (NEW - 2025-11-02)</content>
 <parameter name="filePath">/Users/sthwalonyoni/FIN/docs/development/tasks/TASK_3.2_Service_Dependency_Documentation.md

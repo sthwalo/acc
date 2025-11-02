@@ -220,7 +220,7 @@ public class ApplicationContext {
         CompanyRepository companyRepository = new CompanyRepository(initialDbUrl);
         register(CompanyRepository.class, companyRepository);
         
-        PayslipPdfService payslipPdfService = new PayslipPdfService(companyRepository);
+        PayslipPdfService payslipPdfService = new PayslipPdfService();
         register(PayslipPdfService.class, payslipPdfService);
         
         // Payroll service

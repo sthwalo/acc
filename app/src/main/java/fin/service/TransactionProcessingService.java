@@ -35,7 +35,6 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.ArrayList;
@@ -61,7 +60,6 @@ import java.util.logging.Level;
 public class TransactionProcessingService {
     private static final Logger LOGGER = Logger.getLogger(TransactionProcessingService.class.getName());
     private final String dbUrl;
-    private final AccountClassificationService accountClassificationService;
     private final JournalEntryGenerator journalEntryGenerator;
     
     // Database parameter indices for PreparedStatement operations
@@ -73,14 +71,9 @@ public class TransactionProcessingService {
     // Default account codes for unmapped transactions
     private static final String DEFAULT_BANK_ACCOUNT_CODE = "1100";
     
-    // Cache for account mappings
-    private Map<String, Long> accountCache = new HashMap<>();
-    
     public TransactionProcessingService(String initialDbUrl) {
         this.dbUrl = initialDbUrl;
-        this.accountClassificationService = new AccountClassificationService(initialDbUrl);
         this.journalEntryGenerator = new JournalEntryGenerator(initialDbUrl, new AccountRepository(initialDbUrl));
-        loadAccountCache();
     }
     
     /**
@@ -329,27 +322,6 @@ public class TransactionProcessingService {
     // ============================================================================
     // PRIVATE HELPER METHODS
     // ============================================================================
-
-    /**
-     * Load account cache for quick lookups
-     */
-    private void loadAccountCache() {
-        String sql = "SELECT account_code, id FROM accounts";
-        
-        try (Connection conn = DriverManager.getConnection(dbUrl);
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
-            
-            while (rs.next()) {
-                accountCache.put(rs.getString("account_code"), rs.getLong("id"));
-            }
-            
-            LOGGER.info("Loaded " + accountCache.size() + " accounts into cache");
-            
-        } catch (SQLException e) {
-            LOGGER.log(Level.WARNING, "Failed to load account cache", e);
-        }
-    }
 
     /**
      * Get unclassified transactions for a company

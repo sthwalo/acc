@@ -38,10 +38,17 @@ import java.sql.Date; // Explicitly import SQL Date
 /**
  * Service for managing data integrity, validation, and manual corrections.
  */
+@SuppressWarnings("unused") // companyService and accountService reserved for future validation features
 public class DataManagementService {
     private static final Logger LOGGER = Logger.getLogger(DataManagementService.class.getName());
     private final String dbUrl;
+    
+    // TODO: Use for company existence validation, fiscal period validation, and audit logging enrichment
+    // Future: Validate company exists/active before operations, check fiscal periods are open
     private final CompanyService companyService;
+    
+    // TODO: Use for account existence validation, ownership validation, type checking, and status verification
+    // Future: Validate accounts exist/active/belong to company, enforce accounting rules (asset vs liability)
     private final AccountService accountService;
 
     // SQL Parameter indices for manual invoice creation

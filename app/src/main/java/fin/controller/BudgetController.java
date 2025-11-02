@@ -39,7 +39,6 @@ import fin.ui.OutputFormatter;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.sql.SQLException;
 import java.util.List;
 
 /**
@@ -55,12 +54,13 @@ public class BudgetController {
     private final InputHandler inputHandler;
     private final OutputFormatter outputFormatter;
 
-    // Menu option constants
+    // Menu option constants (aligned with ConsoleMenu.displayBudgetMenu)
     private static final int MENU_OPTION_STRATEGIC_PLANNING = 1;
-    private static final int MENU_OPTION_BUDGET_MANAGEMENT = 2;
+    private static final int MENU_OPTION_BUDGET_CREATION = 2;
     private static final int MENU_OPTION_BUDGET_REPORTS = 3;
-    private static final int MENU_OPTION_BACK_TO_MAIN = 4;
-    private static final int BUDGET_MENU_MAX_OPTION = 4;
+    private static final int MENU_OPTION_BUDGET_VS_ACTUAL = 4;
+    private static final int MENU_OPTION_BACK_TO_MAIN = 5;
+    private static final int BUDGET_MENU_MAX_OPTION = 5;
 
     // Strategic planning menu options
     private static final int STRATEGIC_OPTION_CREATE_PLAN = 1;
@@ -138,11 +138,14 @@ public class BudgetController {
                 case MENU_OPTION_STRATEGIC_PLANNING:
                     handleStrategicPlanning();
                     break;
-                case MENU_OPTION_BUDGET_MANAGEMENT:
+                case MENU_OPTION_BUDGET_CREATION:
                     handleBudgetManagementMenu();
                     break;
                 case MENU_OPTION_BUDGET_REPORTS:
                     handleBudgetReports();
+                    break;
+                case MENU_OPTION_BUDGET_VS_ACTUAL:
+                    generateBudgetVsActualReport();
                     break;
                 case MENU_OPTION_BACK_TO_MAIN:
                     back = true;
@@ -160,11 +163,7 @@ public class BudgetController {
         outputFormatter.printHeader("Budget & Strategic Planning");
         System.out.println("Company: " + applicationState.getCurrentCompany().getName());
         System.out.println();
-        System.out.println("1. Strategic Planning");
-        System.out.println("2. Budget Management");
-        System.out.println("3. Budget Reports");
-        System.out.println("4. Back to Main Menu");
-        System.out.print("Enter your choice (1-4): ");
+        menu.displayBudgetMenu();
     }
 
     /**
@@ -203,12 +202,7 @@ public class BudgetController {
      */
     private void displayStrategicPlanningMenu() {
         outputFormatter.printSubHeader("Strategic Planning");
-        System.out.println("1. Create Strategic Plan");
-        System.out.println("2. View Strategic Plans");
-        System.out.println("3. Edit Strategic Plan");
-        System.out.println("4. Delete Strategic Plan");
-        System.out.println("5. Back");
-        System.out.print("Enter your choice (1-5): ");
+        menu.displayStrategicPlanningMenu();
     }
 
     /**
@@ -297,33 +291,6 @@ public class BudgetController {
         }
 
         inputHandler.waitForEnter();
-    }
-
-    /**
-     * Display strategic plan details
-     */
-    private void displayStrategicPlanDetails(StrategicPlan plan) {
-        System.out.println("📋 Strategic Plan ID: " + plan.getId());
-        System.out.println("🏢 Company ID: " + plan.getCompanyId());
-        System.out.println("👁️  Vision: " + plan.getVisionStatement());
-        System.out.println("🎯 Mission: " + plan.getMissionStatement());
-        System.out.println("🎯 Goals: " + plan.getGoals());
-        System.out.println("📅 Created: " + plan.getCreatedAt());
-
-        List<StrategicPriority> priorities;
-        try {
-            priorities = strategicPlanningService.getStrategicPriorities(plan.getId());
-        } catch (SQLException e) {
-            System.out.println("❌ Error loading priorities: " + e.getMessage());
-            priorities = null;
-        }
-
-        if (priorities != null && !priorities.isEmpty()) {
-            System.out.println("🎯 Strategic Priorities:");
-            priorities.forEach(priority ->
-                System.out.println("  • " + priority.getName() + " (" + priority.getPriorityOrder() + ") - " + priority.getDescription())
-            );
-        }
     }
 
     /**
@@ -433,13 +400,8 @@ public class BudgetController {
      * Display budget management menu
      */
     private void displayBudgetManagementMenu() {
-        outputFormatter.printSubHeader("Budget Management");
-        System.out.println("1. Create Budget");
-        System.out.println("2. View Budgets");
-        System.out.println("3. Edit Budget");
-        System.out.println("4. Delete Budget");
-        System.out.println("5. Back");
-        System.out.print("Enter your choice (1-5): ");
+        outputFormatter.printSubHeader("Budget Creation");
+        menu.displayBudgetCreationMenu();
     }
 
     /**
@@ -636,6 +598,8 @@ public class BudgetController {
      */
     private void displayBudgetReportsMenu() {
         outputFormatter.printSubHeader("Budget Reports");
+        // Note: ConsoleMenu.displayBudgetReportsMenu() only shows options 1-4 (no PDF option)
+        // We need to add the PDF option manually for now
         System.out.println("1. Budget Summary Report");
         System.out.println("2. Budget vs Actual Report");
         System.out.println("3. Strategic Plan Report");
@@ -799,6 +763,7 @@ public class BudgetController {
      */
     private void displayPdfReportsMenu() {
         outputFormatter.printSubHeader("Print PDF Reports");
+        // No ConsoleMenu method for this submenu, so we display it directly
         System.out.println("1. Print Budget Summary PDF");
         System.out.println("2. Print Budget vs Actual PDF");
         System.out.println("3. Print Strategic Plan PDF");
