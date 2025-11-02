@@ -26,6 +26,11 @@ plugins {
     id("com.github.spotbugs") version "5.2.5"
 }
 
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
 repositories {
     // Use Maven Central for resolving dependencies.
     mavenCentral()
