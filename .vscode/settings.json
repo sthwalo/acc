@@ -1,13 +1,23 @@
 {
     "java.configuration.updateBuildConfiguration": "interactive",
     "cSpell.words": [
+        "ABSA",
+        "Capitec",
+        "COSATU",
+        "DMARC",
         "gson",
+        "Investec",
         "jdbc",
         "Libharu",
+        "Nedbank",
         "Nyoni",
         "pdftotext",
         "pstmt",
-        "Sthwalo"
+        "QUICKREF",
+        "spotbugs",
+        "Sthwalo",
+        "Stokvela",
+        "Xero"
     ],
     "java.compile.nullAnalysis.mode": "automatic",
     "java.debug.settings.onBuildFailureProceed": true,

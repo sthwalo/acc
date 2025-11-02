@@ -447,9 +447,132 @@ public class ExcelFinancialReportService {
     }
     
     private void createAuditReport(Workbook workbook, CompanyInfo company, FiscalPeriodInfo period) {
-        // TODO: Implement audit report content
-        // Sheet sheet = workbook.createSheet("Audit report");
-        // Add audit report content
+        Sheet sheet = workbook.createSheet("Audit report");
+        createCompanyHeader(workbook, sheet, company, period, "Report of the Independent Auditors");
+        
+        CellStyle normalStyle = workbook.createCellStyle();
+        normalStyle.setWrapText(true);
+        normalStyle.setVerticalAlignment(VerticalAlignment.TOP);
+        
+        CellStyle boldStyle = workbook.createCellStyle();
+        Font boldFont = workbook.createFont();
+        boldFont.setBold(true);
+        boldStyle.setFont(boldFont);
+        boldStyle.setWrapText(true);
+        
+        int currentRow = ROW_INDEX_INTRO;
+        
+        // To the members
+        Row row1 = sheet.createRow(currentRow++);
+        Cell toMembersCell = row1.createCell(0);
+        toMembersCell.setCellValue("To the members of " + company.name);
+        toMembersCell.setCellStyle(boldStyle);
+        currentRow++;
+        
+        // Opinion section
+        Row opinionHeaderRow = sheet.createRow(currentRow++);
+        Cell opinionHeaderCell = opinionHeaderRow.createCell(0);
+        opinionHeaderCell.setCellValue("Opinion");
+        opinionHeaderCell.setCellStyle(boldStyle);
+        
+        Row opinionRow = sheet.createRow(currentRow++);
+        Cell opinionCell = opinionRow.createCell(0);
+        opinionCell.setCellValue(
+            "We have audited the annual financial statements of " + company.name + " set out on pages 7 to 15, " +
+            "which comprise the statement of financial position as at " + 
+            period.endDate.format(DateTimeFormatter.ofPattern("dd MMMM yyyy")) + 
+            ", and the statement of comprehensive income, statement of changes in equity and statement of cash flows " +
+            "for the year then ended, and notes to the annual financial statements, including a summary of significant accounting policies."
+        );
+        opinionCell.setCellStyle(normalStyle);
+        sheet.getRow(currentRow - 1).setHeightInPoints(60);
+        currentRow += 2;
+        
+        Row opinionConclusionRow = sheet.createRow(currentRow++);
+        Cell opinionConclusionCell = opinionConclusionRow.createCell(0);
+        opinionConclusionCell.setCellValue(
+            "In our opinion, the annual financial statements present fairly, in all material respects, " +
+            "the financial position of " + company.name + " as at " + 
+            period.endDate.format(DateTimeFormatter.ofPattern("dd MMMM yyyy")) + 
+            ", and its financial performance and cash flows for the year then ended in accordance with " +
+            "International Financial Reporting Standards and the requirements of the Companies Act of South Africa."
+        );
+        opinionConclusionCell.setCellStyle(normalStyle);
+        sheet.getRow(currentRow - 1).setHeightInPoints(80);
+        currentRow += 2;
+        
+        // Basis for Opinion section
+        Row basisHeaderRow = sheet.createRow(currentRow++);
+        Cell basisHeaderCell = basisHeaderRow.createCell(0);
+        basisHeaderCell.setCellValue("Basis for Opinion");
+        basisHeaderCell.setCellStyle(boldStyle);
+        
+        Row basisRow = sheet.createRow(currentRow++);
+        Cell basisCell = basisRow.createCell(0);
+        basisCell.setCellValue(
+            "We conducted our audit in accordance with International Standards on Auditing (ISAs). " +
+            "Our responsibilities under those standards are further described in the Auditor's Responsibilities " +
+            "for the Audit of the Annual Financial Statements section of our report. We are independent of the " +
+            "company in accordance with the Independent Regulatory Board for Auditors' Code of Professional Conduct " +
+            "for Registered Auditors (IRBA Code) and other independence requirements applicable to performing audits " +
+            "of financial statements in South Africa. We have fulfilled our other ethical responsibilities in accordance " +
+            "with the IRBA Code and in accordance with other ethical requirements applicable to performing audits in South Africa."
+        );
+        basisCell.setCellStyle(normalStyle);
+        sheet.getRow(currentRow - 1).setHeightInPoints(120);
+        currentRow += 2;
+        
+        // Directors' Responsibility section
+        Row directorsHeaderRow = sheet.createRow(currentRow++);
+        Cell directorsHeaderCell = directorsHeaderRow.createCell(0);
+        directorsHeaderCell.setCellValue("Directors' Responsibility for the Annual Financial Statements");
+        directorsHeaderCell.setCellStyle(boldStyle);
+        
+        Row directorsRow = sheet.createRow(currentRow++);
+        Cell directorsCell = directorsRow.createCell(0);
+        directorsCell.setCellValue(
+            "The directors are responsible for the preparation and fair presentation of the annual financial statements " +
+            "in accordance with International Financial Reporting Standards and the requirements of the Companies Act of South Africa, " +
+            "and for such internal control as the directors determine is necessary to enable the preparation of annual financial statements " +
+            "that are free from material misstatement, whether due to fraud or error."
+        );
+        directorsCell.setCellStyle(normalStyle);
+        sheet.getRow(currentRow - 1).setHeightInPoints(80);
+        currentRow += 2;
+        
+        // Auditor's Responsibility section
+        Row auditorHeaderRow = sheet.createRow(currentRow++);
+        Cell auditorHeaderCell = auditorHeaderRow.createCell(0);
+        auditorHeaderCell.setCellValue("Auditor's Responsibility");
+        auditorHeaderCell.setCellStyle(boldStyle);
+        
+        Row auditorRow = sheet.createRow(currentRow++);
+        Cell auditorCell = auditorRow.createCell(0);
+        auditorCell.setCellValue(
+            "Our objectives are to obtain reasonable assurance about whether the annual financial statements as a whole " +
+            "are free from material misstatement, whether due to fraud or error, and to issue an auditor's report that includes our opinion. " +
+            "Reasonable assurance is a high level of assurance, but is not a guarantee that an audit conducted in accordance with ISAs " +
+            "will always detect a material misstatement when it exists."
+        );
+        auditorCell.setCellStyle(normalStyle);
+        sheet.getRow(currentRow - 1).setHeightInPoints(80);
+        currentRow += 2;
+        
+        // Signature section
+        Row signatureRow = sheet.createRow(currentRow++);
+        signatureRow.createCell(0).setCellValue("_______________________");
+        currentRow++;
+        
+        Row auditorNameRow = sheet.createRow(currentRow++);
+        Cell auditorNameCell = auditorNameRow.createCell(0);
+        auditorNameCell.setCellValue(company.auditors != null ? company.auditors : "Independent Auditors");
+        auditorNameCell.setCellStyle(boldStyle);
+        
+        Row dateRow = sheet.createRow(currentRow++);
+        dateRow.createCell(0).setCellValue("Date: " + LocalDate.now().format(DateTimeFormatter.ofPattern("dd MMMM yyyy")));
+        
+        // Set column width for better readability
+        sheet.setColumnWidth(0, 15000);
     }
     
     private void createDirectorsReport(Workbook workbook, CompanyInfo company, FiscalPeriodInfo period) {

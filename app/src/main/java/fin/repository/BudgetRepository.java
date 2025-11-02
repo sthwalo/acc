@@ -399,4 +399,44 @@ public class BudgetRepository {
             return allocations;
         }
     }
+
+    /**
+     * Update budget totals by recalculating from categories.
+     * Updates total_revenue and total_expenses fields in the budgets table.
+     */
+    public void updateBudgetTotals(Long budgetId, BigDecimal totalRevenue, BigDecimal totalExpenses) throws SQLException {
+        String sql = "UPDATE budgets SET total_revenue = ?, total_expenses = ?, updated_at = ? WHERE id = ?";
+
+        try (Connection conn = DriverManager.getConnection(dbUrl);
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setBigDecimal(1, totalRevenue);
+            stmt.setBigDecimal(2, totalExpenses);
+            stmt.setTimestamp(3, Timestamp.valueOf(LocalDateTime.now()));
+            stmt.setLong(4, budgetId);
+
+            stmt.executeUpdate();
+        }
+    }
+
+    /**
+     * Update budget approval status, timestamp, and approver.
+     * Updates status, approved_at, approved_by, and updated_at fields.
+     */
+    public void updateBudgetApproval(Long budgetId, String status, LocalDateTime approvedAt, 
+                                    String approvedBy) throws SQLException {
+        String sql = "UPDATE budgets SET status = ?, approved_at = ?, approved_by = ?, updated_at = ? WHERE id = ?";
+
+        try (Connection conn = DriverManager.getConnection(dbUrl);
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, status);
+            stmt.setTimestamp(2, approvedAt != null ? Timestamp.valueOf(approvedAt) : null);
+            stmt.setString(3, approvedBy);
+            stmt.setTimestamp(4, Timestamp.valueOf(LocalDateTime.now()));
+            stmt.setLong(5, budgetId);
+
+            stmt.executeUpdate();
+        }
+    }
 }

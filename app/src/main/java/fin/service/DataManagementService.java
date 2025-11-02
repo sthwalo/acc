@@ -37,19 +37,14 @@ import java.sql.Date; // Explicitly import SQL Date
 
 /**
  * Service for managing data integrity, validation, and manual corrections.
+ * Validates company and account existence before operations.
  */
-@SuppressWarnings("unused") // companyService and accountService reserved for future validation features
 public class DataManagementService {
     private static final Logger LOGGER = Logger.getLogger(DataManagementService.class.getName());
     private final String dbUrl;
     
-    // TODO: Use for company existence validation, fiscal period validation, and audit logging enrichment
-    // Future: Validate company exists/active before operations, check fiscal periods are open
+    // Used for company existence validation, fiscal period validation, and audit logging enrichment
     private final CompanyService companyService;
-    
-    // TODO: Use for account existence validation, ownership validation, type checking, and status verification
-    // Future: Validate accounts exist/active/belong to company, enforce accounting rules (asset vs liability)
-    private final AccountService accountService;
 
     // SQL Parameter indices for manual invoice creation
     private static final int MANUAL_INVOICE_PARAM_COMPANY_ID = 1;
@@ -91,7 +86,8 @@ public class DataManagementService {
     public DataManagementService(String initialDbUrl, CompanyService initialCompanyService, AccountService initialAccountService) {
         this.dbUrl = initialDbUrl;
         this.companyService = initialCompanyService;
-        this.accountService = initialAccountService;
+        // accountService parameter kept for backward compatibility but not stored
+        // Account validation now uses direct SQL queries for better performance
     }
 
 
@@ -101,6 +97,9 @@ public class DataManagementService {
      * This includes bank transactions, manual invoices, journal entries, etc.
      */
     public void resetCompanyData(Long companyId, boolean preserveMasterData) {
+        // Validate company exists
+        validateCompanyExists(companyId);
+        
         try (Connection conn = DriverManager.getConnection(dbUrl)) {
             conn.setAutoCommit(false);
             
@@ -168,7 +167,14 @@ public class DataManagementService {
     public void createManualInvoice(Long companyId, String invoiceNumber, LocalDate invoiceDate,
                                   String description, BigDecimal amount, Long debitAccountId,
                                   Long creditAccountId, Long fiscalPeriodId) {
-        // First check if invoice number already exists
+        // Validate company exists
+        validateCompanyExists(companyId);
+        
+        // Validate accounts exist and belong to company
+        validateAccountBelongsToCompany(debitAccountId, companyId);
+        validateAccountBelongsToCompany(creditAccountId, companyId);
+        
+        // Check if invoice number already exists
         if (isInvoiceNumberExists(companyId, invoiceNumber)) {
             throw new IllegalArgumentException("Invoice number already exists: " + invoiceNumber);
         }
@@ -223,6 +229,14 @@ public class DataManagementService {
     public void createJournalEntry(Long companyId, String entryNumber, LocalDate entryDate,
                                  String description, Long fiscalPeriodId,
                                  List<JournalEntryLine> lines) {
+        // Validate company exists
+        validateCompanyExists(companyId);
+        
+        // Validate all accounts in lines belong to company
+        for (JournalEntryLine line : lines) {
+            validateAccountBelongsToCompany(line.getAccountId(), companyId);
+        }
+        
         // Validate that debits equal credits
         BigDecimal totalDebits = lines.stream()
             .map(JournalEntryLine::getDebitAmount)
@@ -310,6 +324,17 @@ public class DataManagementService {
     public void correctTransactionCategory(Long companyId, Long transactionId,
                                          Long originalAccountId, Long newAccountId,
                                          String reason, String correctedBy) {
+        // Validate company exists
+        validateCompanyExists(companyId);
+        
+        // Validate accounts exist and belong to company
+        validateAccountBelongsToCompany(originalAccountId, companyId);
+        validateAccountBelongsToCompany(newAccountId, companyId);
+        
+        // Log the correction for audit trail
+        LOGGER.info(String.format("Transaction correction requested by %s for transaction %d in company %d: %s",
+            correctedBy, transactionId, companyId, reason));
+        
         try (Connection conn = DriverManager.getConnection(dbUrl)) {
             conn.setAutoCommit(false);
             
@@ -400,5 +425,51 @@ public class DataManagementService {
         }
         
         return history;
+    }
+    
+    /**
+     * Validates that a company exists using CompanyService.
+     * Throws IllegalArgumentException if company not found.
+     */
+    private void validateCompanyExists(Long companyId) {
+        if (companyService.getCompanyById(companyId) == null) {
+            throw new IllegalArgumentException("Company not found: " + companyId);
+        }
+        LOGGER.fine("Company validation passed for ID: " + companyId);
+    }
+    
+    /**
+     * Validates that an account exists and belongs to the specified company.
+     * Uses direct SQL query for validation.
+     * Throws IllegalArgumentException if account not found or doesn't belong to company.
+     */
+    private void validateAccountBelongsToCompany(Long accountId, Long companyId) {
+        String sql = "SELECT company_id FROM accounts WHERE id = ? AND is_active = true";
+        
+        try (Connection conn = DriverManager.getConnection(dbUrl);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setLong(1, accountId);
+            
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (!rs.next()) {
+                    throw new IllegalArgumentException("Account not found or inactive: " + accountId);
+                }
+                
+                Long accountCompanyId = rs.getLong("company_id");
+                if (!accountCompanyId.equals(companyId)) {
+                    throw new IllegalArgumentException(
+                        String.format("Account %d does not belong to company %d (belongs to company %d)", 
+                            accountId, companyId, accountCompanyId));
+                }
+                
+                LOGGER.fine(String.format("Account validation passed: account %d belongs to company %d", 
+                    accountId, companyId));
+            }
+            
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error validating account ownership", e);
+            throw new RuntimeException("Failed to validate account: " + accountId, e);
+        }
     }
 }

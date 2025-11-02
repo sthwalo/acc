@@ -191,22 +191,179 @@ public class BudgetService {
         }
 
         // Update budget totals in database
-        // TODO: Implement updateBudgetTotals in repository
+        repository.updateBudgetTotals(budgetId, totalRevenue, totalExpenses);
     }
 
     /**
-     * Generate budget projections for multiple years
+     * Generate budget projections for multiple years based on a base budget.
+     * Creates new budgets for future years with projected amounts based on growth rate.
+     * 
+     * @param budgetId The base budget to project from
+     * @param years Number of future years to project (1-10)
+     * @param growthRate Annual growth rate as decimal (e.g., 0.05 for 5% growth)
+     * @throws SQLException if database operation fails
+     * @throws IllegalArgumentException if parameters are invalid
      */
     public void generateBudgetProjections(Long budgetId, Integer years, BigDecimal growthRate) throws SQLException {
-        // TODO: Implement multi-year projections
-        throw new UnsupportedOperationException("Budget projections not yet implemented");
+        // Validate inputs
+        if (budgetId == null) {
+            throw new IllegalArgumentException("Budget ID is required");
+        }
+        if (years == null || years < 1 || years > 10) {
+            throw new IllegalArgumentException("Years must be between 1 and 10");
+        }
+        if (growthRate == null) {
+            throw new IllegalArgumentException("Growth rate is required");
+        }
+
+        // Get base budget with all details
+        Budget baseBudget = repository.getBudgetWithDetails(budgetId);
+        if (baseBudget == null) {
+            throw new IllegalArgumentException("Base budget not found: " + budgetId);
+        }
+
+        // Get company to check for existing budgets
+        Long companyId = baseBudget.getCompanyId();
+        List<Budget> existingBudgets = repository.getBudgetsByCompany(companyId);
+
+        // Generate projections for each year
+        for (int year = 1; year <= years; year++) {
+            Integer projectedYear = baseBudget.getBudgetYear() + year;
+            
+            // Skip if budget already exists for this year
+            boolean yearExists = existingBudgets.stream()
+                    .anyMatch(b -> b.getBudgetYear().equals(projectedYear));
+            if (yearExists) {
+                System.out.println("⚠️  Budget already exists for year " + projectedYear + ", skipping...");
+                continue;
+            }
+
+            // Calculate compound growth factor: (1 + rate)^year
+            BigDecimal growthFactor = BigDecimal.ONE.add(growthRate);
+            for (int i = 1; i < year; i++) {
+                growthFactor = growthFactor.multiply(BigDecimal.ONE.add(growthRate));
+            }
+
+            // Create projected budget
+            String projectedTitle = baseBudget.getTitle() + " - Projected Year " + projectedYear;
+            String projectedDescription = "Projected budget based on " + baseBudget.getBudgetYear() + 
+                                        " budget with " + growthRate.multiply(new BigDecimal("100")) + 
+                                        "% annual growth rate";
+            
+            Budget projectedBudget = createBudget(companyId, projectedTitle, projectedYear, projectedDescription);
+
+            // Copy and project categories
+            for (BudgetCategory baseCategory : baseBudget.getCategories()) {
+                // Create projected category
+                BudgetCategory projectedCategory = addBudgetCategory(
+                    projectedBudget.getId(),
+                    baseCategory.getName(),
+                    baseCategory.getCategoryType(),
+                    baseCategory.getAllocatedPercentage(),
+                    baseCategory.getDescription()
+                );
+
+                // Copy and project budget items
+                for (BudgetItem baseItem : baseCategory.getItems()) {
+                    // Apply growth factor to amount
+                    BigDecimal projectedAmount = baseItem.getAnnualAmount().multiply(growthFactor);
+                    
+                    // Round to 2 decimal places using modern RoundingMode
+                    projectedAmount = projectedAmount.setScale(2, java.math.RoundingMode.HALF_UP);
+
+                    addBudgetItem(
+                        projectedCategory.getId(),
+                        baseItem.getDescription(),
+                        projectedAmount,
+                        baseItem.getAccountId(),
+                        "Projected from " + baseBudget.getBudgetYear() + " with " + 
+                        growthRate.multiply(new BigDecimal("100")) + "% growth"
+                    );
+                }
+            }
+
+            // Update totals for projected budget
+            updateBudgetTotals(projectedBudget.getId());
+
+            System.out.println("✅ Created projected budget for year " + projectedYear);
+        }
+
+        System.out.println("🎯 Budget projections completed for " + years + " year(s)");
     }
 
     /**
-     * Approve a budget
+     * Approve a budget with validation and status transition workflow.
+     * Changes budget status from DRAFT to APPROVED and records approver details.
+     * 
+     * @param budgetId The budget to approve
+     * @param approvedBy Username or identifier of the person approving
+     * @return The approved budget with updated status
+     * @throws SQLException if database operation fails
+     * @throws IllegalArgumentException if parameters are invalid or budget not found
+     * @throws IllegalStateException if budget is not in DRAFT status
      */
     public Budget approveBudget(Long budgetId, String approvedBy) throws SQLException {
-        // TODO: Implement budget approval workflow
-        throw new UnsupportedOperationException("Budget approval not yet implemented");
+        // Validate inputs
+        if (budgetId == null) {
+            throw new IllegalArgumentException("Budget ID is required");
+        }
+        if (approvedBy == null || approvedBy.trim().isEmpty()) {
+            throw new IllegalArgumentException("Approver name is required");
+        }
+
+        // Get budget with current details
+        Budget budget = repository.getBudgetWithDetails(budgetId);
+        if (budget == null) {
+            throw new IllegalArgumentException("Budget not found: " + budgetId);
+        }
+
+        // Validate budget is in DRAFT status
+        String currentStatus = budget.getStatus();
+        if (!"DRAFT".equals(currentStatus)) {
+            throw new IllegalStateException(
+                String.format("Budget cannot be approved from status '%s'. Only DRAFT budgets can be approved.", 
+                    currentStatus)
+            );
+        }
+
+        // Validate budget has content (categories and items)
+        if (budget.getCategories() == null || budget.getCategories().isEmpty()) {
+            throw new IllegalStateException(
+                "Budget cannot be approved without categories. Please add at least one budget category."
+            );
+        }
+
+        // Validate budget has budget items
+        boolean hasItems = budget.getCategories().stream()
+                .anyMatch(category -> category.getItems() != null && !category.getItems().isEmpty());
+        if (!hasItems) {
+            throw new IllegalStateException(
+                "Budget cannot be approved without budget items. Please add items to at least one category."
+            );
+        }
+
+        // Validate budget has non-zero totals
+        if (budget.getTotalRevenue().compareTo(BigDecimal.ZERO) == 0 
+            && budget.getTotalExpenses().compareTo(BigDecimal.ZERO) == 0) {
+            throw new IllegalStateException(
+                "Budget cannot be approved with zero revenue and zero expenses. Please add budget amounts."
+            );
+        }
+
+        // Update budget approval in database
+        java.time.LocalDateTime approvalTime = java.time.LocalDateTime.now();
+        repository.updateBudgetApproval(budgetId, "APPROVED", approvalTime, approvedBy.trim());
+
+        // Update budget object
+        budget.setStatus("APPROVED");
+        budget.setApprovedAt(approvalTime);
+        budget.setApprovedBy(approvedBy.trim());
+
+        System.out.println("✅ Budget '" + budget.getTitle() + "' approved by " + approvedBy);
+        System.out.println("📊 Total Revenue: " + budget.getTotalRevenue());
+        System.out.println("💰 Total Expenses: " + budget.getTotalExpenses());
+        System.out.println("📈 Net Position: " + budget.getTotalRevenue().subtract(budget.getTotalExpenses()));
+
+        return budget;
     }
 }
