@@ -98,6 +98,10 @@ public class PdfFormattingUtils {
             return lines;
         }
 
+        // Check if text is purely numeric (numbers, currency symbols, commas, dots, dashes, percentages)
+        // These should NEVER be wrapped with hyphens
+        boolean isNumeric = text.matches("^[R$€£¥₹\\d\\s,\\.\\-]+%?$");
+        
         String[] words = text.split("\\s+");
         StringBuilder line = new StringBuilder();
         for (String w : words) {
@@ -109,25 +113,37 @@ public class PdfFormattingUtils {
                 if (line.length() > 0) lines.add(line.toString());
                 // if single word longer than maxWidth, break the word (simple hyphenation)
                 if (textWidth(font, fontSize, w) > maxWidth) {
-                    String remaining = w;
-                    while (textWidth(font, fontSize, remaining) > maxWidth && remaining.length() > 1) {
-                        int approxChars = Math.max(1, (int) (remaining.length() * maxWidth / textWidth(font, fontSize, remaining)));
-                        String part = remaining.substring(0, approxChars);
-                        // shrink until fits
-                        while (textWidth(font, fontSize, part) > maxWidth && part.length() > 1) {
-                            part = part.substring(0, part.length() - 1);
+                    // CRITICAL: Never hyphenate numeric values (currency, numbers, percentages)
+                    // Check if this specific word is numeric (including percentages like "100.0%" or "4.0%")
+                    boolean isWordNumeric = w.matches("^[R$€£¥₹\\d\\s,\\.\\-]+%?$") || w.endsWith("%");
+                    
+                    if (isWordNumeric || isNumeric) {
+                        // Don't break numeric values - just add as-is even if too wide
+                        // This prevents "30000.00" from becoming "3000-0.00"
+                        lines.add(w);
+                        line = new StringBuilder();
+                    } else {
+                        // Only break non-numeric text
+                        String remaining = w;
+                        while (textWidth(font, fontSize, remaining) > maxWidth && remaining.length() > 1) {
+                            int approxChars = Math.max(1, (int) (remaining.length() * maxWidth / textWidth(font, fontSize, remaining)));
+                            String part = remaining.substring(0, approxChars);
+                            // shrink until fits
+                            while (textWidth(font, fontSize, part) > maxWidth && part.length() > 1) {
+                                part = part.substring(0, part.length() - 1);
+                            }
+                            // Only add hyphen if we're actually breaking the word
+                            if (remaining.length() > part.length()) {
+                                lines.add(part + "-");
+                                remaining = remaining.substring(part.length());
+                            } else {
+                                lines.add(part);
+                                remaining = "";
+                            }
                         }
-                        // Only add hyphen if we're actually breaking the word
-                        if (remaining.length() > part.length()) {
-                            lines.add(part + "-");
-                            remaining = remaining.substring(part.length());
-                        } else {
-                            lines.add(part);
-                            remaining = "";
-                        }
+                        if (!remaining.isEmpty()) line = new StringBuilder(remaining);
+                        else line = new StringBuilder();
                     }
-                    if (!remaining.isEmpty()) line = new StringBuilder(remaining);
-                    else line = new StringBuilder();
                 } else {
                     line = new StringBuilder(w);
                 }
@@ -276,22 +292,53 @@ public class PdfFormattingUtils {
     // ------------------------
     public static float drawSectionHeader(PDPageContentStream cs, String sectionTitle, float startY,
                                           float contentWidth) throws IOException {
+        // Add consistent spacing BEFORE header (only if not at top of page)
+        // This prevents excessive blank lines between sections
+        float headerY = startY - 0f; // Reduced from 15f to 0f for tighter spacing (20pt total with bottom margin)
+        
         // Dark header bar
         cs.setNonStrokingColor(COLOR_DARK_GRAY[0], COLOR_DARK_GRAY[1], COLOR_DARK_GRAY[2]);
-        cs.addRect(MARGIN_LEFT, startY - 20, contentWidth, 18);
+        cs.addRect(MARGIN_LEFT, headerY - 20, contentWidth, 18);
         cs.fill();
 
         // Title (white)
         cs.setNonStrokingColor(1f, 1f, 1f);
         cs.beginText();
         cs.setFont(FONT_BOLD, FONT_SIZE_SUBHEADER);
-        cs.newLineAtOffset(MARGIN_LEFT + 8, startY - 16);
+        cs.newLineAtOffset(MARGIN_LEFT + 8, headerY - 16);
         cs.showText(sectionTitle);
         cs.endText();
 
         // reset color
         cs.setNonStrokingColor(COLOR_BLACK[0], COLOR_BLACK[1], COLOR_BLACK[2]);
-        return startY - 28;
+        // Return position with moderate spacing AFTER header (12 points)
+        return headerY - 32;
+    }
+
+    // ------------------------
+    //  Draw a subsection header (same style as main section header for consistency)
+    // ------------------------
+    public static float drawSubsectionHeader(PDPageContentStream cs, String subsectionTitle, float startY,
+                                             float contentWidth) throws IOException {
+        float headerY = startY - 5f; // Small spacing before subsection
+        
+        // Dark gray header bar (same as main section for consistency)
+        cs.setNonStrokingColor(COLOR_DARK_GRAY[0], COLOR_DARK_GRAY[1], COLOR_DARK_GRAY[2]);
+        cs.addRect(MARGIN_LEFT, headerY - 16, contentWidth, 14);
+        cs.fill();
+
+        // Title (white)
+        cs.setNonStrokingColor(1f, 1f, 1f);
+        cs.beginText();
+        cs.setFont(FONT_BOLD, FONT_SIZE_NORMAL);
+        cs.newLineAtOffset(MARGIN_LEFT + 6, headerY - 12);
+        cs.showText(subsectionTitle);
+        cs.endText();
+
+        // reset color
+        cs.setNonStrokingColor(COLOR_BLACK[0], COLOR_BLACK[1], COLOR_BLACK[2]);
+        // Return position with spacing after header
+        return headerY - 26;
     }
 
     // ------------------------
@@ -319,15 +366,15 @@ public class PdfFormattingUtils {
         cs.setNonStrokingColor(COLOR_BLACK[0], COLOR_BLACK[1], COLOR_BLACK[2]);
 
         // Draw header text with padding
-        float x = pageMarginLeft + 6;
+        float headerX = pageMarginLeft;
         float headerTextY = currentY - rowHeight + (rowHeight - FONT_SIZE_SMALL) / 2f + 2;
         cs.setFont(FONT_BOLD, FONT_SIZE_SMALL);
         for (int i = 0; i < headers.length; i++) {
             cs.beginText();
-            cs.newLineAtOffset(x, headerTextY);
+            cs.newLineAtOffset(headerX + 6, headerTextY);  // 6pt left padding
             cs.showText(headers[i]);
             cs.endText();
-            x += columnWidths[i];
+            headerX += columnWidths[i];
         }
 
         // Header underline
@@ -342,19 +389,27 @@ public class PdfFormattingUtils {
         // Draw rows
         cs.setFont(FONT_REGULAR, FONT_SIZE_SMALL);
         for (String[] row : data) {
-            float cellLeft = pageMarginLeft + 6;
             float cellTop = currentY;
             for (int col = 0; col < numColumns; col++) {
                 String cell = (col < row.length) && row[col] != null ? row[col] : "";
-                float cw = columnWidths[col] - 12; // account for left/right padding
+                
+                // Calculate column start position explicitly to prevent accumulation errors
+                float colStart = pageMarginLeft;
+                for (int i = 0; i < col; i++) {
+                    colStart += columnWidths[i];
+                }
+                
+                // Calculate the actual left and right edges with padding
+                float textLeft = colStart + 6;  // 6pt left padding
+                float textRight = colStart + columnWidths[col] - 6;  // 6pt right padding
 
                 // If looks like a numeric value (currency/number) — right align
                 if (isNumericLike(cell)) {
-                    float rightEdge = cellLeft + cw;
-                    showRightAlignedText(cs, FONT_REGULAR, FONT_SIZE_SMALL, cell, rightEdge + 6, cellTop - (FONT_SIZE_SMALL));
+                    showRightAlignedText(cs, FONT_REGULAR, FONT_SIZE_SMALL, cell, textRight, cellTop - (FONT_SIZE_SMALL));
                 } else {
                     // wrap lines inside cell
-                    List<String> lines = wrapText(cell, FONT_REGULAR, FONT_SIZE_SMALL, cw);
+                    float textWidth = textRight - textLeft;  // Available width for text
+                    List<String> lines = wrapText(cell, FONT_REGULAR, FONT_SIZE_SMALL, textWidth);
                     float lineY = cellTop - 4 - FONT_SIZE_SMALL; // small top padding
                     int lineCount = 0;
                     int maxLines = (int) Math.floor((rowHeight - 8) / (FONT_SIZE_SMALL * LINE_HEIGHT_FACTOR));
@@ -376,7 +431,7 @@ public class PdfFormattingUtils {
                             }
                             if (hasMoreContent) {
                                 cs.beginText();
-                                cs.newLineAtOffset(cellLeft, lineY);
+                                cs.newLineAtOffset(textLeft, lineY);
                                 cs.showText("...");
                                 cs.endText();
                             }
@@ -385,14 +440,14 @@ public class PdfFormattingUtils {
                         
                         cs.beginText();
                         cs.setFont(FONT_REGULAR, FONT_SIZE_SMALL);
-                        cs.newLineAtOffset(cellLeft, lineY);
+                        cs.newLineAtOffset(textLeft, lineY);
                         cs.showText(ln);
                         cs.endText();
                         lineY -= FONT_SIZE_SMALL * LINE_HEIGHT_FACTOR;
                         lineCount++;
                     }
                 }
-                cellLeft += columnWidths[col];
+                // No need to accumulate cellLeft - we calculate colStart explicitly each iteration
             }
             currentY -= rowHeight;
         }
@@ -415,14 +470,59 @@ public class PdfFormattingUtils {
         }
 
         if (content != null && !content.trim().isEmpty()) {
-            List<String> lines = wrapText(content, FONT_REGULAR, FONT_SIZE_SMALL, maxWidth);
+            // Split by newlines first to respect line breaks
+            String[] contentLines = content.split("\n");
             cs.setFont(FONT_REGULAR, FONT_SIZE_SMALL);
-            for (String ln : lines) {
-                cs.beginText();
-                cs.newLineAtOffset(MARGIN_LEFT, y);
-                cs.showText(ln);
-                cs.endText();
-                y -= FONT_SIZE_SMALL * LINE_HEIGHT_FACTOR;
+            
+            for (String line : contentLines) {
+                if (line.trim().isEmpty()) {
+                    // Empty line - add small spacing
+                    y -= FONT_SIZE_SMALL * LINE_HEIGHT_FACTOR * 0.5f;
+                    continue;
+                }
+                
+                // Detect if this is a numbered item (e.g., "1. Academic Excellence")
+                // or a bullet item (starts with •)
+                boolean isNumberedItem = line.matches("^\\d+\\.\\s+.*");
+                boolean isBulletItem = line.trim().startsWith("•");
+                boolean isYearHeader = line.trim().matches("^Year\\s+\\d+.*");
+                
+                float indent = MARGIN_LEFT;
+                String displayLine = line.trim();
+                
+                if (isBulletItem) {
+                    // Bullet item - indent by 20 points
+                    indent = MARGIN_LEFT + 20f;
+                    displayLine = line.trim(); // Keep the bullet
+                } else if (isNumberedItem || isYearHeader) {
+                    // Numbered item or Year header - no extra indent (bold font)
+                    cs.setFont(FONT_BOLD, FONT_SIZE_SMALL);
+                }
+                
+                // Wrap the line if it's too long
+                List<String> wrappedLines = wrapText(displayLine, 
+                    (isNumberedItem || isYearHeader) ? FONT_BOLD : FONT_REGULAR, 
+                    FONT_SIZE_SMALL, 
+                    maxWidth - (indent - MARGIN_LEFT));
+                
+                for (int i = 0; i < wrappedLines.size(); i++) {
+                    String wrappedLine = wrappedLines.get(i);
+                    cs.beginText();
+                    cs.newLineAtOffset(indent, y);
+                    cs.showText(wrappedLine);
+                    cs.endText();
+                    y -= FONT_SIZE_SMALL * LINE_HEIGHT_FACTOR;
+                    
+                    // For continuation lines of the same logical line, add extra indent
+                    if (i == 0 && wrappedLines.size() > 1) {
+                        indent += 10f; // Additional indent for wrapped continuations
+                    }
+                }
+                
+                // Reset font to regular for next line
+                if (isNumberedItem || isYearHeader) {
+                    cs.setFont(FONT_REGULAR, FONT_SIZE_SMALL);
+                }
             }
         }
         return y - 6;
@@ -613,19 +713,14 @@ public class PdfFormattingUtils {
     public static float[] calculateAnnualBudgetColumnWidths(float tableWidth) {
         float[] widths = new float[14];
         
-        // Allocate space:
-        // Category: 25% of table width (for long names like "Community Engagement")
-        // Annual Amount: 12% of table width
-        // 12 Month columns: Remaining 63% divided equally (5.25% each)
+        widths[0] = tableWidth * 0.15f;  // Category column - 15%
+        widths[1] = tableWidth * 0.10f;  // Annual Amount - 10%
         
-        widths[0] = tableWidth * 0.25f;  // Category column - 25%
-        widths[1] = tableWidth * 0.12f;  // Annual Amount - 12%
-        
-        float remainingWidth = tableWidth * 0.63f;
-        float monthColumnWidth = remainingWidth / 12f;
+        // Remaining 75% divided equally among 12 months = 6.25% each
+        float monthColumnWidth = tableWidth * 0.0625f;
         
         for (int i = 2; i < 14; i++) {
-            widths[i] = monthColumnWidth;  // Each month gets equal space
+            widths[i] = monthColumnWidth;  // Each month gets 6.0%
         }
         
         return widths;
@@ -713,6 +808,120 @@ public class PdfFormattingUtils {
                     cs.showText(line);
                     cs.endText();
                     lineY -= (FONT_SIZE_SMALL + 2);
+                }
+
+                x += columnWidths[col];
+            }
+
+            currentY -= rowHeight;
+
+            // Draw horizontal line between rows
+            cs.setLineWidth(0.5f);
+            cs.moveTo(pageMarginLeft, currentY);
+            cs.lineTo(pageMarginLeft + tableWidth, currentY);
+            cs.stroke();
+            cs.setLineWidth(1f);
+        }
+
+        // Draw vertical lines
+        float columnX = pageMarginLeft;
+        for (float w : columnWidths) {
+            cs.moveTo(columnX, startY);
+            cs.lineTo(columnX, currentY);
+            cs.stroke();
+            columnX += w;
+        }
+        cs.moveTo(columnX, startY);
+        cs.lineTo(columnX, currentY);
+        cs.stroke();
+
+        return currentY;
+    }
+
+    /**
+     * Overloaded drawTable with custom font size for narrow tables with many columns.
+     * Useful for tables like Annual Budget where values need to fit in narrow month columns.
+     * 
+     * @param fontSize Custom font size (recommended: 8f for wide tables, 10f for normal)
+     */
+    public static float drawTable(PDPageContentStream cs, PDDocument doc, String[] headers, String[][] data,
+                                  float startY, float rowHeight, float pageContentWidth, float pageMarginLeft,
+                                  float[] customColumnWidths, float fontSize) throws IOException {
+        float currentY = startY;
+        float tableWidth = pageContentWidth;
+
+        float[] columnWidths = customColumnWidths;
+
+        // Calculate table height to draw border
+        float tableHeight = (data.length + 1) * rowHeight;
+        cs.setLineWidth(1f);
+        cs.addRect(pageMarginLeft, currentY - tableHeight, tableWidth, tableHeight);
+        cs.stroke();
+
+        // Header background
+        cs.setNonStrokingColor(COLOR_LIGHT_GRAY[0], COLOR_LIGHT_GRAY[1], COLOR_LIGHT_GRAY[2]);
+        cs.addRect(pageMarginLeft + 1, currentY - rowHeight + 1, tableWidth - 2, rowHeight - 2);
+        cs.fill();
+        cs.setNonStrokingColor(COLOR_BLACK[0], COLOR_BLACK[1], COLOR_BLACK[2]);
+
+        // Draw header text with padding (using custom font size)
+        float x = pageMarginLeft + 6;
+        float headerTextY = currentY - rowHeight + (rowHeight - fontSize) / 2f + 2;
+        cs.setFont(FONT_BOLD, fontSize);
+        for (int i = 0; i < headers.length; i++) {
+            cs.beginText();
+            cs.newLineAtOffset(x, headerTextY);
+            cs.showText(headers[i]);
+            cs.endText();
+            x += columnWidths[i];
+        }
+
+        currentY -= rowHeight;
+
+        // Draw data rows with wrapping support (using custom font size)
+        cs.setFont(FONT_REGULAR, fontSize);
+        for (String[] row : data) {
+            x = pageMarginLeft + 6;
+            
+            // Calculate max lines needed for this row based on rowHeight and custom fontSize
+            int maxLines = (int) Math.floor(rowHeight / (fontSize + 2));
+            float textStartY = currentY - (rowHeight - fontSize) / 2f;
+
+            for (int col = 0; col < row.length && col < columnWidths.length; col++) {
+                String cellText = row[col] == null ? "" : row[col];
+                float colWidth = columnWidths[col] - 12; // padding
+                
+                List<String> wrappedLines = wrapText(cellText, FONT_REGULAR, fontSize, colWidth);
+                
+                // Only show maxLines, append "..." if truncated AND has content after truncation
+                boolean truncated = wrappedLines.size() > maxLines;
+                List<String> displayLines = wrappedLines.subList(0, Math.min(maxLines, wrappedLines.size()));
+                
+                // Check if remaining lines have non-empty content
+                boolean hasRemainingContent = false;
+                if (truncated) {
+                    for (int i = maxLines; i < wrappedLines.size(); i++) {
+                        if (!wrappedLines.get(i).trim().isEmpty()) {
+                            hasRemainingContent = true;
+                            break;
+                        }
+                    }
+                }
+                
+                if (truncated && hasRemainingContent && !displayLines.isEmpty()) {
+                    String lastLine = displayLines.get(displayLines.size() - 1);
+                    displayLines.set(displayLines.size() - 1, lastLine + "...");
+                }
+
+                float lineY = textStartY;
+                for (String line : displayLines) {
+                    if (line.trim().isEmpty()) continue; // Skip empty lines
+                    
+                    cs.beginText();
+                    cs.newLineAtOffset(x, lineY);
+                    cs.showText(line);
+                    cs.endText();
+                    lineY -= (fontSize + 2);
                 }
 
                 x += columnWidths[col];
