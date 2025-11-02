@@ -1,6 +1,8 @@
 /*
- * Copyright 2025 Sthwalo Nyoni
- *
+ * Copyright (c) 2024-2025 Sthwalo Holdings (Pty) Ltd.
+ * Owner: Immaculate Nyoni
+ * Contact: sthwaloe@gmail.com | +27 61 514 6185
+ * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at

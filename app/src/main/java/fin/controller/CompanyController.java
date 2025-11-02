@@ -1,3 +1,29 @@
+/*
+ * FIN Financial Management System
+ * 
+ * Copyright (c) 2024-2025 Sthwalo Holdings (Pty) Ltd.
+ * Owner: Immaculate Nyoni
+ * Contact: sthwaloe@gmail.com | +27 61 514 6185
+ * 
+ * This source code is licensed under the Apache License 2.0.
+ * Commercial use of the APPLICATION requires separate licensing.
+ * 
+ * Contains proprietary algorithms and business logic.
+ * Unauthorized commercial use is strictly prohibited.
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package fin.controller;
 
 import fin.model.Company;
@@ -90,6 +116,7 @@ public class CompanyController {
         outputFormatter.printHeader("Create New Company");
         
         try {
+            // Basic company information
             String name = inputHandler.getString("Enter company name");
             String regNumber = inputHandler.getString("Enter registration number (optional)", "");
             String taxNumber = inputHandler.getString("Enter tax number (optional)", "");
@@ -97,12 +124,28 @@ public class CompanyController {
             String email = inputHandler.getString("Enter contact email (optional)", "");
             String phone = inputHandler.getString("Enter contact phone (optional)", "");
             
+            // Banking details
+            outputFormatter.printInfo("\n📊 Banking Details");
+            String bankName = inputHandler.getString("Enter bank name (optional)", "");
+            String accountNumber = inputHandler.getString("Enter account number (optional)", "");
+            String accountType = inputHandler.getString("Enter account type (e.g., Business Cheque) (optional)", "");
+            String branchCode = inputHandler.getString("Enter branch code (optional)", "");
+            
+            // VAT registration
+            outputFormatter.printInfo("\n💰 VAT Registration");
+            boolean vatRegistered = inputHandler.getBoolean("Is company VAT registered? (y/n)");
+            
             Company company = new Company(name);
             company.setRegistrationNumber(regNumber.isEmpty() ? null : regNumber);
             company.setTaxNumber(taxNumber.isEmpty() ? null : taxNumber);
             company.setAddress(address.isEmpty() ? null : address);
             company.setContactEmail(email.isEmpty() ? null : email);
             company.setContactPhone(phone.isEmpty() ? null : phone);
+            company.setBankName(bankName.isEmpty() ? null : bankName);
+            company.setAccountNumber(accountNumber.isEmpty() ? null : accountNumber);
+            company.setAccountType(accountType.isEmpty() ? null : accountType);
+            company.setBranchCode(branchCode.isEmpty() ? null : branchCode);
+            company.setVatRegistered(vatRegistered);
             
             company = companyService.createCompany(company);
             applicationState.setCurrentCompany(company);
@@ -110,6 +153,11 @@ public class CompanyController {
             outputFormatter.printSuccess("Company created successfully!");
             outputFormatter.printInfo("Company ID: " + company.getId());
             outputFormatter.printInfo("Company Name: " + company.getName());
+            if (vatRegistered) {
+                outputFormatter.printInfo("VAT Registered: Yes (15% VAT will be applied to invoices)");
+            } else {
+                outputFormatter.printInfo("VAT Registered: No (No VAT will be applied to invoices)");
+            }
             
         } catch (Exception e) {
             outputFormatter.printError("Error creating company: " + e.getMessage());
@@ -169,6 +217,23 @@ public class CompanyController {
             String logoPath = inputHandler.getString("Logo path (full file path to company logo)", 
                     currentCompany.getLogoPath() != null ? currentCompany.getLogoPath() : "");
             
+            // Banking Details Section
+            outputFormatter.printInfo("\n📊 Banking Details");
+            String bankName = inputHandler.getString("Bank name", 
+                    currentCompany.getBankName() != null ? currentCompany.getBankName() : "");
+            String accountNumber = inputHandler.getString("Account number", 
+                    currentCompany.getAccountNumber() != null ? currentCompany.getAccountNumber() : "");
+            String accountType = inputHandler.getString("Account type (e.g., Cheque, Savings)", 
+                    currentCompany.getAccountType() != null ? currentCompany.getAccountType() : "");
+            String branchCode = inputHandler.getString("Branch code", 
+                    currentCompany.getBranchCode() != null ? currentCompany.getBranchCode() : "");
+            
+            // VAT Registration Section
+            outputFormatter.printInfo("\n💰 VAT Registration");
+            outputFormatter.printInfo("Current VAT status: " + 
+                    (currentCompany.isVatRegistered() ? "Registered (15% VAT on invoices)" : "Not registered (0% VAT)"));
+            boolean vatRegistered = inputHandler.getBoolean("Is company VAT registered?");
+            
             currentCompany.setName(name);
             currentCompany.setRegistrationNumber(regNumber.isEmpty() ? null : regNumber);
             currentCompany.setTaxNumber(taxNumber.isEmpty() ? null : taxNumber);
@@ -176,6 +241,11 @@ public class CompanyController {
             currentCompany.setContactEmail(email.isEmpty() ? null : email);
             currentCompany.setContactPhone(phone.isEmpty() ? null : phone);
             currentCompany.setLogoPath(logoPath.isEmpty() ? null : logoPath);
+            currentCompany.setBankName(bankName.isEmpty() ? null : bankName);
+            currentCompany.setAccountNumber(accountNumber.isEmpty() ? null : accountNumber);
+            currentCompany.setAccountType(accountType.isEmpty() ? null : accountType);
+            currentCompany.setBranchCode(branchCode.isEmpty() ? null : branchCode);
+            currentCompany.setVatRegistered(vatRegistered);
             
             currentCompany = companyService.updateCompany(currentCompany);
             applicationState.setCurrentCompany(currentCompany);

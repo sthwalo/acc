@@ -74,8 +74,12 @@ class CompanyControllerTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
         
-        // Create real InputHandler with test input for editCompany (7 inputs needed: name, reg, tax, address, email, phone, logo)
-        String testInput = "Test Company\n123456\n98765\nTest Address\ntest@example.com\n+27-11-123-4567\n/logo.png\n";
+        // Create real InputHandler with test input
+        // editCompany needs: name, reg, tax, address, email, phone, logo, bank_name, account_number, account_type, branch_code, vat_registered (12 inputs)
+        // createCompany needs: name, reg, tax, address, email, phone, bank_name, account_number, account_type, branch_code, vat_registered (11 inputs)
+        // Add enough inputs for editCompany (which is the superset)
+        String testInput = "Test Company\n123456\n98765\nTest Address\ntest@example.com\n+27-11-123-4567\n/logo.png\nTest Bank\n1234567890\nCheque\n123456\ny\n" +
+                           "Test Company\n123456\n98765\nTest Address\ntest@example.com\n+27-11-123-4567\nTest Bank\n1234567890\nCheque\n123456\ny\n";
         Scanner scanner = new Scanner(new ByteArrayInputStream(testInput.getBytes()));
         inputHandler = new InputHandler(scanner);
         
