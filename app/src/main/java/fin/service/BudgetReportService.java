@@ -70,27 +70,14 @@ public class BudgetReportService {
 
     // PDF Layout Constants - Using PdfFormattingUtils
     private static final float PAGE_MARGIN_LEFT = PdfFormattingUtils.MARGIN_LEFT;
-    private static final float PAGE_WIDTH = PdfFormattingUtils.PAGE_WIDTH;
-    private static final float PAGE_HEIGHT = PdfFormattingUtils.PAGE_HEIGHT;
 
     // Font Sizes - Using PdfFormattingUtils typography hierarchy
-    private static final float FONT_SIZE_TITLE = PdfFormattingUtils.FONT_SIZE_TITLE;
-    private static final float FONT_SIZE_HEADER = PdfFormattingUtils.FONT_SIZE_HEADER;
     private static final float FONT_SIZE_NORMAL = PdfFormattingUtils.FONT_SIZE_NORMAL;
     private static final float FONT_SIZE_SMALL = PdfFormattingUtils.FONT_SIZE_SMALL;
 
     // Vertical Spacing - Using PdfFormattingUtils consistent spacing
     private static final float LINE_SPACING_NORMAL = PdfFormattingUtils.FONT_SIZE_NORMAL * PdfFormattingUtils.LINE_HEIGHT_FACTOR;
     private static final float LINE_SPACING_LARGE = PdfFormattingUtils.FONT_SIZE_HEADER * PdfFormattingUtils.LINE_HEIGHT_FACTOR;
-
-    // Section Positions - Updated for professional layout
-    private static final float TITLE_Y = PdfFormattingUtils.PAGE_HEIGHT - PdfFormattingUtils.MARGIN_TOP;
-    private static final float HEADER_Y = TITLE_Y - 120f; // Space for header section
-    private static final float SUMMARY_Y = HEADER_Y - 80f; // Space for summary section
-    private static final float TABLE_Y = SUMMARY_Y - 60f; // Space for table content
-    private static final float CATEGORY_Y = TABLE_Y - 200f; // Space for categories
-    private static final float ITEMS_Y = CATEGORY_Y - 150f; // Space for items
-    private static final float STRATEGIC_Y = ITEMS_Y - 200f; // Space for strategic content
 
     public BudgetReportService(String initialDbUrl) {
         this.dbUrl = initialDbUrl;
@@ -110,14 +97,6 @@ public class BudgetReportService {
         private String footerText1;
         private String footerText2;
         private String footerText3;
-
-        public PageManager(PDDocument document) {
-            this.document = document;
-            this.pageCount = 0;
-            this.isLandscape = false;
-            this.allContentStreams = new ArrayList<>();
-            createNewPage(false); // Start with portrait
-        }
 
         /**
          * Create PageManager with specified default orientation
@@ -226,31 +205,10 @@ public class BudgetReportService {
         }
 
         /**
-         * Move Y position by specified amount
-         */
-        public void moveY(float deltaY) {
-            this.currentY += deltaY;
-        }
-
-        /**
          * Get current content stream
          */
         public PDPageContentStream getContentStream() {
             return currentContentStream;
-        }
-
-        /**
-         * Get current page
-         */
-        public PDPage getCurrentPage() {
-            return currentPage;
-        }
-
-        /**
-         * Get total page count
-         */
-        public int getPageCount() {
-            return pageCount;
         }
 
         /**
@@ -265,15 +223,6 @@ public class BudgetReportService {
          */
         public boolean isLandscape() {
             return isLandscape;
-        }
-
-        /**
-         * Set footer text for all pages (two parameters - backward compatibility)
-         */
-        public void setFooterText(String text1, String text2) {
-            this.footerText1 = text1;
-            this.footerText2 = text2;
-            this.footerText3 = null; // No custom right text
         }
 
         /**
@@ -296,7 +245,6 @@ public class BudgetReportService {
 
             // Now draw footers on all pages with correct page numbers
             for (int i = 0; i < allContentStreams.size(); i++) {
-                PDPageContentStream contentStream = allContentStreams.get(i);
                 try {
                     // Create a new content stream for the footer (PDFBox requires this for existing pages)
                     PDPageContentStream footerStream = new PDPageContentStream(document, document.getPage(i), PDPageContentStream.AppendMode.APPEND, true, true);

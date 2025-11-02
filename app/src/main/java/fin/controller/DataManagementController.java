@@ -568,12 +568,11 @@ public class DataManagementController {
     private void handlePaginationAndCorrection(List<BankTransaction> transactions,
                                             List<BankTransaction> allTransactions,
                                             int filterChoice) throws Exception {
-        final int transactionsPerPage = 50;
-        int totalPages = (int) Math.ceil((double) transactions.size() / transactionsPerPage);
+        int totalPages = (int) Math.ceil((double) transactions.size() / TRANSACTIONS_PER_PAGE);
         int currentPage = 1;
 
         while (true) {
-            displayTransactionPage(transactions, currentPage, totalPages, transactionsPerPage);
+            displayTransactionPage(transactions, currentPage, totalPages, TRANSACTIONS_PER_PAGE);
 
             String input = getUserNavigationInput(currentPage, totalPages, transactions.size());
 
@@ -592,7 +591,7 @@ public class DataManagementController {
                 correctSingleTransaction(transactions.get(txIndex));
                 refreshTransactionData(allTransactions, filterChoice, currentPage, totalPages);
                 transactions = filterTransactions(allTransactions, filterChoice);
-                totalPages = (int) Math.ceil((double) transactions.size() / transactionsPerPage);
+                totalPages = (int) Math.ceil((double) transactions.size() / TRANSACTIONS_PER_PAGE);
 
                 currentPage = adjustCurrentPageAfterRefresh(currentPage, totalPages);
             }
@@ -664,15 +663,17 @@ public class DataManagementController {
     
     private List<BankTransaction> filterTransactions(List<BankTransaction> transactions, int filterChoice) {
         switch (filterChoice) {
-            case FILTER_CHOICE_UNCATEGORIZED: // Uncategorized only
+            case FILTER_CHOICE_ALL:
+                return transactions;
+            case FILTER_CHOICE_UNCATEGORIZED:
                 return transactions.stream()
                     .filter(tx -> tx.getAccountCode() == null || tx.getAccountCode().isEmpty())
                     .collect(java.util.stream.Collectors.toList());
-            case FILTER_CHOICE_CATEGORIZED: // Categorized only
+            case FILTER_CHOICE_CATEGORIZED:
                 return transactions.stream()
                     .filter(tx -> tx.getAccountCode() != null && !tx.getAccountCode().isEmpty())
                     .collect(java.util.stream.Collectors.toList());
-            default: // All transactions
+            default:
                 return transactions;
         }
     }
@@ -933,7 +934,16 @@ public class DataManagementController {
         
         if ("CONFIRM".equals(confirmation)) {
             try {
-                boolean preserveMasterData = (choice == RESET_CHOICE_TRANSACTIONS_ONLY);
+                boolean preserveMasterData;
+                if (choice == RESET_CHOICE_TRANSACTIONS_ONLY) {
+                    preserveMasterData = true;
+                } else if (choice == RESET_CHOICE_ALL_DATA) {
+                    preserveMasterData = false;
+                } else {
+                    outputFormatter.printError("Invalid reset choice");
+                    return;
+                }
+                
                 dataManagementService.resetCompanyData(
                     applicationState.getCurrentCompany().getId(), 
                     preserveMasterData);

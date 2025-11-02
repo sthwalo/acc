@@ -299,14 +299,6 @@ public class TransactionMappingRuleService extends JdbcBaseRepository {
             this.successCount = success;
             this.errorCount = errors;
         }
-
-        public int getSuccessCount() {
-            return successCount;
-        }
-
-        public int getErrorCount() {
-            return errorCount;
-        }
     }
 
     /**

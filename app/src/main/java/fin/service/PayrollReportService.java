@@ -62,8 +62,6 @@ public class PayrollReportService {
 
     // PDF Layout Constants
     private static final float PAGE_MARGIN_LEFT = 50f;
-    private static final float PAGE_WIDTH = 550f;
-    private static final float PAGE_HEIGHT = 750f;
 
     // Font Sizes
     private static final float FONT_SIZE_TITLE = 16f;
@@ -112,11 +110,6 @@ public class PayrollReportService {
     private static final float EMP201_SECTION_FONT_SIZE = 14f;
     private static final float EMP201_DATA_FONT_SIZE = 11f;
     private static final float EMP201_FOOTER_FONT_SIZE = 9f;
-    
-    // EMP201 Column Widths and Positions
-    private static final float EMP201_LABEL_COLUMN_WIDTH = 50f;
-    private static final float EMP201_VALUE_COLUMN_WIDTH = 100f;
-    private static final float EMP201_TOTAL_LABEL_WIDTH = 470f;
 
     public PayrollReportService(String initialDbUrl) {
         this.dbUrl = initialDbUrl;
@@ -250,9 +243,6 @@ public class PayrollReportService {
     private PayrollSummaryData calculatePayrollSummaryData(Long companyId) throws SQLException {
         // Get all processed payroll periods for the company
         List<PayrollPeriod> processedPeriods = getProcessedPayrollPeriods(companyId);
-        
-        // Debug: Check if we have any processed periods
-        System.out.println("🔍 DEBUG: Found " + processedPeriods.size() + " processed payroll periods for company " + companyId);
 
         // Calculate summary data
         BigDecimal totalGrossPay = BigDecimal.ZERO;
@@ -291,11 +281,6 @@ public class PayrollReportService {
                 BigDecimal totalUIFEmployee = rs.getBigDecimal("total_uif_employee") != null ? rs.getBigDecimal("total_uif_employee") : BigDecimal.ZERO;
                 BigDecimal totalUIFEmployer = rs.getBigDecimal("total_uif_employer") != null ? rs.getBigDecimal("total_uif_employer") : BigDecimal.ZERO;
                 totalUIF = totalUIFEmployee.add(totalUIFEmployer);
-                
-                // Debug: Check payslip data
-                System.out.println("🔍 DEBUG: Payslip totals - PAYE: R" + totalPAYE + ", UIF Employee: R" + totalUIFEmployee + ", UIF Employer: R" + totalUIFEmployer);
-            } else {
-                System.out.println("🔍 DEBUG: No payslip data found for company " + companyId);
             }
         }
 
@@ -803,8 +788,6 @@ public class PayrollReportService {
                 "LEFT JOIN payroll_periods pp ON p.payroll_period_id = pp.id " +
                 "WHERE e.company_id = ?";
 
-        System.out.println("🔍 DEBUG: Calculating EMP 201 data for company " + companyId);
-
         try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
@@ -820,13 +803,6 @@ public class PayrollReportService {
                 data.totalUIFEmployee = rs.getBigDecimal("total_uif_employee").doubleValue();
                 data.totalUIFEmployer = rs.getBigDecimal("total_uif_employer").doubleValue();
                 data.totalSDL = rs.getBigDecimal("total_sdl").doubleValue();
-
-                System.out.println("🔍 DEBUG: Found " + data.totalEmployees + " employees, " + data.totalPeriods + " periods");
-                System.out.println("🔍 DEBUG: Total gross: R" + String.format("%.2f", data.totalGrossPay));
-                System.out.println("🔍 DEBUG: PAYE: R" + String.format("%.2f", data.totalPAYE));
-                System.out.println("🔍 DEBUG: UIF Employee: R" + String.format("%.2f", data.totalUIFEmployee));
-                System.out.println("🔍 DEBUG: UIF Employer: R" + String.format("%.2f", data.totalUIFEmployer));
-                System.out.println("🔍 DEBUG: SDL: R" + String.format("%.2f", data.totalSDL));
 
                 return data;
             }

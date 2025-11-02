@@ -31,7 +31,6 @@ import fin.model.Company;
 import fin.model.Employee;
 import fin.model.Payslip;
 import fin.model.PayrollPeriod;
-import fin.repository.CompanyRepository;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.file.Files;
@@ -88,8 +87,6 @@ public class PayslipPdfService {
     private static final float FONT_SIZE_SECTION_HEADER = 12f;
     private static final float FONT_SIZE_NORMAL = 10f;
     private static final float FONT_SIZE_SMALL = 9f;
-    private static final float FONT_SIZE_NET_PAY = 14f;
-    private static final float FONT_SIZE_BOLD_NORMAL = 11f;
 
     // Spacing and positioning constants
     private static final float HEADER_BORDER_HEIGHT = 140f;
@@ -126,23 +123,16 @@ public class PayslipPdfService {
     private static final float EARNINGS_DEDUCTIONS_TABLE_HEIGHT = 150f;
     private static final float EARNINGS_DEDUCTIONS_SECTION_HEADER_HEIGHT = 15f;
     private static final float EARNINGS_DEDUCTIONS_SECTION_HEADER_OFFSET = 12f;
-    private static final float EARNINGS_DEDUCTIONS_TABLE_HEADER_OFFSET = 15f;
     private static final float EARNINGS_DEDUCTIONS_AMOUNT_COLUMN_OFFSET = 70f;
-    private static final float EARNINGS_DEDUCTIONS_ROW_START_OFFSET = 50f;
-    private static final float EARNINGS_DEDUCTIONS_ROW_SPACING = 30f;
-    private static final float EARNINGS_DEDUCTIONS_TOTAL_SPACING = 35f;
-    private static final float EARNINGS_DEDUCTIONS_TOTAL_HEIGHT = 20f;
     private static final float EARNINGS_DEDUCTIONS_BOTTOM_SPACING = 40f;
 
     // Net pay section constants
     private static final float NET_PAY_SECTION_HEIGHT = 40f;
-    private static final float NET_PAY_TEXT_OFFSET = 20f;
     private static final float NET_PAY_LABEL_OFFSET = 20f;
     private static final float NET_PAY_AMOUNT_OFFSET = 120f;
     private static final float NET_PAY_BOTTOM_SPACING = 20f;
 
     // Footer constants
-    private static final float FOOTER_Y_POSITION = 100f;
     private static final float FOOTER_LINE_SPACING = 15f;
 
     // Additional constants for earnings/deductions section
@@ -185,7 +175,6 @@ public class PayslipPdfService {
     private static final float[] COLOR_LIGHT_GRAY_BACKGROUND = {0.95f, 0.95f, 0.95f};
     private static final float[] COLOR_LIGHT_BLUE_HEADER = {0.8f, 0.8f, 0.9f};
     private static final float[] COLOR_LIGHT_GRAY_HEADER = {0.9f, 0.9f, 0.9f};
-    private static final float[] COLOR_LIGHT_GREEN_BACKGROUND = {0.95f, 1.0f, 0.95f};
     private static final float[] COLOR_VERY_LIGHT_GRAY = {0.95f, 0.95f, 0.95f};
 
     // Line width constants
@@ -196,8 +185,6 @@ public class PayslipPdfService {
     // Text truncation constants
     private static final int MAX_NAME_LENGTH = 25;
     private static final int NAME_TRUNCATE_LENGTH = 22;
-
-    private final CompanyRepository companyRepository;
 
     private static class DrawingContext {
         private final Pointer page;
@@ -234,8 +221,6 @@ public class PayslipPdfService {
             this.contentWidth = widthContent;
             this.boldFont = fontBold;
         }
-    }    public PayslipPdfService(CompanyRepository initialCompanyRepository) {
-        this.companyRepository = initialCompanyRepository;
     }
 
     /**

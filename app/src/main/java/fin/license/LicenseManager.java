@@ -17,6 +17,8 @@
  */
 package fin.license;
 
+import fin.ui.InputHandler;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -102,8 +104,6 @@ public class LicenseManager {
     }
     
     private static boolean confirmPersonalUse() {
-        // Don't use try-with-resources here as it closes System.in
-        Scanner scanner = new Scanner(System.in, java.nio.charset.StandardCharsets.UTF_8);
         System.out.println();
         System.out.println("📋 LICENSE AGREEMENT CONFIRMATION:");
         System.out.println();
@@ -120,9 +120,12 @@ public class LicenseManager {
             return true;
         }
         
-        System.out.print("Type 'yes' to confirm personal use only, or 'no' to exit: ");
+        // Create InputHandler with System.in scanner (managed by InputHandler)
+        Scanner scanner = new Scanner(System.in, java.nio.charset.StandardCharsets.UTF_8);
+        InputHandler inputHandler = new InputHandler(scanner);
         
-        String response = scanner.nextLine().trim().toLowerCase();
+        System.out.println("Type 'yes' to confirm personal use only, or 'no' to exit.");
+        String response = inputHandler.getString("Confirm personal use").trim().toLowerCase();
         
         if ("yes".equals(response)) {
             System.out.println("✅ Personal use confirmed. Starting FIN...");

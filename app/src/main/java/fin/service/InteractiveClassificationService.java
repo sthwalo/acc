@@ -88,7 +88,6 @@ public class InteractiveClassificationService {
     private static final int PATTERN_DISPLAY_LENGTH = 40;
     private static final int PARTIAL_PATTERN_WORDS = 3;
     private static final int LAST_CHANGES_COUNT = 5;
-    private static final int ELLIPSIS_LENGTH = 3; // Length of "..." for truncated display
     
     // SQL Parameter Index Constants for PreparedStatement operations
     private static final int RULE_COMPANY_ID_PARAM = 1;
@@ -96,8 +95,6 @@ public class InteractiveClassificationService {
     private static final int RULE_KEYWORDS_PARAM = 3;
     private static final int RULE_ACCOUNT_CODE_PARAM = 4;
     private static final int RULE_ACCOUNT_NAME_PARAM = 5;
-    private static final int RULE_USAGE_COUNT_PARAM = 6;
-    private static final int RULE_ID_PARAM = 2;
     private static final int RULE_UPDATE_KEYWORDS_PARAM = 1;
     private static final int RULE_UPDATE_ID_PARAM = 2;
     private static final int RULE_CHECK_COMPANY_ID_PARAM = 1;
@@ -139,7 +136,6 @@ public class InteractiveClassificationService {
     private static final int ALLOCATION_ANALYSIS_FISCAL_PERIOD_PARAM = 2;
     private static final int SUMMARY_COMPANY_ID_PARAM = 1;
     private static final int SUMMARY_FISCAL_PERIOD_PARAM = 2;
-    private static final int SUGGESTIONS_PATTERN_PARAM = 1;
     
     // Change tracking
     public static class ChangeRecord {

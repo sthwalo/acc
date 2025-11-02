@@ -49,7 +49,7 @@ public class CashFlowService {
     private static final int CASH_FLOW_REPORT_WIDTH = 65;
 
     private final FinancialDataRepository repository;
-    private final IncomeStatementService incomeStatementService;
+    private final GeneralLedgerService generalLedgerService;
 
     /**
      * Constructor with dependency injection.
@@ -62,11 +62,11 @@ public class CashFlowService {
      * - Suppressions are configured in config/spotbugs/exclude.xml for all service constructors
      *
      * @param initialRepository the financial data repository for database operations
-     * @param initialIncomeStatementService the income statement service for net income calculations
+     * @param initialGeneralLedgerService the general ledger service for account balance calculations
      */
-    public CashFlowService(FinancialDataRepository initialRepository, IncomeStatementService initialIncomeStatementService) {
+    public CashFlowService(FinancialDataRepository initialRepository, GeneralLedgerService initialGeneralLedgerService) {
         this.repository = initialRepository;
-        this.incomeStatementService = initialIncomeStatementService;
+        this.generalLedgerService = initialGeneralLedgerService;
     }
 
     /**
@@ -112,8 +112,7 @@ public class CashFlowService {
      */
     private BigDecimal calculateNetIncome(int companyId, int fiscalPeriodId) throws SQLException {
         // Get account balances from General Ledger (same source as IncomeStatementService)
-        GeneralLedgerService glService = new GeneralLedgerService(repository);
-        var accountBalances = glService.getAccountClosingBalances(companyId, fiscalPeriodId);
+        var accountBalances = generalLedgerService.getAccountClosingBalances(companyId, fiscalPeriodId);
         
         BigDecimal totalRevenue = BigDecimal.ZERO;
         BigDecimal totalExpenses = BigDecimal.ZERO;

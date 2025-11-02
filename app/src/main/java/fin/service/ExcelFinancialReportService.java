@@ -50,8 +50,6 @@ public class ExcelFinancialReportService {
     
     // Font size constants for Excel reports
     private static final short FONT_SIZE_HEADER_LARGE = 14;
-    private static final short FONT_SIZE_HEADER_MEDIUM = 12;
-    private static final short FONT_SIZE_NORMAL = 10;
     
     // Excel row and column position constants
     private static final int ROW_COMPANY_NAME = 10; // Row 11 (0-indexed)
@@ -133,7 +131,6 @@ public class ExcelFinancialReportService {
             
             workbook.close();
             
-            System.out.println("✅ Excel Financial Report generated: " + fullPath);
             LOGGER.info("Excel Financial Report generated: " + fullPath);
             
         } catch (SQLException | IOException e) {
@@ -611,7 +608,7 @@ public class ExcelFinancialReportService {
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setLong(1, companyId);
             stmt.setLong(2, fiscalPeriodId);
-            stmt.setLong(COL_INCOME_STATEMENT_CURRENT_YEAR, companyId);
+            stmt.setLong(3, companyId);
 
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
@@ -623,8 +620,7 @@ public class ExcelFinancialReportService {
                 }
             }
         } catch (SQLException e) {
-            // Log error and return empty list
-            System.err.println("Error getting revenue data: " + e.getMessage());
+            LOGGER.log(Level.SEVERE, "Error getting revenue data", e);
         }
 
         return revenues;
@@ -648,7 +644,7 @@ public class ExcelFinancialReportService {
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setLong(1, companyId);
             stmt.setLong(2, fiscalPeriodId);
-            stmt.setLong(COL_INCOME_STATEMENT_CURRENT_YEAR, companyId);
+            stmt.setLong(3, companyId);
 
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
@@ -660,8 +656,7 @@ public class ExcelFinancialReportService {
                 }
             }
         } catch (SQLException e) {
-            // Log error and return empty list
-            System.err.println("Error getting expense data: " + e.getMessage());
+            LOGGER.log(Level.SEVERE, "Error getting expense data", e);
         }
 
         return expenses;

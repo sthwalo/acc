@@ -27,13 +27,9 @@
 package fin.service;
 
 import fin.model.*;
-import fin.repository.DepreciationRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 import java.math.BigDecimal;
 
 /**
@@ -42,15 +38,11 @@ import java.math.BigDecimal;
  */
 class DepreciationServiceTest {
 
-    @Mock
-    private DepreciationRepository depreciationRepository;
-
     private DepreciationService service;
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
-        service = new DepreciationService(depreciationRepository);
+        service = new DepreciationService(null);
     }
 
     @Test

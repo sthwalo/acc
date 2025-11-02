@@ -54,16 +54,11 @@ public final class AccountClassificationService {
     private static final int DISPLAY_WIDTH_REPORT = 60;
     private static final int DISPLAY_WIDTH_CATEGORY = 25;
     private static final int DISPLAY_WIDTH_COUNT = 10;
-    private static final int DISPLAY_WIDTH_AMOUNT = 15;
-    private static final int DISPLAY_WIDTH_ACCOUNT = 30;
-    private static final int DISPLAY_WIDTH_PATTERN = 25;
+        private static final int DISPLAY_WIDTH_AMOUNT = 15;
     
     // Prepared statement parameter indices for SQL operations
-    private static final int SQL_PARAM_ACCOUNT_CODE = 1;
-    private static final int SQL_PARAM_ACCOUNT_NAME = 2;
     private static final int SQL_PARAM_TRANSACTION_ID = 3;
     private static final int SQL_PARAM_USERNAME = 3;
-    private static final int SQL_PARAM_CLASSIFIED_BY = 3;
     private static final int SQL_PARAM_TRANSACTION_ID_RECLASSIFY = 4;
     
     // Array indices and limits
@@ -73,8 +68,6 @@ public final class AccountClassificationService {
     private static final int PREPARED_STATEMENT_PARAM_3 = 3;
     private static final int PREPARED_STATEMENT_PARAM_4 = 4;
     private static final int PREPARED_STATEMENT_PARAM_5 = 5;
-    private static final int PREPARED_STATEMENT_PARAM_6 = 6;
-    private static final int PREPARED_STATEMENT_PARAM_7 = 7;
     
     // Rule priority constants
     private static final int PRIORITY_CRITICAL = 10;

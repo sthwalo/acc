@@ -38,16 +38,13 @@ import javax.sql.DataSource;
  */
 public class JdbcFinancialDataRepository implements FinancialDataRepository {
 
-    @SuppressWarnings("EI_EXPOSE_REP") // DataSource is thread-safe and not exposed
     private final DataSource dataSource;
     
     // Prepared statement parameter indices
-    private static final int PREPARED_STATEMENT_PARAM_1 = 1;
-    private static final int PREPARED_STATEMENT_PARAM_2 = 2;
     private static final int PREPARED_STATEMENT_PARAM_3 = 3;
     private static final int PREPARED_STATEMENT_PARAM_4 = 4;
 
-    public JdbcFinancialDataRepository(@SuppressWarnings("EI_EXPOSE_REP") DataSource initialDataSource) {
+    public JdbcFinancialDataRepository(DataSource initialDataSource) {
         this.dataSource = initialDataSource;
     }
 

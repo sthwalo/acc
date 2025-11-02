@@ -131,18 +131,8 @@ private static class PayrollAccountIds {
     private static final int PARAM_SALARY_TYPE = 12;
     private static final int PARAM_TAX_NUMBER = 13;
     private static final int PARAM_CREATED_BY = 14;
-    private static final int PARAM_ID = 13;
-    private static final int PARAM_COMPANY_ID = 14;
-    
-    // Payroll Period Parameter Indices
-    private static final int PARAM_PERIOD_NAME = 3;
-    private static final int PARAM_PAY_DATE = 4;
-    private static final int PARAM_START_DATE = 5;
-    private static final int PARAM_END_DATE = 6;
-    private static final int PARAM_PERIOD_TYPE = 7;
     
     // Query Parameter Indices
-    private static final int PARAM_YEAR = 2;
     private static final int PARAM_MONTH = 3;
     
     // Journal Entry Parameter Indices
@@ -167,23 +157,6 @@ private static class PayrollAccountIds {
     private static final int PARAM_PAYROLL_DESCRIPTION = 5;
     private static final int PARAM_TOTAL_AMOUNT = 6;
     private static final int PARAM_PAYROLL_CREATED_BY = 7;
-    
-    // Payslip Parameter Indices
-    private static final int PARAM_PAYSLIP_COMPANY_ID = 1;
-    private static final int PARAM_PAYSLIP_EMPLOYEE_ID = 2;
-    private static final int PARAM_PAYSLIP_PERIOD_ID = 3;
-    private static final int PARAM_PAYSLIP_NUMBER = 4;
-    private static final int PARAM_PAYSLIP_BASIC_SALARY = 5;
-    private static final int PARAM_PAYSLIP_GROSS_SALARY = 6;
-    private static final int PARAM_PAYSLIP_TOTAL_EARNINGS = 7;
-    private static final int PARAM_PAYSLIP_PAYEE_TAX = 8;
-    private static final int PARAM_PAYSLIP_UIF_EMPLOYEE = 9;
-    private static final int PARAM_PAYSLIP_UIF_EMPLOYER = 10;
-    private static final int PARAM_PAYSLIP_SDL_LEVY = 11;
-    private static final int PARAM_PAYSLIP_TOTAL_DEDUCTIONS = 12;
-    private static final int PARAM_PAYSLIP_NET_PAY = 13;
-    private static final int PARAM_PAYSLIP_STATUS = 14;
-    private static final int PARAM_PAYSLIP_CREATED_BY = 15;
     
     // Update Payroll Period Parameter Indices
     private static final int PARAM_TOTAL_GROSS_PAY = 1;
@@ -232,7 +205,7 @@ private static class PayrollAccountIds {
         SARSTaxCalculator taxCalc = new SARSTaxCalculator();
         initializeTaxCalculator(taxCalc);
         CompanyRepository companyRepo = new CompanyRepository(initialDbUrl);
-        PayslipPdfService pdfSvc = new PayslipPdfService(companyRepo);
+        PayslipPdfService pdfSvc = new PayslipPdfService();
         EmailService emailSvc = new EmailService();
         this.dbUrl = initialDbUrl;
         this.sarsTaxCalculator = taxCalc;
@@ -255,7 +228,7 @@ private static class PayrollAccountIds {
     private void initializeTaxCalculator(SARSTaxCalculator taxCalc) {
         // Skip tax calculator initialization in test environment
         if (isTestEnvironment()) {
-            System.out.println("🧪 Skipping SARS tax calculator initialization in test environment");
+            LOGGER.info("Skipping SARS tax calculator initialization in test environment");
             return;
         }
         
@@ -263,9 +236,9 @@ private static class PayrollAccountIds {
             // Load tax tables from the PDF text file for accurate SARS 2026 calculations
             String pdfTextPath = "input/PAYE-GEN-01-G01-A03-2026-Monthly-Tax-Deduction-Tables-External-Annexure.txt";
             taxCalc.loadTaxTablesFromPDFText(pdfTextPath);
-            System.out.println("✅ SARS Tax Calculator initialized with official 2026 tables");
+            LOGGER.info("SARS Tax Calculator initialized with official 2026 tables");
         } catch (IOException e) {
-            System.out.println("❌ Failed to load SARS tax tables: " + e.getMessage() + " - using default calculations");
+            LOGGER.warning("Failed to load SARS tax tables: " + e.getMessage() + " - using default calculations");
             // Don't throw exception - allow constructor to complete
         }
     }
@@ -758,9 +731,20 @@ private static class PayrollAccountIds {
     // ===== PAYROLL PROCESSING =====
     
     /**
-     * Process payroll for a specific period
+     * Process payroll for a specific period (without emailing)
      */
     public void processPayroll(Long payrollPeriodId, String processedBy) {
+        processPayroll(payrollPeriodId, processedBy, false);
+    }
+    
+    /**
+     * Process payroll for a specific period with optional email sending
+     * 
+     * @param payrollPeriodId The payroll period to process
+     * @param processedBy User who is processing the payroll
+     * @param sendEmails Whether to send payslip emails after processing
+     */
+    public void processPayroll(Long payrollPeriodId, String processedBy, boolean sendEmails) {
         PayrollPeriod period = getPayrollPeriodById(payrollPeriodId)
             .orElseThrow(() -> new RuntimeException("Payroll period not found"));
 
@@ -789,6 +773,26 @@ private static class PayrollAccountIds {
                            " (" + result.employeeCount + " employees)");
 
                 logPdfGenerationResults(result.generatedPdfPaths);
+                
+                // Send emails if requested
+                if (sendEmails && emailService != null) {
+                    try {
+                        LOGGER.info("Sending payslip emails to employees...");
+                        EmailSendSummary emailSummary = emailPayslipsToEmployees(payrollPeriodId);
+                        LOGGER.info("Email sending completed: " + emailSummary.getSuccessCount() + 
+                                   " sent successfully, " + emailSummary.getFailureCount() + " failed");
+                        
+                        if (emailSummary.hasFailures()) {
+                            LOGGER.warning("Failed to send emails to: " + 
+                                         String.join(", ", emailSummary.getFailedRecipients()));
+                        }
+                    } catch (Exception e) {
+                        LOGGER.log(Level.WARNING, "Email sending failed but payroll was processed successfully", e);
+                        // Don't fail the entire operation if email sending fails
+                    }
+                } else if (sendEmails && emailService == null) {
+                    LOGGER.warning("Email sending requested but EmailService not configured");
+                }
 
             } catch (RuntimeException e) {
                 conn.rollback();
@@ -971,6 +975,153 @@ private static class PayrollAccountIds {
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Error generating PDFs for payroll period", e);
             throw new RuntimeException("Failed to generate PDFs: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Email payslips to all employees for a processed payroll period
+     * 
+     * @param payrollPeriodId The payroll period ID
+     * @return EmailSendSummary with success/failure counts
+     */
+    public EmailSendSummary emailPayslipsToEmployees(Long payrollPeriodId) {
+        if (emailService == null) {
+            LOGGER.warning("EmailService not configured - cannot send emails");
+            throw new RuntimeException("Email service not available");
+        }
+        
+        try {
+            PayrollPeriod period = getPayrollPeriodById(payrollPeriodId)
+                .orElseThrow(() -> new RuntimeException("Payroll period not found"));
+            
+            Company company = companyRepository.findById(period.getCompanyId())
+                .orElseThrow(() -> new RuntimeException("Company not found"));
+            
+            // Get all payslips for this period
+            String sql = "SELECT * FROM payslips WHERE payroll_period_id = ?";
+            List<PayslipEmailData> emailDataList = new ArrayList<>();
+            
+            try (Connection conn = DriverManager.getConnection(dbUrl);
+                 PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                
+                pstmt.setLong(1, payrollPeriodId);
+                ResultSet rs = pstmt.executeQuery();
+                
+                while (rs.next()) {
+                    Payslip payslip = mapResultSetToPayslip(rs);
+                    
+                    // Get employee details
+                    Optional<Employee> employeeOpt = getEmployeeById(payslip.getEmployeeId());
+                    if (employeeOpt.isPresent()) {
+                        Employee employee = employeeOpt.get();
+                        
+                        // Check if employee has email
+                        if (employee.getEmail() != null && !employee.getEmail().trim().isEmpty()) {
+                            // Generate PDF if not already generated
+                            String pdfPath = null;
+                            if (pdfService != null) {
+                                try {
+                                    pdfPath = pdfService.generatePayslipPdf(payslip, employee, company, period);
+                                } catch (Exception e) {
+                                    LOGGER.log(Level.WARNING, "Failed to generate PDF for " + employee.getFullName(), e);
+                                }
+                            }
+                            
+                            emailDataList.add(new PayslipEmailData(
+                                employee.getEmail(),
+                                employee.getFullName(),
+                                pdfPath,
+                                period.getPeriodName()
+                            ));
+                        } else {
+                            LOGGER.warning("No email address for employee: " + employee.getFullName() + 
+                                         " (" + employee.getEmployeeNumber() + ")");
+                        }
+                    }
+                }
+            }
+            
+            // Send emails
+            int successCount = 0;
+            int failureCount = 0;
+            List<String> failedRecipients = new ArrayList<>();
+            
+            for (PayslipEmailData emailData : emailDataList) {
+                boolean success = emailService.sendPayslipEmail(
+                    emailData.toEmail,
+                    emailData.employeeName,
+                    emailData.pdfPath,
+                    emailData.periodName
+                );
+                
+                if (success) {
+                    successCount++;
+                    LOGGER.info("Emailed payslip to " + emailData.employeeName + " at " + emailData.toEmail);
+                } else {
+                    failureCount++;
+                    failedRecipients.add(emailData.employeeName + " <" + emailData.toEmail + ">");
+                    LOGGER.warning("Failed to email payslip to " + emailData.employeeName);
+                }
+            }
+            
+            LOGGER.info("Email summary: " + successCount + " sent, " + failureCount + " failed");
+            return new EmailSendSummary(successCount, failureCount, failedRecipients);
+            
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error emailing payslips", e);
+            throw new RuntimeException("Failed to email payslips: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Data class for payslip email information
+     */
+    private static class PayslipEmailData {
+        final String toEmail;
+        final String employeeName;
+        final String pdfPath;
+        final String periodName;
+        
+        PayslipEmailData(String email, String name, String path, String period) {
+            this.toEmail = email;
+            this.employeeName = name;
+            this.pdfPath = path;
+            this.periodName = period;
+        }
+    }
+    
+    /**
+     * Summary of email sending results
+     */
+    public static class EmailSendSummary {
+        private final int successCount;
+        private final int failureCount;
+        private final List<String> failedRecipients;
+        
+        public EmailSendSummary(int success, int failure, List<String> failed) {
+            this.successCount = success;
+            this.failureCount = failure;
+            this.failedRecipients = failed;
+        }
+        
+        public int getSuccessCount() {
+            return successCount;
+        }
+        
+        public int getFailureCount() {
+            return failureCount;
+        }
+        
+        public List<String> getFailedRecipients() {
+            return failedRecipients;
+        }
+        
+        public int getTotalAttempted() {
+            return successCount + failureCount;
+        }
+        
+        public boolean hasFailures() {
+            return failureCount > 0;
         }
     }
     
@@ -1419,13 +1570,6 @@ private static class PayrollAccountIds {
         payslip.setPayrollPeriodId(rs.getLong("payroll_period_id"));
         payslip.setPayslipNumber(rs.getString("payslip_number"));
 
-        // Debug: Print values from database
-        System.out.println("Debug mapResultSetToPayslip: payslip_id=" + rs.getLong("id") +
-                          ", gross_salary=" + rs.getBigDecimal("gross_salary") +
-                          ", basic_salary=" + rs.getBigDecimal("basic_salary") +
-                          ", total_earnings=" + rs.getBigDecimal("total_earnings") +
-                          ", net_pay=" + rs.getBigDecimal("net_pay"));
-
         // Set basic salary first
         BigDecimal basicSalary = rs.getBigDecimal("basic_salary");
         payslip.setBasicSalary(basicSalary != null ? basicSalary : BigDecimal.ZERO);
@@ -1482,9 +1626,8 @@ private static class PayrollAccountIds {
      */
     public void initializePayrollSchema() {
         // TODO: Execute payroll_database_schema.sql
-        LOGGER.info("Payroll schema initialization - manual execution required");
-        System.out.println("⚠️  Please execute the payroll database schema manually:");
-        System.out.println("   File: docs/payroll_database_schema.sql");
+        LOGGER.warning("Payroll schema initialization - manual execution required");
+        LOGGER.warning("Please execute the payroll database schema manually: docs/payroll_database_schema.sql");
     }
 
     /**

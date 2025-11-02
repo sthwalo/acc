@@ -36,24 +36,43 @@ import java.util.List;
 public class CompanyService {
     private final String dbUrl;
     
-    // PreparedStatement parameter indices for company operations
-    private static final int PARAM_COMPANY_NAME = 1;
-    private static final int PARAM_REGISTRATION_NUMBER = 2;
-    private static final int PARAM_TAX_NUMBER = 3;
-    private static final int PARAM_ADDRESS = 4;
-    private static final int PARAM_CONTACT_EMAIL = 5;
-    private static final int PARAM_CONTACT_PHONE = 6;
-    private static final int PARAM_LOGO_PATH = 7;
-    private static final int PARAM_CREATED_AT = 8;
-    private static final int PARAM_UPDATED_AT = 8;
-    private static final int PARAM_COMPANY_ID = 9;
+    // PreparedStatement parameter indices for INSERT company operations
+    private static final int PARAM_INSERT_COMPANY_NAME = 1;
+    private static final int PARAM_INSERT_REGISTRATION_NUMBER = 2;
+    private static final int PARAM_INSERT_TAX_NUMBER = 3;
+    private static final int PARAM_INSERT_ADDRESS = 4;
+    private static final int PARAM_INSERT_CONTACT_EMAIL = 5;
+    private static final int PARAM_INSERT_CONTACT_PHONE = 6;
+    private static final int PARAM_INSERT_LOGO_PATH = 7;
+    private static final int PARAM_INSERT_BANK_NAME = 8;
+    private static final int PARAM_INSERT_ACCOUNT_NUMBER = 9;
+    private static final int PARAM_INSERT_ACCOUNT_TYPE = 10;
+    private static final int PARAM_INSERT_BRANCH_CODE = 11;
+    private static final int PARAM_INSERT_VAT_REGISTERED = 12;
+    private static final int PARAM_INSERT_CREATED_AT = 13;
     
-    // PreparedStatement parameter indices for fiscal period operations
+    // PreparedStatement parameter indices for UPDATE company operations
+    private static final int PARAM_UPDATE_COMPANY_NAME = 1;
+    private static final int PARAM_UPDATE_REGISTRATION_NUMBER = 2;
+    private static final int PARAM_UPDATE_TAX_NUMBER = 3;
+    private static final int PARAM_UPDATE_ADDRESS = 4;
+    private static final int PARAM_UPDATE_CONTACT_EMAIL = 5;
+    private static final int PARAM_UPDATE_CONTACT_PHONE = 6;
+    private static final int PARAM_UPDATE_LOGO_PATH = 7;
+    private static final int PARAM_UPDATE_BANK_NAME = 8;
+    private static final int PARAM_UPDATE_ACCOUNT_NUMBER = 9;
+    private static final int PARAM_UPDATE_ACCOUNT_TYPE = 10;
+    private static final int PARAM_UPDATE_BRANCH_CODE = 11;
+    private static final int PARAM_UPDATE_VAT_REGISTERED = 12;
+    private static final int PARAM_UPDATE_UPDATED_AT = 13;
+    private static final int PARAM_UPDATE_COMPANY_ID = 14;
+    
+    // PreparedStatement parameter indices for INSERT fiscal period operations
     private static final int PARAM_FISCAL_COMPANY_ID = 1;
-    private static final int PARAM_PERIOD_NAME = 2;
-    private static final int PARAM_START_DATE = 3;
-    private static final int PARAM_END_DATE = 4;
-    private static final int PARAM_IS_CLOSED = 5;
+    private static final int PARAM_FISCAL_PERIOD_NAME = 2;
+    private static final int PARAM_FISCAL_START_DATE = 3;
+    private static final int PARAM_FISCAL_END_DATE = 4;
+    private static final int PARAM_FISCAL_IS_CLOSED = 5;
     private static final int PARAM_FISCAL_CREATED_AT = 6;
     
     // PreparedStatement parameter indices for query operations
@@ -74,19 +93,19 @@ public class CompanyService {
         try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             
-            pstmt.setString(PARAM_COMPANY_NAME, company.getName());
-            pstmt.setString(PARAM_REGISTRATION_NUMBER, company.getRegistrationNumber());
-            pstmt.setString(PARAM_TAX_NUMBER, company.getTaxNumber());
-            pstmt.setString(PARAM_ADDRESS, company.getAddress());
-            pstmt.setString(PARAM_CONTACT_EMAIL, company.getContactEmail());
-            pstmt.setString(PARAM_CONTACT_PHONE, company.getContactPhone());
-            pstmt.setString(PARAM_LOGO_PATH, company.getLogoPath());
-            pstmt.setString(8, company.getBankName());
-            pstmt.setString(9, company.getAccountNumber());
-            pstmt.setString(10, company.getAccountType());
-            pstmt.setString(11, company.getBranchCode());
-            pstmt.setBoolean(12, company.isVatRegistered());
-            pstmt.setTimestamp(13, Timestamp.valueOf(LocalDateTime.now()));
+            pstmt.setString(PARAM_INSERT_COMPANY_NAME, company.getName());
+            pstmt.setString(PARAM_INSERT_REGISTRATION_NUMBER, company.getRegistrationNumber());
+            pstmt.setString(PARAM_INSERT_TAX_NUMBER, company.getTaxNumber());
+            pstmt.setString(PARAM_INSERT_ADDRESS, company.getAddress());
+            pstmt.setString(PARAM_INSERT_CONTACT_EMAIL, company.getContactEmail());
+            pstmt.setString(PARAM_INSERT_CONTACT_PHONE, company.getContactPhone());
+            pstmt.setString(PARAM_INSERT_LOGO_PATH, company.getLogoPath());
+            pstmt.setString(PARAM_INSERT_BANK_NAME, company.getBankName());
+            pstmt.setString(PARAM_INSERT_ACCOUNT_NUMBER, company.getAccountNumber());
+            pstmt.setString(PARAM_INSERT_ACCOUNT_TYPE, company.getAccountType());
+            pstmt.setString(PARAM_INSERT_BRANCH_CODE, company.getBranchCode());
+            pstmt.setBoolean(PARAM_INSERT_VAT_REGISTERED, company.isVatRegistered());
+            pstmt.setTimestamp(PARAM_INSERT_CREATED_AT, Timestamp.valueOf(LocalDateTime.now()));
             
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows == 0) {
@@ -117,10 +136,10 @@ public class CompanyService {
              PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             
             pstmt.setLong(PARAM_FISCAL_COMPANY_ID, fiscalPeriod.getCompanyId());
-            pstmt.setString(PARAM_PERIOD_NAME, fiscalPeriod.getPeriodName());
-            pstmt.setDate(PARAM_START_DATE, Date.valueOf(fiscalPeriod.getStartDate()));
-            pstmt.setDate(PARAM_END_DATE, Date.valueOf(fiscalPeriod.getEndDate()));
-            pstmt.setBoolean(PARAM_IS_CLOSED, fiscalPeriod.isClosed());
+            pstmt.setString(PARAM_FISCAL_PERIOD_NAME, fiscalPeriod.getPeriodName());
+            pstmt.setDate(PARAM_FISCAL_START_DATE, Date.valueOf(fiscalPeriod.getStartDate()));
+            pstmt.setDate(PARAM_FISCAL_END_DATE, Date.valueOf(fiscalPeriod.getEndDate()));
+            pstmt.setBoolean(PARAM_FISCAL_IS_CLOSED, fiscalPeriod.isClosed());
             pstmt.setTimestamp(PARAM_FISCAL_CREATED_AT, Timestamp.valueOf(LocalDateTime.now()));
             
             int affectedRows = pstmt.executeUpdate();
@@ -263,20 +282,20 @@ public class CompanyService {
         try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             
-            pstmt.setString(PARAM_COMPANY_NAME, company.getName());
-            pstmt.setString(PARAM_REGISTRATION_NUMBER, company.getRegistrationNumber());
-            pstmt.setString(PARAM_TAX_NUMBER, company.getTaxNumber());
-            pstmt.setString(PARAM_ADDRESS, company.getAddress());
-            pstmt.setString(PARAM_CONTACT_EMAIL, company.getContactEmail());
-            pstmt.setString(PARAM_CONTACT_PHONE, company.getContactPhone());
-            pstmt.setString(PARAM_LOGO_PATH, company.getLogoPath());
-            pstmt.setString(8, company.getBankName());
-            pstmt.setString(9, company.getAccountNumber());
-            pstmt.setString(10, company.getAccountType());
-            pstmt.setString(11, company.getBranchCode());
-            pstmt.setBoolean(12, company.isVatRegistered());
-            pstmt.setTimestamp(13, Timestamp.valueOf(LocalDateTime.now()));
-            pstmt.setLong(14, company.getId());
+            pstmt.setString(PARAM_UPDATE_COMPANY_NAME, company.getName());
+            pstmt.setString(PARAM_UPDATE_REGISTRATION_NUMBER, company.getRegistrationNumber());
+            pstmt.setString(PARAM_UPDATE_TAX_NUMBER, company.getTaxNumber());
+            pstmt.setString(PARAM_UPDATE_ADDRESS, company.getAddress());
+            pstmt.setString(PARAM_UPDATE_CONTACT_EMAIL, company.getContactEmail());
+            pstmt.setString(PARAM_UPDATE_CONTACT_PHONE, company.getContactPhone());
+            pstmt.setString(PARAM_UPDATE_LOGO_PATH, company.getLogoPath());
+            pstmt.setString(PARAM_UPDATE_BANK_NAME, company.getBankName());
+            pstmt.setString(PARAM_UPDATE_ACCOUNT_NUMBER, company.getAccountNumber());
+            pstmt.setString(PARAM_UPDATE_ACCOUNT_TYPE, company.getAccountType());
+            pstmt.setString(PARAM_UPDATE_BRANCH_CODE, company.getBranchCode());
+            pstmt.setBoolean(PARAM_UPDATE_VAT_REGISTERED, company.isVatRegistered());
+            pstmt.setTimestamp(PARAM_UPDATE_UPDATED_AT, Timestamp.valueOf(LocalDateTime.now()));
+            pstmt.setLong(PARAM_UPDATE_COMPANY_ID, company.getId());
             
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows == 0) {
