@@ -124,17 +124,42 @@ public class TestDatabaseSetup {
                     } catch (Exception e) {
                         // Ignore errors for DROP statements on non-existent objects
                         String errorMsg = e.getMessage().toLowerCase();
-                        boolean isDrop = sql.toUpperCase().startsWith("DROP");
-                        boolean isAlter = sql.toUpperCase().startsWith("ALTER");
+                        String sqlUpper = sql.toUpperCase();
+                        boolean isDrop = sqlUpper.startsWith("DROP");
+                        boolean isAlter = sqlUpper.startsWith("ALTER");
                         boolean isDoesNotExist = errorMsg.contains("does not exist");
+                        boolean isCannotDrop = errorMsg.contains("cannot drop");
                         
-                        if ((isDrop || isAlter) && isDoesNotExist) {
-                            // Silently skip - expected for initial setup
+                        // Check if transaction is in aborted state
+                        boolean isAbortedTransaction = errorMsg.contains("current transaction is aborted");
+                        
+                        if ((isDrop || isAlter) && (isDoesNotExist || isCannotDrop)) {
+                            // Expected errors for initial setup - rollback and continue
+                            try {
+                                conn.rollback(); // Clear the aborted transaction state
+                            } catch (Exception rollbackEx) {
+                                // Ignore rollback errors
+                            }
+                            skipCount++;
+                        } else if (isAbortedTransaction) {
+                            // Transaction is in aborted state, need to rollback before continuing
+                            try {
+                                conn.rollback();
+                                System.out.println("⚠️ Transaction rolled back, continuing...");
+                            } catch (Exception rollbackEx) {
+                                // Ignore rollback errors
+                            }
                             skipCount++;
                         } else {
                             // Log unexpected errors
                             System.err.println("⚠️ Error: " + e.getMessage());
                             System.err.println("   SQL: " + sql.substring(0, Math.min(100, sql.length())));
+                            // Rollback to clear transaction state
+                            try {
+                                conn.rollback();
+                            } catch (Exception rollbackEx) {
+                                // Ignore
+                            }
                             skipCount++;
                         }
                     }
