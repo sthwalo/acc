@@ -1,6 +1,6 @@
 # Development Tasks Directory
 **Status:** 📋 Documentation Complete - Ready for Implementation
-**Total Tasks:** 16 (6 EI_EXPOSE_REP + 6 SpotBugs Remediation + 3 Checkstyle Cleanup + 1 New Feature)
+**Total Tasks:** 17 (6 EI_EXPOSE_REP + 6 SpotBugs Remediation + 3 Checkstyle Cleanup + 2 New Features)
 **Risk Distribution:** 4 Critical, 2 High, 4 Medium, 4 Low
 
 ## 📋 Task Overview
@@ -13,7 +13,7 @@ This directory contains detailed documentation for fixing security vulnerabiliti
 - **TASK 3.x:** Medium-Risk Configuration & Documentation (2 tasks)
 - **TASK 4.x:** SpotBugs Remediation (6 tasks) - **NEW**
 - **TASK 5.x:** Checkstyle Cleanup (2 tasks) - **NEW**
-- **TASK 6.x:** New Feature Development (1 task) - **NEW**
+- **TASK 6.x:** New Feature Development (2 tasks) - **NEW**
 
 ## 📁 Task Files
 
@@ -113,6 +113,12 @@ This directory contains detailed documentation for fixing security vulnerabiliti
     - **Files:** New services, models, controllers, database tables
     - **Feature:** Comprehensive budget generation and strategic planning for organizations
 
+17. **[TASK 6.3: Invoice Generation and Printing System](TASK_6.3_Invoice_Generation_Printing_System.md)**
+    - **Risk:** MEDIUM - New business functionality
+    - **Status:** 🔄 IN PROGRESS
+    - **Files:** New services, models, controllers, PDF generation
+    - **Feature:** Professional invoice generation and printing with templates
+
 ## 🎯 Implementation Strategy
 
 ### Phase 1: Critical Security Fixes (Tasks 1.1-1.3, 4.1-4.2)
@@ -179,7 +185,7 @@ This directory contains detailed documentation for fixing security vulnerabiliti
 - [ ] Phase 2 Implementation (0/1 tasks)
 - [ ] Phase 3 Implementation (4/5 tasks completed - TASK 4.2, TASK 4.3, TASK 4.4, TASK 4.5, TASK 4.6)
 - [ ] Checkstyle Cleanup (1/2 tasks completed - TASK 5.3 ✅, TASK 5.4 🔄 IN PROGRESS - Budget.java completed)
-- [ ] New Feature Development (0/1 tasks - TASK 6.1)
+- [ ] New Feature Development (0/2 tasks - TASK 6.1, TASK 6.3)
 
 ## 📚 References
 
@@ -230,6 +236,7 @@ This directory contains detailed documentation for fixing security vulnerabiliti
   - ✅ TASK 5.9: Employee.java Holistic Checkstyle Cleanup (50+ violations: DesignForExtension, LeftCurly, OperatorWrap)
 
 ### Phase 5: New Feature Development (Priority: MEDIUM)
-- **Completed:** 0/1 tasks (0%)
-  - 🔄 TASK 6.1: Budget Generation and Strategic Planning</content>
+- **Completed:** 0/2 tasks (0%)
+  - 🔄 TASK 6.1: Budget Generation and Strategic Planning
+  - 🔄 TASK 6.3: Invoice Generation and Printing System</content>
 <parameter name="filePath">/Users/sthwalonyoni/FIN/docs/development/tasks/TASK_3.2_Service_Dependency_Documentation.md
