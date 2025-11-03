@@ -311,3 +311,4 @@ docs/MIGRATION_DEPLOYMENT_PROCESS.md
 scripts/backup_database.sh
 scripts/deploy_migrations.sh
 scripts/monitor_logs.sh
+.env

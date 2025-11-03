@@ -46,11 +46,10 @@ public class PdfBrandingService {
     
     // Branding constants
     private static final String SYSTEM_NAME = "FIN Financial Management System";
-    private static final String COPYRIGHT_HOLDER = "Sthwalo Nyoni";
+    private static final String COPYRIGHT_HOLDER = "Immaculate Nyoni";
     private static final String COMPANY_NAME = "Sthwalo Holdings (Pty) Ltd";
     private static final String CONTACT_EMAIL = "sthwaloe@gmail.com";
     private static final String CONTACT_PHONE = "+27 61 514 6185";
-    private static final int CURRENT_YEAR = LocalDateTime.now().getYear();
     
     /**
      * Adds a standard footer to the PDF document with system branding and timestamp.
@@ -91,7 +90,7 @@ public class PdfBrandingService {
         copyright.setAlignment(Element.ALIGN_CENTER);
         copyright.setSpacingBefore(10);
         
-        copyright.add("Copyright © 2024-" + CURRENT_YEAR + " " + COPYRIGHT_HOLDER + " / " + COMPANY_NAME + "\n");
+        copyright.add("Copyright © 2025 " + COPYRIGHT_HOLDER + " / " + COMPANY_NAME + "\n");
         copyright.add("Contact: " + CONTACT_EMAIL + " | " + CONTACT_PHONE + "\n");
         copyright.add("Licensed under Apache License 2.0 | Proprietary algorithms and business logic\n");
         copyright.add("Unauthorized commercial use is strictly prohibited");
@@ -118,7 +117,7 @@ public class PdfBrandingService {
      * @return Copyright text including holder, company, and year
      */
     public String getCopyrightText() {
-        return "Copyright © 2024-" + CURRENT_YEAR + " " + COPYRIGHT_HOLDER + " / " + COMPANY_NAME;
+        return "Copyright © 2025 " + COPYRIGHT_HOLDER + " / " + COMPANY_NAME;
     }
     
     /**
