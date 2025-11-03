@@ -1,0 +1,108 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:17-alpine3.20
+    container_name: fin-postgres
+    environment:
+      POSTGRES_DB: drimacc_db
+      POSTGRES_USER: ${DATABASE_USER:-postgres}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-postgres}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER:-postgres} -d drimacc_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - fin-network
+
+  # Test Database (separate instance)
+  postgres-test:
+    image: postgres:16-alpine
+    container_name: fin-postgres-test
+    environment:
+      POSTGRES_DB: drimacc_test
+      POSTGRES_USER: ${TEST_DATABASE_USER:-postgres}
+      POSTGRES_PASSWORD: ${TEST_DATABASE_PASSWORD:-postgres}
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+      - ./app/src/test/resources/test_schema.sql:/docker-entrypoint-initdb.d/test_schema.sql
+    ports:
+      - "5433:5432"
+    profiles:
+      - test
+    networks:
+      - fin-network
+
+  # FIN Application
+  fin-app:
+    build:
+      context: .
+      dockerfile: Dockerfile.compose
+    container_name: fin-app
+    environment:
+      # Database Configuration
+      DATABASE_URL: jdbc:postgresql://postgres:5432/drimacc_db
+      DATABASE_USER: ${DATABASE_USER:-postgres}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-postgres}
+      TEST_DATABASE_URL: jdbc:postgresql://postgres-test:5432/drimacc_test
+      TEST_DATABASE_USER: ${TEST_DATABASE_USER:-postgres}
+      TEST_DATABASE_PASSWORD: ${TEST_DATABASE_PASSWORD:-postgres}
+
+      # Application Configuration
+      JAVA_OPTS: "-Xmx1g -Xms512m -Dfin.license.autoconfirm=true"
+      SPRING_PROFILES_ACTIVE: docker
+
+      # Email Configuration (optional)
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USERNAME: ${SMTP_USERNAME}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      EMAIL_FROM: ${EMAIL_FROM}
+      EMAIL_FROM_NAME: ${EMAIL_FROM_NAME}
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - fin-network
+    restart: unless-stopped
+
+  # FIN Application for Testing
+  fin-app-test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fin-app-test
+    environment:
+      DATABASE_URL: jdbc:postgresql://postgres-test:5432/drimacc_test
+      DATABASE_USER: ${TEST_DATABASE_USER:-postgres}
+      DATABASE_PASSWORD: ${TEST_DATABASE_PASSWORD:-postgres}
+      TEST_DATABASE_URL: jdbc:postgresql://postgres-test:5432/drimacc_test
+      TEST_DATABASE_USER: ${TEST_DATABASE_USER:-postgres}
+      TEST_DATABASE_PASSWORD: ${TEST_DATABASE_PASSWORD:-postgres}
+      JAVA_OPTS: "-Xmx512m -Xms256m"
+      SPRING_PROFILES_ACTIVE: test,docker
+    ports:
+      - "8081:8080"
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+    profiles:
+      - test
+    networks:
+      - fin-network
+
+volumes:
+  postgres_data:
+    driver: local
+  postgres_test_data:
+    driver: local
+
+networks:
+  fin-network:
+    driver: bridge
