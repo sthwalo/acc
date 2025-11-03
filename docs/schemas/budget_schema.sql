@@ -2,7 +2,7 @@
 -- Implementation for TASK 6.1: Budget Generation and Strategic Planning
 
 -- Strategic Plans Table
-CREATE TABLE strategic_plans (
+CREATE TABLE IF NOT EXISTS strategic_plans (
     id SERIAL PRIMARY KEY,
     company_id INTEGER NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
     title VARCHAR(255) NOT NULL,
@@ -18,7 +18,7 @@ CREATE TABLE strategic_plans (
 );
 
 -- Strategic Priorities Table
-CREATE TABLE strategic_priorities (
+CREATE TABLE IF NOT EXISTS strategic_priorities (
     id SERIAL PRIMARY KEY,
     strategic_plan_id INTEGER NOT NULL REFERENCES strategic_plans(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
@@ -28,7 +28,7 @@ CREATE TABLE strategic_priorities (
 );
 
 -- Strategic Initiatives Table
-CREATE TABLE strategic_initiatives (
+CREATE TABLE IF NOT EXISTS strategic_initiatives (
     id SERIAL PRIMARY KEY,
     strategic_priority_id INTEGER NOT NULL REFERENCES strategic_priorities(id) ON DELETE CASCADE,
     title VARCHAR(255) NOT NULL,
@@ -42,7 +42,7 @@ CREATE TABLE strategic_initiatives (
 );
 
 -- Strategic Milestones Table
-CREATE TABLE strategic_milestones (
+CREATE TABLE IF NOT EXISTS strategic_milestones (
     id SERIAL PRIMARY KEY,
     strategic_initiative_id INTEGER NOT NULL REFERENCES strategic_initiatives(id) ON DELETE CASCADE,
     title VARCHAR(255) NOT NULL,
@@ -55,7 +55,7 @@ CREATE TABLE strategic_milestones (
 );
 
 -- Operational Activities Table (Monthly operational plan)
-CREATE TABLE operational_activities (
+CREATE TABLE IF NOT EXISTS operational_activities (
     id SERIAL PRIMARY KEY,
     strategic_plan_id INTEGER NOT NULL REFERENCES strategic_plans(id) ON DELETE CASCADE,
     month_number INTEGER NOT NULL CHECK (month_number BETWEEN 1 AND 12), -- 1=Jan, 2=Feb, etc.
@@ -69,7 +69,7 @@ CREATE TABLE operational_activities (
 );
 
 -- Budgets Table
-CREATE TABLE budgets (
+CREATE TABLE IF NOT EXISTS budgets (
     id SERIAL PRIMARY KEY,
     company_id INTEGER NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
     fiscal_period_id INTEGER REFERENCES fiscal_periods(id),
@@ -87,7 +87,7 @@ CREATE TABLE budgets (
 );
 
 -- Budget Categories Table
-CREATE TABLE budget_categories (
+CREATE TABLE IF NOT EXISTS budget_categories (
     id SERIAL PRIMARY KEY,
     budget_id INTEGER NOT NULL REFERENCES budgets(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
@@ -99,7 +99,7 @@ CREATE TABLE budget_categories (
 );
 
 -- Budget Items Table
-CREATE TABLE budget_items (
+CREATE TABLE IF NOT EXISTS budget_items (
     id SERIAL PRIMARY KEY,
     budget_category_id INTEGER NOT NULL REFERENCES budget_categories(id) ON DELETE CASCADE,
     account_id INTEGER REFERENCES accounts(id), -- Link to chart of accounts
@@ -111,7 +111,7 @@ CREATE TABLE budget_items (
 );
 
 -- Budget Monthly Allocations Table (for month-to-month reporting)
-CREATE TABLE budget_monthly_allocations (
+CREATE TABLE IF NOT EXISTS budget_monthly_allocations (
     id SERIAL PRIMARY KEY,
     budget_item_id INTEGER NOT NULL REFERENCES budget_items(id) ON DELETE CASCADE,
     month_number INTEGER NOT NULL CHECK (month_number BETWEEN 1 AND 12), -- 1=Jan, 2=Feb, etc.
@@ -125,7 +125,7 @@ CREATE TABLE budget_monthly_allocations (
 );
 
 -- Budget Projections Table (Multi-year planning)
-CREATE TABLE budget_projections (
+CREATE TABLE IF NOT EXISTS budget_projections (
     id SERIAL PRIMARY KEY,
     budget_id INTEGER NOT NULL REFERENCES budgets(id) ON DELETE CASCADE,
     projection_year INTEGER NOT NULL,

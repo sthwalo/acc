@@ -112,6 +112,7 @@ scripts/*_credentials_*.sh
 target/
 out/
 bin/
+secrets/
 
 # IDE files
 .idea/

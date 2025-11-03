@@ -226,22 +226,22 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
-CREATE TRIGGER IF NOT EXISTS update_account_categories_updated_at 
+CREATE TRIGGER update_account_categories_updated_at 
     BEFORE UPDATE ON account_categories 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER IF NOT EXISTS update_accounts_updated_at 
+CREATE TRIGGER update_accounts_updated_at 
     BEFORE UPDATE ON accounts 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER IF NOT EXISTS update_journal_entries_updated_at 
+CREATE TRIGGER update_journal_entries_updated_at 
     BEFORE UPDATE ON journal_entries 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER IF NOT EXISTS update_transaction_mapping_rules_updated_at 
+CREATE TRIGGER update_transaction_mapping_rules_updated_at 
     BEFORE UPDATE ON transaction_mapping_rules 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER IF NOT EXISTS update_manual_invoices_updated_at 
+CREATE TRIGGER update_manual_invoices_updated_at 
     BEFORE UPDATE ON manual_invoices 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

@@ -38,6 +38,11 @@ public class ConsoleApplication {
     
     public static void main(String[] args) {
         try {
+            // If explicitly requested, start API server mode
+            if (args.length > 0 && ("api".equalsIgnoreCase(args[0]) || "--api".equalsIgnoreCase(args[0]))) {
+                ApiApplication.main(args);
+                return;
+            }
             // Check for batch mode
             if (args.length > 0 && "--batch".equals(args[0])) {
                 runBatchMode(args);
