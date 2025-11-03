@@ -24,6 +24,8 @@ plugins {
     // Code quality plugins
     checkstyle
     id("com.github.spotbugs") version "5.2.5"
+    // Database migration plugin
+    id("org.flywaydb.flyway") version "10.0.1"
 }
 
 java {
@@ -172,9 +174,9 @@ tasks.named<Test>("test") {
         .mapValues { it.value as Any }
     
     // Pass environment variables to tests (especially for CI/CD)
-    environment("TEST_DATABASE_URL", System.getenv("TEST_DATABASE_URL") ?: System.getProperty("TEST_DATABASE_URL") ?: "jdbc:postgresql://localhost:5432/drimacc_test")
-    environment("TEST_DATABASE_USER", System.getenv("TEST_DATABASE_USER") ?: System.getProperty("TEST_DATABASE_USER") ?: "sthwalonyoni")
-    environment("TEST_DATABASE_PASSWORD", System.getenv("TEST_DATABASE_PASSWORD") ?: System.getProperty("TEST_DATABASE_PASSWORD") ?: "Test1823")
+    environment("TEST_DATABASE_URL", System.getenv("TEST_DATABASE_URL") ?: System.getProperty("TEST_DATABASE_URL") ?: "")
+    environment("TEST_DATABASE_USER", System.getenv("TEST_DATABASE_USER") ?: System.getProperty("TEST_DATABASE_USER") ?: "")
+    environment("TEST_DATABASE_PASSWORD", System.getenv("TEST_DATABASE_PASSWORD") ?: System.getProperty("TEST_DATABASE_PASSWORD") ?: "")
     environment("TEST_MODE", System.getenv("TEST_MODE") ?: "true")
     
     // Set working directory to project root so test.env can be found
