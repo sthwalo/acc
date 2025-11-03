@@ -54,10 +54,10 @@ public class LicenseManager {
         "   • Starter: $29/month (small business)\n" +
         "   • Professional: $99/month (growing business)\n" +
         "   • Enterprise: $299/month (large organization)\n" +
-        "   • Contact: licensing@fin-software.com\n" +
+        "   • Contact: sthwaloe@gmail.com\n" +
         "\n" +
         "⚖️  COPYRIGHT NOTICE:\n" +
-        "   Copyright 2025 Sthwalo Nyoni. All rights reserved.\n" +
+        "   Copyright 2025 Sthwalo Holdings (Pty) Ltd. Owner: Immaculate Nyoni. All rights reserved.\n" +
         "   Unauthorized commercial use is strictly prohibited.\n" +
         "\n" +
         "══════════════════════════════════════════════════════════════════════════════════\n";
@@ -88,7 +88,7 @@ public class LicenseManager {
             
             // Simple validation (in production, this would be cryptographically signed)
             if (licenseContent.contains("VALID_COMMERCIAL_LICENSE") && 
-                licenseContent.contains("Sthwalo Nyoni")) {
+                licenseContent.contains("Immaculate Nyoni")) {
                 
                 System.out.println("✅ Valid commercial license detected.");
                 System.out.println("   Licensed for commercial use.");
@@ -135,7 +135,7 @@ public class LicenseManager {
             System.out.println();
             System.out.println("🚫 Commercial use requires a commercial license.");
             System.out.println("   Please visit: https://fin-licensing.com");
-            System.out.println("   Contact: licensing@fin-software.com");
+            System.out.println("   Contact: sthwaloe@gmail.com for questions or to begin your commercial license.");
             return false;
         }
     }
@@ -168,7 +168,7 @@ public class LicenseManager {
         System.out.println("   • Unlimited usage and phone support");
         System.out.println("   • Custom features and compliance reporting");
         System.out.println();
-        System.out.println("📞 Contact: licensing@fin-software.com");
+        System.out.println("📞 Contact: sthwaloe@gmail.com for questions or to begin your commercial license.");
         System.out.println("🌐 Website: https://fin-licensing.com");
         System.out.println();
     }
