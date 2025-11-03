@@ -1,0 +1,65 @@
+# Git and version control
+.git
+.gitignore
+.github
+
+# IDE files
+.idea
+.vscode
+*.iml
+*.ipr
+*.iws
+
+# Gradle
+.gradle
+build/
+gradle.properties
+
+# Environment files (credentials)
+.env
+.env.local
+.env.production
+
+# Secrets directory
+secrets/
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.swp
+*.bak
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test reports
+test-results/
+reports/
+
+# Backups
+backups/
+
+# Documentation (can be large, but allow schemas)
+docs/
+!docs/schemas/
+
+# Scripts (exclude sensitive scripts but allow migrations)
+scripts/
+!scripts/migrations/
+
+# Input/Output directories
+input/
+output/
+payslips/
+reports/
+
+# Node modules (if any)
+node_modules/
+
+# Docker files
+Dockerfile*
+docker-compose*.yml
