@@ -254,7 +254,7 @@ public class InteractiveClassificationService {
     }
     
     public InteractiveClassificationService() {
-        this.dbUrl = DatabaseConfig.getDatabaseUrl();
+        this.dbUrl = DatabaseConfig.getDatabaseUrlWithCredentials();
         this.scanner = new Scanner(System.in, StandardCharsets.UTF_8);
         this.accountClassificationService = new AccountClassificationService(dbUrl);
         this.companyRules = new HashMap<>();

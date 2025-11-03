@@ -2,7 +2,8 @@
 # Uses Chainguard's secure builder images for enhanced security
 
 # Build stage using Eclipse Temurin JDK Alpine
-FROM eclipse-temurin:21-jdk-alpine AS builder
+#FROM eclipse-temurin:21-jdk-alpine AS builder
+FROM eclipse-temurin:25-jre-alpine AS builder
 
 WORKDIR /app
 
