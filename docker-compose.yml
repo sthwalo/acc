@@ -1,7 +1,7 @@
 services:
   # PostgreSQL Database
   postgres:
-    image: postgres:17-alpine3.20
+    image: postgres:17-alpine
     container_name: fin-postgres
     environment:
       POSTGRES_DB: drimacc_db
@@ -21,7 +21,7 @@ services:
 
   # Test Database (separate instance)
   postgres-test:
-    image: postgres:16-alpine
+    image: postgres:17-alpine
     container_name: fin-postgres-test
     environment:
       POSTGRES_DB: drimacc_test
@@ -67,7 +67,7 @@ services:
       - "8080:8080"
     depends_on:
       postgres:
-        condition: service_healthy
+        condition: service_started
     networks:
       - fin-network
     restart: unless-stopped
@@ -76,7 +76,7 @@ services:
   fin-app-test:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.compose
     container_name: fin-app-test
     environment:
       DATABASE_URL: jdbc:postgresql://postgres-test:5432/drimacc_test

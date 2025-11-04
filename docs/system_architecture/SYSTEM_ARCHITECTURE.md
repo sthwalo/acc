@@ -1,8 +1,29 @@
-# Integrated Financial Document Processing System Architecture
+# FIN Financial Management System - Current Architecture
 
 ## System Overview
 
-The Integrated Financial Document Processing System is designed to automate the entire financial document lifecycle for small businesses, with a focus on South African tax compliance. The system processes various financial documents, extracts relevant data using AI, categorizes transactions, performs accounting functions, and generates reports and tax submissions.
+The FIN Financial Management System is a Java 17-based financial document processing system designed to automate the financial document lifecycle for small businesses, with a focus on South African tax compliance. The system processes bank statements (PDF/CSV), extracts transaction data, performs automated categorization, and generates comprehensive financial reports.
+
+Architecture : Java 17-based modular financial processing system with PostgreSQL persistence, implementing clean architecture principles with clear separation between presentation, controller, service, and data layers.
+
+## Executive Summary
+
+**✅ **Working Components**:
+- Complete transaction processing pipeline (PDF → Database → Reports)
+- Financial reporting suite (Trial Balance, Income Statement, Balance Sheet, etc.)
+- SARS-compliant chart of accounts with modular service architecture
+- Multi-company and fiscal period management
+- CSV import/export functionality with reconciliation
+
+**⚠️ **Architecture Considerations**:
+- Layered architecture with clear dependency direction
+- Strategy pattern implementation for extensible transaction parsing
+- Repository pattern for data access abstraction
+
+**🏗️ **Architecture Qualities**:
+1. Modular design with clear separation of concerns
+2. Extensible parser framework using strategy pattern
+3. Comprehensive data integrity and audit capabilities
 
 ## Architecture Diagram
 
@@ -53,17 +74,20 @@ The Integrated Financial Document Processing System is designed to automate the 
                                 ▼
 ┌───────────────────────────────────────────────────────────────────────┐
 │                    Automated Accounting Engine                         │
-├──────────────┬──────────────┬─────────────────┬─────────────────┬─────┤
-│Categorization│Reconciliation│ General Ledger  │ Tax Calculation │Audit│
-│   Engine     │   System     │    Management   │ SARS-Compliant  │Trail│
-└──────────────┴──────────────┴─────────────────┴─────────────────┴─────┘
+├──────────────┬──────────────┬─────────────────┬─────────────────┬─────┬─────────────────┬─────────────────┤
+│Categorization│Reconciliation│ General Ledger  │ Tax Calculation │Audit│ Payroll         │ Budget          │
+│   Engine     │   System     │    Management   │ SARS-Compliant  │Trail│ Processing      │ Management      │
+└──────────────┴──────────────┴─────────────────┴─────────────────┴─────┴─────────────────┴─────────────────┘
                                 │
                                 ▼
 ┌───────────────────────────────────────────────────────────────────────┐
 │                      Output Generation System                          │
-├─────────────────────┬───────────────────────┬─────────────────────────┤
-│  Financial Reports  │  SARS-Ready Returns   │  Client Dashboard       │
-└─────────────────────┴───────────────────────┴─────────────────────────┘
+├─────────────────┬─────────────────┬─────────────────┬─────────────────┤
+│ Financial       │ SARS-Ready      │ Payroll         │ Budget Reports  │
+│ Reports         │ Returns         │ Documents       │ & Analysis      │
+├─────────────────┴─────────────────┴─────────────────┴─────────────────┤
+│                      Client Dashboard                                  │
+└─────────────────────┬───────────────────────┬─────────────────────────┘
                       │                       │
                       ▼                       ▼
           ┌─────────────────────┐  ┌─────────────────────┐
@@ -147,6 +171,7 @@ The Integrated Financial Document Processing System is designed to automate the 
 - Encryption services
 - Audit logging system
 - Backup service
+- PostgreSQL 17+ with advanced features
 
 ### 5. Automated Accounting Engine
 
@@ -170,7 +195,7 @@ The Integrated Financial Document Processing System is designed to automate the 
 
 ### 6. Output Generation System
 
-**Purpose**: Generate various outputs including reports, tax returns, and dashboard visualizations.
+**Purpose**: Generate various outputs including reports, tax returns, dashboard visualizations, payroll documents, and budget reports.
 
 **Key Features**:
 - Financial report generation
@@ -179,6 +204,8 @@ The Integrated Financial Document Processing System is designed to automate the 
 - Export functionality (PDF, Excel, CSV)
 - Scheduled reporting
 - Custom report builder
+- Payroll output generation (payslips, tax certificates, compliance reports)
+- Budget reporting and analysis (variance reports, forecasts, strategic plans)
 
 **Technical Components**:
 - Report generation service
@@ -186,6 +213,50 @@ The Integrated Financial Document Processing System is designed to automate the 
 - Data visualization components
 - Export service
 - Scheduling system
+- Payroll document generator
+- Budget report engine
+
+### 7. Payroll Processing System
+
+**Purpose**: Automate payroll calculations, tax deductions, and compliance with South African labor regulations.
+
+**Key Features**:
+- Employee management and onboarding
+- SARS-compliant tax calculations (PAYE, UIF, SDL)
+- Automated payroll period processing
+- Payslip generation and distribution
+- Tax certificate generation (IRP5)
+- Leave management integration
+- Overtime and allowance calculations
+
+**Technical Components**:
+- PayrollService with SARS tax calculator
+- Employee repository and management
+- Payroll period scheduling
+- PDF payslip generation
+- Email distribution service
+- Compliance reporting engine
+
+### 8. Budget Management System
+
+**Purpose**: Provide strategic planning and budget management capabilities for financial forecasting.
+
+**Key Features**:
+- Multi-year budget planning
+- Strategic priority alignment
+- Budget vs actual variance analysis
+- Department and project budgeting
+- Cash flow forecasting
+- Budget approval workflows
+- Performance tracking and reporting
+
+**Technical Components**:
+- Strategic planning service
+- Budget creation and management
+- Variance analysis engine
+- Reporting and visualization
+- Approval workflow system
+- Historical data analysis
 
 ## Data Flow
 
@@ -300,624 +371,8 @@ The Integrated Financial Document Processing System is designed to automate the 
 
 ---
 
-## Current Implementation Status & Architecture
+## Summary
 
-### Implementation Overview
+The FIN Financial Management System architecture provides a robust foundation for financial document processing and management. The modular design with clear separation of concerns enables maintainable code while supporting the complex requirements of financial data processing, reporting, and compliance.
 
-The FIN application represents the **current working implementation** of core components from the broader system architecture outlined above. Built as a Java console application, it demonstrates key financial processing capabilities and serves as a proof-of-concept for the larger integrated system.
-
-### Current System Architecture
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    PRESENTATION LAYER                       │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │           App.java (Main Application)               │   │
-│  │  • Interactive Console Menus                       │   │
-│  │  • User Input Handling                             │   │
-│  │  • Application Flow Control                        │   │
-│  │  • Session State Management                        │   │
-│  │  ⚠️  MONOLITHIC DESIGN - NEEDS REFACTORING          │   │
-│  └─────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────┘
-                               │
-┌─────────────────────────────────────────────────────────────┐
-│                     SERVICE LAYER                           │
-│  ┌─────────────────┐ ┌──────────────────┐ ┌──────────────┐ │
-│  │  CompanyService │ │  CsvImportService│ │ ReportService│ │
-│  │  • Company CRUD │ │  • CSV Processing│ │ • Financial  │ │
-│  │  • Fiscal       │ │  • Transaction   │ │   Reports    │ │
-│  │    Periods      │ │    Import        │ │ • Export     │ │
-│  └─────────────────┘ └──────────────────┘ └──────────────┘ │
-│                                                             │
-│  ┌─────────────────┐ ┌──────────────────┐ ┌──────────────┐ │
-│  │ BankStatement   │ │ DataManagement   │ │ Verification │ │
-│  │ ProcessingService│ │ Service          │ │ Service      │ │
-│  │ • PDF Processing│ │ • Manual Entries │ │ • Data       │ │
-│  │ • Parser        │ │ • Corrections    │ │   Validation │ │
-│  │   Orchestra.    │ │ • Audit Trail    │ │ • Reconcile  │ │
-│  └─────────────────┘ └──────────────────┘ └──────────────┘ │
-└─────────────────────────────────────────────────────────────┘
-                               │
-┌─────────────────────────────────────────────────────────────┐
-│                   PARSING FRAMEWORK                         │
-│  ┌─────────────────┐ ┌──────────────────┐ ┌──────────────┐ │
-│  │ DocumentText    │ │ TransactionParser│ │ ParsedTrans  │ │
-│  │ Extractor       │ │ Interface        │ │ action Model │ │
-│  │ • PDF Text      │ │ • Credit Parser  │ │ • Immutable  │ │
-│  │   Extraction    │ │ • ServiceFee     │ │   Value Obj  │ │
-│  │ • Content       │ │   Parser         │ │ • Builder    │ │
-│  │   Recognition   │ │ • Multi Parser   │ │   Pattern    │ │
-│  └─────────────────┘ └──────────────────┘ └──────────────┘ │
-└─────────────────────────────────────────────────────────────┘
-                               │
-┌─────────────────────────────────────────────────────────────┐
-│                   REPOSITORY LAYER                          │
-│  ┌─────────────────┐ ┌──────────────────┐ ┌──────────────┐ │
-│  │ BaseRepository  │ │ BankTransaction  │ │ FiscalPeriod │ │
-│  │ Interface       │ │ Repository       │ │ Repository   │ │
-│  │ • Standard CRUD │ │ • Transaction    │ │ • Period     │ │
-│  │   Operations    │ │   Persistence    │ │   Management │ │
-│  └─────────────────┘ └──────────────────┘ └──────────────┘ │
-└─────────────────────────────────────────────────────────────┘
-                               │
-┌─────────────────────────────────────────────────────────────┐
-│                      DATA LAYER                             │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │              PostgreSQL Database                     │   │
-│  │  • companies                                        │   │
-│  │  • fiscal_periods                                   │   │
-│  │  • bank_transactions                                │   │
-│  │  • accounts                                         │   │
-│  │  • journal_entries                                  │   │
-│  │  • account_types                                    │   │
-│  └─────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### Implemented Components
-
-#### 1. Document Processing Engine (Partially Implemented)
-
-**Current Implementation**:
-- `DocumentTextExtractor`: Unified document text extraction service
-- `BankStatementProcessingService`: Orchestrates PDF bank statement processing
-- PDF processing using Apache PDFBox 3.0
-- Text extraction and line-by-line processing
-
-**Key Features**:
-```java
-// Document text extraction
-public List<String> extractTextLines(String pdfPath)
-
-// Transaction line recognition  
-public boolean isTransaction(String line)
-
-// Metadata extraction
-public String getAccountNumber()
-public String getStatementPeriod()
-```
-
-**Technology Stack**:
-- Apache PDFBox 3.0 for PDF processing
-- Custom pattern matching for content recognition
-- Context-aware transaction identification
-
-#### 2. Transaction Parsing Framework (Fully Implemented)
-
-**Architecture**: Strategy Pattern with extensible parser implementations
-
-**Parser Implementations**:
-
-##### CreditTransactionParser
-- Handles deposits, transfers in, payments from customers
-- Pattern matching for credit keywords
-- Amount extraction with regex patterns
-
-##### ServiceFeeParser  
-- Processes service fees and bank charges
-- Handles both `##` markers and `FEE` keywords
-- Excludes table headers and non-fee content
-
-##### MultiTransactionParser
-- Handles complex transactions with embedded fees
-- Separates main transaction from associated charges
-- Example: "TRANSFER TO VENDOR 750.50- FEE-ELECTRONIC PAYMENT 8.90-"
-
-**Core Interface**:
-```java
-public interface TransactionParser {
-    boolean canParse(String line, TransactionParsingContext context);
-    ParsedTransaction parse(String line, TransactionParsingContext context);
-}
-```
-
-**Parsing Context**:
-```java
-public class TransactionParsingContext {
-    private final LocalDate statementDate;
-    private final String accountNumber;
-    private final String statementPeriod;
-    private final String sourceFile;
-}
-```
-
-#### 3. Financial Data Storage (Fully Implemented)
-
-**Database Schema**:
-```sql
--- Core business entities
-CREATE TABLE companies (
-    id BIGSERIAL PRIMARY KEY,
-    name TEXT NOT NULL,
-    registration_number TEXT,
-    tax_number TEXT,
-    address TEXT,
-    contact_email TEXT,
-    contact_phone TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE fiscal_periods (
-    id BIGSERIAL PRIMARY KEY,
-    company_id BIGINT NOT NULL,
-    period_name TEXT NOT NULL,
-    start_date DATE NOT NULL,
-    end_date DATE NOT NULL,
-    is_closed BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (company_id) REFERENCES companies(id)
-);
-
-CREATE TABLE bank_transactions (
-    id BIGSERIAL PRIMARY KEY,
-    company_id BIGINT NOT NULL,
-    fiscal_period_id BIGINT NOT NULL,
-    transaction_date DATE NOT NULL,
-    details TEXT,
-    debit_amount DECIMAL(15,2),
-    credit_amount DECIMAL(15,2),
-    balance DECIMAL(15,2),
-    service_fee BOOLEAN DEFAULT FALSE,
-    account_number TEXT,
-    statement_period TEXT,
-    source_file TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (company_id) REFERENCES companies(id),
-    FOREIGN KEY (fiscal_period_id) REFERENCES fiscal_periods(id)
-);
-
--- Chart of accounts
-CREATE TABLE accounts (
-    id BIGSERIAL PRIMARY KEY,
-    company_id BIGINT NOT NULL,
-    account_code TEXT NOT NULL,
-    account_name TEXT NOT NULL,
-    account_type_id BIGINT NOT NULL,
-    parent_account_id BIGINT,
-    balance DECIMAL(15,2) DEFAULT 0.00,
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (company_id) REFERENCES companies(id),
-    FOREIGN KEY (account_type_id) REFERENCES account_types(id)
-);
-
--- Journal entries for manual accounting
-CREATE TABLE journal_entries (
-    id BIGSERIAL PRIMARY KEY,
-    company_id BIGINT NOT NULL,
-    fiscal_period_id BIGINT NOT NULL,
-    entry_number TEXT NOT NULL,
-    entry_date DATE NOT NULL,
-    description TEXT,
-    total_debits DECIMAL(15,2) DEFAULT 0.00,
-    total_credits DECIMAL(15,2) DEFAULT 0.00,
-    is_balanced BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (company_id) REFERENCES companies(id),
-    FOREIGN KEY (fiscal_period_id) REFERENCES fiscal_periods(id)
-);
-```
-
-**Repository Pattern Implementation**:
-```java
-public interface BaseRepository<T, ID> {
-    T save(T entity);
-    Optional<T> findById(ID id);
-    List<T> findAll();
-    void delete(T entity);
-    void deleteById(ID id);
-    boolean exists(ID id);
-}
-
-public class BankTransactionRepository implements BaseRepository<BankTransaction, Long> {
-    // Standard CRUD operations
-    // Custom queries for financial data
-    public List<BankTransaction> findByCompanyAndFiscalPeriod(Long companyId, Long fiscalPeriodId);
-}
-```
-
-#### 4. Service Layer Architecture (Fully Implemented)
-
-##### CompanyService
-- Manages companies and fiscal periods
-- Handles company CRUD operations
-- Fiscal period lifecycle management
-
-```java
-public class CompanyService {
-    public Company createCompany(Company company);
-    public List<Company> getAllCompanies();
-    public FiscalPeriod createFiscalPeriod(FiscalPeriod fiscalPeriod);
-    public List<FiscalPeriod> getFiscalPeriodsByCompany(Long companyId);
-}
-```
-
-##### CsvImportService
-- Handles CSV transaction imports
-- Smart fiscal period matching (FY2025 vs FY2024-2025)
-- Transaction validation and categorization
-
-```java
-public class CsvImportService {
-    public List<BankTransaction> importCsvFile(String filePath, Long companyId, Long fiscalPeriodId);
-    public List<BankTransaction> getTransactions(Long companyId, Long fiscalPeriodId);
-    // Fiscal period matching logic for data consistency
-}
-```
-
-##### ReportService
-- Generates comprehensive financial reports
-- Multiple report formats and export options
-
-```java
-public class ReportService {
-    public String generateCashbookReport(Long fiscalPeriodId);
-    public String generateGeneralLedgerReport(Long fiscalPeriodId);
-    public String generateTrialBalanceReport(Long fiscalPeriodId);
-    public String generateIncomeStatementReport(Long fiscalPeriodId);
-    public String generateBalanceSheetReport(Long fiscalPeriodId);
-    public String generateCashFlowReport(Long fiscalPeriodId);
-}
-```
-
-##### DataManagementService
-- Manual data entry and corrections
-- Audit trail maintenance
-- Transaction categorization management
-
-```java
-public class DataManagementService {
-    public void createJournalEntry(Long companyId, String entryNumber, LocalDate entryDate, 
-                                 String description, Long fiscalPeriodId, List<JournalEntryLine> lines);
-    public void correctTransactionCategory(Long companyId, Long transactionId, Long bankAccountId,
-                                        Long newAccountId, String reason, String correctedBy);
-    public List<Map<String, Object>> getTransactionCorrectionHistory(Long transactionId);
-}
-```
-
-##### TransactionVerificationService
-- Data integrity validation
-- Bank statement vs CSV reconciliation
-- Discrepancy identification and reporting
-
-```java
-public class TransactionVerificationService {
-    public static class VerificationResult {
-        private boolean isValid;
-        private BigDecimal totalDebits;
-        private BigDecimal totalCredits;
-        private BigDecimal finalBalance;
-        private List<String> discrepancies;
-        private List<BankTransaction> missingTransactions;
-        private List<BankTransaction> extraTransactions;
-    }
-    
-    public VerificationResult verifyTransactions(String bankStatementPath, Long companyId, Long fiscalPeriodId);
-}
-```
-
-#### 5. Application Layer (Console Interface)
-
-**Main Application Controller**:
-```java
-public class App {
-    // Service dependencies
-    private final CompanyService companyService;
-    private final CsvImportService csvImportService;
-    private final ReportService reportService;
-    private final BankStatementProcessingService bankStatementService;
-    private final DataManagementService dataManagementService;
-    private final TransactionVerificationService verificationService;
-    
-    // Application state
-    private Company currentCompany;
-    private FiscalPeriod currentFiscalPeriod;
-}
-```
-
-**User Interface Features**:
-- Interactive console menus
-- Company and fiscal period management
-- Bank statement processing workflows
-- CSV import/export functionality
-- Financial report generation
-- Data management and corrections
-- Transaction verification tools
-
-#### 6. Data Processing Workflows
-
-##### Bank Statement Processing Flow
-```
-PDF File → DocumentTextExtractor → Raw Text Lines
-    ↓
-TransactionParser Selection → ParsedTransaction Objects
-    ↓
-BankTransaction Entity Conversion → Database Storage
-    ↓
-Optional CSV Export → File System
-```
-
-##### CSV Import Flow  
-```
-CSV File → CsvImportService → Parse & Validate
-    ↓
-Fiscal Period Matching → Filter Transactions
-    ↓
-Database Storage → BankTransaction Table
-```
-
-##### Report Generation Flow
-```
-Database Query → Raw Transaction Data
-    ↓
-ReportService Processing → Formatted Reports
-    ↓
-Console Display or File Export
-```
-
-### Testing Framework
-
-**Comprehensive Unit Testing**:
-```
-app/src/test/java/fin/
-├── service/
-│   ├── parser/                    # Parser framework tests
-│   │   ├── CreditTransactionParserTest
-│   │   ├── ServiceFeeParserTest
-│   │   └── MultiTransactionParserTest
-│   ├── BankStatementProcessingServiceTest
-│   └── DocumentTextExtractorTest
-└── AppTest                        # Main application tests
-```
-
-**Test Coverage**: 
-- Parser framework (100% coverage)
-- Core service logic validation
-- Document extraction verification
-- Integration testing for workflows
-
-### Technology Implementation
-
-**Core Technologies**:
-- **Java 17** with modern language features
-- **Gradle 8.8** for build management
-- **PostgreSQL** for production database
-- **Apache PDFBox 3.0** for PDF processing
-- **JUnit 5** for comprehensive testing
-- **iText PDF** for report generation
-
-**Build Configuration**:
-```gradle
-dependencies {
-    implementation("org.postgresql:postgresql:42.7.3")
-    implementation("org.apache.pdfbox:pdfbox:3.0.0")
-    implementation("com.itextpdf:itextpdf:5.5.13.3")
-    testImplementation("org.junit.jupiter:junit-jupiter")
-    testImplementation("org.mockito:mockito-core:5.5.0")
-}
-```
-
-### File System Integration
-
-**Directory Structure**:
-```
-FIN/
-├── app/                           # Main application
-│   ├── src/main/java/fin/        # Source code
-│   │   ├── model/                # Domain entities
-│   │   ├── service/              # Business logic
-│   │   │   └── parser/           # Transaction parsing
-│   │   ├── repository/           # Data access
-│   │   └── App.java              # Main application
-│   ├── src/test/                 # Test suite
-│   └── build/libs/app.jar        # Executable JAR
-├── bank/                         # PDF bank statements
-├── cash/                         # Cash-related documents  
-├── reports/                      # Generated reports
-├── docs/                         # Documentation
-└── process_statement.sh          # Automation script
-```
-
-### Operational Features
-
-**Automation Support**:
-- Automated bank statement processing via shell scripts
-- Batch processing capabilities for multiple documents
-- CSV export functionality for external system integration
-
-**Data Management**:
-- Transaction correction workflows with audit trails
-- Manual journal entry creation
-- Chart of accounts management
-- Fiscal period administration
-
-**Reporting Capabilities**:
-- Complete suite of financial reports
-- Export options (console, CSV, PDF)
-- Period-based reporting
-- Transaction verification reports
-
-### Implementation Progress Mapping
-
-| System Component | Implementation Status | Details |
-|------------------|----------------------|---------|
-| **Document Upload Interface** | ✅ Implemented | Console-based file path input, validation |
-| **AI Document Processing** | ⚠️ Partial | PDF text extraction, pattern recognition (no ML) |
-| **Structured Data Review** | ✅ Implemented | Console-based data display and correction |
-| **Financial Data Storage** | ✅ Implemented | PostgreSQL with comprehensive schema |
-| **Automated Accounting** | ✅ Implemented | Categorization, reconciliation, reporting |
-| **Output Generation** | ✅ Implemented | Financial reports, CSV export |
-
-### Future Enhancement Roadmap
-
-**Immediate Enhancements**:
-1. Web-based user interface to replace console interface
-2. Enhanced PDF parsing with machine learning models
-3. Integration with external banking APIs
-4. Advanced reporting with visualization
-
-**Long-term Integration**:
-1. SARS e-Filing integration for tax submissions
-2. Multi-company and multi-currency support  
-3. Advanced AI categorization with learning capabilities
-4. Mobile application for document capture
-5. Cloud deployment with scalability features
-
-### Architecture Strengths
-
-**Current Implementation Benefits**:
-1. **Modular Design**: Clear separation of concerns across layers
-2. **Extensible Parser Framework**: Easy addition of new transaction types
-3. **Comprehensive Testing**: High test coverage for critical components
-4. **Data Integrity**: Built-in verification and audit trails
-5. **Multiple Input Formats**: Support for both PDF and CSV processing
-6. **Complete Financial Reporting**: Standard accounting reports implemented
-
-**Design Patterns Utilized**:
-- **Strategy Pattern**: Transaction parser implementations
-- **Repository Pattern**: Data access abstraction
-- **Builder Pattern**: Immutable value objects
-- **Service Layer Pattern**: Business logic encapsulation
-
-This current implementation serves as a solid foundation for the broader integrated financial system architecture, demonstrating core capabilities while providing a clear path for enhancement and integration with the larger vision.
-
-## Planned Architecture Improvements
-
-### Modular Refactoring Initiative
-
-**Current Challenge**: The `App.java` file (~1,280 lines) represents a monolithic design that violates SOLID principles and hampers maintainability.
-
-**Proposed Solution**: Comprehensive refactoring into a layered, modular architecture following Clean Architecture principles.
-
-### Target Modular Architecture
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    PRESENTATION LAYER                       │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │              ConsoleApplication                     │   │
-│  │  • Application Bootstrap                            │   │
-│  │  • Dependency Injection Setup                      │   │
-│  │  • Main Method Only (~20 lines)                    │   │
-│  └─────────────────────────────────────────────────────┘   │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │                 UI Package                          │   │
-│  │  ┌─────────────┐ ┌──────────────┐ ┌──────────────┐ │   │
-│  │  │ ConsoleMenu │ │ InputHandler │ │ OutputFormat │ │   │
-│  │  │ • Display   │ │ • Validation │ │ • Pretty     │ │   │
-│  │  │ • Navigate  │ │ • Type Conv. │ │   Print      │ │   │
-│  │  └─────────────┘ └──────────────┘ └──────────────┘ │   │
-│  └─────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────┘
-                               │
-┌─────────────────────────────────────────────────────────────┐
-│                   CONTROLLER LAYER                          │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │            ApplicationController                    │   │
-│  │  • Main Application Flow                           │   │
-│  │  • Session State Management                        │   │
-│  │  • Controller Coordination                         │   │
-│  └─────────────────────────────────────────────────────┘   │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │              Domain Controllers                     │   │
-│  │  ┌─────────────┐ ┌──────────────┐ ┌──────────────┐ │   │
-│  │  │ Company     │ │ Import       │ │ Report       │ │   │
-│  │  │ Controller  │ │ Controller   │ │ Controller   │ │   │
-│  │  │ • Setup     │ │ • PDF & CSV  │ │ • Generation │ │   │
-│  │  │ • Periods   │ │ • Validation │ │ • Export     │ │   │
-│  │  └─────────────┘ └──────────────┘ └──────────────┘ │   │
-│  │  ┌─────────────┐ ┌──────────────┐                  │   │
-│  │  │ Data Mgmt   │ │ Verification │                  │   │
-│  │  │ Controller  │ │ Controller   │                  │   │
-│  │  │ • Entries   │ │ • Reconcile  │                  │   │
-│  │  │ • Correct   │ │ • Validate   │                  │   │
-│  │  └─────────────┘ └──────────────┘                  │   │
-│  └─────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────┘
-                               │
-┌─────────────────────────────────────────────────────────────┐
-│                   WORKFLOW LAYER                            │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │              Business Workflows                     │   │
-│  │  ┌─────────────┐ ┌──────────────┐ ┌──────────────┐ │   │
-│  │  │ Company     │ │ Import       │ │ Report Gen   │ │   │
-│  │  │ Setup       │ │ Workflow     │ │ Workflow     │ │   │
-│  │  │ Workflow    │ │ • Multi-step │ │ • Multi-     │ │   │
-│  │  │ • Guided    │ │   Process    │ │   Format     │ │   │
-│  │  │   Setup     │ │ • Validation │ │ • Batch      │ │   │
-│  │  └─────────────┘ └──────────────┘ └──────────────┘ │   │
-│  └─────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────┘
-                               │
-┌─────────────────────────────────────────────────────────────┐
-│                     SERVICE LAYER                           │
-│  │  [Existing Services - No Changes Required]              │
-│  │  • CompanyService • CsvImportService • ReportService    │
-│  │  • BankStatementProcessingService • DataManagementSvc  │
-│  │  • TransactionVerificationService                       │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### Refactoring Benefits
-
-**SOLID Principles Compliance**:
-- ✅ **Single Responsibility**: Each class has one clear purpose
-- ✅ **Open/Closed**: Easy to add new features without modification
-- ✅ **Liskov Substitution**: Controllers can be swapped/mocked
-- ✅ **Interface Segregation**: Focused interfaces for each concern
-- ✅ **Dependency Inversion**: Controllers depend on abstractions
-
-**Clean Architecture Benefits**:
-- 🔄 **Separation of Concerns**: UI, business logic, and data are separate
-- 🧪 **Testability**: Each component can be unit tested independently
-- 🔧 **Maintainability**: Changes in one layer don't affect others
-- 🔄 **Flexibility**: Easy to replace console UI with web/API interface
-- ♻️ **Reusability**: Controllers can be used by different interfaces
-
-**Development Benefits**:
-- 👥 **Team Development**: Multiple developers can work on different controllers
-- 👀 **Code Review**: Smaller, focused classes are easier to review
-- 🐛 **Debugging**: Issues are isolated to specific components
-- ✨ **Feature Addition**: New features follow established patterns
-- 🔄 **Refactoring**: Easier to refactor individual components
-
-### Implementation Plan
-
-| Phase | Components | Duration | Status |
-|-------|------------|----------|---------|
-| **Phase 1** | UI Components (Menu, Input, Output) | 2-3 days | 📋 Planned |
-| **Phase 2** | Controller Layer (Application, Domain) | 3-4 days | 📋 Planned |
-| **Phase 3** | Workflow Layer (Business Processes) | 2-3 days | 📋 Planned |
-| **Phase 4** | State Management & Dependency Injection | 1-2 days | 📋 Planned |
-| **Phase 5** | Final Cleanup & Testing | 1 day | 📋 Planned |
-
-**Target Metrics**:
-- **Lines of Code**: Reduce main class from 1,280 to <100 lines
-- **Cyclomatic Complexity**: Reduce from 15-20 to 3-5 per method
-- **Test Coverage**: Achieve 80%+ coverage for all components
-- **Feature Addition Time**: Reduce from 2-3 hours to 30-60 minutes
-
-**Documentation**: Detailed refactoring plan available in `docs/system_architecture/MODULAR_REFACTORING_PLAN.md`
-
----
+For detailed implementation status, progress tracking, and development journey information, see the [Progress Overview](PROGRESS_OVERVIEW.md) document.

@@ -61,8 +61,10 @@ import fin.service.OpeningBalanceService;
 import fin.service.PayrollReportService;
 import fin.service.PayrollService;
 import fin.service.PayslipPdfService;
+import fin.service.PdfBrandingService;
 import fin.service.PdfExportService;
 import fin.service.ReportService;
+import fin.service.TextReportToPdfService;
 import fin.service.StrategicPlanningService;
 import fin.service.TransactionClassificationService;
 import fin.service.TrialBalanceService;
@@ -159,11 +161,20 @@ public class ApplicationContext {
         ReportService reportService = new ReportService(initialDbUrl, csvImportService);
         register(ReportService.class, reportService);
         
-        FinancialReportingService financialReportingService = new FinancialReportingService(initialDbUrl);
-        register(FinancialReportingService.class, financialReportingService);
-        
         PdfExportService pdfExportService = new PdfExportService();
         register(PdfExportService.class, pdfExportService);
+        
+        // PDF Branding Service for report headers/footers
+        PdfBrandingService pdfBrandingService = new PdfBrandingService();
+        register(PdfBrandingService.class, pdfBrandingService);
+        
+        // Text-to-PDF conversion service for financial reports
+        TextReportToPdfService textReportToPdfService = new TextReportToPdfService();
+        register(TextReportToPdfService.class, textReportToPdfService);
+        
+        // Financial Reporting Service with PDF export capability
+        FinancialReportingService financialReportingService = new FinancialReportingService(initialDbUrl, textReportToPdfService);
+        register(FinancialReportingService.class, financialReportingService);
         
         DataManagementService dataManagementService = new DataManagementService(
             initialDbUrl, companyService, csvImportService.getAccountService());

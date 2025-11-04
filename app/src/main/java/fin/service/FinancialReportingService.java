@@ -79,10 +79,12 @@ public class FinancialReportingService {
     private final IncomeStatementService incomeStatementService;
     private final BalanceSheetService balanceSheetService;
     private final CashFlowService cashFlowService;
+    private final TextReportToPdfService pdfService;
 
-    public FinancialReportingService(String initialDbUrl) {
+    public FinancialReportingService(String initialDbUrl, TextReportToPdfService pdfService) {
         this.dbUrl = initialDbUrl;
         this.currencyFormat = NumberFormat.getCurrencyInstance(Locale.forLanguageTag("en-ZA"));
+        this.pdfService = pdfService;
 
         // Create DataSource from dbUrl
         HikariConfig config = new HikariConfig();
@@ -381,11 +383,22 @@ public class FinancialReportingService {
 
             Path filePath = reportsDir.resolve(filename);
 
+            // Export as TXT file
             try (FileWriter writer = new FileWriter(filePath.toFile(), java.nio.charset.StandardCharsets.UTF_8)) {
                 writer.write(content);
             }
 
-            LOGGER.info("Report exported to: " + filePath.toAbsolutePath());
+            LOGGER.info("Report exported to TXT: " + filePath.toAbsolutePath());
+
+            // Also export as PDF if PDF service is available
+            if (pdfService != null) {
+                try {
+                    String pdfPath = pdfService.convertTextReportToPdf(content, reportType, company, period);
+                    LOGGER.info("Report exported to PDF: " + pdfPath);
+                } catch (Exception pdfError) {
+                    LOGGER.log(Level.WARNING, "Failed to generate PDF report, but TXT file was created successfully", pdfError);
+                }
+            }
 
         } catch (IOException e) {
             LOGGER.log(Level.SEVERE, "Error exporting report", e);
