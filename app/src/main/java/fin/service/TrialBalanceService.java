@@ -85,7 +85,7 @@ public class TrialBalanceService {
         report.append(generateReportHeader("TRIAL BALANCE REPORT", company, fiscalPeriod));
         report.append("\n");
         report.append("Source: General Ledger Account Balances (Double-Entry Bookkeeping)\n");
-        report.append("Hierarchy: Journal Entries → General Ledger → Trial Balance → Financial Statements\n");
+        report.append("Hierarchy: Journal Entries > General Ledger > Trial Balance > Financial Statements\n");
         report.append("\n");
 
                 // Column headers for traditional trial balance

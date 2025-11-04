@@ -83,7 +83,7 @@ public class GeneralLedgerService {
         report.append(generateReportHeader("GENERAL LEDGER REPORT", company, fiscalPeriod));
         report.append("\n");
         report.append("Source: Journal Entries (Double-Entry Bookkeeping)\n");
-        report.append("Hierarchy: Journal Entries → General Ledger → Trial Balance → Financial Statements\n");
+        report.append("Hierarchy: Journal Entries > General Ledger > Trial Balance > Financial Statements\n");
         report.append("\n");
 
         // Generate ledger for each account with activity

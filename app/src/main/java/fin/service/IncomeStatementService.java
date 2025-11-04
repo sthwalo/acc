@@ -90,7 +90,7 @@ public class IncomeStatementService {
         report.append(generateReportHeader("INCOME STATEMENT", company, fiscalPeriod));
         report.append("\n");
         report.append("Source: Trial Balance Account Balances\n");
-        report.append("Hierarchy: Journal Entries → General Ledger → Trial Balance → Income Statement\n");
+        report.append("Hierarchy: Journal Entries > General Ledger > Trial Balance > Income Statement\n");
         report.append("\n");
 
         // Separate revenue and expense accounts

@@ -38,7 +38,7 @@ import java.util.Map;
  * Shows assets, liabilities, and equity positions.
  * 
  * FOLLOWS PROPER ACCOUNTING HIERARCHY:
- * Journal Entries → General Ledger → Trial Balance → Balance Sheet
+ * Journal Entries > General Ledger > Trial Balance > Balance Sheet
  */
 public class BalanceSheetService {
 
@@ -88,23 +88,23 @@ public class BalanceSheetService {
 
     /**
      * Generate balance sheet report content
-     * 
+    /**
      * CORRECT ACCOUNTING FLOW:
      * This method reads closing balances FROM General Ledger (same as Trial Balance).
-     * Implements: Journal Entries → General Ledger → Trial Balance → Balance Sheet
+     * Implements: Journal Entries > General Ledger > Trial Balance > Balance Sheet
      */
     public String generateBalanceSheet(int companyId, int fiscalPeriodId) throws SQLException {
         Company company = repository.getCompany(companyId);
         FiscalPeriod fiscalPeriod = repository.getFiscalPeriod(fiscalPeriodId);
         
-        // ✅ CORRECT FLOW: Get closing balances FROM General Ledger (same source as Trial Balance)
+        // [OK] CORRECT FLOW: Get closing balances FROM General Ledger (same source as Trial Balance)
         Map<String, AccountBalance> accountBalances = generalLedgerService.getAccountClosingBalances(companyId, fiscalPeriodId);
 
         StringBuilder report = new StringBuilder();
         report.append(generateReportHeader("BALANCE SHEET", company, fiscalPeriod));
         report.append("\n");
         report.append("Source: General Ledger Account Balances (Double-Entry Bookkeeping)\n");
-        report.append("Hierarchy: Journal Entries → General Ledger → Trial Balance → Balance Sheet\n");
+        report.append("Hierarchy: Journal Entries > General Ledger > Trial Balance > Balance Sheet\n");
         report.append("\n");
 
         // Categorize accounts by Balance Sheet type
@@ -203,7 +203,7 @@ public class BalanceSheetService {
             }
         } else {
             report.append("*** BALANCE SHEET BALANCES ***\n");
-            report.append("Assets = Liabilities + Equity ✓\n");
+            report.append("Assets = Liabilities + Equity [OK]\n");
         }
 
         return report.toString();

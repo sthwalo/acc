@@ -93,14 +93,15 @@ public class ConsoleMenu {
         System.out.println("\n===== Data Management =====");
         System.out.println("1. Create Manual Invoice");
         System.out.println("2. Generate Invoice PDF");
-        System.out.println("3. Create Manual Journal Entry");
-        System.out.println("4. Transaction Classification");
-        System.out.println("5. Correct Transaction Categories");
-        System.out.println("6. View Transaction History");
-        System.out.println("7. Reset Company Data");
-        System.out.println("8. Export to CSV");
-        System.out.println("9. Back to main menu");
-        System.out.print("Enter your choice (1-9): ");
+        System.out.println("3. Sync Invoice Journal Entries");
+        System.out.println("4. Create Manual Journal Entry");
+        System.out.println("5. Transaction Classification");
+        System.out.println("6. Correct Transaction Categories");
+        System.out.println("7. View Transaction History");
+        System.out.println("8. Reset Company Data");
+        System.out.println("9. Export to CSV");
+        System.out.println("10. Back to main menu");
+        System.out.print("Enter your choice (1-10): ");
     }
     
     public void displayImportMenu() {

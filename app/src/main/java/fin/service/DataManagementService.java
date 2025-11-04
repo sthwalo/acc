@@ -184,19 +184,45 @@ public class DataManagementService {
             "description, amount, debit_account_id, credit_account_id, fiscal_period_id) " +
             "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
             
-        try (Connection conn = DriverManager.getConnection(dbUrl);
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        try (Connection conn = DriverManager.getConnection(dbUrl)) {
+            conn.setAutoCommit(false);  // Start transaction
             
-            pstmt.setLong(MANUAL_INVOICE_PARAM_COMPANY_ID, companyId);
-            pstmt.setString(MANUAL_INVOICE_PARAM_INVOICE_NUMBER, invoiceNumber);
-            pstmt.setDate(MANUAL_INVOICE_PARAM_INVOICE_DATE, Date.valueOf(invoiceDate));
-            pstmt.setString(MANUAL_INVOICE_PARAM_DESCRIPTION, description);
-            pstmt.setBigDecimal(MANUAL_INVOICE_PARAM_AMOUNT, amount);
-            pstmt.setLong(MANUAL_INVOICE_PARAM_DEBIT_ACCOUNT_ID, debitAccountId);
-            pstmt.setLong(MANUAL_INVOICE_PARAM_CREDIT_ACCOUNT_ID, creditAccountId);
-            pstmt.setLong(MANUAL_INVOICE_PARAM_FISCAL_PERIOD_ID, fiscalPeriodId);
+            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                pstmt.setLong(MANUAL_INVOICE_PARAM_COMPANY_ID, companyId);
+                pstmt.setString(MANUAL_INVOICE_PARAM_INVOICE_NUMBER, invoiceNumber);
+                pstmt.setDate(MANUAL_INVOICE_PARAM_INVOICE_DATE, Date.valueOf(invoiceDate));
+                pstmt.setString(MANUAL_INVOICE_PARAM_DESCRIPTION, description);
+                pstmt.setBigDecimal(MANUAL_INVOICE_PARAM_AMOUNT, amount);
+                pstmt.setLong(MANUAL_INVOICE_PARAM_DEBIT_ACCOUNT_ID, debitAccountId);
+                pstmt.setLong(MANUAL_INVOICE_PARAM_CREDIT_ACCOUNT_ID, creditAccountId);
+                pstmt.setLong(MANUAL_INVOICE_PARAM_FISCAL_PERIOD_ID, fiscalPeriodId);
+                
+                pstmt.executeUpdate();
+            }
             
-            pstmt.executeUpdate();
+            // Create corresponding journal entry
+            String journalEntryNumber = "INV-" + invoiceNumber;
+            Long journalEntryId = createJournalEntryHeader(conn, companyId, journalEntryNumber,
+                invoiceDate, "Invoice: " + description, fiscalPeriodId);
+            
+            // Create debit line (Accounts Receivable)
+            JournalEntryLine debitLine = new JournalEntryLine();
+            debitLine.setAccountId(debitAccountId);
+            debitLine.setDescription(description);
+            debitLine.setDebitAmount(amount);
+            debitLine.setCreditAmount(BigDecimal.ZERO);
+            createJournalEntryLine(conn, journalEntryId, debitLine);
+            
+            // Create credit line (Sales Revenue)
+            JournalEntryLine creditLine = new JournalEntryLine();
+            creditLine.setAccountId(creditAccountId);
+            creditLine.setDescription(description);
+            creditLine.setDebitAmount(BigDecimal.ZERO);
+            creditLine.setCreditAmount(amount);
+            createJournalEntryLine(conn, journalEntryId, creditLine);
+            
+            conn.commit();  // Commit transaction
+            LOGGER.info("Invoice and journal entry created successfully: " + invoiceNumber);
             
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Error creating manual invoice", e);
@@ -221,6 +247,87 @@ public class DataManagementService {
             LOGGER.log(Level.SEVERE, "Error checking invoice number existence", e);
             throw new RuntimeException("Failed to check invoice number", e);
         }
+    }
+
+    /**
+     * Syncs journal entries for all invoices that don't have them yet.
+     * This is useful for invoices created before automatic journal entry sync was implemented.
+     * 
+     * @param companyId The company to sync invoices for
+     * @return Number of invoices synced
+     */
+    public int syncInvoiceJournalEntries(Long companyId) {
+        validateCompanyExists(companyId);
+        
+        String sql = 
+            "SELECT mi.id, mi.invoice_number, mi.invoice_date, mi.description, " +
+            "       mi.amount, mi.debit_account_id, mi.credit_account_id, mi.fiscal_period_id " +
+            "FROM manual_invoices mi " +
+            "WHERE mi.company_id = ? " +
+            "  AND NOT EXISTS (" +
+            "    SELECT 1 FROM journal_entries je " +
+            "    WHERE je.company_id = mi.company_id " +
+            "      AND je.description = 'Invoice: ' || mi.description" +
+            "  )";
+        
+        int syncedCount = 0;
+        
+        try (Connection conn = DriverManager.getConnection(dbUrl);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setLong(1, companyId);
+            
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    conn.setAutoCommit(false);
+                    
+                    try {
+                        String invoiceNumber = rs.getString("invoice_number");
+                        LocalDate invoiceDate = rs.getDate("invoice_date").toLocalDate();
+                        String description = rs.getString("description");
+                        BigDecimal amount = rs.getBigDecimal("amount");
+                        Long debitAccountId = rs.getLong("debit_account_id");
+                        Long creditAccountId = rs.getLong("credit_account_id");
+                        Long fiscalPeriodId = rs.getLong("fiscal_period_id");
+                        
+                        // Create journal entry
+                        String journalEntryNumber = "INV-" + invoiceNumber;
+                        Long journalEntryId = createJournalEntryHeader(conn, companyId, journalEntryNumber,
+                            invoiceDate, "Invoice: " + description, fiscalPeriodId);
+                        
+                        // Create debit line (Accounts Receivable)
+                        JournalEntryLine debitLine = new JournalEntryLine();
+                        debitLine.setAccountId(debitAccountId);
+                        debitLine.setDescription(description);
+                        debitLine.setDebitAmount(amount);
+                        debitLine.setCreditAmount(BigDecimal.ZERO);
+                        createJournalEntryLine(conn, journalEntryId, debitLine);
+                        
+                        // Create credit line (Sales Revenue)
+                        JournalEntryLine creditLine = new JournalEntryLine();
+                        creditLine.setAccountId(creditAccountId);
+                        creditLine.setDescription(description);
+                        creditLine.setDebitAmount(BigDecimal.ZERO);
+                        creditLine.setCreditAmount(amount);
+                        createJournalEntryLine(conn, journalEntryId, creditLine);
+                        
+                        conn.commit();
+                        syncedCount++;
+                        LOGGER.info("Synced journal entry for invoice: " + invoiceNumber);
+                        
+                    } catch (SQLException e) {
+                        conn.rollback();
+                        LOGGER.log(Level.WARNING, "Failed to sync invoice, skipping", e);
+                    }
+                }
+            }
+            
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error syncing invoice journal entries", e);
+            throw new RuntimeException("Failed to sync invoice journal entries", e);
+        }
+        
+        return syncedCount;
     }
 
     /**
@@ -281,7 +388,7 @@ public class DataManagementService {
                                         LocalDate entryDate, String description,
                                         Long fiscalPeriodId) throws SQLException {
         String sql = 
-            "INSERT INTO journal_entries (company_id, entry_number, entry_date, " +
+            "INSERT INTO journal_entries (company_id, reference, entry_date, " +
             "description, fiscal_period_id) VALUES (?, ?, ?, ?, ?) " +
             "RETURNING id";
             

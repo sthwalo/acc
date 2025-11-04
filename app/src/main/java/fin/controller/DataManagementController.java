@@ -55,13 +55,14 @@ public class DataManagementController {
     // Menu choice constants
     private static final int MENU_CHOICE_MANUAL_INVOICE = 1;
     private static final int MENU_CHOICE_GENERATE_INVOICE_PDF = 2;
-    private static final int MENU_CHOICE_JOURNAL_ENTRY = 3;
-    private static final int MENU_CHOICE_TRANSACTION_CLASSIFICATION = 4;
-    private static final int MENU_CHOICE_TRANSACTION_CORRECTION = 5;
-    private static final int MENU_CHOICE_TRANSACTION_HISTORY = 6;
-    private static final int MENU_CHOICE_DATA_RESET = 7;
-    private static final int MENU_CHOICE_EXPORT_CSV = 8;
-    private static final int MENU_CHOICE_BACK = 9;
+    private static final int MENU_CHOICE_SYNC_INVOICE_JOURNAL = 3;
+    private static final int MENU_CHOICE_JOURNAL_ENTRY = 4;
+    private static final int MENU_CHOICE_TRANSACTION_CLASSIFICATION = 5;
+    private static final int MENU_CHOICE_TRANSACTION_CORRECTION = 6;
+    private static final int MENU_CHOICE_TRANSACTION_HISTORY = 7;
+    private static final int MENU_CHOICE_DATA_RESET = 8;
+    private static final int MENU_CHOICE_EXPORT_CSV = 9;
+    private static final int MENU_CHOICE_BACK = 10;
     
     // Transaction classification menu choices
     private static final int CLASSIFICATION_CHOICE_INTERACTIVE = 1;
@@ -158,6 +159,9 @@ public class DataManagementController {
                         break;
                     case MENU_CHOICE_GENERATE_INVOICE_PDF:
                         handleInvoicePdfGeneration();
+                        break;
+                    case MENU_CHOICE_SYNC_INVOICE_JOURNAL:
+                        handleSyncInvoiceJournalEntries();
                         break;
                     case MENU_CHOICE_JOURNAL_ENTRY:
                         handleJournalEntryCreation();
@@ -261,6 +265,37 @@ public class DataManagementController {
             outputFormatter.printError(e.getMessage());
         } catch (Exception e) {
             outputFormatter.printError("Error generating invoice PDF: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Handles syncing journal entries for existing invoices.
+     * Scans all manual invoices and creates journal entries for those without them.
+     */
+    public void handleSyncInvoiceJournalEntries() {
+        outputFormatter.printHeader("Sync Invoice Journal Entries");
+        
+        try {
+            applicationState.requireCompany();
+            
+            outputFormatter.printInfo("Scanning invoices without journal entries...");
+            
+            int syncedCount = dataManagementService.syncInvoiceJournalEntries(
+                applicationState.getCurrentCompany().getId()
+            );
+            
+            if (syncedCount > 0) {
+                outputFormatter.printSuccess(
+                    String.format("Successfully synced %d invoice(s) to journal entries", syncedCount)
+                );
+            } else {
+                outputFormatter.printInfo("All invoices already have journal entries");
+            }
+            
+        } catch (IllegalStateException e) {
+            outputFormatter.printError(e.getMessage());
+        } catch (Exception e) {
+            outputFormatter.printError("Error syncing invoice journal entries: " + e.getMessage());
         }
     }
     
