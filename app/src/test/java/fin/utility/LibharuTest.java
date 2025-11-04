@@ -24,9 +24,10 @@
  * limitations under the License.
  */
 
-package fin.service;
+package fin.utility;
 
 import com.sun.jna.Pointer;
+import fin.util.Libharu;
 
 /**
  * Test class for libharu integration

@@ -27,6 +27,7 @@
 package fin.service;
 
 import fin.config.DatabaseConfig;
+import fin.util.Libharu;
 import com.sun.jna.Pointer;
 
 import java.io.IOException;
