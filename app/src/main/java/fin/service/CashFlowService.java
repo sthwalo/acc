@@ -158,7 +158,8 @@ public class CashFlowService {
             stmt.setInt(2, fiscalPeriodId);
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
-                return rs.getBigDecimal("balance");
+                BigDecimal balance = rs.getBigDecimal("balance");
+                return balance != null ? balance : BigDecimal.ZERO;
             }
         }
         return BigDecimal.ZERO;
@@ -313,14 +314,17 @@ public class CashFlowService {
         
         BigDecimal calculatedEndingBalance = openingCashBalance.add(netCashChange);
         report.append(String.format("%-45s %-15s%n", "Cash at End of Period (calculated)", formatCurrency(calculatedEndingBalance)));
-        report.append(String.format("%-45s %-15s%n", "Cash at End of Period (actual)", formatCurrency(actualEndingBalance)));
+        
+        // Handle null actualEndingBalance
+        BigDecimal safeActualBalance = actualEndingBalance != null ? actualEndingBalance : BigDecimal.ZERO;
+        report.append(String.format("%-45s %-15s%n", "Cash at End of Period (actual)", formatCurrency(safeActualBalance)));
         
         // Reconciliation check
-        BigDecimal difference = actualEndingBalance.subtract(calculatedEndingBalance);
+        BigDecimal difference = safeActualBalance.subtract(calculatedEndingBalance);
         if (difference.abs().compareTo(new BigDecimal("0.01")) > 0) {
-            report.append(String.format("%-45s %-15s%n", "⚠️ Reconciliation Difference", formatCurrency(difference)));
+            report.append(String.format("%-45s %-15s%n", "WARNING: Reconciliation Difference", formatCurrency(difference)));
         } else {
-            report.append("✅ Cash Flow Reconciled\n");
+            report.append("[RECONCILED] Cash Flow Statement\n");
         }
         report.append("\n");
 
