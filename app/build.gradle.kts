@@ -50,19 +50,18 @@ dependencies {
     implementation(libs.guava)
     
     // Database drivers
-    implementation("org.postgresql:postgresql:42.7.3")  // PostgreSQL driver
+    implementation("org.postgresql:postgresql:42.7.4")  // PostgreSQL driver (PostgreSQL 17 compatible)
     implementation("com.zaxxer:HikariCP:5.0.1")         // Connection pooling
     
-    // PDF libraries
-    implementation("org.apache.pdfbox:pdfbox:3.0.0")  // Latest stable version
+    // PDF libraries - OPEN SOURCE ONLY (no iText due to commercial licensing)
+    implementation("org.apache.pdfbox:pdfbox:3.0.0")  // Latest stable version - for PDF reading/text extraction
     implementation("org.apache.pdfbox:fontbox:3.0.0")
     implementation("org.apache.pdfbox:xmpbox:3.0.0")
     implementation("org.apache.pdfbox:preflight:3.0.0")
     implementation("org.bouncycastle:bcprov-jdk15on:1.70")
     implementation("org.bouncycastle:bcmail-jdk15on:1.70")
-    implementation("com.itextpdf:itextpdf:5.5.13.3")
     
-    // JNA for Libharu PDF library
+    // JNA for Libharu PDF library - for PDF generation (payslips, reports, invoices)
     implementation("net.java.dev.jna:jna:5.13.0")
     
     // JavaMail API for email functionality
@@ -96,7 +95,7 @@ spotbugs {
 // Apply a specific Java toolchain to ease working on different environments.
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
+        languageVersion = JavaLanguageVersion.of(17)
     }
 }
 
@@ -107,6 +106,19 @@ application {
 
 // Configure the run task to pass system properties
 tasks.named<JavaExec>("run") {
+    jvmArgs(
+        "-Xmx24g",           // Increase max heap to 24GB
+        "-Xms4g",            // Start with 4GB
+        "-XX:MaxMetaspaceSize=2g",
+        "-XX:+UseG1GC",
+        "-XX:G1HeapRegionSize=32m",
+        "-XX:MaxGCPauseMillis=200",
+        "-XX:+UseStringDeduplication",
+        "-XX:+HeapDumpOnOutOfMemoryError",
+        "-XX:HeapDumpPath=/tmp/fin_heap_dump.hprof",
+        "-verbose:gc",
+        "-Djna.library.path=/opt/homebrew/lib:/usr/local/lib"  // libharu for PDF generation
+    )
     systemProperties = System.getProperties()
         .filter { it.key is String }
         .mapKeys { it.key as String }

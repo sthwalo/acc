@@ -87,8 +87,8 @@ Bank PDFs → Text Extraction → Transaction Parsing → Classification → Jou
 ## 🚀 Quick Start
 
 ### **Prerequisites**
-- Java 17+
-- PostgreSQL 12+ (configured and running)
+- Java 17+ (see [Java Version Management Guide](docs/development/JAVA_VERSION_MANAGEMENT.md) for setup)
+- PostgreSQL 17+ (configured and running)
 - Environment variables set (see `.env`)
 
 ### **1. REST API Server Mode (Recommended)**
@@ -305,7 +305,7 @@ Detailed documentation is available in the `docs` directory:
 ## Requirements
 
 - **Java 17+** (OpenJDK or Oracle JDK)
-- **PostgreSQL 12+** (configured and running)
+- **PostgreSQL 17+** (configured and running)
 - **Environment variables** (see `.env` template)
 
 ## ⚖️ License

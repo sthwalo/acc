@@ -470,6 +470,7 @@ psql -U your_username -d drimacc_db -c "SELECT COUNT(*) FROM companies;"
 **Primary:**
 - [development/README.md](development/README.md) - Developer hub
 - [development/QUICK_START.md](development/QUICK_START.md) - Quick commands
+- [development/JAVA_VERSION_MANAGEMENT.md](development/JAVA_VERSION_MANAGEMENT.md) - Java 17 setup and troubleshooting
 - [development/REFACTORING_SUMMARY.md](development/REFACTORING_SUMMARY.md) - Phases 2-7 summary
 
 **Code Quality:**
