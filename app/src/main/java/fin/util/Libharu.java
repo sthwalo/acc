@@ -24,64 +24,62 @@
  * limitations under the License.
  */
 
+
 package fin.util;
 
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.pdmodel.PDPage;
-import org.apache.pdfbox.pdmodel.PDPageContentStream;
-import java.io.IOException;
+import com.sun.jna.Library;
+import com.sun.jna.Native;
+import com.sun.jna.Pointer;
 
 /**
- * Utility class for creating professional PDFs using libharu-inspired drawing techniques
- * Provides high-level PDF creation methods with advanced drawing capabilities
+ * JNA binding for libharu PDF library
+ * Provides Java access to libharu's native C functions for manual PDF generation
  */
-public class Libharu {
+public interface Libharu extends Library {
+    // Load the library explicitly from the Homebrew path
+    Libharu INSTANCE = (Libharu) Native.load("/opt/homebrew/lib/libhpdf.dylib", Libharu.class);
 
-    /**
-     * Create a professional PDF using a drawing callback
-     * @param outputPath Path where the PDF should be saved
-     * @param callback Callback that performs the actual drawing
-     * @param width Page width in points
-     * @param height Page height in points
-     * @throws IOException If PDF creation fails
-     */
-    public static void createProfessionalPdf(String outputPath, LibharuDrawingCallback callback,
-                                           float width, float height) throws IOException {
-        PDDocument document = new PDDocument();
+    // PDF document creation and management
+    Pointer HPDF_New(Pointer errorHandler, Pointer userData);
+    void HPDF_Free(Pointer pdf);
 
-        try {
-            // Create a new page
-            PDPage page = new PDPage();
-            document.addPage(page);
+    // Page management
+    Pointer HPDF_AddPage(Pointer pdf);
+    void HPDF_Page_SetSize(Pointer page, int size, int direction);
 
-            // Create content stream for drawing
-            PDPageContentStream contentStream = new PDPageContentStream(document, page);
+    // Font management
+    Pointer HPDF_GetFont(Pointer pdf, String fontName, String encodingName);
+    void HPDF_Page_SetFontAndSize(Pointer page, Pointer font, float size);
 
-            try {
-                // Call the callback to perform custom drawing
-                callback.draw(contentStream, document);
-            } finally {
-                // Always close the content stream
-                contentStream.close();
-            }
+    // Text drawing
+    void HPDF_Page_BeginText(Pointer page);
+    void HPDF_Page_TextOut(Pointer page, float x, float y, String text);
+    void HPDF_Page_EndText(Pointer page);
 
-            // Save the document
-            document.save(outputPath);
+    // Drawing operations
+    void HPDF_Page_MoveTo(Pointer page, float x, float y);
+    void HPDF_Page_LineTo(Pointer page, float x, float y);
+    void HPDF_Page_Rectangle(Pointer page, float x, float y, float width, float height);
+    void HPDF_Page_Stroke(Pointer page);
+    void HPDF_Page_Fill(Pointer page);
+    void HPDF_Page_SetLineWidth(Pointer page, float width);
 
-        } finally {
-            // Always close the document
-            document.close();
-        }
-    }
+    // Colors
+    void HPDF_Page_SetRGBFill(Pointer page, float r, float g, float b);
+    void HPDF_Page_SetRGBStroke(Pointer page, float r, float g, float b);
 
-    /**
-     * Create a professional PDF with default A4 dimensions
-     * @param outputPath Path where the PDF should be saved
-     * @param callback Callback that performs the actual drawing
-     * @throws IOException If PDF creation fails
-     */
-    public static void createProfessionalPdf(String outputPath, LibharuDrawingCallback callback) throws IOException {
-        // Default A4 dimensions: 595.28 x 841.89 points
-        createProfessionalPdf(outputPath, callback, 595.28f, 841.89f);
-    }
+    // Image handling
+    Pointer HPDF_LoadPngImageFromFile(Pointer pdf, String filename);
+    void HPDF_Page_DrawImage(Pointer page, Pointer image, float x, float y, float width, float height);
+
+    // Text measurement
+    float HPDF_Page_TextWidth(Pointer page, String text);
+
+    // Saving
+    int HPDF_SaveToFile(Pointer pdf, String filename);
+
+    // Constants
+    public static final int HPDF_PAGE_SIZE_A4 = 0;
+    public static final int HPDF_PAGE_PORTRAIT = 0;
+    public static final int HPDF_PAGE_LANDSCAPE = 1;
 }

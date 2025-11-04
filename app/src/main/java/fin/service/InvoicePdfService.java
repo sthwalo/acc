@@ -25,12 +25,11 @@
  */
 package fin.service;
 
-import com.itextpdf.text.*;
-import com.itextpdf.text.pdf.*;
+import com.sun.jna.Pointer;
 import fin.model.Company;
 import fin.model.FiscalPeriod;
+import fin.util.Libharu;
 
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.file.Files;
@@ -43,26 +42,38 @@ import java.time.format.DateTimeFormatter;
 /**
  * Service for generating professional PDF invoices from manual invoice data
  * Features: Beautiful layout, conditional VAT, banking details
- * Now uses centralized PdfBrandingService for consistent footer and copyright
+ * Uses libharu (HPDF) for PDF generation
  */
 public class InvoicePdfService {
 
-    private static final Font COMPANY_NAME_FONT = new Font(Font.FontFamily.HELVETICA, 20, Font.BOLD, BaseColor.DARK_GRAY);
-    private static final Font HEADER_FONT = new Font(Font.FontFamily.HELVETICA, 12, Font.BOLD);
-    private static final Font NORMAL_FONT = new Font(Font.FontFamily.HELVETICA, 10, Font.NORMAL);
-    private static final Font TITLE_FONT = new Font(Font.FontFamily.HELVETICA, 18, Font.BOLD, BaseColor.WHITE);
-    private static final Font SMALL_FONT = new Font(Font.FontFamily.HELVETICA, 9, Font.NORMAL);
+    // Page dimensions
+    private static final float PAGE_WIDTH_A4 = 595.28f;
+    private static final float PAGE_HEIGHT_A4 = 841.89f;
     
-    private static final BaseColor PRIMARY_COLOR = new BaseColor(51, 102, 153); // Professional blue
-    private static final BaseColor SECONDARY_COLOR = new BaseColor(240, 240, 240); // Light gray
-    private static final BaseColor BORDER_COLOR = new BaseColor(220, 220, 220);
+    // Font sizes
+    private static final float COMPANY_NAME_SIZE = 20f;
+    private static final float HEADER_SIZE = 12f;
+    private static final float NORMAL_SIZE = 10f;
+    private static final float TITLE_SIZE = 18f;
+    private static final float SMALL_SIZE = 9f;
+    
+    // Colors (RGB 0-1 range)
+    private static final float[] PRIMARY_COLOR = {51/255f, 102/255f, 153/255f}; // Professional blue
+    private static final float[] SECONDARY_COLOR = {240/255f, 240/255f, 240/255f}; // Light gray
+    private static final float[] BORDER_COLOR = {220/255f, 220/255f, 220/255f};
+    private static final float[] WHITE_COLOR = {1.0f, 1.0f, 1.0f};
+    private static final float[] DARK_GRAY = {0.3f, 0.3f, 0.3f};
+
+    // Margins
+    private static final float MARGIN_LEFT = 50f;
+    private static final float MARGIN_RIGHT = 50f;
+    private static final float MARGIN_TOP = 50f;
+    private static final float MARGIN_BOTTOM = 50f;
 
     private final String dbUrl;
-    private final PdfBrandingService brandingService;
 
     public InvoicePdfService(String dbUrl) {
         this.dbUrl = dbUrl;
-        this.brandingService = new PdfBrandingService();
     }
 
     /**
@@ -73,7 +84,7 @@ public class InvoicePdfService {
      * @param fiscalPeriod The fiscal period information
      * @return Path to the generated PDF file
      */
-    public String generateInvoicePdf(Long invoiceId, Company company, FiscalPeriod fiscalPeriod) throws SQLException, IOException, DocumentException {
+    public String generateInvoicePdf(Long invoiceId, Company company, FiscalPeriod fiscalPeriod) throws SQLException, IOException {
         // Fetch invoice data from database
         InvoiceData invoiceData = fetchInvoiceData(invoiceId);
 
@@ -81,8 +92,7 @@ public class InvoicePdfService {
             throw new IllegalArgumentException("Invoice not found: " + invoiceId);
         }
 
-        // Create PDF document
-        Document document = new Document(PageSize.A4, 50, 50, 50, 50);
+        // Create PDF document using libharu
         String fileName = String.format("Invoice_%s.pdf", invoiceData.invoiceNumber);
         String outputPath = "exports/" + fileName;
 
@@ -92,30 +102,57 @@ public class InvoicePdfService {
             Files.createDirectories(exportsDir);
         }
 
-        PdfWriter.getInstance(document, new FileOutputStream(outputPath));
-        document.open();
-
+        Libharu hpdf = Libharu.INSTANCE;
+        Pointer pdf = hpdf.HPDF_New(null, null);
+        
         try {
-            // Add company header
-            addCompanyHeader(document, company);
+            Pointer page = hpdf.HPDF_AddPage(pdf);
+            Pointer helveticaFont = hpdf.HPDF_GetFont(pdf, "Helvetica", null);
+            Pointer helveticaBoldFont = hpdf.HPDF_GetFont(pdf, "Helvetica-Bold", null);
+            
+            // Load company logo if available
+            Pointer logo = loadCompanyLogo(pdf, company);
+
+            float currentY = PAGE_HEIGHT_A4 - MARGIN_TOP;
+
+            // Add company header with logo
+            currentY = addCompanyHeader(page, company, logo, helveticaBoldFont, helveticaFont, currentY);
 
             // Add invoice details
-            addInvoiceDetails(document, invoiceData, fiscalPeriod);
+            currentY = addInvoiceDetails(page, invoiceData, fiscalPeriod, helveticaBoldFont, helveticaFont, currentY);
 
             // Add line items
-            addInvoiceItems(document, invoiceData);
+            currentY = addInvoiceItems(page, invoiceData, helveticaBoldFont, helveticaFont, currentY);
 
             // Add totals (with conditional VAT based on company registration)
-            addInvoiceTotals(document, invoiceData, company);
+            currentY = addInvoiceTotals(page, invoiceData, company, helveticaBoldFont, helveticaFont, currentY);
 
             // Add footer (with banking details)
-            addInvoiceFooter(document, company);
+            addInvoiceFooter(page, company, helveticaBoldFont, helveticaFont, currentY);
+
+            // Save the PDF
+            hpdf.HPDF_SaveToFile(pdf, outputPath);
 
         } finally {
-            document.close();
+            hpdf.HPDF_Free(pdf);
         }
 
         return outputPath;
+    }
+
+    private Pointer loadCompanyLogo(Pointer pdf, Company company) {
+        if (company.getLogoPath() != null && !company.getLogoPath().isEmpty()) {
+            try {
+                Pointer logo = Libharu.INSTANCE.HPDF_LoadPngImageFromFile(pdf, company.getLogoPath());
+                if (logo != null) {
+                    System.out.println("✅ Company logo loaded successfully");
+                    return logo;
+                }
+            } catch (Exception e) {
+                System.err.println("⚠️ Failed to load company logo: " + e.getMessage());
+            }
+        }
+        return null;
     }
 
     private InvoiceData fetchInvoiceData(Long invoiceId) throws SQLException {
@@ -149,273 +186,388 @@ public class InvoicePdfService {
         return null;
     }
 
-    private void addCompanyHeader(Document document, Company company) throws DocumentException, IOException {
-        // Create header table with 2 columns (logo | company info)
-        PdfPTable headerTable = new PdfPTable(2);
-        headerTable.setWidthPercentage(100);
-        headerTable.setWidths(new float[]{1, 3}); // Logo column smaller than info column
-        headerTable.setSpacingAfter(20);
+    private float addCompanyHeader(Pointer page, Company company, Pointer logo, Pointer boldFont, Pointer normalFont, float yPos) {
+        Libharu hpdf = Libharu.INSTANCE;
         
-        // Left cell: Company logo (if available)
-        PdfPCell logoCell = new PdfPCell();
-        logoCell.setBorder(Rectangle.NO_BORDER);
-        logoCell.setPadding(10);
-        logoCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        // Company info box with gray background
+        float boxX = MARGIN_LEFT + 120; // Leave space for logo
+        float boxY = yPos - 100;
+        float boxWidth = PAGE_WIDTH_A4 - MARGIN_LEFT - MARGIN_RIGHT - 120;
+        float boxHeight = 100;
         
-        if (company.getLogoPath() != null && !company.getLogoPath().isEmpty()) {
-            try {
-                Path logoPath = Paths.get(company.getLogoPath());
-                if (Files.exists(logoPath)) {
-                    Image logo = Image.getInstance(company.getLogoPath());
-                    // Scale logo to fit nicely (max 80x80 pixels)
-                    logo.scaleToFit(80, 80);
-                    logo.setAlignment(Element.ALIGN_CENTER);
-                    logoCell.addElement(logo);
-                } else {
-                    // Logo file not found, add placeholder
-                    Paragraph placeholder = new Paragraph("[Logo]", SMALL_FONT);
-                    placeholder.setAlignment(Element.ALIGN_CENTER);
-                    logoCell.addElement(placeholder);
-                }
-            } catch (Exception e) {
-                // Error loading logo, add placeholder
-                Paragraph placeholder = new Paragraph("[Logo]", SMALL_FONT);
-                placeholder.setAlignment(Element.ALIGN_CENTER);
-                logoCell.addElement(placeholder);
-            }
+        // Draw gray background box
+        hpdf.HPDF_Page_SetRGBFill(page, SECONDARY_COLOR[0], SECONDARY_COLOR[1], SECONDARY_COLOR[2]);
+        hpdf.HPDF_Page_Rectangle(page, boxX, boxY, boxWidth, boxHeight);
+        hpdf.HPDF_Page_Fill(page);
+        
+        // Draw company logo if available
+        if (logo != null) {
+            float logoWidth = 100;
+            float logoHeight = 90;
+            float logoX = MARGIN_LEFT + 10;
+            float logoY = boxY + 5;
+            hpdf.HPDF_Page_DrawImage(page, logo, logoX, logoY, logoWidth, logoHeight);
         } else {
-            // No logo configured
-            logoCell.addElement(new Paragraph("", SMALL_FONT));
+            // Logo placeholder text (if no logo)
+            hpdf.HPDF_Page_BeginText(page);
+            hpdf.HPDF_Page_SetFontAndSize(page, normalFont, SMALL_SIZE);
+            hpdf.HPDF_Page_TextOut(page, MARGIN_LEFT + 30, boxY + 40, "[Logo]");
+            hpdf.HPDF_Page_EndText(page);
         }
         
-        headerTable.addCell(logoCell);
+        // Company name (large, bold, dark gray)
+        hpdf.HPDF_Page_BeginText(page);
+        hpdf.HPDF_Page_SetRGBFill(page, DARK_GRAY[0], DARK_GRAY[1], DARK_GRAY[2]);
+        hpdf.HPDF_Page_SetFontAndSize(page, boldFont, COMPANY_NAME_SIZE);
+        hpdf.HPDF_Page_TextOut(page, boxX + 10, boxY + boxHeight - 30, company.getName());
+        hpdf.HPDF_Page_EndText(page);
         
-        // Right cell: Company name and details
-        PdfPCell infoCell = new PdfPCell();
-        infoCell.setBorder(Rectangle.NO_BORDER);
-        infoCell.setPadding(10);
-        infoCell.setBackgroundColor(SECONDARY_COLOR);
-        
-        // Company name with professional styling
-        Paragraph title = new Paragraph(company.getName(), COMPANY_NAME_FONT);
-        title.setAlignment(Element.ALIGN_LEFT);
-        title.setSpacingAfter(5);
-        infoCell.addElement(title);
-        
-        // Company details
-        Paragraph companyInfo = new Paragraph();
-        companyInfo.setFont(SMALL_FONT);
-        companyInfo.setAlignment(Element.ALIGN_LEFT);
+        // Company details (smaller font)
+        float detailY = boxY + boxHeight - 50;
+        hpdf.HPDF_Page_BeginText(page);
+        hpdf.HPDF_Page_SetFontAndSize(page, normalFont, SMALL_SIZE);
         
         if (company.getRegistrationNumber() != null && !company.getRegistrationNumber().isEmpty()) {
-            companyInfo.add("Registration Number: " + company.getRegistrationNumber() + "\n");
+            hpdf.HPDF_Page_TextOut(page, boxX + 10, detailY, "Registration Number: " + company.getRegistrationNumber());
+            detailY -= 12;
         }
         if (company.getTaxNumber() != null && !company.getTaxNumber().isEmpty()) {
-            companyInfo.add("Tax Number: " + company.getTaxNumber() + "\n");
+            hpdf.HPDF_Page_TextOut(page, boxX + 10, detailY, "Tax Number: " + company.getTaxNumber());
+            detailY -= 12;
         }
         if (company.getAddress() != null && !company.getAddress().isEmpty()) {
-            companyInfo.add("Address: " + company.getAddress() + "\n");
+            hpdf.HPDF_Page_TextOut(page, boxX + 10, detailY, "Address: " + company.getAddress());
+            detailY -= 12;
         }
-        companyInfo.add("Email: " + (company.getContactEmail() != null ? company.getContactEmail() : "N/A") + "\n");
-        companyInfo.add("Phone: " + (company.getContactPhone() != null ? company.getContactPhone() : "N/A"));
+        hpdf.HPDF_Page_TextOut(page, boxX + 10, detailY, "Email: " + (company.getContactEmail() != null ? company.getContactEmail() : "N/A"));
+        detailY -= 12;
+        hpdf.HPDF_Page_TextOut(page, boxX + 10, detailY, "Phone: " + (company.getContactPhone() != null ? company.getContactPhone() : "N/A"));
+        hpdf.HPDF_Page_EndText(page);
         
-        infoCell.addElement(companyInfo);
-        headerTable.addCell(infoCell);
-        
-        document.add(headerTable);
+        return boxY - 20; // Return new Y position with spacing
     }
 
-    private void addInvoiceDetails(Document document, InvoiceData invoiceData, FiscalPeriod fiscalPeriod) throws DocumentException {
-        // Invoice header with colored background
-        PdfPTable invoiceHeaderTable = new PdfPTable(1);
-        invoiceHeaderTable.setWidthPercentage(100);
-        invoiceHeaderTable.setSpacingAfter(20);
+    private float addInvoiceDetails(Pointer page, InvoiceData invoiceData, FiscalPeriod fiscalPeriod, Pointer boldFont, Pointer normalFont, float yPos) {
+        Libharu hpdf = Libharu.INSTANCE;
         
-        PdfPCell invoiceHeaderCell = new PdfPCell(new Phrase("INVOICE", TITLE_FONT));
-        invoiceHeaderCell.setBackgroundColor(PRIMARY_COLOR);
-        invoiceHeaderCell.setPadding(10);
-        invoiceHeaderCell.setHorizontalAlignment(Element.ALIGN_CENTER);
-        invoiceHeaderCell.setBorder(Rectangle.NO_BORDER);
-        invoiceHeaderTable.addCell(invoiceHeaderCell);
+        // "INVOICE" title with blue background
+        float titleWidth = PAGE_WIDTH_A4 - MARGIN_LEFT - MARGIN_RIGHT;
+        float titleHeight = 30;
+        float titleY = yPos - titleHeight;
         
-        document.add(invoiceHeaderTable);
-
-        // Invoice details table with borders
-        PdfPTable detailsTable = new PdfPTable(new float[]{3, 7});
-        detailsTable.setWidthPercentage(100);
-        detailsTable.setSpacingAfter(20);
-
+        // Draw blue background
+        hpdf.HPDF_Page_SetRGBFill(page, PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
+        hpdf.HPDF_Page_Rectangle(page, MARGIN_LEFT, titleY, titleWidth, titleHeight);
+        hpdf.HPDF_Page_Fill(page);
+        
+        // Draw "INVOICE" text in white
+        hpdf.HPDF_Page_BeginText(page);
+        hpdf.HPDF_Page_SetRGBFill(page, WHITE_COLOR[0], WHITE_COLOR[1], WHITE_COLOR[2]);
+        hpdf.HPDF_Page_SetFontAndSize(page, boldFont, TITLE_SIZE);
+        float textWidth = hpdf.HPDF_Page_TextWidth(page, "INVOICE");
+        hpdf.HPDF_Page_TextOut(page, (PAGE_WIDTH_A4 - textWidth) / 2, titleY + 8, "INVOICE");
+        hpdf.HPDF_Page_EndText(page);
+        
+        yPos = titleY - 20;
+        
+        // Invoice details table
+        float labelX = MARGIN_LEFT;
+        float valueX = MARGIN_LEFT + 150;
+        
+        hpdf.HPDF_Page_BeginText(page);
+        hpdf.HPDF_Page_SetRGBFill(page, 0, 0, 0);
+        
         // Invoice Number
-        detailsTable.addCell(createStyledCell("Invoice Number:", HEADER_FONT, true));
-        detailsTable.addCell(createStyledCell(invoiceData.invoiceNumber, NORMAL_FONT, false));
-
+        hpdf.HPDF_Page_SetFontAndSize(page, boldFont, HEADER_SIZE);
+        hpdf.HPDF_Page_TextOut(page, labelX, yPos, "Invoice Number:");
+        hpdf.HPDF_Page_SetFontAndSize(page, normalFont, NORMAL_SIZE);
+        hpdf.HPDF_Page_TextOut(page, valueX, yPos, invoiceData.invoiceNumber);
+        yPos -= 20;
+        
         // Invoice Date
-        detailsTable.addCell(createStyledCell("Invoice Date:", HEADER_FONT, true));
-        detailsTable.addCell(createStyledCell(invoiceData.invoiceDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")), NORMAL_FONT, false));
-
-        // Fiscal Period
-        detailsTable.addCell(createStyledCell("Period:", HEADER_FONT, true));
-        detailsTable.addCell(createStyledCell(fiscalPeriod.getPeriodName(), NORMAL_FONT, false));
-
-        document.add(detailsTable);
+        hpdf.HPDF_Page_SetFontAndSize(page, boldFont, HEADER_SIZE);
+        hpdf.HPDF_Page_TextOut(page, labelX, yPos, "Invoice Date:");
+        hpdf.HPDF_Page_SetFontAndSize(page, normalFont, NORMAL_SIZE);
+        hpdf.HPDF_Page_TextOut(page, valueX, yPos, invoiceData.invoiceDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
+        yPos -= 20;
+        
+        // Period
+        hpdf.HPDF_Page_SetFontAndSize(page, boldFont, HEADER_SIZE);
+        hpdf.HPDF_Page_TextOut(page, labelX, yPos, "Period:");
+        hpdf.HPDF_Page_SetFontAndSize(page, normalFont, NORMAL_SIZE);
+        hpdf.HPDF_Page_TextOut(page, valueX, yPos, fiscalPeriod.getPeriodName());
+        
+        hpdf.HPDF_Page_EndText(page);
+        
+        return yPos - 20;
     }
 
-    private void addInvoiceItems(Document document, InvoiceData invoiceData) throws DocumentException {
-        Paragraph itemsHeader = new Paragraph("Invoice Items", HEADER_FONT);
-        itemsHeader.setSpacingAfter(10);
-        document.add(itemsHeader);
-
-        // Items table
-        PdfPTable itemsTable = new PdfPTable(new float[]{4, 2, 2});
-        itemsTable.setWidthPercentage(100);
-        itemsTable.setSpacingAfter(20);
-
-        // Headers
-        itemsTable.addCell(createCell("Description", HEADER_FONT));
-        itemsTable.addCell(createCell("Quantity", HEADER_FONT));
-        itemsTable.addCell(createCell("Amount", HEADER_FONT));
-
-        // Item row
-        itemsTable.addCell(createCell(invoiceData.description, NORMAL_FONT));
-        itemsTable.addCell(createCell("1", NORMAL_FONT));
-        itemsTable.addCell(createCell("R " + invoiceData.amount.toString(), NORMAL_FONT));
-
-        document.add(itemsTable);
+    private float addInvoiceItems(Pointer page, InvoiceData invoiceData, Pointer boldFont, Pointer normalFont, float yPos) {
+        Libharu hpdf = Libharu.INSTANCE;
+        
+        // "Invoice Items" header
+        hpdf.HPDF_Page_BeginText(page);
+        hpdf.HPDF_Page_SetRGBFill(page, 0, 0, 0);
+        hpdf.HPDF_Page_SetFontAndSize(page, boldFont, HEADER_SIZE);
+        hpdf.HPDF_Page_TextOut(page, MARGIN_LEFT, yPos, "Invoice Items");
+        hpdf.HPDF_Page_EndText(page);
+        
+        yPos -= 20;
+        
+        // Table dimensions
+        float tableX = MARGIN_LEFT;
+        float tableWidth = PAGE_WIDTH_A4 - MARGIN_LEFT - MARGIN_RIGHT;
+        float col1Width = tableWidth * 0.5f;  // Description: 50%
+        float col2Width = tableWidth * 0.25f; // Quantity: 25%
+        float col3Width = tableWidth * 0.25f; // Amount: 25%
+        float rowHeight = 25;
+        
+        // Column X positions for alignment
+        float col1X = tableX + 5;
+        float col2X = tableX + col1Width + 5;
+        float col3RightEdge = tableX + col1Width + col2Width + col3Width - 5;
+        
+        // Draw table header row with gray background
+        hpdf.HPDF_Page_SetRGBFill(page, SECONDARY_COLOR[0], SECONDARY_COLOR[1], SECONDARY_COLOR[2]);
+        hpdf.HPDF_Page_Rectangle(page, tableX, yPos - rowHeight, tableWidth, rowHeight);
+        hpdf.HPDF_Page_Fill(page);
+        
+        // Header borders
+        hpdf.HPDF_Page_SetRGBStroke(page, BORDER_COLOR[0], BORDER_COLOR[1], BORDER_COLOR[2]);
+        hpdf.HPDF_Page_SetLineWidth(page, 1.0f);
+        hpdf.HPDF_Page_Rectangle(page, tableX, yPos - rowHeight, tableWidth, rowHeight);
+        hpdf.HPDF_Page_Stroke(page);
+        
+        // Header text
+        hpdf.HPDF_Page_BeginText(page);
+        hpdf.HPDF_Page_SetRGBFill(page, 0, 0, 0);
+        hpdf.HPDF_Page_SetFontAndSize(page, boldFont, NORMAL_SIZE);
+        hpdf.HPDF_Page_TextOut(page, col1X, yPos - 17, "Description");
+        hpdf.HPDF_Page_TextOut(page, col2X, yPos - 17, "Quantity");
+        // Right-align "Amount" header
+        String amountHeader = "Amount";
+        hpdf.HPDF_Page_SetFontAndSize(page, boldFont, NORMAL_SIZE);
+        float amountHeaderWidth = hpdf.HPDF_Page_TextWidth(page, amountHeader);
+        hpdf.HPDF_Page_TextOut(page, col3RightEdge - amountHeaderWidth, yPos - 17, amountHeader);
+        hpdf.HPDF_Page_EndText(page);
+        
+        yPos -= rowHeight;
+        
+        // Data row
+        hpdf.HPDF_Page_SetRGBStroke(page, BORDER_COLOR[0], BORDER_COLOR[1], BORDER_COLOR[2]);
+        hpdf.HPDF_Page_Rectangle(page, tableX, yPos - rowHeight, tableWidth, rowHeight);
+        hpdf.HPDF_Page_Stroke(page);
+        
+        hpdf.HPDF_Page_BeginText(page);
+        hpdf.HPDF_Page_SetFontAndSize(page, normalFont, NORMAL_SIZE);
+        hpdf.HPDF_Page_TextOut(page, col1X, yPos - 17, invoiceData.description);
+        hpdf.HPDF_Page_TextOut(page, col2X, yPos - 17, "1");
+        // Right-align amount value
+        String amountText = "R " + invoiceData.amount.toString();
+        float amountTextWidth = hpdf.HPDF_Page_TextWidth(page, amountText);
+        hpdf.HPDF_Page_TextOut(page, col3RightEdge - amountTextWidth, yPos - 17, amountText);
+        hpdf.HPDF_Page_EndText(page);
+        
+        // Draw vertical lines
+        hpdf.HPDF_Page_MoveTo(page, tableX + col1Width, yPos);
+        hpdf.HPDF_Page_LineTo(page, tableX + col1Width, yPos + rowHeight);
+        hpdf.HPDF_Page_Stroke(page);
+        
+        hpdf.HPDF_Page_MoveTo(page, tableX + col1Width + col2Width, yPos);
+        hpdf.HPDF_Page_LineTo(page, tableX + col1Width + col2Width, yPos + rowHeight);
+        hpdf.HPDF_Page_Stroke(page);
+        
+        return yPos - rowHeight - 20;
     }
 
-    private void addInvoiceTotals(Document document, InvoiceData invoiceData, Company company) throws DocumentException {
-        PdfPTable totalsTable = new PdfPTable(2);
-        totalsTable.setWidthPercentage(50);
-        totalsTable.setHorizontalAlignment(Element.ALIGN_RIGHT);
-        totalsTable.setSpacingAfter(30);
-
-        // Subtotal
-        PdfPCell subtotalLabel = createCell("Subtotal:", HEADER_FONT);
-        subtotalLabel.setBackgroundColor(SECONDARY_COLOR);
-        totalsTable.addCell(subtotalLabel);
-        totalsTable.addCell(createCell("R " + String.format("%.2f", invoiceData.amount), NORMAL_FONT));
-
-        // VAT (conditional based on company registration)
+    private float addInvoiceTotals(Pointer page, InvoiceData invoiceData, Company company, Pointer boldFont, Pointer normalFont, float yPos) {
+        Libharu hpdf = Libharu.INSTANCE;
+        
+        // Totals table on the right side
+        float tableWidth = 250;
+        float tableX = PAGE_WIDTH_A4 - MARGIN_RIGHT - tableWidth;
+        float col1Width = 150;
+        float col2Width = 100;
+        float rowHeight = 25;
+        
+        // Column positions
+        float labelX = tableX + 5;
+        float valueRightEdge = tableX + col1Width + col2Width - 5;
+        
+        // Subtotal row with gray background
+        hpdf.HPDF_Page_SetRGBFill(page, SECONDARY_COLOR[0], SECONDARY_COLOR[1], SECONDARY_COLOR[2]);
+        hpdf.HPDF_Page_Rectangle(page, tableX, yPos - rowHeight, col1Width, rowHeight);
+        hpdf.HPDF_Page_Fill(page);
+        
+        hpdf.HPDF_Page_SetRGBStroke(page, BORDER_COLOR[0], BORDER_COLOR[1], BORDER_COLOR[2]);
+        hpdf.HPDF_Page_SetLineWidth(page, 1.0f);
+        hpdf.HPDF_Page_Rectangle(page, tableX, yPos - rowHeight, tableWidth, rowHeight);
+        hpdf.HPDF_Page_Stroke(page);
+        
+        hpdf.HPDF_Page_BeginText(page);
+        hpdf.HPDF_Page_SetRGBFill(page, 0, 0, 0);
+        hpdf.HPDF_Page_SetFontAndSize(page, boldFont, NORMAL_SIZE);
+        hpdf.HPDF_Page_TextOut(page, labelX, yPos - 17, "Subtotal:");
+        hpdf.HPDF_Page_SetFontAndSize(page, normalFont, NORMAL_SIZE);
+        String subtotalText = "R " + String.format("%.2f", invoiceData.amount);
+        float subtotalWidth = hpdf.HPDF_Page_TextWidth(page, subtotalText);
+        hpdf.HPDF_Page_TextOut(page, valueRightEdge - subtotalWidth, yPos - 17, subtotalText);
+        hpdf.HPDF_Page_EndText(page);
+        
+        yPos -= rowHeight;
+        
+        // VAT row (conditional based on company registration)
         BigDecimal total;
+        BigDecimal vat;
+        String vatText;
         
         if (company.isVatRegistered()) {
-            BigDecimal vat = invoiceData.amount.multiply(new BigDecimal("0.15"));
-            PdfPCell vatLabel = createCell("VAT (15%):", HEADER_FONT);
-            vatLabel.setBackgroundColor(SECONDARY_COLOR);
-            totalsTable.addCell(vatLabel);
-            totalsTable.addCell(createCell("R " + String.format("%.2f", vat), NORMAL_FONT));
+            vat = invoiceData.amount.multiply(new BigDecimal("0.15"));
             total = invoiceData.amount.add(vat);
+            vatText = "VAT (15%):";
         } else {
-            PdfPCell vatLabel = createCell("VAT:", HEADER_FONT);
-            vatLabel.setBackgroundColor(SECONDARY_COLOR);
-            totalsTable.addCell(vatLabel);
-            totalsTable.addCell(createCell("R 0.00", NORMAL_FONT));
+            vat = BigDecimal.ZERO;
             total = invoiceData.amount;
+            vatText = "VAT:";
         }
-
-        // Total with colored background
-        PdfPCell totalLabel = createCell("Total:", HEADER_FONT);
-        totalLabel.setBackgroundColor(PRIMARY_COLOR);
-        Font whiteFont = new Font(Font.FontFamily.HELVETICA, 12, Font.BOLD, BaseColor.WHITE);
-        totalLabel.setPhrase(new Phrase("Total:", whiteFont));
-        totalsTable.addCell(totalLabel);
         
-        PdfPCell totalValue = createCell("R " + String.format("%.2f", total), HEADER_FONT);
-        totalValue.setBackgroundColor(PRIMARY_COLOR);
-        totalValue.setPhrase(new Phrase("R " + String.format("%.2f", total), whiteFont));
-        totalsTable.addCell(totalValue);
-
-        document.add(totalsTable);
+        // VAT row with gray background
+        hpdf.HPDF_Page_SetRGBFill(page, SECONDARY_COLOR[0], SECONDARY_COLOR[1], SECONDARY_COLOR[2]);
+        hpdf.HPDF_Page_Rectangle(page, tableX, yPos - rowHeight, col1Width, rowHeight);
+        hpdf.HPDF_Page_Fill(page);
+        
+        hpdf.HPDF_Page_SetRGBStroke(page, BORDER_COLOR[0], BORDER_COLOR[1], BORDER_COLOR[2]);
+        hpdf.HPDF_Page_Rectangle(page, tableX, yPos - rowHeight, tableWidth, rowHeight);
+        hpdf.HPDF_Page_Stroke(page);
+        
+        hpdf.HPDF_Page_BeginText(page);
+        hpdf.HPDF_Page_SetRGBFill(page, 0, 0, 0);
+        hpdf.HPDF_Page_SetFontAndSize(page, boldFont, NORMAL_SIZE);
+        hpdf.HPDF_Page_TextOut(page, labelX, yPos - 17, vatText);
+        hpdf.HPDF_Page_SetFontAndSize(page, normalFont, NORMAL_SIZE);
+        String vatAmountText = "R " + String.format("%.2f", vat);
+        float vatWidth = hpdf.HPDF_Page_TextWidth(page, vatAmountText);
+        hpdf.HPDF_Page_TextOut(page, valueRightEdge - vatWidth, yPos - 17, vatAmountText);
+        hpdf.HPDF_Page_EndText(page);
+        
+        yPos -= rowHeight;
+        
+        // Total row with blue background and white text
+        hpdf.HPDF_Page_SetRGBFill(page, PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
+        hpdf.HPDF_Page_Rectangle(page, tableX, yPos - rowHeight, tableWidth, rowHeight);
+        hpdf.HPDF_Page_Fill(page);
+        
+        hpdf.HPDF_Page_SetRGBStroke(page, BORDER_COLOR[0], BORDER_COLOR[1], BORDER_COLOR[2]);
+        hpdf.HPDF_Page_Rectangle(page, tableX, yPos - rowHeight, tableWidth, rowHeight);
+        hpdf.HPDF_Page_Stroke(page);
+        
+        hpdf.HPDF_Page_BeginText(page);
+        hpdf.HPDF_Page_SetRGBFill(page, WHITE_COLOR[0], WHITE_COLOR[1], WHITE_COLOR[2]);
+        hpdf.HPDF_Page_SetFontAndSize(page, boldFont, HEADER_SIZE);
+        hpdf.HPDF_Page_TextOut(page, labelX, yPos - 17, "Total:");
+        String totalText = "R " + String.format("%.2f", total);
+        float totalWidth = hpdf.HPDF_Page_TextWidth(page, totalText);
+        hpdf.HPDF_Page_TextOut(page, valueRightEdge - totalWidth, yPos - 17, totalText);
+        hpdf.HPDF_Page_EndText(page);
+        
+        return yPos - rowHeight - 30;
     }
 
-    private void addInvoiceFooter(Document document, Company company) throws DocumentException {
-        // Add spacing before footer
-        document.add(new Paragraph("\n"));
+    private void addInvoiceFooter(Pointer page, Company company, Pointer boldFont, Pointer normalFont, float yPos) {
+        Libharu hpdf = Libharu.INSTANCE;
         
         // Banking details section
         if (company.getBankName() != null && !company.getBankName().isEmpty()) {
-            PdfPTable bankingTable = new PdfPTable(1);
-            bankingTable.setWidthPercentage(100);
-            bankingTable.setSpacingBefore(20);
-            bankingTable.setSpacingAfter(10);
+            yPos -= 20; // Spacing
             
-            PdfPCell bankingHeader = new PdfPCell(new Phrase("BANKING DETAILS", HEADER_FONT));
-            bankingHeader.setBackgroundColor(SECONDARY_COLOR);
-            bankingHeader.setPadding(8);
-            bankingHeader.setHorizontalAlignment(Element.ALIGN_CENTER);
-            bankingHeader.setBorder(Rectangle.BOX);
-            bankingHeader.setBorderColor(BORDER_COLOR);
-            bankingTable.addCell(bankingHeader);
+            // "BANKING DETAILS" header with gray background
+            float headerHeight = 25;
+            float tableWidth = PAGE_WIDTH_A4 - MARGIN_LEFT - MARGIN_RIGHT;
             
-            // Banking info table
-            PdfPTable bankInfo = new PdfPTable(new float[]{3, 7});
-            bankInfo.setWidthPercentage(100);
+            hpdf.HPDF_Page_SetRGBFill(page, SECONDARY_COLOR[0], SECONDARY_COLOR[1], SECONDARY_COLOR[2]);
+            hpdf.HPDF_Page_Rectangle(page, MARGIN_LEFT, yPos - headerHeight, tableWidth, headerHeight);
+            hpdf.HPDF_Page_Fill(page);
+            
+            hpdf.HPDF_Page_SetRGBStroke(page, BORDER_COLOR[0], BORDER_COLOR[1], BORDER_COLOR[2]);
+            hpdf.HPDF_Page_SetLineWidth(page, 1.0f);
+            hpdf.HPDF_Page_Rectangle(page, MARGIN_LEFT, yPos - headerHeight, tableWidth, headerHeight);
+            hpdf.HPDF_Page_Stroke(page);
+            
+            hpdf.HPDF_Page_BeginText(page);
+            hpdf.HPDF_Page_SetRGBFill(page, 0, 0, 0);
+            hpdf.HPDF_Page_SetFontAndSize(page, boldFont, HEADER_SIZE);
+            float textWidth = hpdf.HPDF_Page_TextWidth(page, "BANKING DETAILS");
+            hpdf.HPDF_Page_TextOut(page, (PAGE_WIDTH_A4 - textWidth) / 2, yPos - 17, "BANKING DETAILS");
+            hpdf.HPDF_Page_EndText(page);
+            
+            yPos -= headerHeight;
+            
+            // Banking info details
+            float labelX = MARGIN_LEFT + 10;
+            float valueX = MARGIN_LEFT + 150;
+            float detailY = yPos - 20;
+            
+            hpdf.HPDF_Page_BeginText(page);
+            hpdf.HPDF_Page_SetRGBFill(page, 0, 0, 0);
             
             // Bank name
-            bankInfo.addCell(createStyledCell("Bank:", HEADER_FONT, true));
-            bankInfo.addCell(createStyledCell(company.getBankName(), NORMAL_FONT, false));
+            hpdf.HPDF_Page_SetFontAndSize(page, boldFont, NORMAL_SIZE);
+            hpdf.HPDF_Page_TextOut(page, labelX, detailY, "Bank:");
+            hpdf.HPDF_Page_SetFontAndSize(page, normalFont, NORMAL_SIZE);
+            hpdf.HPDF_Page_TextOut(page, valueX, detailY, company.getBankName());
+            detailY -= 15;
             
-            // Account holder (company name)
-            bankInfo.addCell(createStyledCell("Account Holder:", HEADER_FONT, true));
-            bankInfo.addCell(createStyledCell(company.getName(), NORMAL_FONT, false));
+            // Account holder
+            hpdf.HPDF_Page_SetFontAndSize(page, boldFont, NORMAL_SIZE);
+            hpdf.HPDF_Page_TextOut(page, labelX, detailY, "Account Holder:");
+            hpdf.HPDF_Page_SetFontAndSize(page, normalFont, NORMAL_SIZE);
+            hpdf.HPDF_Page_TextOut(page, valueX, detailY, company.getName());
+            detailY -= 15;
             
             // Account number
             if (company.getAccountNumber() != null && !company.getAccountNumber().isEmpty()) {
-                bankInfo.addCell(createStyledCell("Account Number:", HEADER_FONT, true));
-                bankInfo.addCell(createStyledCell(company.getAccountNumber(), NORMAL_FONT, false));
+                hpdf.HPDF_Page_SetFontAndSize(page, boldFont, NORMAL_SIZE);
+                hpdf.HPDF_Page_TextOut(page, labelX, detailY, "Account Number:");
+                hpdf.HPDF_Page_SetFontAndSize(page, normalFont, NORMAL_SIZE);
+                hpdf.HPDF_Page_TextOut(page, valueX, detailY, company.getAccountNumber());
+                detailY -= 15;
             }
             
             // Account type
             if (company.getAccountType() != null && !company.getAccountType().isEmpty()) {
-                bankInfo.addCell(createStyledCell("Account Type:", HEADER_FONT, true));
-                bankInfo.addCell(createStyledCell(company.getAccountType(), NORMAL_FONT, false));
+                hpdf.HPDF_Page_SetFontAndSize(page, boldFont, NORMAL_SIZE);
+                hpdf.HPDF_Page_TextOut(page, labelX, detailY, "Account Type:");
+                hpdf.HPDF_Page_SetFontAndSize(page, normalFont, NORMAL_SIZE);
+                hpdf.HPDF_Page_TextOut(page, valueX, detailY, company.getAccountType());
+                detailY -= 15;
             }
             
             // Branch code
             if (company.getBranchCode() != null && !company.getBranchCode().isEmpty()) {
-                bankInfo.addCell(createStyledCell("Branch Code:", HEADER_FONT, true));
-                bankInfo.addCell(createStyledCell(company.getBranchCode(), NORMAL_FONT, false));
+                hpdf.HPDF_Page_SetFontAndSize(page, boldFont, NORMAL_SIZE);
+                hpdf.HPDF_Page_TextOut(page, labelX, detailY, "Branch Code:");
+                hpdf.HPDF_Page_SetFontAndSize(page, normalFont, NORMAL_SIZE);
+                hpdf.HPDF_Page_TextOut(page, valueX, detailY, company.getBranchCode());
             }
             
-            PdfPCell bankInfoCell = new PdfPCell(bankInfo);
-            bankInfoCell.setBorder(Rectangle.BOX);
-            bankInfoCell.setBorderColor(BORDER_COLOR);
-            bankInfoCell.setPadding(5);
-            bankingTable.addCell(bankInfoCell);
+            hpdf.HPDF_Page_EndText(page);
             
-            document.add(bankingTable);
+            // Draw border around banking details
+            float bankingBoxHeight = yPos - detailY + 35;
+            hpdf.HPDF_Page_SetRGBStroke(page, BORDER_COLOR[0], BORDER_COLOR[1], BORDER_COLOR[2]);
+            hpdf.HPDF_Page_Rectangle(page, MARGIN_LEFT, detailY - 10, tableWidth, bankingBoxHeight);
+            hpdf.HPDF_Page_Stroke(page);
         }
         
-        // Use centralized branding service for footer and copyright
-        brandingService.addFullBranding(document, 1);
-    }
-
-    private PdfPCell createCell(String text, Font font) {
-        PdfPCell cell = new PdfPCell(new Phrase(text, font));
-        cell.setBorder(Rectangle.NO_BORDER);
-        cell.setPadding(5);
-        return cell;
-    }
-    
-    /**
-     * Creates a styled cell with optional background color
-     *
-     * @param text The text content
-     * @param font The font to use
-     * @param isLabel Whether this is a label (gets background color)
-     * @return Styled PdfPCell
-     */
-    private PdfPCell createStyledCell(String text, Font font, boolean isLabel) {
-        PdfPCell cell = new PdfPCell(new Phrase(text, font));
-        cell.setPadding(5);
-        cell.setBorder(Rectangle.BOX);
-        cell.setBorderColor(BORDER_COLOR);
-        
-        if (isLabel) {
-            cell.setBackgroundColor(SECONDARY_COLOR);
-        }
-        
-        return cell;
+        // Footer text at bottom of page
+        float footerY = MARGIN_BOTTOM + 20;
+        hpdf.HPDF_Page_BeginText(page);
+        hpdf.HPDF_Page_SetRGBFill(page, 0.5f, 0.5f, 0.5f);
+        hpdf.HPDF_Page_SetFontAndSize(page, normalFont, SMALL_SIZE);
+        String footerText = "Payment is due within 30 days. Thank you for your business.";
+        float footerWidth = hpdf.HPDF_Page_TextWidth(page, footerText);
+        hpdf.HPDF_Page_TextOut(page, (PAGE_WIDTH_A4 - footerWidth) / 2, footerY, footerText);
+        hpdf.HPDF_Page_EndText(page);
     }
 
     /**
