@@ -41,11 +41,6 @@ public class SARSTaxCalculator {
     // UIF Constants
     private static final double UIF_THRESHOLD = 17712.0;
     private static final double UIF_CAP = 177.12;
-    private static final double MIN_SALARY_RANGE = 5500.0;
-    private static final double MAX_SALARY_RANGE = 30000.0;
-    private static final double BASE_TAX_HIGHEST_BRACKET = 54481.0;
-    private static final double THRESHOLD_HIGHEST_BRACKET = 156328.0;
-    private static final double ADDITIONAL_TAX_RATE = 0.45;
     private static final double UIF_RATE = 0.01;
 
     // Regex group indices for tax bracket parsing
@@ -119,22 +114,18 @@ public class SARSTaxCalculator {
                     double upper1 = parseNumber(matcher.group(REGEX_GROUP_UPPER_1));
                     double tax1 = parseNumber(matcher.group(REGEX_GROUP_TAX_1));
                     
-                    // Validate first bracket is within R5,500-R30,000 range
-                    if (lower1 >= MIN_SALARY_RANGE && upper1 <= MAX_SALARY_RANGE) {
-                        taxBrackets.add(new TaxBracket(lower1, upper1, tax1));
-                        System.out.printf("✓ Added first bracket: R%.0f - R%.0f → Tax R%.0f%n", lower1, upper1, tax1);
-                    }
+                    // Add first bracket
+                    taxBrackets.add(new TaxBracket(lower1, upper1, tax1));
+                    System.out.printf("✓ Added first bracket: R%.0f - R%.0f → Tax R%.0f%n", lower1, upper1, tax1);
                     
                     // Parse second bracket
                     double lower2 = parseNumber(matcher.group(REGEX_GROUP_LOWER_2));
                     double upper2 = parseNumber(matcher.group(REGEX_GROUP_UPPER_2));
                     double tax2 = parseNumber(matcher.group(REGEX_GROUP_TAX_2));
                     
-                    // Validate second bracket is within R5,500-R30,000 range
-                    if (lower2 >= MIN_SALARY_RANGE && upper2 <= MAX_SALARY_RANGE) {
-                        taxBrackets.add(new TaxBracket(lower2, upper2, tax2));
-                        System.out.printf("✓ Added second bracket: R%.0f - R%.0f → Tax R%.0f%n", lower2, upper2, tax2);
-                    }
+                    // Add second bracket
+                    taxBrackets.add(new TaxBracket(lower2, upper2, tax2));
+                    System.out.printf("✓ Added second bracket: R%.0f - R%.0f → Tax R%.0f%n", lower2, upper2, tax2);
                     
                 } catch (Exception e) {
                     System.err.println("Error parsing line: " + line + " - " + e.getMessage());
@@ -149,7 +140,7 @@ public class SARSTaxCalculator {
         Set<String> seen = new HashSet<>();
         taxBrackets.removeIf(bracket -> !seen.add(bracket.lower + "-" + bracket.upper));
         
-        System.out.println("Final tax brackets loaded: " + taxBrackets.size() + " (filtered for R5,500-R30,000 range)");
+        System.out.println("Final tax brackets loaded: " + taxBrackets.size());
     }
 
     private double parseNumber(String numberStr) {
@@ -190,11 +181,7 @@ public class SARSTaxCalculator {
             return 0.0;
         }
         
-        // Check if salary is within our loaded range
-        if (grossSalary < MIN_SALARY_RANGE || grossSalary > MAX_SALARY_RANGE) {
-            throw new IllegalArgumentException("Salary R" + grossSalary + " is outside the supported range (R5,500-R30,000)");
-        }
-        
+        // Search for the exact bracket in our loaded tax table
         for (TaxBracket bracket : taxBrackets) {
             if (grossSalary >= bracket.lower && grossSalary <= bracket.upper) {
                 System.out.printf("✓ Found bracket: %s for gross R%.2f%n", bracket, grossSalary);
@@ -202,24 +189,26 @@ public class SARSTaxCalculator {
             }
         }
 
-        // If salary exceeds highest bracket, use the formula from page 15
-        if (!taxBrackets.isEmpty() && grossSalary > taxBrackets.get(taxBrackets.size()-1).upper) {
-            System.out.println("⚠ Salary exceeds table range, using 45% formula");
-            return calculateAboveTablePAYE(grossSalary);
+        // If no exact bracket found, use the closest bracket
+        if (!taxBrackets.isEmpty()) {
+            // If salary is above the highest bracket, use the highest bracket's tax
+            if (grossSalary > taxBrackets.get(taxBrackets.size()-1).upper) {
+                double highestTax = taxBrackets.get(taxBrackets.size()-1).tax;
+                System.out.printf("⚠ Salary R%.2f exceeds table range, using highest bracket tax: R%.2f%n", grossSalary, highestTax);
+                return highestTax;
+            }
+            
+            // If salary is below the lowest bracket, use zero
+            if (grossSalary < taxBrackets.get(0).lower) {
+                System.out.printf("✓ Salary R%.2f is below lowest bracket, no PAYE tax%n", grossSalary);
+                return 0.0;
+            }
         }
 
         throw new IllegalArgumentException("No tax bracket found for gross salary: R" + grossSalary);
     }
 
-    private double calculateAboveTablePAYE(double grossSalary) {
-        // Formula from page 15: Add base tax + 45% of excess over R156,328
-        double baseTax = BASE_TAX_HIGHEST_BRACKET; // Tax for highest bracket
-        double threshold = THRESHOLD_HIGHEST_BRACKET;
-        double excess = grossSalary - threshold;
-        double additionalTax = excess * ADDITIONAL_TAX_RATE;
 
-        return baseTax + additionalTax;
-    }
 
     public Map<String, Double> calculateNetPay(double grossSalary) {
         System.out.println("\n" + "=".repeat(HEADER_WIDTH));
