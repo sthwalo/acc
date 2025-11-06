@@ -180,17 +180,22 @@ jobs:
         TEST_DATABASE_PASSWORD: ${{ env.TEST_DATABASE_PASSWORD }}
 
     - name: 📊 Generate Test Report
-      run: ./gradlew testReport || true
+      run: |
+        echo "📊 Test reports should be generated automatically by test execution..."
+        echo "📊 Checking if test reports exist..."
+        ls -la app/build/reports/tests/test/ || echo "⚠️ Test reports directory not found"
 
-    - name: � Upload Test Report for Debugging
+    - name: 📋 Upload Test Report for Debugging
       uses: actions/upload-artifact@v4
       if: always()
       with:
         name: test-report-${{ matrix.test_profile }}
-        path: app/build/reports/tests/test
+        path: |
+          app/build/reports/tests/test/
+          app/build/test-results/test/
         retention-days: 14
 
-    - name: �📈 Upload Test Results
+    - name: � Upload Test Results
       uses: actions/upload-artifact@v4
       if: always()
       with:
