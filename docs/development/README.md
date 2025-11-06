@@ -20,9 +20,9 @@ java --version
 ./gradlew clean build
 
 # Run application modes
-./gradlew run                           # Console application
-./gradlew run --args="api"              # REST API server
-./gradlew run --args="--batch [cmd]"    # Batch processing
+java -jar app/build/libs/app.jar        # Console application
+java -jar app/build/libs/app.jar api    # REST API server
+java -jar app/build/libs/app.jar --batch [cmd]  # Batch processing
 ```
 
 ### 3. Essential Resources
@@ -92,8 +92,8 @@ git pull origin main
 ./gradlew test
 
 # 5. Start development server (choose mode)
-./gradlew run                    # Console mode for testing
-./gradlew run --args="api"       # API mode for frontend dev
+java -jar app/build/libs/app.jar        # Console mode for testing
+java -jar app/build/libs/app.jar api    # API mode for frontend dev
 ```
 
 ### Code Quality Standards

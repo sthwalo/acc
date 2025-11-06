@@ -18,7 +18,7 @@ echo ""
 
 # Run the application in console mode to test depreciation functionality
 echo "To test the depreciation functionality interactively, run:"
-echo "  ./gradlew run"
+echo "  java -jar app/build/libs/app.jar"
 echo ""
 echo "Then follow these steps:"
 echo "1. Select a company (e.g., Xinghizana Group)"
@@ -35,7 +35,7 @@ echo ""
 
 # Don't run the application - just show instructions
 # cd /Users/sthwalonyoni/FIN
-# ./gradlew run
+# java -jar app/build/libs/app.jar
 
 echo ""
 echo "=== Test Complete ==="

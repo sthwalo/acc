@@ -29,9 +29,9 @@
 - ✅ **Project Compatible**: Matches requirements in `build.gradle.kts`
 
 ### Development Workflow Ready
-- ✅ **Console Application**: `./gradlew run`
-- ✅ **API Server**: `./gradlew run --args="api"`
-- ✅ **Batch Processing**: `./gradlew run --args="--batch [command]"`
+- ✅ **Console Application**: `java -jar app/build/libs/app.jar`
+- ✅ **API Server**: `java -jar app/build/libs/app.jar api`
+- ✅ **Batch Processing**: `java -jar app/build/libs/app.jar --batch [command]`
 
 ## 📚 Documentation Structure
 

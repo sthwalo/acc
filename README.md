@@ -95,7 +95,7 @@ Bank PDFs → Text Extraction → Transaction Parsing → Classification → Jou
 ```bash
 cd /path/to/fin-project
 source .env
-./gradlew run --args="api"
+java -jar app/build/libs/app.jar api
 ```
 **API Endpoints:**
 - Health: `http://localhost:8080/api/v1/health`
@@ -107,7 +107,7 @@ source .env
 ```bash
 cd /path/to/fin-project
 source .env
-./gradlew run
+java -jar app/build/libs/app.jar
 ```
 **Features:**
 - Interactive menu system
@@ -121,7 +121,7 @@ source .env
 ```bash
 cd /path/to/fin-project
 source .env
-./gradlew run --args="--batch [command]"
+java -jar app/build/libs/app.jar --batch [command]
 ```
 **Batch Commands:**
 - Automated transaction processing
@@ -292,14 +292,11 @@ Detailed documentation is available in the `docs` directory:
 # Run tests
 ./gradlew test
 
-# Create executable JAR
-./gradlew fatJar
-
 # Run API server
-./gradlew run --args="api"
+java -jar app/build/libs/app.jar api
 
 # Run console application
-./gradlew run
+java -jar app/build/libs/app.jar
 ```
 
 ## Requirements

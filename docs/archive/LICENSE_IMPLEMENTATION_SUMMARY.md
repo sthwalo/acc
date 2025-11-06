@@ -307,7 +307,7 @@ cd /Users/sthwalonyoni/FIN
 ### Test PdfBrandingService:
 ```bash
 # Generate an invoice
-./gradlew run
+java -jar app/build/libs/app.jar
 # Select: 6. Generate Reports → 12. Generate Invoice
 
 # Check generated PDF

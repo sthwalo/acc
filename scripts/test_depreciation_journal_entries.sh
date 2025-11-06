@@ -7,7 +7,7 @@ echo "Testing Depreciation Journal Entry Creation"
 echo "=========================================="
 
 # Create input for the application
-cat << 'EOF' | ./gradlew run --console=plain
+cat << 'EOF' | java -jar app/build/libs/app.jar --console=plain
 1
 Limelight Academy Institutions
 2

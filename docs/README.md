@@ -414,8 +414,8 @@ cp .env.example .env
 
 # 4. Run application (choose one mode)
 ./run.sh                           # Console application (interactive)
-./gradlew run --args="api"         # API server (http://localhost:8080/api/v1/)
-./gradlew run --args="--batch process-transactions"  # Batch mode
+java -jar app/build/libs/app.jar api         # API server (http://localhost:8080/api/v1/)
+java -jar app/build/libs/app.jar --batch process-transactions  # Batch mode
 ```
 
 ### First-Time Configuration
