@@ -168,12 +168,12 @@ jobs:
         TEST_DATABASE_USER: ${{ env.TEST_DATABASE_USER }}
         TEST_DATABASE_PASSWORD: ${{ env.TEST_DATABASE_PASSWORD }}
 
-    - name: 🔗 Run Integration Tests
+    - name: 🔗 Run Integration Tests (JAR-First)
       if: matrix.test_profile == 'integration'
       run: |
-        echo "🔗 Running integration tests..."
-        ./gradlew integrationTest --no-daemon --continue || echo "⚠️ No integration tests found or some tests failed"
-        echo "✅ Integration test phase completed"
+        echo "🔗 Running JAR-first integration tests..."
+        ./gradlew integrationTest --no-daemon --continue || echo "⚠️ Some integration tests failed - check JAR functionality"
+        echo "✅ JAR-first integration test phase completed"
       env:
         TEST_DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
         TEST_DATABASE_USER: ${{ env.TEST_DATABASE_USER }}
@@ -182,7 +182,15 @@ jobs:
     - name: 📊 Generate Test Report
       run: ./gradlew testReport || true
 
-    - name: 📈 Upload Test Results
+    - name: � Upload Test Report for Debugging
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-report-${{ matrix.test_profile }}
+        path: app/build/reports/tests/test
+        retention-days: 14
+
+    - name: �📈 Upload Test Results
       uses: actions/upload-artifact@v4
       if: always()
       with:

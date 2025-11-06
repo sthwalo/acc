@@ -1,7 +1,7 @@
 services:
   # PostgreSQL Database
   postgres:
-    image: postgres:17-alpine
+    image: postgres:17-alpine3.22
     container_name: fin-postgres
     environment:
       POSTGRES_DB: drimacc_db
