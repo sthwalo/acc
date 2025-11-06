@@ -52,6 +52,11 @@ public class DepreciationSchedule {
     private String createdBy;
     private LocalDateTime calculationDate;
 
+    // Journal entry integration fields
+    private Long journalEntryId;
+    private LocalDateTime postedAt;
+    private String postedBy;
+
     // Calculated fields
     private List<DepreciationYear> years;
     private BigDecimal totalDepreciation;
@@ -204,6 +209,30 @@ public class DepreciationSchedule {
         this.calculationDate = calculationDate;
     }
 
+    public Long getJournalEntryId() {
+        return journalEntryId;
+    }
+
+    public void setJournalEntryId(Long journalEntryId) {
+        this.journalEntryId = journalEntryId;
+    }
+
+    public LocalDateTime getPostedAt() {
+        return postedAt;
+    }
+
+    public void setPostedAt(LocalDateTime postedAt) {
+        this.postedAt = postedAt;
+    }
+
+    public String getPostedBy() {
+        return postedBy;
+    }
+
+    public void setPostedBy(String postedBy) {
+        this.postedBy = postedBy;
+    }
+
     // Calculated field getters
     public List<DepreciationYear> getYears() {
         return years != null ? Collections.unmodifiableList(years) : Collections.emptyList();
@@ -258,6 +287,11 @@ public class DepreciationSchedule {
         sb.append("Method: ").append(depreciationMethod).append("\n");
         sb.append("Total Depreciation: ").append(totalDepreciation).append("\n");
         sb.append("Final Book Value: ").append(finalBookValue).append("\n");
+        sb.append("Status: ").append(status).append("\n");
+        if (postedAt != null) {
+            sb.append("Posted At: ").append(postedAt).append("\n");
+            sb.append("Posted By: ").append(postedBy).append("\n");
+        }
         sb.append("Yearly Breakdown:\n");
 
         if (years != null) {
@@ -290,6 +324,9 @@ public class DepreciationSchedule {
         if (status != null ? !status.equals(that.status) : that.status != null) return false;
         if (createdBy != null ? !createdBy.equals(that.createdBy) : that.createdBy != null) return false;
         if (calculationDate != null ? !calculationDate.equals(that.calculationDate) : that.calculationDate != null) return false;
+        if (journalEntryId != null ? !journalEntryId.equals(that.journalEntryId) : that.journalEntryId != null) return false;
+        if (postedAt != null ? !postedAt.equals(that.postedAt) : that.postedAt != null) return false;
+        if (postedBy != null ? !postedBy.equals(that.postedBy) : that.postedBy != null) return false;
         if (years != null ? !years.equals(that.years) : that.years != null) return false;
         if (totalDepreciation != null ? !totalDepreciation.equals(that.totalDepreciation) : that.totalDepreciation != null)
             return false;
@@ -312,6 +349,9 @@ public class DepreciationSchedule {
         result = 31 * result + (status != null ? status.hashCode() : 0);
         result = 31 * result + (createdBy != null ? createdBy.hashCode() : 0);
         result = 31 * result + (calculationDate != null ? calculationDate.hashCode() : 0);
+        result = 31 * result + (journalEntryId != null ? journalEntryId.hashCode() : 0);
+        result = 31 * result + (postedAt != null ? postedAt.hashCode() : 0);
+        result = 31 * result + (postedBy != null ? postedBy.hashCode() : 0);
         result = 31 * result + (years != null ? years.hashCode() : 0);
         result = 31 * result + (totalDepreciation != null ? totalDepreciation.hashCode() : 0);
         result = 31 * result + (finalBookValue != null ? finalBookValue.hashCode() : 0);

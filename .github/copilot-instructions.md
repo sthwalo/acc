@@ -440,4 +440,26 @@ git push origin main
 
 **Quality Remediation**: SpotBugs warnings addressed with defensive copying patterns. EI_EXPOSE_REP fixes documented in task files.
 
+## Collaboration Protocol
+
+### ⚠️ CRITICAL COLLABORATION REQUIREMENTS
+
+**MANDATORY WORKFLOW**: We work together as a team. Do NOT jump into actions without explicit agreement.
+
+#### Question-Answering Protocol
+1. **When Asked a Question**: First analyze the question, provide observations and analysis of the provided information
+2. **Outline Approach**: Present your proposed solution or investigation plan clearly
+3. **Wait for Agreement**: Only proceed with implementation or further actions after explicit user confirmation
+4. **Collaborative Decision Making**: Consider user suggestions and feedback before taking any action
+
+#### Investigation vs Implementation
+- **Investigations Allowed**: Database queries, code analysis, file searches, and exploratory queries can be performed proactively to gather information
+- **Implementation Requires Agreement**: Code changes, database modifications, or system alterations must wait for explicit user approval
+- **No Direct Database CRUD**: Do not perform direct database operations (INSERT, UPDATE, DELETE). Instead, write application code that handles these tasks through proper service/repository patterns
+
+#### Communication Standards
+- **Clear Explanations**: Always explain WHAT you plan to do, WHY, and HOW before proceeding
+- **User Confirmation Required**: Wait for explicit statements like "yes, proceed" or "that approach looks good" before implementing
+- **Joint Problem Solving**: Work together to identify root causes and develop solutions
+
 When modifying financial processing logic, maintain the existing transaction flow and update relevant task documentation. The system processes real financial data - ensure accuracy over speed.

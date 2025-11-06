@@ -38,19 +38,21 @@ public class DepreciationRequest {
     private DepreciationMethod method;
     private BigDecimal dbFactor; // For declining balance method (typically 2.0 for double declining)
     private String convention; // "Half-Year", "Mid-Quarter", etc.
+    private java.time.LocalDate acquisitionDate; // For IAS 16 partial year calculations
 
     public DepreciationRequest() {
         // Default constructor
     }
 
     public DepreciationRequest(BigDecimal cost, BigDecimal salvageValue, int usefulLife,
-                             DepreciationMethod method, BigDecimal dbFactor, String convention) {
+                             DepreciationMethod method, BigDecimal dbFactor, String convention, java.time.LocalDate acquisitionDate) {
         this.cost = cost;
         this.salvageValue = salvageValue;
         this.usefulLife = usefulLife;
         this.method = method;
         this.dbFactor = dbFactor;
         this.convention = convention;
+        this.acquisitionDate = acquisitionDate;
     }
 
     public static class Builder {
@@ -60,6 +62,7 @@ public class DepreciationRequest {
         private DepreciationMethod method;
         private BigDecimal dbFactor = new BigDecimal("1.0");
         private String convention;
+        private java.time.LocalDate acquisitionDate;
 
         public Builder cost(BigDecimal cost) {
             this.cost = cost;
@@ -91,9 +94,14 @@ public class DepreciationRequest {
             return this;
         }
 
+        public Builder acquisitionDate(java.time.LocalDate acquisitionDate) {
+            this.acquisitionDate = acquisitionDate;
+            return this;
+        }
+
         public DepreciationRequest build() {
             validate();
-            return new DepreciationRequest(cost, salvageValue, usefulLife, method, dbFactor, convention);
+            return new DepreciationRequest(cost, salvageValue, usefulLife, method, dbFactor, convention, acquisitionDate);
         }
 
         private void validate() {
@@ -209,6 +217,19 @@ public class DepreciationRequest {
         return this;
     }
 
+    public java.time.LocalDate getAcquisitionDate() {
+        return acquisitionDate;
+    }
+
+    public void setAcquisitionDate(java.time.LocalDate acquisitionDate) {
+        this.acquisitionDate = acquisitionDate;
+    }
+
+    public DepreciationRequest acquisitionDate(java.time.LocalDate acquisitionDate) {
+        this.acquisitionDate = acquisitionDate;
+        return this;
+    }
+
     @Override
     public String toString() {
         return "DepreciationRequest{" +
@@ -218,6 +239,7 @@ public class DepreciationRequest {
                 ", method=" + method +
                 ", dbFactor=" + dbFactor +
                 ", convention='" + convention + '\'' +
+                ", acquisitionDate=" + acquisitionDate +
                 '}';
     }
 
@@ -233,7 +255,8 @@ public class DepreciationRequest {
         if (salvageValue != null ? !salvageValue.equals(that.salvageValue) : that.salvageValue != null) return false;
         if (method != that.method) return false;
         if (dbFactor != null ? !dbFactor.equals(that.dbFactor) : that.dbFactor != null) return false;
-        return convention != null ? convention.equals(that.convention) : that.convention == null;
+        if (convention != null ? !convention.equals(that.convention) : that.convention != null) return false;
+        return acquisitionDate != null ? acquisitionDate.equals(that.acquisitionDate) : that.acquisitionDate == null;
     }
 
     @Override
@@ -244,6 +267,7 @@ public class DepreciationRequest {
         result = 31 * result + (method != null ? method.hashCode() : 0);
         result = 31 * result + (dbFactor != null ? dbFactor.hashCode() : 0);
         result = 31 * result + (convention != null ? convention.hashCode() : 0);
+        result = 31 * result + (acquisitionDate != null ? acquisitionDate.hashCode() : 0);
         return result;
     }
 }
