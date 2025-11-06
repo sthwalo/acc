@@ -108,19 +108,19 @@ The development environment is fully configured for all operational modes:
 
 ### Console Application
 ```bash
-./gradlew run
+java -jar app/build/libs/app.jar
 # → ConsoleApplication.main() → interactive menu system
 ```
 
 ### API Server
 ```bash
-./gradlew run --args="api"
+java -jar app/build/libs/app.jar api
 # → ApiApplication.main() → REST API on port 8080
 ```
 
 ### Batch Processing
 ```bash
-./gradlew run --args="--batch [command]"
+java -jar app/build/libs/app.jar --batch [command]
 # → automated processing mode
 ```
 

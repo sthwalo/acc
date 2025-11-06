@@ -7,7 +7,7 @@ This document explains how to run the FIN application with proper security pract
 ### PostgreSQL Container Updates
 
 - ❌ **Before**: `postgres:15-alpine` (contained 2 high vulnerabilities)
-- ✅ **After**: `postgres:17-alpine` (latest with enhanced security features and patches)
+- ✅ **After**: `postgres:17-alpine3.22` (latest with enhanced security features and patches)
 - ✅ **Ultra-secure**: Pinned digest to prevent supply chain attacks
 
 ### 2. Removed Hardcoded Credentials from Dockerfile

@@ -28,9 +28,9 @@ This setup provides containerized deployment for the FIN application with Postgr
    ```
 
 3. **Access the Application:**
-   - Console UI: `docker-compose exec fin-app ./gradlew run --args="console"`
-   - API Server: `docker-compose exec fin-app ./gradlew run --args="api"`
-   - Batch Processing: `docker-compose exec fin-app ./gradlew run --args="batch"`
+   - Console UI: `docker-compose exec fin-app java -jar app/build/libs/app.jar`
+   - API Server: `docker-compose exec fin-app java -jar app/build/libs/app.jar api`
+   - Batch Processing: `docker-compose exec fin-app java -jar app/build/libs/app.jar --batch [command]`
 
 ## Services
 

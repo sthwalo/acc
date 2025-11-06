@@ -6,15 +6,53 @@ FIN is a production-ready financial management system built in Java 17 with Post
 ## Architecture & Entry Points
 
 **Core Architecture**: Single Gradle module with dependency injection via `ApplicationContext`. Three runtime modes:
-- **Console**: `./gradlew run` → `ConsoleApplication.main()` → interactive menu system
-- **API Server**: `./gradlew run --args="api"` → `ApiApplication.main()` → REST API on port 8080
-- **Batch**: `./gradlew run --args="--batch [command]"` → automated processing
+- **Console**: `java -jar app/build/libs/app.jar` → `ConsoleApplication.main()` → interactive menu system
+- **API Server**: `java -jar app/build/libs/app.jar api` → `ApiApplication.main()` → REST API on port 8080 (Docker-ready)
+- **Batch**: `java -jar app/build/libs/app.jar --batch [command]` → automated processing
 
 **Key Components**:
 - `ApplicationContext`: Central DI container - register ALL new services here using secure constructor pattern
 - `ApplicationController`: Orchestrates console flow via domain-specific controllers
 - `ApiServer`: SparkJava-based REST endpoints with `setup*` methods for route organization
 - `DatabaseConfig`: PostgreSQL connection management with environment-based configuration
+
+## 🚀 JAR-First Development Workflow (Docker Production Ready)
+
+**MANDATORY**: All development and testing uses JAR files directly - same as production Docker containers.
+
+**Development Commands**:
+```bash
+# Build JAR (only when code changes)
+./gradlew build
+
+# Run API server (production-same)
+java -jar app/build/libs/app.jar api &
+
+# Test endpoints systematically
+curl http://localhost:8080/api/v1/health
+curl http://localhost:8080/api/v1/companies
+
+# Run console mode
+java -jar app/build/libs/app.jar
+
+# Run batch processing
+java -jar app/build/libs/app.jar --batch [command]
+```
+
+**Docker Production**:
+```dockerfile
+FROM openjdk:17-jre-slim
+COPY app/build/libs/app.jar /app.jar
+EXPOSE 8080
+CMD ["java", "-jar", "/app.jar", "api"]
+```
+
+**Why JAR-First?**
+- ✅ **Dev = Prod**: Eliminates deployment surprises
+- ✅ **Docker-ready**: Containerized from day one
+- ✅ **No Gradle daemon issues**: Reliable API testing
+- ✅ **Systematic endpoint testing**: Build frontend incrementally
+- ✅ **Production confidence**: Test against real deployment artifact
 
 ## Critical Development Patterns
 
@@ -284,12 +322,31 @@ source .env                             # Load database credentials
 # Tests use: TEST_DATABASE_URL, TEST_DATABASE_USER, TEST_DATABASE_PASSWORD
 ```
 
-**Development Modes**:
+**Development Modes** (JAR-First Approach):
 ```bash
-./gradlew run                           # Console application
-./gradlew run --args="api"              # REST API server
-./start-backend.sh                      # API with environment setup
-./test-api.sh                          # API integration tests
+# Build JAR (only when code changes)
+./gradlew build
+
+# API Server (Docker-same as production)
+java -jar app/build/libs/app.jar api &
+
+# Console Application
+java -jar app/build/libs/app.jar
+
+# Batch Processing
+java -jar app/build/libs/app.jar --batch [command]
+
+# Docker Development (optional)
+docker build -t fin-backend .
+docker run -p 8080:8080 fin-backend
+```
+
+**Production Deployment**:
+```bash
+# Build and deploy JAR to Docker
+./gradlew build
+docker build -t fin-backend .
+docker run -d -p 8080:8080 --env-file .env fin-backend
 ```
 
 ## Code Quality & Documentation
@@ -339,28 +396,50 @@ After making code changes:
 - ❌ **DO NOT** assume the fix works just because it compiles
 - ❌ **DO NOT** rush to commit and push
 
-#### 3. **TESTING WORKFLOW** (Required Before Any Commit)
+#### 3. **TESTING WORKFLOW** (JAR-First - Docker Ready)
 ```bash
-# User must verify the fix by:
-1. Running the application: ./run.sh
-2. Testing the changed functionality interactively
-3. Reviewing generated reports/output
-4. Confirming the fix resolves the original issue
-5. Giving explicit approval: "Yes, this fix works, commit it"
+# Build JAR for testing
+./gradlew build
 
-# Only after user confirmation:
-git add <changed-files>
-git commit -m "descriptive message"
-git push origin main
+# Start API server (same as production Docker)
+java -jar app/build/libs/app.jar api &
+API_PID=$!
+
+# Test ALL endpoints systematically before frontend
+curl http://localhost:8080/api/v1/health
+curl http://localhost:8080/api/v1/companies
+curl http://localhost:8080/api/v1/companies/1/fiscal-periods
+# ... test all endpoints ...
+
+# Frontend connects to containerized backend
+# Start frontend: npm run dev (connects to localhost:8080)
+
+# Stop API server
+kill $API_PID
 ```
 
-#### 4. **CONSEQUENCES OF VIOLATION**
-- Committing unverified code → production bugs
-- Rushing commits → broken functionality
-- Skipping user confirmation → wasted time on incorrect fixes
-- Not testing thoroughly → financial data corruption
+**Docker Container Testing** (Production-Ready):
+```bash
+# Build and test in Docker (same as production)
+docker build -t fin-backend .
+docker run -d -p 8080:8080 --name fin-api fin-backend
 
-**FAILURE TO COMPLY** will result in broken builds, runtime errors, deployment issues, and financial reporting errors. This protocol is **STRICTLY ENFORCED** for all code changes, especially those affecting financial calculations, database queries, or report generation.
+# Test endpoints against container
+curl http://localhost:8080/api/v1/health
+
+# Frontend development against container
+# docker run -p 3000:3000 your-frontend-image
+
+# Stop container
+docker stop fin-api
+```
+
+#### 4. **CONSEQUENCES OF VIOLATION** (JAR-First Policy)
+- Committing untested JAR → production container failures
+- Skipping Docker testing → deployment surprises
+- Not testing all endpoints → broken frontend integration
+- Gradle daemon usage → unreliable API testing
+- **FAILURE TO COMPLY** will result in broken containers, runtime errors, deployment issues, and failed frontend integration. This JAR-first protocol is **STRICTLY ENFORCED** for all API development and containerization.
 
 ## Service Dependencies & Data Flow
 
@@ -430,6 +509,34 @@ git push origin main
 - `POST /api/v1/payroll/process` - payroll processing
 - `GET /api/v1/budgets/{id}/variance` - budget analysis
 - `GET /api/v1/reports/financial` - financial report generation
+
+## 🐳 Docker Containerization Strategy
+
+**MANDATORY**: Frontend development MUST use Docker containerized backend to ensure production compatibility.
+
+**Container Development Workflow**:
+```bash
+# Build and run backend in Docker
+docker build -t fin-backend .
+docker run -d -p 8080:8080 --name fin-api --env-file .env fin-backend
+
+# Verify container is running
+curl http://localhost:8080/api/v1/health
+
+# Frontend connects to containerized backend
+# npm run dev (configure to use http://localhost:8080)
+
+# Stop container
+docker stop fin-api
+docker rm fin-api
+```
+
+**Why Container-First?**
+- ✅ **Production accuracy**: Test against same runtime as production
+- ✅ **Environment consistency**: Same JVM, dependencies, config
+- ✅ **Deployment confidence**: No "works on my machine" issues
+- ✅ **Frontend integration**: Test real API calls in container
+- ✅ **Zero deployment surprises**: Container = production
 
 ## Current Development Focus
 
