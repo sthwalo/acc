@@ -201,6 +201,48 @@ tasks.named<Test>("test") {
     workingDir = rootProject.projectDir
 }
 
+// Integration Test Task - JAR-First Testing
+tasks.register<Test>("integrationTest") {
+    group = "verification"
+    description = "Runs integration tests against the built JAR (JAR-first approach)"
+
+    // Use JUnit Platform
+    useJUnitPlatform()
+
+    // Include only integration tests
+    include("**/*IntegrationTest.class")
+    include("**/integration/**")
+
+    // Exclude unit tests
+    exclude("**/*Test.class")
+    exclude("**/Test*.class")
+
+    // Test against built JAR (JAR-first approach)
+    dependsOn("build")
+
+    // Configure test environment
+    maxHeapSize = "2G"
+    systemProperties = System.getProperties()
+        .filter { it.key is String }
+        .mapKeys { it.key as String }
+        .mapValues { it.value as Any }
+
+    // Pass environment variables
+    val testDbUrl = System.getenv("TEST_DATABASE_URL") ?: System.getProperty("TEST_DATABASE_URL")
+    val testDbUser = System.getenv("TEST_DATABASE_USER") ?: System.getProperty("TEST_DATABASE_USER")
+    val testDbPassword = System.getenv("TEST_DATABASE_PASSWORD") ?: System.getProperty("TEST_DATABASE_PASSWORD")
+
+    if (testDbUrl != null) systemProperty("TEST_DATABASE_URL", testDbUrl)
+    if (testDbUser != null) systemProperty("TEST_DATABASE_USER", testDbUser)
+    if (testDbPassword != null) systemProperty("TEST_DATABASE_PASSWORD", testDbPassword)
+
+    systemProperty("TEST_MODE", "integration")
+    workingDir = rootProject.projectDir
+
+    // Make sure integration tests don't run with unit tests
+    shouldRunAfter(tasks.named<Test>("test"))
+}
+
 tasks.jar {
     manifest {
         attributes(mapOf(
