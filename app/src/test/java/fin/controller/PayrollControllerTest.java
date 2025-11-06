@@ -144,7 +144,7 @@ class PayrollControllerTest {
         
         assertDoesNotThrow(() -> payrollController.handlePayrollManagement(1L));
         
-        verify(payrollService, atLeastOnce()).processPayroll(1L, "system");
+        verify(payrollService, atLeastOnce()).processPayroll(1L, "FIN");
     }
     
     @Test

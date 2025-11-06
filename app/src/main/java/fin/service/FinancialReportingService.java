@@ -290,7 +290,7 @@ public class FinancialReportingService {
                     report.append(String.format("ENTRY: %-20s DATE: %-12s CREATED BY: %-20s%n",
                             reference,
                             entryDate.toLocalDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")),
-                            createdBy != null ? createdBy : "SYSTEM"));
+                            createdBy != null ? createdBy : "FIN"));
                     report.append(String.format("DESCRIPTION: %s%n", journalDescription));
                     report.append(String.format("TIMESTAMP: %s%n", 
                             createdAt.toLocalDateTime().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss"))));
