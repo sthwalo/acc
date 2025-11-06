@@ -307,7 +307,7 @@ public class ApplicationContext {
         DepreciationRepository depreciationRepository = new DepreciationRepository(initialDbUrl);
         register(DepreciationRepository.class, depreciationRepository);
         
-        DepreciationService depreciationService = new DepreciationService(depreciationRepository);
+        DepreciationService depreciationService = new DepreciationService(initialDbUrl, depreciationRepository);
         register(DepreciationService.class, depreciationService);
     }
     

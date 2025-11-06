@@ -54,6 +54,7 @@ public class OpeningBalanceService {
     private static final int JOURNAL_LINE_CREDIT_PARAM = 4;
     private static final int JOURNAL_LINE_DESCRIPTION_PARAM = 5;
     private static final int JOURNAL_LINE_REFERENCE_PARAM = 6;
+    private static final int JOURNAL_LINE_SOURCE_TRANSACTION_PARAM = 7;
 
     public OpeningBalanceService(String initialDbUrl) {
         this.dbUrl = initialDbUrl;
@@ -297,8 +298,8 @@ public class OpeningBalanceService {
                                         String reference) throws SQLException {
         String sql = """
             INSERT INTO journal_entry_lines (journal_entry_id, account_id, debit_amount,
-                                           credit_amount, description, reference, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                                           credit_amount, description, reference, source_transaction_id, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
             """;
         
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -309,6 +310,7 @@ public class OpeningBalanceService {
             pstmt.setBigDecimal(JOURNAL_LINE_CREDIT_PARAM, null);
             pstmt.setString(JOURNAL_LINE_DESCRIPTION_PARAM, "Bank - Current Account");
             pstmt.setString(JOURNAL_LINE_REFERENCE_PARAM, reference + "-L1");
+            pstmt.setNull(JOURNAL_LINE_SOURCE_TRANSACTION_PARAM, java.sql.Types.INTEGER); // source_transaction_id - NULL for opening balance
             pstmt.executeUpdate();
             
             // Line 2: CREDIT Opening Balance Equity (temporary equity account - Cash Flow Statement only)
@@ -318,6 +320,7 @@ public class OpeningBalanceService {
             pstmt.setBigDecimal(JOURNAL_LINE_CREDIT_PARAM, openingBalance);  // CREDIT
             pstmt.setString(JOURNAL_LINE_DESCRIPTION_PARAM, "Opening Balance Equity - Cash Flow Statement Only");
             pstmt.setString(JOURNAL_LINE_REFERENCE_PARAM, reference + "-L2");
+            pstmt.setNull(JOURNAL_LINE_SOURCE_TRANSACTION_PARAM, java.sql.Types.INTEGER); // source_transaction_id - NULL for opening balance
             pstmt.executeUpdate();
         }
     }

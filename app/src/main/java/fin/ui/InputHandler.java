@@ -40,34 +40,82 @@ import java.io.File;
 public class InputHandler {
     private final Scanner scanner;
     
+    /**
+     * Exception thrown when user cancels an input operation
+     */
+    public static class InputCancelledException extends RuntimeException {
+        public InputCancelledException(String message) {
+            super(message);
+        }
+    }
+    
     public InputHandler(Scanner initialScanner) {
         this.scanner = initialScanner;
     }
     
     public String getString(String prompt) {
         System.out.print(prompt + ": ");
+        
+        // Check if there's input available before trying to read
+        if (!scanner.hasNextLine()) {
+            System.out.println("\n❌ No input available. Exiting application...");
+            System.exit(0);
+        }
+        
         return scanner.nextLine().trim();
     }
     
     public String getString(String prompt, String defaultValue) {
         System.out.print(prompt + " [" + defaultValue + "]: ");
+        
+        // Check if there's input available before trying to read
+        if (!scanner.hasNextLine()) {
+            System.out.println("\n❌ No input available. Using default value: " + defaultValue);
+            return defaultValue;
+        }
+        
         String input = scanner.nextLine().trim();
         return input.isEmpty() ? defaultValue : input;
     }
     
     public String getOptionalString(String prompt) {
         System.out.print(prompt + " (optional): ");
+        
+        // Check if there's input available before trying to read
+        if (!scanner.hasNextLine()) {
+            System.out.println("\n❌ No input available. Using empty value.");
+            return null;
+        }
+        
         String input = scanner.nextLine().trim();
         return input.isEmpty() ? null : input;
     }
     
     public int getInteger(String prompt) {
+        return getInteger(prompt, "cancel");
+    }
+    
+    public int getInteger(String prompt, String cancelKeyword) {
         while (true) {
             try {
                 System.out.print(prompt + ": ");
-                return Integer.parseInt(scanner.nextLine().trim());
+                
+                // Check if there's input available before trying to read
+                if (!scanner.hasNextLine()) {
+                    System.out.println("\n❌ No input available. Exiting application...");
+                    System.exit(0);
+                }
+                
+                String input = scanner.nextLine().trim();
+                
+                // Check for cancellation
+                if (cancelKeyword != null && cancelKeyword.equalsIgnoreCase(input)) {
+                    throw new InputCancelledException("Operation cancelled by user");
+                }
+                
+                return Integer.parseInt(input);
             } catch (NumberFormatException e) {
-                System.out.println("Invalid input. Please enter a number.");
+                System.out.println("Invalid input. Please enter a number or '" + cancelKeyword + "' to cancel.");
             }
         }
     }
@@ -83,13 +131,30 @@ public class InputHandler {
     }
     
     public LocalDate getDate(String prompt) {
+        return getDate(prompt, "cancel");
+    }
+    
+    public LocalDate getDate(String prompt, String cancelKeyword) {
         while (true) {
             try {
                 System.out.print(prompt + " (DD/MM/YYYY): ");
+                
+                // Check if there's input available before trying to read
+                if (!scanner.hasNextLine()) {
+                    System.out.println("\n❌ No input available. Exiting application...");
+                    System.exit(0);
+                }
+                
                 String dateStr = scanner.nextLine().trim();
+                
+                // Check for cancellation
+                if (cancelKeyword != null && cancelKeyword.equalsIgnoreCase(dateStr)) {
+                    throw new InputCancelledException("Operation cancelled by user");
+                }
+                
                 return LocalDate.parse(dateStr, DateTimeFormatter.ofPattern("dd/MM/yyyy"));
             } catch (DateTimeParseException e) {
-                System.out.println("Invalid date format. Please use DD/MM/YYYY.");
+                System.out.println("Invalid date format. Please use DD/MM/YYYY or '" + cancelKeyword + "' to cancel.");
             }
         }
     }
@@ -105,12 +170,30 @@ public class InputHandler {
     }
     
     public BigDecimal getBigDecimal(String prompt) {
+        return getBigDecimal(prompt, "cancel");
+    }
+    
+    public BigDecimal getBigDecimal(String prompt, String cancelKeyword) {
         while (true) {
             try {
                 System.out.print(prompt + ": ");
-                return new BigDecimal(scanner.nextLine().trim());
+                
+                // Check if there's input available before trying to read
+                if (!scanner.hasNextLine()) {
+                    System.out.println("\n❌ No input available. Exiting application...");
+                    System.exit(0);
+                }
+                
+                String input = scanner.nextLine().trim();
+                
+                // Check for cancellation
+                if (cancelKeyword != null && cancelKeyword.equalsIgnoreCase(input)) {
+                    throw new InputCancelledException("Operation cancelled by user");
+                }
+                
+                return new BigDecimal(input);
             } catch (NumberFormatException e) {
-                System.out.println("Invalid amount. Please enter a valid number.");
+                System.out.println("Invalid amount. Please enter a valid number or '" + cancelKeyword + "' to cancel.");
             }
         }
     }
@@ -118,6 +201,13 @@ public class InputHandler {
     public boolean getBoolean(String prompt) {
         while (true) {
             System.out.print(prompt + " (y/n): ");
+            
+            // Check if there's input available before trying to read
+            if (!scanner.hasNextLine()) {
+                System.out.println("\n❌ No input available. Defaulting to 'no'.");
+                return false;
+            }
+            
             String input = scanner.nextLine().trim().toLowerCase();
             if (input.startsWith("y")) {
                 return true;
@@ -131,6 +221,13 @@ public class InputHandler {
     public String getFilePath(String prompt, String extension) {
         while (true) {
             System.out.print(prompt + " (*" + extension + "): ");
+            
+            // Check if there's input available before trying to read
+            if (!scanner.hasNextLine()) {
+                System.out.println("\n❌ No input available. Exiting application...");
+                System.exit(0);
+            }
+            
             String filePath = scanner.nextLine().trim();
             
             if (isValidFilePath(filePath, extension)) {
@@ -201,12 +298,26 @@ public class InputHandler {
     
     public void waitForEnter() {
         System.out.println("\nPress Enter to continue...");
+        
+        // Check if there's input available before trying to read
+        if (!scanner.hasNextLine()) {
+            System.out.println("❌ No input available. Continuing...");
+            return;
+        }
+        
         scanner.nextLine();
     }
     
     public void waitForEnter(String message) {
         System.out.println("\n" + message);
         System.out.println("Press Enter to continue...");
+        
+        // Check if there's input available before trying to read
+        if (!scanner.hasNextLine()) {
+            System.out.println("❌ No input available. Continuing...");
+            return;
+        }
+        
         scanner.nextLine();
     }
 }

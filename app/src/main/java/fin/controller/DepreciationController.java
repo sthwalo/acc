@@ -36,8 +36,10 @@ import fin.state.ApplicationState;
 import fin.ui.InputHandler;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Controller for depreciation calculator functionality
@@ -54,6 +56,7 @@ public class DepreciationController {
     private static final int MENU_OPTION_3 = 3;
     private static final int MENU_OPTION_4 = 4;
     private static final int MENU_OPTION_5 = 5;
+    private static final int MENU_OPTION_6 = 6;
     private static final BigDecimal ZERO_SALVAGE = BigDecimal.ZERO;
 
     private final DepreciationService depreciationService;
@@ -78,8 +81,9 @@ public class DepreciationController {
             System.out.println("2. View Saved Depreciation Schedules");
             System.out.println("3. Manage Assets");
             System.out.println("4. Quick Calculation (In-Memory)");
-            System.out.println("5. Back to Main Menu");
-            System.out.print("Enter your choice (1-5): ");
+            System.out.println("5. Repost Depreciation Schedules");
+            System.out.println("6. Back to Main Menu");
+            System.out.print("Enter your choice (1-6): ");
 
             int choice = inputHandler.getInteger("Enter your choice");
 
@@ -97,6 +101,9 @@ public class DepreciationController {
                     displayQuickCalculationMenu();
                     break;
                 case MENU_OPTION_5:
+                    repostDepreciationSchedules();
+                    break;
+                case MENU_OPTION_6:
                     return;
                 default:
                     System.out.println("❌ Invalid choice. Please try again.");
@@ -108,57 +115,107 @@ public class DepreciationController {
         System.out.println("\n=== Calculate and Save Depreciation Schedule ===");
 
         try {
-            // Get asset information
+            // First, get asset code and try to find existing asset
             String assetCode = inputHandler.getString("Enter asset code");
-            String assetName = inputHandler.getString("Enter asset name");
-            String assetDescription = inputHandler.getString("Enter asset description");
-            BigDecimal cost = inputHandler.getBigDecimal("Enter asset cost");
-            LocalDate purchaseDate = inputHandler.getDate("Enter purchase date");
-            int usefulLife = inputHandler.getInteger("Enter useful life (years)");
-            BigDecimal salvageValue = inputHandler.getBigDecimal("Enter salvage value");
+            Long companyId = applicationState.getCurrentCompany().getId();
+
+            // Try to find existing asset by code
+            Optional<Asset> existingAssetOpt = depreciationService.getAssetByCode(assetCode, companyId);
+            Asset asset;
+
+            if (existingAssetOpt.isPresent()) {
+                // Use existing asset
+                asset = existingAssetOpt.get();
+                System.out.printf("✅ Found existing asset: %s (%s)%n", asset.getAssetName(), asset.getAssetCode());
+                System.out.printf("Cost: R%.2f, Useful Life: %d years, Salvage Value: R%.2f%n",
+                    asset.getCost(), asset.getUsefulLifeYears(), asset.getSalvageValue());
+            } else {
+                // Asset doesn't exist, ask user if they want to create it
+                System.out.printf("⚠️  Asset with code '%s' not found.%n", assetCode);
+                String createAsset = inputHandler.getString("Create new asset? (Y/n)");
+                if (!createAsset.isEmpty() && !createAsset.toLowerCase().startsWith("y")) {
+                    System.out.println("❌ Operation cancelled.");
+                    return;
+                }
+
+                // Get remaining asset information
+                String assetName = inputHandler.getString("Enter asset name");
+                String assetDescription = inputHandler.getString("Enter asset description");
+                BigDecimal cost = inputHandler.getBigDecimal("Enter asset cost");
+                LocalDate purchaseDate = inputHandler.getDate("Enter purchase date");
+                int usefulLife = inputHandler.getInteger("Enter useful life (years)");
+                BigDecimal salvageValue = inputHandler.getBigDecimal("Enter salvage value");
+
+                // Create new asset
+                asset = new Asset();
+                asset.setCompanyId(companyId);
+                asset.setAssetCode(assetCode);
+                asset.setAssetName(assetName);
+                asset.setDescription(assetDescription);
+                asset.setCost(cost);
+                asset.setAcquisitionDate(purchaseDate);
+                asset.setUsefulLifeYears(usefulLife);
+                asset.setSalvageValue(salvageValue);
+                asset.setAssetCategory("FIXED_ASSET");
+                asset.setLocation("MAIN_OFFICE");
+                asset.setDepartment("GENERAL");
+                asset.setCreatedBy("FIN");
+
+                // Save asset
+                asset = depreciationService.saveAsset(asset);
+                System.out.println("✅ Asset created successfully with ID: " + asset.getId());
+            }
 
             // Get depreciation method
             DepreciationMethod method = selectDepreciationMethod();
 
             BigDecimal dbFactor = null;
             if (method == DepreciationMethod.DECLINING_BALANCE) {
-                dbFactor = inputHandler.getBigDecimal("Enter declining balance factor (e.g., 2.0 for double)");
+                // Display rate options
+                System.out.println("\nSelect declining balance rate:");
+                System.out.println("1. 20%");
+                System.out.println("2. 25%");
+                System.out.println("3. 30%");
+                System.out.println("4. 33.33%");
+                System.out.println("5. 35%");
+
+                int choice = inputHandler.getInteger("Enter your choice (1-5)");
+                BigDecimal selectedRate;
+                switch (choice) {
+                    case 1: selectedRate = BigDecimal.valueOf(20); break;
+                    case 2: selectedRate = BigDecimal.valueOf(25); break;
+                    case 3: selectedRate = BigDecimal.valueOf(30); break;
+                    case 4: selectedRate = BigDecimal.valueOf(33.33); break;
+                    case 5: selectedRate = BigDecimal.valueOf(35); break;
+                    default:
+                        System.out.println("❌ Invalid choice. Using 20% as default.");
+                        selectedRate = BigDecimal.valueOf(20);
+                }
+
+                // Calculate factor: factor = rate / 100 (annual percentage rate)
+                dbFactor = selectedRate.divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP);
+
+                System.out.printf("Selected rate: %.2f%%, Calculated factor: %.2f%n", selectedRate, dbFactor);
             }
 
-            // Create asset
-            Asset asset = new Asset();
-            asset.setCompanyId(applicationState.getCurrentCompany().getId());
-            asset.setAssetCode(assetCode);
-            asset.setAssetName(assetName);
-            asset.setDescription(assetDescription);
-            asset.setCost(cost);
-            asset.setAcquisitionDate(purchaseDate);
-            asset.setUsefulLifeYears(usefulLife);
-            asset.setSalvageValue(salvageValue);
-            asset.setAssetCategory("FIXED_ASSET");
-            asset.setLocation("MAIN_OFFICE");
-            asset.setDepartment("GENERAL");
-            asset.setCreatedBy("USER");
-
-            // Save asset
-            Asset savedAsset = depreciationService.saveAsset(asset);
-
-            // Create depreciation request
+            // Create depreciation request using asset data
             DepreciationRequest request = new DepreciationRequest();
-            request.setCost(cost);
-            request.setSalvageValue(salvageValue);
-            request.setUsefulLife(usefulLife);
+            request.setCost(asset.getCost());
+            request.setSalvageValue(asset.getSalvageValue());
+            request.setUsefulLife(asset.getUsefulLifeYears());
             request.setMethod(method);
             request.setDbFactor(dbFactor);
 
             // Calculate and save depreciation
-            DepreciationSchedule schedule = depreciationService.calculateAndSaveDepreciation(savedAsset, request);
+            DepreciationSchedule schedule = depreciationService.calculateAndSaveDepreciation(asset, request);
 
-            System.out.println("✅ Asset and depreciation schedule created successfully!");
-            System.out.println("Asset ID: " + savedAsset.getId());
-            System.out.println("Asset: " + savedAsset.getAssetName());
+            System.out.println("✅ Depreciation schedule created successfully!");
+            System.out.println("Asset: " + asset.getAssetName() + " (" + asset.getAssetCode() + ")");
+            System.out.println("Method: " + method.name());
             System.out.println("Total depreciation: " + schedule.getTotalDepreciation());
 
+        } catch (InputHandler.InputCancelledException e) {
+            System.out.println("❌ Operation cancelled. Returning to menu.");
         } catch (Exception e) {
             System.out.println("❌ Error calculating and saving depreciation: " + e.getMessage());
         }
@@ -255,14 +312,14 @@ public class DepreciationController {
             }
 
             System.out.println("\nAssets for Current Company:");
-            System.out.printf("%-5s %-20s %-15s %-15s %-10s %-15s %-10s%n",
+            System.out.printf("%-5s %-20s %-15s %-15s %-15s %-12s %-15s%n",
                 "ID", "Name", "Description", "Cost", "Purchase Date", "Useful Life", "Salvage Value");
             System.out.println("=".repeat(TABLE_WIDTH));
 
             for (Asset asset : assets) {
-                System.out.printf("%-5d %-20s %-15s %-15s %-10d %-15s %-10s%n",
+                System.out.printf("%-5d %-20s %-15s %-15s %-15s %-12d %-15s%n",
                     asset.getId(), asset.getAssetName(),
-                    asset.getCost(), asset.getAcquisitionDate(),
+                    asset.getDescription(), asset.getCost(), asset.getAcquisitionDate(),
                     asset.getUsefulLifeYears(), asset.getSalvageValue());
             }
 
@@ -276,6 +333,21 @@ public class DepreciationController {
             System.out.println("\n=== Add New Asset ===");
 
             String assetCode = inputHandler.getString("Enter asset code");
+            Long companyId = applicationState.getCurrentCompany().getId();
+
+            // Check if asset code already exists
+            if (depreciationService.assetCodeExists(assetCode, companyId)) {
+                System.out.printf("⚠️  Asset code '%s' already exists for this company.%n", assetCode);
+                String generateUnique = inputHandler.getString("Generate unique code automatically? (Y/n)");
+                if (generateUnique.isEmpty() || generateUnique.toLowerCase().startsWith("y")) {
+                    assetCode = depreciationService.generateUniqueAssetCode(assetCode, companyId);
+                    System.out.printf("✅ Generated unique code: '%s'%n", assetCode);
+                } else {
+                    System.out.println("❌ Asset creation cancelled.");
+                    return;
+                }
+            }
+
             String name = inputHandler.getString("Enter asset name");
             String description = inputHandler.getString("Enter asset description");
             BigDecimal cost = inputHandler.getBigDecimal("Enter asset cost");
@@ -284,7 +356,7 @@ public class DepreciationController {
             BigDecimal salvageValue = inputHandler.getBigDecimal("Enter salvage value");
 
             Asset asset = new Asset();
-            asset.setCompanyId(applicationState.getCurrentCompany().getId());
+            asset.setCompanyId(companyId);
             asset.setAssetCode(assetCode);
             asset.setAssetName(name);
             asset.setDescription(description);
@@ -296,6 +368,8 @@ public class DepreciationController {
             Asset savedAsset = depreciationService.saveAsset(asset);
             System.out.println("✅ Asset saved successfully with ID: " + savedAsset.getId());
 
+        } catch (InputHandler.InputCancelledException e) {
+            System.out.println("❌ Operation cancelled. Returning to menu.");
         } catch (Exception e) {
             System.out.println("❌ Error adding asset: " + e.getMessage());
         }
@@ -371,18 +445,54 @@ public class DepreciationController {
             }
 
             Asset asset = assetOpt.get();
-            System.out.printf("Are you sure you want to delete asset '%s'? (y/N): ", asset.getAssetName());
-            String confirm = inputHandler.getString("Confirm deletion");
-
-            if (confirm.toLowerCase().startsWith("y")) {
-                depreciationService.deleteAsset(assetId);
-                System.out.println("✅ Asset deleted successfully!");
-            } else {
-                System.out.println("❌ Deletion cancelled.");
+            
+            // Check if asset has depreciation schedules
+            List<DepreciationSchedule> schedules = depreciationService.getDepreciationSchedulesForAsset(assetId);
+            if (!schedules.isEmpty()) {
+                System.out.printf("⚠️  Warning: Asset '%s' has %d depreciation schedule(s) that will also be deleted.%n", 
+                    asset.getAssetName(), schedules.size());
+                System.out.print("Do you want to continue deleting? (y/N): ");
+                String continueDeleting = inputHandler.getString("Continue with deletion");
+                if (!continueDeleting.toLowerCase().startsWith("y")) {
+                    System.out.println("❌ Deletion cancelled.");
+                    return;
+                }
+                
+                // Second confirmation
+                System.out.printf("Are you sure you want to delete asset '%s' and all its depreciation schedules? (y/N): ", asset.getAssetName());
+                String finalConfirm = inputHandler.getString("Final confirmation");
+                if (!finalConfirm.toLowerCase().startsWith("y")) {
+                    System.out.println("❌ Deletion cancelled.");
+                    return;
+                }
             }
+            
+            depreciationService.deleteAsset(assetId);
+            System.out.println("✅ Asset deleted successfully!");
 
         } catch (Exception e) {
             System.out.println("❌ Error deleting asset: " + e.getMessage());
+        }
+    }
+
+    private void repostDepreciationSchedules() {
+        System.out.println("\n=== Repost Depreciation Schedules ===");
+        System.out.println("This will repost all calculated depreciation schedules with correct fiscal periods.");
+        System.out.print("Do you want to continue? (y/N): ");
+        
+        try {
+            String confirm = inputHandler.getString("Confirm reposting");
+            if (!confirm.toLowerCase().startsWith("y")) {
+                System.out.println("❌ Operation cancelled.");
+                return;
+            }
+            
+            Long companyId = applicationState.getCurrentCompany().getId();
+            depreciationService.repostDepreciationSchedules(companyId);
+            System.out.println("✅ Depreciation schedules reposted successfully!");
+            
+        } catch (Exception e) {
+            System.out.println("❌ Error reposting depreciation schedules: " + e.getMessage());
         }
     }
 
@@ -455,6 +565,8 @@ public class DepreciationController {
 
             displayDepreciationSchedule(schedule, "Straight-Line Depreciation");
 
+        } catch (InputHandler.InputCancelledException e) {
+            System.out.println("❌ Operation cancelled. Returning to menu.");
         } catch (Exception e) {
             System.out.println("❌ Error calculating depreciation: " + e.getMessage());
         }
@@ -467,9 +579,34 @@ public class DepreciationController {
             BigDecimal cost = inputHandler.getBigDecimal("Enter asset cost");
             BigDecimal salvageValue = inputHandler.getBigDecimal("Enter salvage value");
             int usefulLife = inputHandler.getInteger("Enter useful life (years)");
-            BigDecimal dbFactor = inputHandler.getBigDecimal("Enter declining balance factor (e.g., 2.0 for double)");
 
-            DepreciationRequest request = new DepreciationRequest()
+            // Display rate options
+            System.out.println("\nSelect declining balance rate:");
+            System.out.println("1. 20%");
+            System.out.println("2. 25%");
+            System.out.println("3. 30%");
+            System.out.println("4. 33.33%");
+            System.out.println("5. 35%");
+
+            int choice = inputHandler.getInteger("Enter your choice (1-5)");
+            BigDecimal selectedRate;
+            switch (choice) {
+                case 1: selectedRate = BigDecimal.valueOf(20); break;
+                case 2: selectedRate = BigDecimal.valueOf(25); break;
+                case 3: selectedRate = BigDecimal.valueOf(30); break;
+                case 4: selectedRate = BigDecimal.valueOf(33.33); break;
+                case 5: selectedRate = BigDecimal.valueOf(35); break;
+                default:
+                    System.out.println("❌ Invalid choice. Using 20% as default.");
+                    selectedRate = BigDecimal.valueOf(20);
+                }
+
+                // Calculate factor: factor = rate / 100 (annual percentage rate)
+                BigDecimal dbFactor = selectedRate.divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP);
+
+                System.out.printf("Selected rate: %.2f%%, Calculated factor: %.2f%n", selectedRate, dbFactor);
+
+                DepreciationRequest request = new DepreciationRequest()
                 .cost(cost)
                 .salvageValue(salvageValue)
                 .usefulLife(usefulLife)
@@ -480,6 +617,8 @@ public class DepreciationController {
 
             displayDepreciationSchedule(schedule, "Declining Balance Depreciation");
 
+        } catch (InputHandler.InputCancelledException e) {
+            System.out.println("❌ Operation cancelled. Returning to menu.");
         } catch (Exception e) {
             System.out.println("❌ Error calculating depreciation: " + e.getMessage());
         }
@@ -509,6 +648,8 @@ public class DepreciationController {
 
             displayDepreciationSchedule(schedule, "FIN Depreciation");
 
+        } catch (InputHandler.InputCancelledException e) {
+            System.out.println("❌ Operation cancelled. Returning to menu.");
         } catch (Exception e) {
             System.out.println("❌ Error calculating depreciation: " + e.getMessage());
         }
@@ -521,9 +662,32 @@ public class DepreciationController {
             BigDecimal cost = inputHandler.getBigDecimal("Enter asset cost");
             BigDecimal salvageValue = inputHandler.getBigDecimal("Enter salvage value");
             int usefulLife = inputHandler.getInteger("Enter useful life (years)");
-            BigDecimal dbFactor = inputHandler.getBigDecimal("Enter declining balance factor (e.g., 2.0)");
 
-            displayComparisonHeader(cost, salvageValue, usefulLife, dbFactor);
+            // Display rate options
+            System.out.println("\nSelect declining balance rate for comparison:");
+            System.out.println("1. 20%");
+            System.out.println("2. 25%");
+            System.out.println("3. 30%");
+            System.out.println("4. 33.33%");
+            System.out.println("5. 35%");
+
+            int choice = inputHandler.getInteger("Enter your choice (1-5)");
+            BigDecimal selectedRate;
+            switch (choice) {
+                case 1: selectedRate = BigDecimal.valueOf(20); break;
+                case 2: selectedRate = BigDecimal.valueOf(25); break;
+                case 3: selectedRate = BigDecimal.valueOf(30); break;
+                case 4: selectedRate = BigDecimal.valueOf(33.33); break;
+                case 5: selectedRate = BigDecimal.valueOf(35); break;
+                default:
+                    System.out.println("❌ Invalid choice. Using 20% as default.");
+                    selectedRate = BigDecimal.valueOf(20);
+            }
+
+            // Calculate factor: factor = rate / 100 (annual percentage rate)
+            BigDecimal dbFactor = selectedRate.divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP);
+
+            displayComparisonHeader(cost, salvageValue, usefulLife, selectedRate);
 
             // Calculate schedules
             DepreciationSchedule slSchedule = calculateStraightLineSchedule(cost, salvageValue, usefulLife);
@@ -531,19 +695,21 @@ public class DepreciationController {
 
             displayComparisonTable(slSchedule, dbSchedule, usefulLife);
 
+        } catch (InputHandler.InputCancelledException e) {
+            System.out.println("❌ Operation cancelled. Returning to menu.");
         } catch (Exception e) {
             System.out.println("❌ Error comparing depreciation methods: " + e.getMessage());
         }
     }
 
-    private void displayComparisonHeader(BigDecimal cost, BigDecimal salvageValue, int usefulLife, BigDecimal dbFactor) {
+    private void displayComparisonHeader(BigDecimal cost, BigDecimal salvageValue, int usefulLife, BigDecimal selectedRate) {
         System.out.println("\n" + "=".repeat(TABLE_WIDTH));
         System.out.println("DEPRECIATION METHOD COMPARISON");
         System.out.println("=".repeat(TABLE_WIDTH));
         System.out.printf("Asset Cost: R%.2f%n", cost);
         System.out.printf("Salvage Value: R%.2f%n", salvageValue);
         System.out.printf("Useful Life: %d years%n", usefulLife);
-        System.out.printf("DB Factor: %.1f%n", dbFactor);
+        System.out.printf("DB Rate: %.2f%%%n", selectedRate);
         System.out.println("=".repeat(TABLE_WIDTH));
     }
 

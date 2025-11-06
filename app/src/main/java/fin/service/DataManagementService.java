@@ -69,6 +69,8 @@ public class DataManagementService {
     private static final int JOURNAL_LINE_PARAM_DESCRIPTION = 3;
     private static final int JOURNAL_LINE_PARAM_DEBIT_AMOUNT = 4;
     private static final int JOURNAL_LINE_PARAM_CREDIT_AMOUNT = 5;
+    private static final int JOURNAL_LINE_PARAM_REFERENCE = 6;
+    private static final int JOURNAL_LINE_PARAM_SOURCE_TRANSACTION_ID = 7;
 
     // SQL Parameter indices for data correction recording
     private static final int CORRECTION_PARAM_COMPANY_ID = 1;
@@ -412,7 +414,7 @@ public class DataManagementService {
                                       JournalEntryLine line) throws SQLException {
         String sql = 
             "INSERT INTO journal_entry_lines (journal_entry_id, account_id, description, " +
-            "debit_amount, credit_amount) VALUES (?, ?, ?, ?, ?)";
+            "debit_amount, credit_amount, reference, source_transaction_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)";
             
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setLong(JOURNAL_LINE_PARAM_JOURNAL_ENTRY_ID, journalEntryId);
@@ -420,6 +422,8 @@ public class DataManagementService {
             pstmt.setString(JOURNAL_LINE_PARAM_DESCRIPTION, line.getDescription());
             pstmt.setBigDecimal(JOURNAL_LINE_PARAM_DEBIT_AMOUNT, line.getDebitAmount());
             pstmt.setBigDecimal(JOURNAL_LINE_PARAM_CREDIT_AMOUNT, line.getCreditAmount());
+            pstmt.setString(JOURNAL_LINE_PARAM_REFERENCE, "JE-" + journalEntryId + "-L" + System.currentTimeMillis()); // Generate reference
+            pstmt.setNull(JOURNAL_LINE_PARAM_SOURCE_TRANSACTION_ID, java.sql.Types.INTEGER); // source_transaction_id - NULL for manual entries
             
             pstmt.executeUpdate();
         }
