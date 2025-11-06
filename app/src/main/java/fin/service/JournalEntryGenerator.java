@@ -67,7 +67,8 @@ public class JournalEntryGenerator {
     private static final int JOURNAL_LINE_INSERT_DEBIT_AMOUNT = 3;
     private static final int JOURNAL_LINE_INSERT_CREDIT_AMOUNT = 4;
     private static final int JOURNAL_LINE_INSERT_DESCRIPTION = 5;
-    private static final int JOURNAL_LINE_INSERT_SOURCE_TRANSACTION_ID = 6;
+    private static final int JOURNAL_LINE_INSERT_REFERENCE = 6;
+    private static final int JOURNAL_LINE_INSERT_SOURCE_TRANSACTION_ID = 7;
 
     // Account code constants
     private static final int PARENT_ACCOUNT_CODE_LENGTH = 4;
@@ -163,7 +164,7 @@ public class JournalEntryGenerator {
         journalEntry.setDescription(transaction.getDetails());
         journalEntry.setCompanyId(transaction.getCompanyId());
         journalEntry.setFiscalPeriodId(transaction.getFiscalPeriodId());
-        journalEntry.setCreatedBy("SYSTEM");
+        journalEntry.setCreatedBy("FIN");
         journalEntry.setCreatedAt(LocalDateTime.now());
         return journalEntry;
     }
@@ -241,8 +242,8 @@ public class JournalEntryGenerator {
     private void createJournalEntryLines(Connection conn, long journalEntryId, BankTransaction transaction,
                                        Long classifiedAccountId, Long bankAccountId) throws SQLException {
         String sql = """
-            INSERT INTO journal_entry_lines (journal_entry_id, account_id, debit_amount, credit_amount, description, source_transaction_id)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO journal_entry_lines (journal_entry_id, account_id, debit_amount, credit_amount, description, reference, source_transaction_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
             """;
 
         // Determine transaction type and create double-entry lines
@@ -260,6 +261,7 @@ public class JournalEntryGenerator {
                 stmt.setNull(JOURNAL_LINE_INSERT_DEBIT_AMOUNT, Types.NUMERIC); // debit_amount = NULL
                 stmt.setBigDecimal(JOURNAL_LINE_INSERT_CREDIT_AMOUNT, amount); // credit_amount = transaction amount
                 stmt.setString(JOURNAL_LINE_INSERT_DESCRIPTION, "Income - " + transaction.getDetails());
+                stmt.setString(JOURNAL_LINE_INSERT_REFERENCE, "JE-" + transaction.getId() + "-INC"); // reference
                 stmt.setLong(JOURNAL_LINE_INSERT_SOURCE_TRANSACTION_ID, transaction.getId()); // source_transaction_id
                 stmt.executeUpdate();
 
@@ -269,6 +271,7 @@ public class JournalEntryGenerator {
                 stmt.setBigDecimal(JOURNAL_LINE_INSERT_DEBIT_AMOUNT, amount); // debit_amount = transaction amount
                 stmt.setNull(JOURNAL_LINE_INSERT_CREDIT_AMOUNT, Types.NUMERIC); // credit_amount = NULL
                 stmt.setString(JOURNAL_LINE_INSERT_DESCRIPTION, "Bank account - " + transaction.getDetails());
+                stmt.setString(JOURNAL_LINE_INSERT_REFERENCE, "JE-" + transaction.getId() + "-BANK"); // reference
                 stmt.setLong(JOURNAL_LINE_INSERT_SOURCE_TRANSACTION_ID, transaction.getId()); // source_transaction_id
                 stmt.executeUpdate();
 
@@ -282,6 +285,7 @@ public class JournalEntryGenerator {
                 stmt.setBigDecimal(JOURNAL_LINE_INSERT_DEBIT_AMOUNT, amount); // debit_amount = transaction amount
                 stmt.setNull(JOURNAL_LINE_INSERT_CREDIT_AMOUNT, Types.NUMERIC); // credit_amount = NULL
                 stmt.setString(JOURNAL_LINE_INSERT_DESCRIPTION, "Expense - " + transaction.getDetails());
+                stmt.setString(JOURNAL_LINE_INSERT_REFERENCE, "JE-" + transaction.getId() + "-EXP"); // reference
                 stmt.setLong(JOURNAL_LINE_INSERT_SOURCE_TRANSACTION_ID, transaction.getId()); // source_transaction_id
                 stmt.executeUpdate();
 
@@ -291,6 +295,7 @@ public class JournalEntryGenerator {
                 stmt.setNull(JOURNAL_LINE_INSERT_DEBIT_AMOUNT, Types.NUMERIC); // debit_amount = NULL
                 stmt.setBigDecimal(JOURNAL_LINE_INSERT_CREDIT_AMOUNT, amount); // credit_amount = transaction amount
                 stmt.setString(JOURNAL_LINE_INSERT_DESCRIPTION, "Bank account - " + transaction.getDetails());
+                stmt.setString(JOURNAL_LINE_INSERT_REFERENCE, "JE-" + transaction.getId() + "-BANK"); // reference
                 stmt.setLong(JOURNAL_LINE_INSERT_SOURCE_TRANSACTION_ID, transaction.getId()); // source_transaction_id
                 stmt.executeUpdate();
             }

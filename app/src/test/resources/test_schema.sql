@@ -2233,6 +2233,116 @@ ALTER TABLE ONLY public.transaction_types
 
 
 --
+-- Name: assets; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.assets (
+    id bigint NOT NULL,
+    company_id bigint NOT NULL,
+    asset_code character varying(50) NOT NULL,
+    asset_name character varying(255) NOT NULL,
+    description text,
+    asset_category character varying(100),
+    asset_subcategory character varying(100),
+    acquisition_date date NOT NULL,
+    cost numeric(15,2) NOT NULL,
+    salvage_value numeric(15,2) DEFAULT 0,
+    useful_life_years integer NOT NULL,
+    location character varying(255),
+    department character varying(100),
+    assigned_to character varying(255),
+    status character varying(20) DEFAULT 'ACTIVE'::character varying,
+    disposal_date date,
+    disposal_value numeric(15,2),
+    account_code character varying(20),
+    accumulated_depreciation numeric(15,2) DEFAULT 0,
+    current_book_value numeric(15,2),
+    created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+    created_by character varying(100),
+    updated_by character varying(100)
+);
+
+
+--
+-- Name: assets_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.assets_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: assets_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.assets_id_seq OWNED BY public.assets.id;
+
+
+--
+-- Name: assets id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.assets ALTER COLUMN id SET DEFAULT nextval('public.assets_id_seq'::regclass);
+
+
+--
+-- Name: assets assets_asset_code_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.assets
+    ADD CONSTRAINT assets_asset_code_key UNIQUE (asset_code);
+
+
+--
+-- Name: assets assets_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.assets
+    ADD CONSTRAINT assets_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: idx_assets_asset_code; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_assets_asset_code ON public.assets USING btree (asset_code);
+
+
+--
+-- Name: idx_assets_category; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_assets_category ON public.assets USING btree (asset_category);
+
+
+--
+-- Name: idx_assets_company_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_assets_company_id ON public.assets USING btree (company_id);
+
+
+--
+-- Name: idx_assets_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_assets_status ON public.assets USING btree (status);
+
+
+--
+-- Name: assets assets_company_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.assets
+    ADD CONSTRAINT assets_company_id_fkey FOREIGN KEY (company_id) REFERENCES public.companies(id);
+
+
+--
 -- PostgreSQL database dump complete
 --
 

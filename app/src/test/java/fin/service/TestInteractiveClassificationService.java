@@ -109,7 +109,7 @@ public class TestInteractiveClassificationService {
     @Test
     @DisplayName("Test batch classification")
     public void testBatchClassification() {
-        List<Long> transactionIds = List.of(999L, 998L); // Non-existent IDs for test
+        List<Long> transactionIds = List.of(-999L, -998L); // Guaranteed non-existent negative IDs for test
         String accountCode = "9600";
         String accountName = "Bank Charges";
         Long companyId = 1L;

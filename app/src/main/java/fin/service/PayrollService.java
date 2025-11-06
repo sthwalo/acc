@@ -148,6 +148,7 @@ private static class PayrollAccountIds {
     private static final int PARAM_CREDIT_AMOUNT = 4;
     private static final int PARAM_JOURNAL_LINE_DESCRIPTION = 5;
     private static final int PARAM_JOURNAL_REFERENCE = 6;
+    private static final int PARAM_SOURCE_TRANSACTION_ID = 7;
     
     // Payroll Journal Parameter Indices
     private static final int PARAM_PAYROLL_COMPANY_ID = 1;
@@ -1310,8 +1311,8 @@ private static class PayrollAccountIds {
         
         String insertLine = """
             INSERT INTO journal_entry_lines (journal_entry_id, account_id, debit_amount, 
-                                           credit_amount, description, reference, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                                           credit_amount, description, reference, source_transaction_id, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
             """;
         
         try (PreparedStatement pstmt = conn.prepareStatement(insertLine)) {
@@ -1322,6 +1323,7 @@ private static class PayrollAccountIds {
             pstmt.setBigDecimal(PARAM_CREDIT_AMOUNT, null);
             pstmt.setString(PARAM_JOURNAL_LINE_DESCRIPTION, "Gross salaries for " + period.getPeriodName());
             pstmt.setString(PARAM_JOURNAL_REFERENCE, reference + "-0" + JOURNAL_LINE_GROSS_SALARY);
+            pstmt.setNull(PARAM_SOURCE_TRANSACTION_ID, java.sql.Types.INTEGER); // source_transaction_id - NULL for payroll
             pstmt.executeUpdate();
             
             // 2. Credit: Payroll Liabilities (Total Deductions)
@@ -1332,6 +1334,7 @@ private static class PayrollAccountIds {
                 pstmt.setBigDecimal(PARAM_CREDIT_AMOUNT, totalDeductions);
                 pstmt.setString(PARAM_JOURNAL_LINE_DESCRIPTION, "Payroll deductions for " + period.getPeriodName());
                 pstmt.setString(PARAM_JOURNAL_REFERENCE, reference + "-0" + JOURNAL_LINE_PAYROLL_DEDUCTIONS);
+                pstmt.setNull(PARAM_SOURCE_TRANSACTION_ID, java.sql.Types.INTEGER); // source_transaction_id - NULL for payroll
                 pstmt.executeUpdate();
             }
             
@@ -1342,6 +1345,7 @@ private static class PayrollAccountIds {
             pstmt.setBigDecimal(PARAM_CREDIT_AMOUNT, totalNet);
             pstmt.setString(PARAM_JOURNAL_LINE_DESCRIPTION, "Net pay for " + period.getPeriodName());
             pstmt.setString(PARAM_JOURNAL_REFERENCE, reference + "-0" + JOURNAL_LINE_NET_PAY);
+            pstmt.setNull(PARAM_SOURCE_TRANSACTION_ID, java.sql.Types.INTEGER); // source_transaction_id - NULL for payroll
             pstmt.executeUpdate();
         }
     }
@@ -1858,7 +1862,7 @@ private static class PayrollAccountIds {
 
         Employee employee = new Employee();
         employee.setCompanyId(companyId);
-        employee.setCreatedBy("system");
+        employee.setCreatedBy("FIN");
 
         parseBasicEmployeeInfo(employee, fields);
         constructEmployeeAddress(employee, fields);

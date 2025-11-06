@@ -314,7 +314,7 @@ public class PayrollController {
     }
 
     private void createEmployeeRecord(Employee employee) {
-        employee.setCreatedBy("system");
+        employee.setCreatedBy("FIN");
         Employee created = payrollService.createEmployee(employee);
         outputFormatter.printSuccess("Employee created successfully: " + created.getEmployeeNumber() + " - " + created.getFullName());
     }
@@ -457,7 +457,7 @@ public class PayrollController {
     }
 
     private void performEmployeeUpdate(Employee employee) {
-        employee.setUpdatedBy("system");
+        employee.setUpdatedBy("FIN");
         Employee updated = payrollService.updateEmployee(employee);
         outputFormatter.printSuccess("Employee updated successfully: " + updated.getEmployeeNumber() + " - " + updated.getFullName());
     }
@@ -564,7 +564,7 @@ public class PayrollController {
             LocalDate payDate = LocalDate.of(endYear, endMonth, DEFAULT_PAY_DAY);
             period.setPayDate(payDate);
             
-            period.setCreatedBy("system");
+            period.setCreatedBy("FIN");
             
             PayrollPeriod created = payrollService.createPayrollPeriod(period);
             outputFormatter.printSuccess("Payroll period created: " + created.getPeriodName());
@@ -704,7 +704,7 @@ public class PayrollController {
                 }
             }
             
-            payrollService.processPayroll(selectedPeriod.getId(), "system");
+            payrollService.processPayroll(selectedPeriod.getId(), "FIN");
             outputFormatter.printSuccess("✅ Payroll processed successfully for period: " + selectedPeriod.getPeriodName());
             
         } catch (Exception e) {
