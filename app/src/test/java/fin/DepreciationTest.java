@@ -33,15 +33,15 @@ public class DepreciationTest {
 
     @BeforeEach
     public void setUp() throws Exception {
-        // Use test database configuration
-        String dbUrl = TestConfiguration.TEST_DB_URL;
+        // Use test database configuration with embedded credentials
+        String dbUrl = TestConfiguration.TEST_DB_URL_WITH_CREDENTIALS;
         String dbUser = TestConfiguration.TEST_DB_USER;
         String dbPassword = TestConfiguration.TEST_DB_PASSWORD;
 
         // Initialize database connection using test database
         conn = DatabaseConfig.getTestConnection(dbUrl, dbUser, dbPassword);
 
-        // Initialize repository and service with test database URL
+        // Initialize repository and service with test database URL (with credentials)
         DepreciationRepository repository = new DepreciationRepository(dbUrl);
         service = new DepreciationService(dbUrl, repository);
     }

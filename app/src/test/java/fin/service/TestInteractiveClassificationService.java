@@ -44,14 +44,6 @@ public class TestInteractiveClassificationService {
     
     @BeforeAll
     static void setUpClass() throws Exception {
-        // Skip database setup in CI/CD environments where it might not work
-        String ciEnv = System.getenv("CI");
-        String githubActions = System.getenv("GITHUB_ACTIONS");
-        if ("true".equals(ciEnv) || "true".equals(githubActions)) {
-            System.out.println("⏭️ Skipping TestConfiguration.setupTestDatabase() in CI/CD environment");
-            return;
-        }
-        
         TestConfiguration.setupTestDatabase();
     }
     
