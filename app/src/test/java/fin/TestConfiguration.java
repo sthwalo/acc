@@ -132,8 +132,11 @@ public class TestConfiguration {
      * Create a test database with all required tables
      */
     public static void setupTestDatabase() throws SQLException {
+        System.out.println("🔧 TestConfiguration.setupTestDatabase() - Starting database setup...");
         try (Connection conn = fin.config.DatabaseConfig.getTestConnection(TEST_DB_URL, TEST_DB_USER, TEST_DB_PASSWORD);
              Statement stmt = conn.createStatement()) {
+            
+            System.out.println("🔧 Connected to test database successfully");
             
             // Drop all existing tables and sequences first
             dropAllDatabaseObjects(stmt);
@@ -145,6 +148,10 @@ public class TestConfiguration {
             insertTestData(stmt);
             
             System.out.println("✅ Test database setup completed successfully");
+        } catch (SQLException e) {
+            System.err.println("❌ TestConfiguration.setupTestDatabase() - Failed: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
         }
     }
     
@@ -169,6 +176,10 @@ public class TestConfiguration {
             "bank_accounts",
             "journal_entry_lines",
             "journal_entries",
+            "depreciation_entries",
+            "depreciation_schedules",
+            "asset_disposals",
+            "assets",
             "accounts",
             "account_categories", 
             "account_types",
@@ -296,6 +307,106 @@ public class TestConfiguration {
                 FOREIGN KEY (category_id) REFERENCES account_categories(id) ON DELETE CASCADE,
                 UNIQUE(company_id, account_code)
             )
+            """,
+
+            // Assets table for depreciation tests
+            """
+            CREATE TABLE IF NOT EXISTS assets (
+                id BIGSERIAL PRIMARY KEY,
+                company_id BIGINT NOT NULL,
+                asset_code VARCHAR(50) NOT NULL,
+                asset_name VARCHAR(255) NOT NULL,
+                description TEXT,
+                asset_category VARCHAR(100),
+                asset_subcategory VARCHAR(100),
+                acquisition_date DATE NOT NULL,
+                cost NUMERIC(15,2) NOT NULL,
+                salvage_value NUMERIC(15,2) DEFAULT 0,
+                useful_life_years INTEGER NOT NULL,
+                location VARCHAR(255),
+                department VARCHAR(100),
+                assigned_to VARCHAR(255),
+                status VARCHAR(20) DEFAULT 'ACTIVE',
+                disposal_date DATE,
+                disposal_value NUMERIC(15,2),
+                account_code VARCHAR(20),
+                accumulated_depreciation NUMERIC(15,2) DEFAULT 0,
+                current_book_value NUMERIC(15,2),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                created_by VARCHAR(100),
+                updated_by VARCHAR(100),
+                CONSTRAINT chk_asset_status CHECK (status IN ('ACTIVE', 'DISPOSED', 'SOLD', 'WRITTEN_OFF'))
+            )
+            """,
+
+            // Depreciation schedules table
+            """
+            CREATE TABLE IF NOT EXISTS depreciation_schedules (
+                id BIGSERIAL PRIMARY KEY,
+                company_id BIGINT NOT NULL,
+                asset_id BIGINT,
+                schedule_number VARCHAR(50) NOT NULL,
+                schedule_name VARCHAR(255),
+                description TEXT,
+                cost NUMERIC(15,2) NOT NULL,
+                salvage_value NUMERIC(15,2) DEFAULT 0,
+                useful_life_years INTEGER NOT NULL,
+                depreciation_method VARCHAR(30) NOT NULL,
+                db_factor NUMERIC(5,2) DEFAULT 2.0,
+                convention VARCHAR(50),
+                total_depreciation NUMERIC(15,2) NOT NULL,
+                final_book_value NUMERIC(15,2) NOT NULL,
+                status VARCHAR(20) DEFAULT 'DRAFT',
+                calculation_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                approved_at TIMESTAMP WITH TIME ZONE,
+                approved_by VARCHAR(100),
+                posted_at TIMESTAMP WITH TIME ZONE,
+                posted_by VARCHAR(100),
+                journal_entry_id BIGINT,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                created_by VARCHAR(100),
+                updated_by VARCHAR(100),
+                CONSTRAINT chk_depreciation_method CHECK (depreciation_method IN ('STRAIGHT_LINE', 'DECLINING_BALANCE', 'FIN')),
+                CONSTRAINT chk_schedule_status CHECK (status IN ('DRAFT', 'CALCULATED', 'APPROVED', 'POSTED'))
+            )
+            """,
+
+            // Depreciation entries table
+            """
+            CREATE TABLE IF NOT EXISTS depreciation_entries (
+                id BIGSERIAL PRIMARY KEY,
+                depreciation_schedule_id BIGINT NOT NULL,
+                year_number INTEGER NOT NULL,
+                fiscal_year INTEGER,
+                period_start DATE,
+                period_end DATE,
+                depreciation_amount NUMERIC(15,2) NOT NULL,
+                cumulative_depreciation NUMERIC(15,2) NOT NULL,
+                book_value NUMERIC(15,2) NOT NULL,
+                status VARCHAR(20) DEFAULT 'CALCULATED',
+                journal_entry_line_id BIGINT,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                CONSTRAINT chk_entry_status CHECK (status IN ('CALCULATED', 'POSTED', 'ADJUSTED'))
+            )
+            """,
+
+            // Asset disposals table
+            """
+            CREATE TABLE IF NOT EXISTS asset_disposals (
+                id BIGSERIAL PRIMARY KEY,
+                asset_id BIGINT NOT NULL,
+                disposal_date DATE NOT NULL,
+                disposal_value NUMERIC(15,2),
+                disposal_reason TEXT,
+                reference VARCHAR(100) NOT NULL UNIQUE,
+                approved_by VARCHAR(100),
+                approved_at TIMESTAMP WITH TIME ZONE,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                created_by VARCHAR(100)
+            )
             """
         };
         
@@ -312,6 +423,7 @@ public class TestConfiguration {
     }
     
     private static void executeSchemaFile(Statement stmt) throws SQLException {
+        System.out.println("🔧 executeSchemaFile() - Starting schema execution...");
         try {
             String schemaSql = null;
             
@@ -324,6 +436,8 @@ public class TestConfiguration {
                 if (resourceStream != null) {
                     schemaSql = new String(resourceStream.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
                     System.out.println("✅ Loaded test_schema.sql from classpath (test resources)");
+                } else {
+                    System.out.println("⚠️ test_schema.sql not found in classpath");
                 }
             } catch (Exception e) {
                 System.out.println("⚠️ Could not load from classpath: " + e.getMessage());
@@ -528,6 +642,13 @@ public class TestConfiguration {
             VALUES (1, 'Test Company Ltd', '2023/123456/07', '9876543210', '123 Test St, Test City', 'test@example.com', '+27-11-123-4567')
         """);
         
+        // Insert test company for depreciation test (company ID 5)
+        stmt.executeUpdate("""
+            INSERT INTO companies (id, name, registration_number, tax_number) 
+            VALUES (5, 'Depreciation Test Company', 'DEP123', 'DEP987654') 
+            ON CONFLICT (id) DO NOTHING
+        """);
+        
         // Insert test fiscal period
         stmt.executeUpdate("""
             INSERT INTO fiscal_periods (id, company_id, period_name, start_date, end_date, is_closed)
@@ -547,6 +668,15 @@ public class TestConfiguration {
             (8, 'Financial Expenses', 5, 1)
         """);
         
+        // Insert depreciation test account categories
+        stmt.executeUpdate("""
+            INSERT INTO account_categories (id, name, account_type_id, company_id) VALUES
+            (9, 'Fixed Assets', 1, 5),
+            (10, 'Accumulated Depreciation', 1, 5),
+            (11, 'Depreciation Expense', 5, 5)
+            ON CONFLICT (id) DO NOTHING
+        """);
+        
         // Insert test accounts
         stmt.executeUpdate("""
             INSERT INTO accounts (id, company_id, category_id, account_code, account_name, description) VALUES
@@ -556,6 +686,42 @@ public class TestConfiguration {
             (4, 1, 7, '9600', 'Bank Charges', 'Bank fees and charges'),
             (5, 1, 6, '4000', 'Sales Revenue', 'Revenue from sales'),
             (6, 1, 7, '5000', 'Office Expenses', 'General office expenses')
+        """);
+        
+        // Insert depreciation test accounts
+        stmt.executeUpdate("""
+            INSERT INTO accounts (id, company_id, category_id, account_code, account_name) VALUES
+            (7, 5, 9, '1000', 'Fixed Assets'),
+            (8, 5, 10, '1001', 'Accumulated Depreciation'),
+            (9, 5, 11, '5000', 'Depreciation Expense')
+            ON CONFLICT (id) DO NOTHING
+        """);
+        
+        // Insert test asset for depreciation
+        stmt.executeUpdate("""
+            INSERT INTO assets (id, company_id, asset_code, asset_name, acquisition_date, cost, salvage_value, useful_life_years, status, account_code) 
+            VALUES (1, 5, 'COMP001', 'Test Computer', '2023-01-01', 10000.00, 1000.00, 5, 'ACTIVE', '1000') 
+            ON CONFLICT (id) DO NOTHING
+        """);
+        
+        // Insert test depreciation schedule
+        stmt.executeUpdate("""
+            INSERT INTO depreciation_schedules (id, company_id, asset_id, schedule_number, schedule_name, cost, salvage_value, useful_life_years, depreciation_method, total_depreciation, final_book_value, status) 
+            VALUES (19, 5, 1, 'DS001', 'Test Computer Depreciation', 10000.00, 1000.00, 5, 'STRAIGHT_LINE', 1800.00, 8200.00, 'CALCULATED') 
+            ON CONFLICT (id) DO NOTHING
+        """);
+        
+        // Insert depreciation entries for the schedule
+        stmt.executeUpdate("""
+            INSERT INTO depreciation_entries (depreciation_schedule_id, year_number, depreciation_amount, cumulative_depreciation, book_value, status) 
+            VALUES (19, 1, 1800.00, 1800.00, 8200.00, 'CALCULATED') 
+            ON CONFLICT DO NOTHING
+        """);
+        
+        stmt.executeUpdate("""
+            INSERT INTO depreciation_entries (depreciation_schedule_id, year_number, depreciation_amount, cumulative_depreciation, book_value, status) 
+            VALUES (19, 2, 1800.00, 3600.00, 6400.00, 'CALCULATED') 
+            ON CONFLICT DO NOTHING
         """);
     }
     
@@ -586,6 +752,10 @@ public class TestConfiguration {
                 "bank_accounts",
                 "journal_entry_lines",
                 "journal_entries",
+                "depreciation_entries",
+                "depreciation_schedules",
+                "asset_disposals",
+                "assets",
                 "accounts",
                 "account_categories", 
                 "account_types",
