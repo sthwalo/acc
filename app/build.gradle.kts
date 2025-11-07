@@ -196,6 +196,10 @@ tasks.named<Test>("test") {
     
     // Set working directory to project root so test.env can be found
     workingDir = rootProject.projectDir
+
+    // Exclude integration tests from unit test run - they run separately in integrationTest task
+    exclude("**/*IntegrationTest.class")
+    exclude("**/integration/**")
 }
 
 // Integration Test Task - JAR-First Testing
@@ -209,10 +213,6 @@ tasks.register<Test>("integrationTest") {
     // Include only integration tests
     include("**/*IntegrationTest.class")
     include("**/integration/**")
-
-    // Exclude unit tests
-    exclude("**/*Test.class")
-    exclude("**/Test*.class")
 
     // Test against built JAR (JAR-first approach)
     dependsOn("build")
