@@ -9,6 +9,7 @@ import fin.model.DepreciationYear;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 
 import java.sql.Connection;
 import java.util.List;
@@ -24,22 +25,23 @@ public class DepreciationTest {
     private Connection conn;
     private DepreciationService service;
 
+    @BeforeAll
+    public static void setUpClass() throws Exception {
+        // Setup test database schema and data
+        TestConfiguration.setupTestDatabase();
+    }
+
     @BeforeEach
     public void setUp() throws Exception {
-        // Force use of production database for this test
-        // (since test database may not have depreciation tables set up)
-        System.setProperty("fin.database.test.url", System.getProperty("DATABASE_URL", "jdbc:postgresql://localhost:5432/drimacc_db"));
-        System.setProperty("TEST_DATABASE_USER", System.getProperty("DATABASE_USER", "sthwalonyoni"));
-        System.setProperty("TEST_DATABASE_PASSWORD", System.getProperty("DATABASE_PASSWORD", "drimPro1823"));
+        // Use test database configuration
+        String dbUrl = TestConfiguration.TEST_DB_URL;
+        String dbUser = TestConfiguration.TEST_DB_USER;
+        String dbPassword = TestConfiguration.TEST_DB_PASSWORD;
 
-        // Re-initialize DatabaseConfig with test settings
-        DatabaseConfig.loadConfiguration();
+        // Initialize database connection using test database
+        conn = DatabaseConfig.getTestConnection(dbUrl, dbUser, dbPassword);
 
-        // Initialize database connection
-        conn = DatabaseConfig.getConnection();
-        String dbUrl = DatabaseConfig.getDatabaseUrl();
-
-        // Initialize repository and service with proper dbUrl for accountRepository
+        // Initialize repository and service with test database URL
         DepreciationRepository repository = new DepreciationRepository(dbUrl);
         service = new DepreciationService(dbUrl, repository);
     }

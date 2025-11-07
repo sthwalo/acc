@@ -42,7 +42,9 @@ class CompanyRepositoryTest {
 
     @BeforeAll
     static void setUpClass() throws Exception {
+        System.out.println("🔧 CompanyRepositoryTest.setUpClass() - Starting...");
         TestConfiguration.setupTestDatabase();
+        System.out.println("🔧 CompanyRepositoryTest.setUpClass() - Completed");
     }
 
     @AfterAll
@@ -52,18 +54,43 @@ class CompanyRepositoryTest {
 
     @BeforeEach
     void setUp() throws Exception {
+        System.out.println("🔧 CompanyRepositoryTest.setUp() - Starting...");
         connection = DriverManager.getConnection(
             TestConfiguration.TEST_DB_URL,
             TestConfiguration.TEST_DB_USER,
             TestConfiguration.TEST_DB_PASSWORD
         );
+        System.out.println("🔧 CompanyRepositoryTest.setUp() - Connection established");
+        
         // Use URL with embedded credentials for repository (it uses single-parameter DriverManager.getConnection)
         repository = new CompanyRepository(TestConfiguration.TEST_DB_URL_WITH_CREDENTIALS);
+        System.out.println("🔧 CompanyRepositoryTest.setUp() - Repository created");
 
-        // Clean up any existing test data
+        // Clean up ALL existing test data in reverse dependency order to ensure clean slate
         try (Statement stmt = connection.createStatement()) {
+            System.out.println("🔧 CompanyRepositoryTest.setUp() - Cleaning up test data");
+            
+            // Delete in reverse dependency order to avoid foreign key violations
+            // Clean up depreciation-related data first
+            stmt.executeUpdate("DELETE FROM depreciation_entries");
+            stmt.executeUpdate("DELETE FROM depreciation_schedules");
+            stmt.executeUpdate("DELETE FROM asset_disposals");
+            stmt.executeUpdate("DELETE FROM assets");
+            
+            // Clean up accounting data
+            stmt.executeUpdate("DELETE FROM accounts");
+            stmt.executeUpdate("DELETE FROM account_categories");
+            stmt.executeUpdate("DELETE FROM account_types");
+            
+            // Clean up fiscal periods
+            stmt.executeUpdate("DELETE FROM fiscal_periods");
+            
+            // Finally clean up all companies (both test company ID 1 and depreciation company ID 5)
             stmt.executeUpdate("DELETE FROM companies");
+            
+            System.out.println("🔧 CompanyRepositoryTest.setUp() - Test data cleanup completed");
         }
+        System.out.println("🔧 CompanyRepositoryTest.setUp() - Completed");
     }
 
     @AfterEach
