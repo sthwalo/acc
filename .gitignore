@@ -1,11 +1,44 @@
-# Ignore Gradle project-specific cache directory
-.gradle
+# ========================================
+# CRITICAL SECURITY - NEVER COMMIT TO PUBLIC REPO
+# ========================================
 
-# Ignore Gradle build output directory
-build
+# Environment files with REAL credentials (CRITICAL - contains database passwords, SMTP, emails)
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+.env.staging
+.env.*
+
+# Secrets directory with real passwords and credentials
+secrets/
+secrets/db_password.txt
+secrets/db_user.txt
+secrets/smtp_password.txt
+secrets/*.txt
+secrets/*.key
+secrets/*.pem
+secrets/*.p12
+secrets/*.keystore
+
+# Database files containing real financial data
+*.db
+fin_database.db
+app/fin_database.db
+spring-app/fin_database.db
+
+# SQL files with real credentials or sensitive data
+reset_password.sql
+restore_transactions.sql
+update_created_by.sql
+
+# Python scripts with hardcoded credentials (fallback values are real passwords)
+import_transactions.py
+import_complete_transactions.py
 
 # ========================================
-# LICENSING AND COMMERCIAL FILES
+# COMMERCIAL LICENSES AND ACTIVATION
 # ========================================
 
 # Commercial license files (never commit)
@@ -20,52 +53,30 @@ usage.log
 license_verification.log
 
 # ========================================
-# SENSITIVE DATA - NEVER COMMIT TO PUBLIC REPO
+# FINANCIAL DATA - SENSITIVE BUSINESS INFORMATION
 # ========================================
 
-# Database files containing real financial data
-.env
-*.db
-fin_database.db
-app/fin_database.db
-dev-tools/commands.md
-logicrefactor.txt
-
-# Bank statements and financial documents (PDFs)
+# Bank statements and financial documents (PDFs with real financial data)
 bank/
 input/
 *.pdf
-Commands
-
 
 # Cash transaction documents
 cash/
 input/
 exports/
-output
+output/
 
 # Processed financial data exports
 *.csv
 processed_statement_*.csv
+exported_transactions_*.csv
+complete_transactions_backup.csv
+spring-app/docs/quickcommands.txt
 
 # Reports containing sensitive financial information
 reports/
 dev-tools/scripts/
-
-# Scripts with sensitive data (exclude specific ones)
-scripts/connect_db.sh
-scripts/export_data.sh
-scripts/process_statement.sh
-scripts/frontend-licensing-*.sh
-scripts/*_data_*.sh
-scripts/*_db_*.sh
-scripts/*_credentials_*.sh
-scripts/verify_sdl_implementation.sh
-scripts/create_opening_balance.sh
-run.sh
-runfast.sh
-app/src/test/resources/test.env
-app/src/test/resources/test_database.db
 
 # Employee data files (PII - Personal Identifiable Information)
 input/EmployeesData.txt
@@ -74,34 +85,22 @@ scripts/populate_birth_dates.sql
 scripts/update_employee_names.sql
 scripts/add_company_logo.sql
 scripts/add_updated_at_column.sql
-scripts/set_limelight_logo.sql
 
 # Payslips containing employee financial data
 payslips/
 exports/test_payslip_java.pdf
 
-# Personal usage logs
-personal_use.log
-usage.log
-license_verification.log
-
-# Reports containing sensitive financial information
-reports/
-dev-tools/scripts/
-
-# Scripts with sensitive data (exclude specific ones)
-scripts/connect_db.sh
-scripts/export_data.sh
-scripts/process_statement.sh
-scripts/frontend-licensing-*.sh
-scripts/*_data_*.sh
-scripts/*_db_*.sh
-scripts/*_credentials_*.sh
-
-
 # ========================================
 # BUILD AND DEVELOPMENT FILES
 # ========================================
+
+# Gradle project-specific cache directory
+.gradle
+
+# Gradle build output directory
+build/
+app/build/
+spring-app/build/
 
 # Compiled Java classes
 *.class
@@ -112,7 +111,10 @@ scripts/*_credentials_*.sh
 target/
 out/
 bin/
-secrets/
+
+# Node.js dependencies
+node_modules/
+frontend/node_modules/
 
 # IDE files
 .idea/
@@ -133,28 +135,50 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
-*.log
 *.bak
 *.swp
 *.swo
 *~
 
 # ========================================
-# ENVIRONMENT AND CONFIGURATION
+# LOG FILES AND RUNTIME ARTIFACTS
 # ========================================
 
-# Environment files
-.env
-.env.local
-.env.development
-.env.test
-.env.production
+# Application logs
+*.log
+api_output.log
+api_server.log
+server.log
+spring-boot.log
+spring.log
+spring-boot-foreground.log
+migration_deployments.log
+license-header-additions.log
+license-header-fixes.log
 
-# Configuration files with sensitive data
-config/local.properties
-config/production.properties
-application-local.yml
-application-production.yml
+# Process ID files
+*.pid
+api_pid.txt
+spring-boot.pid
+spring.pid
+
+# ========================================
+# SPRING BOOT CONFIGURATION - PROTECT SENSITIVE FILES
+# ========================================
+
+# Spring Boot application properties (may contain credentials)
+**/application.properties
+**/application*.properties
+**/application-*.properties
+!**/application*.properties.example
+!**/application.properties.template
+
+# Spring Boot application YAML files
+**/application.yml
+**/application*.yml
+**/application-*.yml
+!**/application*.yml.example
+!**/application.yml.template
 
 # API keys and secrets
 secrets.properties
@@ -207,16 +231,12 @@ docs/technical/DATABASE_REFERENCE.md
 docs/DATABASE_REFERENCE.md
 dev-tools/commands.md
 
-
 # Exclude any docs with real credentials or sensitive data
 docs/**/credentials.md
 docs/**/passwords.md
 docs/**/*_credentials_*.md
 docs/**/*_sensitive_*.md
 docs/troubleshooting/DATA_MANAGEMENT_DEEP_DIVE_ANALYSIS.md
-chart_of_accounts_mapping_guide.txt
-cmd.txt
-rules.txt
 
 # ========================================
 # DEVELOPMENT TOOLS
@@ -280,14 +300,9 @@ tools/
 ehthumbs.db
 Thumbs.db
 
-# Environment files
-.env
-.env.local
-.env.production
-.env.test
-# Incident reports and deployment docs
-docs/INCIDENT_REPORT_*.md
-docs/MIGRATION_DEPLOYMENT_PROCESS.md
+# ========================================
+# DATABASE AND MIGRATION FILES
+# ========================================
 
 # Database migration files
 app/src/main/resources/db/migration/
@@ -307,9 +322,3 @@ scripts/monitor_logs.sh
 # Incident reports and deployment docs
 docs/INCIDENT_REPORT_*.md
 docs/MIGRATION_DEPLOYMENT_PROCESS.md
-
-# Monitoring and deployment scripts
-scripts/backup_database.sh
-scripts/deploy_migrations.sh
-scripts/monitor_logs.sh
-.env

@@ -47,9 +47,12 @@ backups/
 docs/
 !docs/schemas/
 
-# Scripts (exclude sensitive scripts but allow migrations)
+# Scripts (exclude sensitive scripts but allow migrations and docker scripts)
 scripts/
 !scripts/migrations/
+!scripts/wait-for-postgres.sh
+!scripts/docker-entrypoint.sh
+!scripts/docker-init.sql
 
 # Input/Output directories
 input/

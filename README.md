@@ -46,7 +46,38 @@ A comprehensive Java-based financial management system with PostgreSQL database,
 
 ---
 
-## �🏢 System Overview
+## 🚀 Quick Start - Container Mode
+
+**One-command full-stack startup with automatic browser launch:**
+
+```bash
+# Start everything (backend, database, frontend) and open browser
+./start.sh
+
+# Or from frontend directory:
+npm run start:containers
+```
+
+This will:
+- ✅ Start PostgreSQL database
+- ✅ Start FIN backend API on port 8080
+- ✅ Start React frontend on port 3000
+- ✅ Automatically open http://localhost:3000 in your browser
+- ✅ Configure CORS for seamless frontend-backend communication
+
+**Stop containers:**
+```bash
+docker compose down
+```
+
+**View logs:**
+```bash
+docker compose logs -f
+```
+
+---
+
+## 🏢 System Overview
 
 FIN is a production-ready financial management system that handles:
 - **Bank Statement Processing** - Automated PDF text extraction and transaction parsing

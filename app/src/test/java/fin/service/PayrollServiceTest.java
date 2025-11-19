@@ -28,6 +28,7 @@ package fin.service;
 
 import fin.model.*;
 import fin.repository.CompanyRepository;
+import fin.repository.EmployeeImportDefaultsRepository;
 import org.junit.jupiter.api.*;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
@@ -54,6 +55,9 @@ class PayrollServiceTest {
     private EmailService emailService;
 
     @Mock
+    private EmployeeImportDefaultsRepository employeeImportDefaultsRepository;
+
+    @Mock
     private Connection connection;
 
     @Mock
@@ -72,7 +76,7 @@ class PayrollServiceTest {
         driverManagerMock.when(() -> DriverManager.getConnection(anyString()))
                         .thenReturn(connection);
 
-        payrollService = new PayrollService("jdbc:test:db", companyRepository, pdfService, emailService);
+        payrollService = new PayrollService("jdbc:test:db", companyRepository, pdfService, emailService, employeeImportDefaultsRepository);
     }
 
     @AfterEach

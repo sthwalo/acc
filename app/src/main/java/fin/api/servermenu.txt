@@ -1,0 +1,569 @@
+================================================================================
+============================== FIN Authentication ==============================
+================================================================================
+ℹ️ Please login or register to access the FIN system
+--------------------------------------------------------------------------------
+Authentication Menu:
+1. Login
+2. Register New Account
+3. Exit
+--------------------------- ===== ================================================================================
+======================= FIN Financial Management System =======================
+================================================================================
+ℹ️ Welcome to the modular FIN application
+--------------------------------------------------------------------------------
+ℹ️ System Status:
+✅ ✓ Database connection established
+✅ ✓ All services initialized
+✅ ✓ License compliance verified
+--------------------------------------------------------------------------------
+ℹ️ Quick Start Guide:
+1. Create or select a company (Option 1)
+2. Create or select a fiscal period (Option 2)
+3. Import bank statements or CSV data (Options 3-4)
+4. Generate financial reports (Option 6)
+--------------------------------------------------------------------------------
+
+================================================================================
+============================== FIN Authentication ==============================
+================================================================================
+ℹ️ Please login or register to access the FIN system
+--------------------------------------------------------------------------------
+Authentication Menu:
+1. Login
+2. Register New Account
+3. Exit
+--------------------------------------------------------------------------------
+Enter your choice (1-3): 1
+
+================================================================================
+================================== User Login ==================================
+================================================================================
+Email: sthwaloe@gmail.com
+Password: Immaculate89
+✅ Login successful!
+ℹ️ Welcome back, Immaculate Nyoni Nyoni
+--------------------------------------------------------------------------------
+✅ Authentication successful!
+ℹ️ You are now logged in as: Immaculate Nyoni Nyoni (sthwaloe@gmail.com)
+
+===== FIN Application Menu =====
+1. Company Setup
+2. Fiscal Period Management
+3. Import Bank Statement
+4. Import CSV Data
+5. View Imported Data
+6. Generate Reports
+7. Data Management
+8. Payroll Management
+9. Budget Management
+10. Depreciation Calculator
+11. Show current time
+12. System Logs
+13. Exit
+---Company Setup =====
+1. Create new company
+2. Select existing company
+3. View company details
+4. Edit company details
+5. Delete company
+6. Back to main menu 
+===== Fiscal Period Management =====
+1. Create new fiscal period
+2. Select existing fiscal period
+3. View fiscal period details
+4. Back to main menu
+===== Import Bank Statement =====
+1. Import single bank statement
+2. Import multiple bank statements (batch)
+3. Back to main menu
+
+===============================================================
+=============================== Import CSV Data ===============================
+================================================================================
+Enter CSV file path (*.csv): ============================================
+
+=============================== View Imported Data ==============================
+============================ Imported Transactions ============================
+================================================================================
+
+--------------------------------------------------
+Current Context
+--------------------------------------------------
+Company: Global Hope Consortium
+Fiscal Period: FY2025-2026 (2025-03-01 to 2026-02-28)
+ℹ️ Found 5 transactions.
+--------------------------------------------------------------------------------
+Options:
+1. View transactions in terminal
+2. Export transactions to PDF
+3. Back to main menu
+ ===== Financial Reports =====
+1. Cashbook Report
+2. General Ledger Report
+3. Trial Balance Report
+4. Income Statement
+5. Balance Sheet
+6. Audit Trail
+7. Cash Flow Statement
+8. Back to main menu
+===== Data Management =====
+1. Create Manual Invoice
+2. Generate Invoice PDF
+3. Sync Invoice Journal Entries
+4. Create Manual Journal Entry
+5. Transaction Classification
+        ===== Transaction Classification =====
+        1. Interactive Classification (new transactions)
+            ============================================================
+             📋 CATEGORIZATION MENU
+             ============================================================
+            1. Review Uncategorized Transactions
+            2. Analyze Account Allocations
+            3. Show Categorization Summary
+            4. Save Changes
+            5. Exit
+            6. Show Change History
+        2. Auto-Classify Unclassified Transactions
+        3. Reclassify ALL Transactions (apply updated rules)
+        4. Initialize Chart of Accounts & Mapping Rules
+            --------------------------------------------------
+            Chart of Accounts Initialization
+            --------------------------------------------------
+
+            ===== Initialize Chart of Accounts =====
+            1. Initialize Chart of Accounts Only
+            2. Initialize Transaction Mapping Rules Only
+            3. Perform Full Initialization
+            4. Back
+        5. Sync Journal Entries (new transactions only)
+        6. Regenerate ALL Journal Entries (after reclassification)
+        7. Back to Data Management
+6. Correct Transaction Categories
+        ================================================================================
+        ====================== Correct Transaction Categorization ======================
+        ================================================================================
+
+            📊 Total Transactions: 5
+
+            Filter Options:
+            1. Show All Transactions
+            2. Show Uncategorized Only
+            3. Show Categorized Only
+            4. Back to Data Management
+7. View Transaction History
+8. Reset Company Data
+        ================================================================================
+        ============================== Reset Company Data ==============================
+        ================================================================================
+        ⚠️ This will delete transaction data for the current company.
+        Reset options:
+        1. Reset only transaction data
+        2. Reset all data (including chart of accounts)
+        3. Cancel
+9. Export to CSV
+10. Back to main menu 
+    
+
+
+================================================================================
+============================== Payroll Management ==============================
+================================================================================
+1. Employee Management
+        ================================================================================
+        ============================= Employee Management =============================
+        ================================================================================
+        1. List Employees
+        2. Create Employee
+        3. Update Employee
+        4. Delete Employee
+        5. Back to Payroll Management
+2. Payroll Period Management
+        ================================================================================
+        ========================== Payroll Period Management ==========================
+        ================================================================================
+        1. List Payroll Periods
+        2. Create Payroll Period
+        3. Delete Payroll Period
+        4. Force Delete All 
+        5. Back to Payroll Management   
+3. Process Payroll
+4. Generate Payslips
+5. Payroll Reports
+        ================================================================================
+        =============================== Payroll Reports ===============================
+        ================================================================================
+        1. Generate Payroll Summary Report
+        2. Generate Employee Payroll Report
+        3. Generate EMP 201 Report (SARS Tax Submission)
+        4. Back to Payroll Management
+6. Document Management
+        ================================================================================
+        ============================= Payroll Document Management ======================
+        ================================================================================
+        1. Upload Payroll Document
+        2. List Payroll Documents
+        3. Download Payroll Document
+        4. Delete Payroll Document
+        5. Search Payroll Documents
+        6. Back to Payroll Management
+7. Back to Main Menu
+================================================================================
+========================= Budget & Strategic Planning =========================
+================================================================================
+Company: Global Hope Consortium
+
+
+===== Budget Management =====
+1. Strategic Planning
+        --------------------------------------------------
+        Strategic Planning
+        --------------------------------------------------
+
+        ===== Strategic Planning =====
+        1. Create Strategic Plan
+        2. View Strategic Plans
+        3. Edit Strategic Plan
+        4. Delete Strategic Plan
+        5. Back to Budget Menu
+2. Budget Creation
+        --------------------------------------------------
+        Budget Creation
+        --------------------------------------------------
+
+        ===== Budget Creation =====
+        1. Create New Budget
+        2. View Budgets
+        3. Edit Budget
+        4. Delete Budget
+        5. Back to Budget Menu
+3. Budget Reports
+        --------------------------------------------------
+        Budget Reports
+        --------------------------------------------------
+        1. Budget Summary Report
+        2. Budget vs Actual Report
+        3. Strategic Plan Report
+        4. Print PDF Reports
+                --------------------------------------------------
+                Print PDF Reports
+                --------------------------------------------------
+                1. Print Budget Summary PDF
+                2. Print Budget vs Actual PDF
+                3. Print Strategic Plan PDF
+                4. Back
+        5. Back to Budget Menu
+4. Budget vs Actual Analysis
+5. Back to Main Menu
+===== Depreciation Calculator =====
+1. Calculate and Save Depreciation Schedule
+2. View Saved Depreciation Schedules
+        === Saved Depreciation Schedules ===
+            Available Assets:
+            ID    Name                 Cost            Purchase Date   Useful Life Salvage Value   Has Schedule
+            ================================================================================
+            20    Computer             23000.00        2021-11-12      10         5000.00         Yes       
+
+            Enter asset ID to view depreciation schedule (0 to cancel): Enter asset ID: 20
+
+            ================================================================================
+            DECLINING BALANCE DEPRECIATION DEPRECIATION FOR COMPUTER SCHEDULE
+            ================================================================================
+            Year | Annual Depreciation | Cumulative Depreciation | Book Value
+            ----------------------------------------------------------------------
+            0 |             255,53 |                 255,53 |   22744,47
+            1 |             758,07 |                1013,60 |   21986,40
+            2 |             732,81 |                1746,41 |   21253,59
+            3 |             708,38 |                2454,79 |   20545,21
+            4 |             684,77 |                3139,56 |   19860,44
+            5 |             661,95 |                3801,51 |   19198,49
+            6 |             639,89 |                4441,40 |   18558,60
+            7 |             618,56 |                5059,96 |   17940,04
+            8 |             597,94 |                5657,90 |   17342,10
+            9 |             578,01 |                6235,91 |   16764,09
+            ======================================================================
+            Total Depreciation: R6235,91
+            Final Book Value: R16764,09
+3. Manage Assets
+        === Asset Management ===
+        1. List All Assets
+        2. Add New Asset
+        3. Update Asset
+        4. Delete Asset
+        5. Back to Depreciation Menu
+4. Quick Calculation (In-Memory)
+        === Quick Depreciation Calculation ===
+        1. Calculate Straight-Line Depreciation
+        2. Calculate Declining Balance Depreciation
+        3. Calculate FIN Depreciation
+        4. Compare Depreciation Methods
+        5. Back to Depreciation Menu
+5. Repost Depreciation Schedules
+6. Back to Main Men
+
+Enter your choice (1-13): Enter your choice (1-13): 11
+ℹ️ Current date: 2025-11-09
+ℹ️ Current fiscal period: FY2025-2026
+
+Press Enter to continue
+================================================================================
+================================= System Logs =================================
+================================================================================
+1. View Application Logs
+2. View Database Logs
+3. View Error Logs
+4. Clear Logs
+5. Back to main menu
+================================================================================
+=============================== Exit Application ===============================
+================================================================================
+ℹ️ Current session: Company: Global Hope Consortium, Period: FY2025-2026
+Would you like to save any current work before exiting? (y/n): y
+
+--------------------------------------------------
+Save Options
+--------------------------------------------------
+1. Export current transactions to CSV
+2. Generate summary report
+3. Skip savingSelect save option (1-3): 3
+ℹ️ Skipping save operations
+Are you sure you want to exit the FIN application? (y/n): y
+
+================================================================================
+=========================== Thank You for Using FIN ===========================
+================================================================================
+✅ Session ended successfully
+ℹ️ All data has been saved
+Goodbye!
+--------------------------------------------------------------------------------
+
+🛑 Shutting down application...
+ℹ️ Shutting down FIN application...
+✅ Shutdown complete
+🔄 Shutting down application context...
+✅ Application context shutdown complete
+✅ Application stopped successfully 
+
+
+tree .
+.
+├── api
+│   ├── ApiServer.java
+│   ├── config
+│   │   ├── # Code Citations.md
+│   │   ├── ApiConfig.java
+│   │   ├── CorsConfig.java
+│   │   ├── ExceptionConfig.java
+│   │   └── RouteRegistry.java
+│   ├── controllers
+│   │   ├── AccountController.java
+│   │   ├── AuthController.java
+│   │   ├── BudgetController.java
+│   │   ├── ClassificationController.java
+│   │   ├── CompanyController.java
+│   │   ├── DataManagementController.java
+│   │   ├── DepreciationController.java
+│   │   ├── FiscalPeriodController.java
+│   │   ├── ImportController.java
+│   │   ├── PayrollController.java
+│   │   ├── ReportController.java
+│   │   ├── SystemController.java
+│   │   ├── TransactionController.java
+│   │   └── UploadController.java
+│   ├── dto
+│   │   ├── requests
+│   │   └── responses
+│   │       └── ApiResponse.java
+│   ├── middleware
+│   │   └── AuthMiddleware.java
+│   ├── routes
+│   │   ├── AccountRoutes.java
+│   │   ├── AuthRoutes.java
+│   │   ├── BudgetRoutes.java
+│   │   ├── CompanyRoutes.java
+│   │   ├── DataManagementRoutes.java
+│   │   ├── DepreciationRoutes.java
+│   │   ├── PayrollRoutes.java
+│   │   └── ReportRoutes.java
+│   ├── servermenu.txt
+│   └── util
+│       ├── ApiConstants.java
+│       ├── RequestValidator.java
+│       └── ResponseBuilder.java
+├── ApiApplication.java
+├── AppTransition.java
+├── BatchProcessor.java
+├── cli
+│   └── CreateOpeningBalance.java
+├── config
+│   └── DatabaseConfig.java
+├── ConsoleApplication.java
+├── context
+│   ├── ApplicationContext.java
+│   └── TransactionParsingContext.java
+├── controller
+│   ├── ApplicationController.java
+│   ├── AuthController.java
+│   ├── BudgetController.java
+│   ├── CompanyController.java
+│   ├── DataManagementController.java
+│   ├── DepreciationController.java
+│   ├── FiscalPeriodController.java
+│   ├── ImportController.java
+│   ├── PayrollController.java
+│   └── ReportController.java
+├── exception
+│   ├── AccountException.java
+│   ├── CategoryException.java
+│   ├── DatabaseException.java
+│   ├── DomainException.java
+│   └── TransactionMappingException.java
+├── license
+│   └── LicenseManager.java
+├── model
+│   ├── Account.java
+│   ├── AccountBalance.java
+│   ├── AccountCategory.java
+│   ├── AccountCode.java
+│   ├── AccountInfo.java
+│   ├── AccountType.java
+│   ├── Asset.java
+│   ├── AuditReport.java
+│   ├── BankTransaction.java
+│   ├── BatchProcessingResult.java
+│   ├── BatchProcessingStatistics.java
+│   ├── Budget.java
+│   ├── BudgetCategory.java
+│   ├── BudgetItem.java
+│   ├── BudgetMonthlyAllocation.java
+│   ├── ClassificationResult.java
+│   ├── Company.java
+│   ├── CompanyExtendedInfo.java
+│   ├── CompanyId.java
+│   ├── DepreciationMethod.java
+│   ├── DepreciationRequest.java
+│   ├── DepreciationSchedule.java
+│   ├── DepreciationYear.java
+│   ├── DirectorsReport.java
+│   ├── DirectorsResponsibilityStatement.java
+│   ├── Disposal.java
+│   ├── Employee.java
+│   ├── EquityMovement.java
+│   ├── FinancialNote.java
+│   ├── FiscalPeriod.java
+│   ├── FiscalPeriodId.java
+│   ├── JournalEntry.java
+│   ├── JournalEntryLine.java
+│   ├── JournalEntryLineDetail.java
+│   ├── Money.java
+│   ├── OperationalActivity.java
+│   ├── parser
+│   │   ├── ParsedTransaction.java
+│   │   └── TransactionType.java
+│   ├── PayrollPeriod.java
+│   ├── Payslip.java
+│   ├── Plan.java
+│   ├── StrategicInitiative.java
+│   ├── StrategicMilestone.java
+│   ├── StrategicPlan.java
+│   ├── StrategicPriority.java
+│   ├── Transaction.java
+│   ├── TransactionId.java
+│   ├── TransactionMappingRule.java
+│   ├── TrialBalanceEntry.java
+│   ├── User.java
+│   └── UserCompany.java
+├── repository
+│   ├── AccountRepository.java
+│   ├── BankTransactionRepository.java
+│   ├── BaseRepository.java
+│   ├── BudgetRepository.java
+│   ├── CompanyRepository.java
+│   ├── DepreciationRepository.java
+│   ├── FinancialDataRepository.java
+│   ├── FiscalPeriodRepository.java
+│   ├── JdbcBaseRepository.java
+│   ├── JdbcFinancialDataRepository.java
+│   ├── PlanRepository.java
+│   ├── StrategicPlanningRepository.java
+│   ├── UserCompanyRepository.java
+│   └── UserRepository.java
+├── security
+│   ├── AuthService.java
+│   └── SecurityUtils.java
+├── service
+│   ├── AccountClassificationService.java
+│   ├── AccountManagementService.java
+│   ├── AccountService.java
+│   ├── BalanceSheetService.java
+│   ├── BankStatementParsingService.java
+│   ├── BankStatementProcessingService.java
+│   ├── BudgetReportService.java
+│   ├── BudgetService.java
+│   ├── CashbookService.java
+│   ├── CashFlowService.java
+│   ├── CategoryManagementService.java
+│   ├── ClassificationRuleManager.java
+│   ├── ClassificationUIHandler.java
+│   ├── CompanyLogoService.java
+│   ├── CompanyService.java
+│   ├── CsvExportService.java
+│   ├── CsvImportService.java
+│   ├── DataManagementService.java
+│   ├── DepreciationService.java
+│   ├── DocumentTextExtractor.java
+│   ├── EmailService.java
+│   ├── ExcelFinancialReportService.java
+│   ├── FinancialReportingService.java
+│   ├── GeneralLedgerService.java
+│   ├── IncomeStatementService.java
+│   ├── InteractiveClassificationService.java
+│   ├── InvoicePdfService.java
+│   ├── JournalEntryGenerator.java
+│   ├── JwtService.java
+│   ├── OpeningBalanceService.java
+│   ├── parser
+│   │   ├── CreditTransactionParser.java
+│   │   ├── ServiceFeeParser.java
+│   │   ├── StandardBankTabularParser.java
+│   │   └── TransactionParser.java
+│   ├── PayrollReportService.java
+│   ├── PayrollService.java
+│   ├── PayslipPdfService.java
+│   ├── PdfBrandingService.java
+│   ├── PdfExportService.java
+│   ├── PdfPrintService.java
+│   ├── PdfTextExtractionService.java
+│   ├── ReportService.java
+│   ├── SARSTaxCalculator.java
+│   ├── StrategicPlanningService.java
+│   ├── TextReportToPdfService.java
+│   ├── TransactionBatchProcessor.java
+│   ├── TransactionClassificationEngine.java
+│   ├── TransactionClassificationService.java
+│   ├── TransactionMappingRuleService.java
+│   ├── TransactionProcessingService.java
+│   ├── TrialBalanceService.java
+│   └── UserService.java
+├── state
+│   └── ApplicationState.java
+├── test
+├── TestDatabaseSetup.java
+├── ui
+│   ├── ConsoleMenu.java
+│   ├── InputHandler.java
+│   └── OutputFormatter.java
+├── util
+│   ├── ExcelTemplateReader.java
+│   ├── Libharu.java
+│   ├── LibharuDrawingCallback.java
+│   ├── PayslipData.java
+│   └── PdfFormattingUtils.java
+└── validation
+    ├── BankTransactionValidator.java
+    ├── CompanyValidator.java
+    ├── FiscalPeriodValidator.java
+    ├── ModelValidator.java
+    └── ValidationResult.java
+
+27 directories, 192 files

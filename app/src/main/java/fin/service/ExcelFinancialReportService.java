@@ -30,14 +30,16 @@ import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.*;
 
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.sql.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 import java.util.ArrayList;
-import java.util.logging.Logger;
-import java.io.IOException;
+import java.util.List;
 import java.util.logging.Level;
+import java.util.logging.Logger;
+import fin.repository.ReportTemplatesRepository;
+import fin.repository.CompanyDefaultsRepository;
 
 /**
  * Excel Financial Report Generator
@@ -47,6 +49,8 @@ import java.util.logging.Level;
 public class ExcelFinancialReportService {
     private static final Logger LOGGER = Logger.getLogger(ExcelFinancialReportService.class.getName());
     private final String dbUrl;
+    private final ReportTemplatesRepository reportTemplatesRepository;
+    private final CompanyDefaultsRepository companyDefaultsRepository;
     
     // Font size constants for Excel reports
     private static final short FONT_SIZE_HEADER_LARGE = 14;
@@ -84,8 +88,10 @@ public class ExcelFinancialReportService {
     
     private static final int ROW_COMPANY_HEADER_PERIOD = 3;
     
-    public ExcelFinancialReportService(String initialDbUrl) {
+    public ExcelFinancialReportService(String initialDbUrl, ReportTemplatesRepository reportTemplatesRepository, CompanyDefaultsRepository companyDefaultsRepository) {
         this.dbUrl = initialDbUrl;
+        this.reportTemplatesRepository = reportTemplatesRepository;
+        this.companyDefaultsRepository = companyDefaultsRepository;
     }
     
     /**
@@ -178,7 +184,7 @@ public class ExcelFinancialReportService {
         }
     }
     
-    private void createIndexSheet(Workbook workbook, CompanyInfo company, FiscalPeriodInfo period) {
+    private void createIndexSheet(Workbook workbook, CompanyInfo company, FiscalPeriodInfo period) throws SQLException {
         Sheet sheet = workbook.createSheet("Index");
         
         // Company header
@@ -192,23 +198,19 @@ public class ExcelFinancialReportService {
         row8.createCell(0).setCellValue("Contents");
         row8.createCell(1).setCellValue("Page");
         
-        // Index items
-        String[][] indexItems = {
-            {"General information", "2"},
-            {"Statement of financial responsibility by the directors", "3"},
-            {"Report of the independent auditors", "4 - 5"},
-            {"Report of the directors", "6"},
-            {"Statement of financial position", "7"},
-            {"Statement of comprehensive income", "8"},
-            {"Statement of changes in equity", "9"},
-            {"Statement of cash flows", "10"},
-            {"Notes to the annual financial statements", "11 - 15"}
-        };
-        
-        for (int i = 0; i < indexItems.length; i++) {
-            Row row = sheet.createRow(ROW_INDEX_FIRST_ITEM + i);
-            row.createCell(0).setCellValue(indexItems[i][0]);
-            row.createCell(1).setCellValue(indexItems[i][1]);
+        // Index items - fetch from database
+        List<ReportTemplatesRepository.ReportTemplate> indexTemplates = reportTemplatesRepository.getTemplatesByType(company.id, "index_items");
+
+        // Parse index items (format: "Title|Page" in template_text)
+        for (int i = 0; i < indexTemplates.size(); i++) {
+            ReportTemplatesRepository.ReportTemplate template = indexTemplates.get(i);
+            String item = template.templateText;
+            String[] parts = item.split("\\|");
+            if (parts.length >= 2) {
+                Row row = sheet.createRow(ROW_INDEX_FIRST_ITEM + i);
+                row.createCell(0).setCellValue(parts[0]); // Title
+                row.createCell(1).setCellValue(parts[1]); // Page
+            }
         }
     }
     

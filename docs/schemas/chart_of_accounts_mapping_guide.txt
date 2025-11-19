@@ -1,0 +1,123 @@
+// CURRENT ASSETS (1000-1999)
+        Long currentAssetsId = categoryIds.get("CURRENT_ASSETS");
+        accounts.add(new AccountDefinition("1000", "Petty Cash", "Cash on hand for small expenses", currentAssetsId));
+        // Sub-accounts for loan receivables
+        accounts.add(new AccountDefinition("1000-001", "Loan Receivable - Tau", "Loan receivable from Tau", currentAssetsId));
+        accounts.add(new AccountDefinition("1000-002", "Loan Receivable - Maposa", "Loan receivable from Maposa", currentAssetsId));
+        accounts.add(new AccountDefinition("1000-003", "Loan Receivable - Other", "Other loan receivables", currentAssetsId));
+        
+        accounts.add(new AccountDefinition("1100", "Bank - Current Account", "Primary business current account", currentAssetsId));
+        // Sub-account for bank transfers
+        accounts.add(new AccountDefinition("1100-001", "Bank Transfers", "Internal bank transfers", currentAssetsId));
+        
+        accounts.add(new AccountDefinition("1101", "Bank - Savings Account", "Business savings account", currentAssetsId));
+        accounts.add(new AccountDefinition("1102", "Bank - Foreign Currency", "Foreign currency accounts", currentAssetsId));
+        accounts.add(new AccountDefinition("1200", "Accounts Receivable", "Money owed by customers", currentAssetsId));
+        accounts.add(new AccountDefinition("1300", "Inventory", "Stock and inventory items", currentAssetsId));
+        accounts.add(new AccountDefinition("1400", "Prepaid Expenses", "Expenses paid in advance", currentAssetsId));
+        accounts.add(new AccountDefinition("1500", "VAT Input", "VAT paid on purchases", currentAssetsId));
+        
+        // NON-CURRENT ASSETS (2000-2999)
+        Long nonCurrentAssetsId = categoryIds.get("NON_CURRENT_ASSETS");
+        accounts.add(new AccountDefinition("2000", "Property, Plant & Equipment", "Fixed assets at cost", nonCurrentAssetsId));
+        // Sub-account for director loans
+        accounts.add(new AccountDefinition("2000-001", "Director Loan - Company Assist", "Loan from director for company assistance", nonCurrentAssetsId));
+        
+        accounts.add(new AccountDefinition("2100", "Accumulated Depreciation", "Depreciation of fixed assets", nonCurrentAssetsId));
+        accounts.add(new AccountDefinition("2200", "Investments", "Long-term investments", nonCurrentAssetsId));
+        accounts.add(new AccountDefinition("2300", "Motor Vehicles", "Motor vehicles and transport equipment", nonCurrentAssetsId));
+        // CURRENT LIABILITIES (3000-3999)
+        Long currentLiabilitiesId = categoryIds.get("CURRENT_LIABILITIES");
+        accounts.add(new AccountDefinition("3000", "Accounts Payable", "Money owed to suppliers", currentLiabilitiesId));
+        accounts.add(new AccountDefinition("3100", "VAT Output", "VAT collected on sales", currentLiabilitiesId));
+        accounts.add(new AccountDefinition("3200", "PAYE Payable", "Pay-As-You-Earn tax payable", currentLiabilitiesId));
+        accounts.add(new AccountDefinition("3300", "UIF Payable", "Unemployment Insurance Fund payable", currentLiabilitiesId));
+        accounts.add(new AccountDefinition("3400", "SDL Payable", "Skills Development Levy payable", currentLiabilitiesId));
+        accounts.add(new AccountDefinition("3500", "Accrued Expenses", "Expenses incurred but not yet paid", currentLiabilitiesId));
+        
+        // NON-CURRENT LIABILITIES (4000-4999)
+        Long nonCurrentLiabilitiesId = categoryIds.get("NON_CURRENT_LIABILITIES");
+        accounts.add(new AccountDefinition("4000", "Long-term Loans", "Long-term debt obligations", nonCurrentLiabilitiesId));
+        
+        // EQUITY (5000-5999)
+        Long equityId = categoryIds.get("EQUITY");
+        accounts.add(new AccountDefinition("5000", "Share Capital", "Issued share capital", equityId));
+        accounts.add(new AccountDefinition("5100", "Retained Earnings", "Accumulated profits", equityId));
+        accounts.add(new AccountDefinition("5200", "Current Year Earnings", "Current year profit/loss", equityId));
+        accounts.add(new AccountDefinition("5300", "Opening Balance Equity", "Temporary equity account for opening balances - Cash Flow Statement only", equityId));
+        
+        // OPERATING REVENUE (6000-6999)
+        Long operatingRevenueId = categoryIds.get("OPERATING_REVENUE");
+        accounts.add(new AccountDefinition("6000", "Sales Revenue", "Revenue from sales", operatingRevenueId));
+        accounts.add(new AccountDefinition("6100", "Service Revenue", "Revenue from services", operatingRevenueId));
+        // Sub-account for specific service revenue
+        accounts.add(new AccountDefinition("6100-001", "Corobrik Service Revenue", "Service revenue from Corobrik", operatingRevenueId));
+        
+        accounts.add(new AccountDefinition("6200", "Other Operating Revenue", "Other operating income", operatingRevenueId));
+        
+        // OTHER INCOME (7000-7999)
+        Long otherIncomeId = categoryIds.get("OTHER_INCOME");
+        accounts.add(new AccountDefinition("7000", "Interest Income", "Interest earned on investments", otherIncomeId));
+        accounts.add(new AccountDefinition("7100", "Dividend Income", "Dividends received", otherIncomeId));
+        accounts.add(new AccountDefinition("7200", "Gain on Asset Disposal", "Profit from asset sales", otherIncomeId));
+        
+        // OPERATING EXPENSES (8000-8999)
+        Long operatingExpensesId = categoryIds.get("OPERATING_EXPENSES");
+        accounts.add(new AccountDefinition("8000", "Cost of Goods Sold", "Direct costs of products sold", operatingExpensesId));
+        accounts.add(new AccountDefinition("8100", "Employee Costs", "Salaries, wages and benefits", operatingExpensesId));
+        accounts.add(new AccountDefinition("8100-001", "Director Remuneration", "Director remuneration", operatingExpensesId));
+        accounts.add(new AccountDefinition("8200", "Rent Expense", "Office and facility rent", operatingExpensesId));
+        accounts.add(new AccountDefinition("8300", "Utilities", "Electricity, water, gas", operatingExpensesId));
+        accounts.add(new AccountDefinition("8400", "Communication", "Telephone, internet, postage", operatingExpensesId));
+        
+        accounts.add(new AccountDefinition("8500", "Motor Vehicle Expenses", "Vehicle running costs", operatingExpensesId));
+        // Sub-accounts for vehicle tracking services
+        accounts.add(new AccountDefinition("8500-001", "Cartrack Vehicle Tracking", "Cartrack tracking service fees", operatingExpensesId));
+        accounts.add(new AccountDefinition("8500-002", "Netstar Vehicle Tracking", "Netstar tracking service fees", operatingExpensesId));
+        
+        accounts.add(new AccountDefinition("8600", "Travel & Entertainment", "Business travel and entertainment", operatingExpensesId));
+        // Sub-accounts for fuel expenses by station
+        accounts.add(new AccountDefinition("8600-001", "Fuel Expenses - BP Stations", "Fuel purchases at BP", operatingExpensesId));
+        accounts.add(new AccountDefinition("8600-002", "Fuel Expenses - Shell Stations", "Fuel purchases at Shell", operatingExpensesId));
+        accounts.add(new AccountDefinition("8600-003", "Fuel Expenses - Sasol Stations", "Fuel purchases at Sasol", operatingExpensesId));
+        accounts.add(new AccountDefinition("8600-004", "Engen Fuel Expenses", "Fuel purchases at Engen", operatingExpensesId));
+        accounts.add(new AccountDefinition("8600-099", "Fuel Expenses - Other Stations", "Fuel purchases at other stations", operatingExpensesId));
+        
+        accounts.add(new AccountDefinition("8700", "Professional Services", "Legal, accounting, consulting", operatingExpensesId));
+        accounts.add(new AccountDefinition("8710", "Suppliers Expense", "Payments to suppliers and vendors", operatingExpensesId));
+        accounts.add(new AccountDefinition("8720", "HR Management Expense", "Human resources management and recruitment", operatingExpensesId));
+        accounts.add(new AccountDefinition("8730", "Education & Training", "Education fees and training costs", operatingExpensesId));
+        
+        accounts.add(new AccountDefinition("8800", "Insurance", "Business insurance premiums", operatingExpensesId));
+        // Sub-accounts for insurance providers
+        accounts.add(new AccountDefinition("8800-001", "King Price Insurance Premiums", "King Price insurance premiums", operatingExpensesId));
+        accounts.add(new AccountDefinition("8800-002", "DOTSURE Insurance Premiums", "DOTSURE insurance premiums", operatingExpensesId));
+        accounts.add(new AccountDefinition("8800-003", "OUTSurance Insurance Premiums", "OUTSurance insurance premiums", operatingExpensesId));
+        accounts.add(new AccountDefinition("8800-004", "MIWAY Insurance Premiums", "MIWAY insurance premiums", operatingExpensesId));
+        accounts.add(new AccountDefinition("8800-005", "Liberty Insurance Premiums", "Liberty insurance premiums", operatingExpensesId));
+        accounts.add(new AccountDefinition("8800-006", "Badger Insurance Premiums", "Badger insurance premiums", operatingExpensesId));
+        accounts.add(new AccountDefinition("8800-999", "Other Insurance Premiums", "Other insurance providers", operatingExpensesId));
+        
+        accounts.add(new AccountDefinition("8900", "Repairs & Maintenance", "Equipment and facility maintenance", operatingExpensesId));
+        
+        // ADMINISTRATIVE EXPENSES (9000-9999)
+        Long adminExpensesId = categoryIds.get("ADMINISTRATIVE_EXPENSES");
+        accounts.add(new AccountDefinition("9000", "Office Supplies", "Stationery and office materials", adminExpensesId));
+        accounts.add(new AccountDefinition("9100", "Computer Expenses", "Software licenses and IT costs", adminExpensesId));
+        accounts.add(new AccountDefinition("9200", "Marketing & Advertising", "Promotional and marketing costs", adminExpensesId));
+        accounts.add(new AccountDefinition("9300", "Training & Development", "Staff training and development", adminExpensesId));
+        accounts.add(new AccountDefinition("9400", "Depreciation", "Depreciation of fixed assets", adminExpensesId));
+        
+        // FINANCE COSTS (9500-9999)
+        Long financeCostsId = categoryIds.get("FINANCE_COSTS");
+        accounts.add(new AccountDefinition("9500", "Interest Expense", "Interest on loans and credit", financeCostsId));
+        accounts.add(new AccountDefinition("9600", "Bank Charges", "Bank fees and transaction costs", financeCostsId));
+        accounts.add(new AccountDefinition("9700", "Foreign Exchange Loss", "Loss on currency exchange", financeCostsId));
+        accounts.add(new AccountDefinition("9800", "VAT Payments to SARS", "VAT payments made to South African Revenue Service", financeCostsId));
+        accounts.add(new AccountDefinition("9810", "Loan Repayments", "Loan repayment costs", financeCostsId));
+        accounts.add(new AccountDefinition("9820", "PAYE Expense", "PAYE tax payments to South African Revenue Service", financeCostsId));
+        accounts.add(new AccountDefinition("9900", "Pension Expenses", "Pension-related costs", financeCostsId));
+        
+        return accounts;
+    }
+    

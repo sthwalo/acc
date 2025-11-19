@@ -27,6 +27,7 @@ package fin.service;
 
 import fin.model.Company;
 import fin.model.FiscalPeriod;
+import fin.repository.UserCompanyRepository;
 
 import java.sql.*;
 import java.time.LocalDateTime;
@@ -35,6 +36,7 @@ import java.util.List;
 
 public class CompanyService {
     private final String dbUrl;
+    private final UserCompanyRepository userCompanyRepository;
     
     // PreparedStatement parameter indices for INSERT company operations
     private static final int PARAM_INSERT_COMPANY_NAME = 1;
@@ -81,6 +83,7 @@ public class CompanyService {
     
     public CompanyService(String initialDbUrl) {
         this.dbUrl = initialDbUrl;
+        this.userCompanyRepository = new UserCompanyRepository(initialDbUrl);
     }
     
 
@@ -225,6 +228,73 @@ public class CompanyService {
         } catch (SQLException e) {
             System.err.println("Error getting companies: " + e.getMessage());
             throw new RuntimeException("Failed to get companies", e);
+        }
+    }
+    
+    /**
+     * Get all companies that a specific user has access to
+     * @param userId The ID of the user
+     * @return List of companies the user can access
+     */
+    public List<Company> getCompaniesForUser(Long userId) {
+        // Get user-company relationships for this user
+        List<fin.model.UserCompany> userCompanies = userCompanyRepository.findCompaniesByUser(userId);
+        
+        // Extract company IDs that the user has access to
+        List<Long> companyIds = userCompanies.stream()
+                .map(fin.model.UserCompany::getCompanyId)
+                .toList();
+        
+        if (companyIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+        
+        // Build SQL query with IN clause for company IDs
+        StringBuilder sqlBuilder = new StringBuilder("SELECT * FROM companies WHERE id IN (");
+        for (int i = 0; i < companyIds.size(); i++) {
+            sqlBuilder.append("?");
+            if (i < companyIds.size() - 1) {
+                sqlBuilder.append(",");
+            }
+        }
+        sqlBuilder.append(") ORDER BY name");
+        
+        List<Company> companies = new ArrayList<>();
+        
+        try (Connection conn = DriverManager.getConnection(dbUrl);
+             PreparedStatement pstmt = conn.prepareStatement(sqlBuilder.toString())) {
+            
+            // Set company IDs as parameters
+            for (int i = 0; i < companyIds.size(); i++) {
+                pstmt.setLong(i + 1, companyIds.get(i));
+            }
+            
+            ResultSet rs = pstmt.executeQuery();
+            
+            while (rs.next()) {
+                Company company = new Company();
+                company.setId(rs.getLong("id"));
+                company.setName(rs.getString("name"));
+                company.setRegistrationNumber(rs.getString("registration_number"));
+                company.setTaxNumber(rs.getString("tax_number"));
+                company.setAddress(rs.getString("address"));
+                company.setContactEmail(rs.getString("contact_email"));
+                company.setContactPhone(rs.getString("contact_phone"));
+                company.setLogoPath(rs.getString("logo_path"));
+                company.setBankName(rs.getString("bank_name"));
+                company.setAccountNumber(rs.getString("account_number"));
+                company.setAccountType(rs.getString("account_type"));
+                company.setBranchCode(rs.getString("branch_code"));
+                company.setVatRegistered(rs.getBoolean("vat_registered"));
+                company.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
+                companies.add(company);
+            }
+            
+            return companies;
+            
+        } catch (SQLException e) {
+            System.err.println("Error getting companies for user: " + e.getMessage());
+            throw new RuntimeException("Failed to get companies for user", e);
         }
     }
     

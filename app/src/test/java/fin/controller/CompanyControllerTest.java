@@ -30,6 +30,7 @@ import fin.service.CompanyService;
 import fin.ui.*;
 import fin.state.ApplicationState;
 import fin.model.Company;
+import fin.repository.UserCompanyRepository;
 
 import org.junit.jupiter.api.*;
 import org.mockito.Mock;
@@ -56,6 +57,9 @@ class CompanyControllerTest {
     
     @Mock
     private OutputFormatter mockOutputFormatter;
+    
+    @Mock
+    private UserCompanyRepository mockUserCompanyRepository;
     
     private InputHandler inputHandler;
     private CompanyController companyController;
@@ -88,7 +92,8 @@ class CompanyControllerTest {
             mockApplicationState,
             mockMenu,
             inputHandler,
-            mockOutputFormatter
+            mockOutputFormatter,
+            mockUserCompanyRepository
         );
     }
     
@@ -117,7 +122,13 @@ class CompanyControllerTest {
             createTestCompany(2L, "Company B")
         );
         
-        when(mockCompanyService.getAllCompanies()).thenReturn(companies);
+        // Mock current user
+        fin.model.User currentUser = new fin.model.User();
+        currentUser.setId(1L);
+        currentUser.setEmail("test@example.com");
+        
+        when(mockApplicationState.getCurrentUser()).thenReturn(currentUser);
+        when(mockCompanyService.getCompaniesForUser(1L)).thenReturn(companies);
         when(mockApplicationState.getCurrentCompany()).thenReturn(companies.get(0));
         
         // Create new InputHandler with selection input
@@ -130,7 +141,8 @@ class CompanyControllerTest {
             mockApplicationState,
             mockMenu,
             selectionInputHandler,
-            mockOutputFormatter
+            mockOutputFormatter,
+            mockUserCompanyRepository
         );
         
         // Execute
@@ -189,7 +201,8 @@ class CompanyControllerTest {
             mockApplicationState,
             mockMenu,
             confirmInputHandler,
-            mockOutputFormatter
+            mockOutputFormatter,
+            mockUserCompanyRepository
         );
         
         // Execute

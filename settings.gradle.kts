@@ -12,3 +12,4 @@ plugins {
 
 rootProject.name = "FIN"
 include("app")
+include("spring-app")

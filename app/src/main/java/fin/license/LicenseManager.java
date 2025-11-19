@@ -34,31 +34,24 @@ public class LicenseManager {
     
     private static final String PERSONAL_USE_DISCLAIMER = 
         "══════════════════════════════════════════════════════════════════════════════════\n" +
-        "🏠 FIN FINANCIAL MANAGEMENT SYSTEM - PERSONAL USE VERSION\n" +
+        "🏠 FIN FINANCIAL MANAGEMENT SYSTEM - FREE PLAN\n" +
         "══════════════════════════════════════════════════════════════════════════════════\n" +
         "\n" +
-        "This software is licensed for PERSONAL USE ONLY under Apache License 2.0.\n" +
+        "You are using the FREE PLAN (1 company, 100 transactions).\n" +
         "\n" +
-        "✅ ALLOWED:\n" +
+        "✅ FREE PLAN FEATURES:\n" +
+        "   • 1 company management\n" +
+        "   • Up to 100 transactions per month\n" +
+        "   • Basic financial reporting\n" +
         "   • Personal finance management\n" +
-        "   • Educational use and research\n" +
-        "   • Non-commercial open source development\n" +
         "\n" +
-        "❌ NOT ALLOWED WITHOUT COMMERCIAL LICENSE:\n" +
-        "   • Business financial management\n" +
-        "   • Commercial or revenue-generating activities\n" +
-        "   • Hosting for other users or customers\n" +
-        "   • Integration into commercial products\n" +
-        "\n" +
-        "💼 NEED COMMERCIAL LICENSE?\n" +
-        "   • Starter: $29/month (small business)\n" +
-        "   • Professional: $99/month (growing business)\n" +
-        "   • Enterprise: $299/month (large organization)\n" +
-        "   • Contact: sthwaloe@gmail.com\n" +
+        "💼 UPGRADE TO COMMERCIAL PLANS:\n" +
+        "   • Starter: $29/month (3 companies, 1,000 transactions)\n" +
+        "   • Professional: $99/month (10 companies, 10,000 transactions)\n" +
+        "   • Enterprise: $299/month (unlimited usage)\n" +
         "\n" +
         "⚖️  COPYRIGHT NOTICE:\n" +
         "   Copyright 2025 Sthwalo Holdings (Pty) Ltd. Owner: Immaculate Nyoni. All rights reserved.\n" +
-        "   Unauthorized commercial use is strictly prohibited.\n" +
         "\n" +
         "══════════════════════════════════════════════════════════════════════════════════\n";
     
@@ -107,8 +100,11 @@ public class LicenseManager {
         System.out.println();
         System.out.println("📋 LICENSE AGREEMENT CONFIRMATION:");
         System.out.println();
-        System.out.println("Are you using FIN for PERSONAL USE ONLY?");
-        System.out.println("(Personal finance, education, or non-commercial development)");
+        System.out.println("You are using the FREE PLAN (1 company, 100 transactions).");
+        System.out.println("This is perfect for personal use, small projects, or getting started.");
+        System.out.println();
+        System.out.println("For business use with more companies or transactions,");
+        System.out.println("please upgrade to a commercial plan.");
         System.out.println();
         
         // Check for auto-confirmation property (for development/testing)
@@ -128,14 +124,15 @@ public class LicenseManager {
         String response = inputHandler.getString("Confirm personal use").trim().toLowerCase();
         
         if ("yes".equals(response)) {
-            System.out.println("✅ Personal use confirmed. Starting FIN...");
+            System.out.println("✅ Free plan confirmed. Starting FIN...");
             logPersonalUse();
             return true;
         } else {
             System.out.println();
-            System.out.println("🚫 Commercial use requires a commercial license.");
-            System.out.println("   Please visit: https://fin-licensing.com");
-            System.out.println("   Contact: sthwaloe@gmail.com for questions or to begin your commercial license.");
+            System.out.println("🚫 To use more than 1 company or 100 transactions,");
+            System.out.println("   please upgrade to a commercial plan.");
+            System.out.println("   Visit: https://fin-licensing.com");
+            System.out.println("   Contact: sthwaloe@gmail.com");
             return false;
         }
     }
@@ -156,6 +153,10 @@ public class LicenseManager {
     public static void showCommercialInfo() {
         System.out.println("\n💼 COMMERCIAL LICENSING INFORMATION:");
         System.out.println("────────────────────────────────────────");
+        System.out.println("🆓 Free Plan - $0/month");
+        System.out.println("   • 1 company, up to 100 transactions");
+        System.out.println("   • Perfect for getting started");
+        System.out.println();
         System.out.println("🥉 Starter License - $29/month");
         System.out.println("   • Up to 3 companies, 1,000 transactions");
         System.out.println("   • Perfect for small businesses");

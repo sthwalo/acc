@@ -1,7 +1,7 @@
 # Development Tasks Directory
 **Status:** 📋 Documentation Complete - Ready for Implementation
-**Total Tasks:** 23 (6 EI_EXPOSE_REP + 6 SpotBugs Remediation + 3 Checkstyle Cleanup + 8 New Features/Refactoring)
-**Risk Distribution:** 4 Critical, 3 High, 7 Medium, 6 Low
+**Total Tasks:** 27 (6 EI_EXPOSE_REP + 6 SpotBugs Remediation + 3 Checkstyle Cleanup + 10 New Features/Refactoring + 1 Architecture Cleanup + 1 Database-First Remediation)
+**Risk Distribution:** 5 Critical, 4 High, 9 Medium, 6 Low, 3 Database-First
 
 ## 📋 Task Overview
 
@@ -13,7 +13,9 @@ This directory contains detailed documentation for fixing security vulnerabiliti
 - **TASK 3.x:** Medium-Risk Configuration & Documentation (2 tasks)
 - **TASK 4.x:** SpotBugs Remediation (6 tasks)
 - **TASK 5.x:** Checkstyle Cleanup (3 tasks)
-- **TASK 6.x:** New Feature Development & Architectural Refactoring (8 tasks)
+- **TASK 6.x:** New Feature Development & Architectural Refactoring (9 tasks)
+- **TASK 7.x:** Business Document Management System (1 task)
+- **TASK 8.x:** Dual-API Architecture Cleanup (1 task)
 
 ## 📁 Task Files
 
@@ -163,6 +165,30 @@ This directory contains detailed documentation for fixing security vulnerabiliti
     - **Effort:** 3-4 hours (Phase 1: 3-4h, Phase 3: 2-3h)
     - **Quick Win Completed:** ✅ Removed 1 unused field (ruleService)
 
+### Business Document Management System
+24. **[TASK 7.1: Business Document Management System Enhancement](TASK_7.1_Business_Document_Management_System_Enhancement.md)**
+    - **Risk:** MEDIUM - New business functionality
+    - **Status:** 📋 PLANNED (Created: 2025-11-07)
+    - **Files:** New services, models, controllers, database tables, enhanced invoice system
+    - **Feature:** Enhanced invoices with multi-line descriptions and recipient details, plus Quotation, Purchase Order, and Receipt systems
+    - **Effort:** 4-6 weeks
+
+### Dual-API Architecture Cleanup
+25. **[TASK 8.1: Dual-API Architecture Cleanup & Consolidation](TASK_8.1_Dual_API_Architecture_Cleanup.md)**
+    - **Risk:** HIGH - Architectural consolidation and maintenance overhead
+    - **Status:** 📋 PLANNED (Created: 2025-11-15)
+    - **Files:** Repository classes, model classes, service classes, configuration files across both Spark and Spring applications
+    - **Fix:** Resolve repository pattern conflicts, standardize model ID types, unify database schema management, consolidate service implementations
+    - **Effort:** 2-3 weeks (40-60 hours)
+
+### Database-First Architecture Enforcement
+26. **[TASK 10: No Fallback Data Remediation - Database-First Architecture Enforcement](TASK_10_No_Fallback_Data_Remediation.md)**
+    - **Risk:** CRITICAL - Architectural integrity violation
+    - **Status:** 📋 PLANNED (Created: 2025-11-17)
+    - **Files:** ExcelFinancialReportService.java, PayrollService.java, 3 new database tables, migration scripts
+    - **Fix:** Remove all hardcoded business text and silent fallback defaults, enforce database-as-single-source-of-truth
+    - **Effort:** 3-4 days (24-32 hours)
+
 ## 🎯 Implementation Strategy
 
 ### Phase 1: Critical Security Fixes (Tasks 1.1-1.3, 4.1-4.2)
@@ -184,10 +210,11 @@ This directory contains detailed documentation for fixing security vulnerabiliti
 
 | Risk Level | Count | Description | Impact |
 |------------|-------|-------------|---------|
-| **CRITICAL** | 6 | Authentication bypass, finalizer attacks, silent errors | System compromise, data loss |
-| **HIGH** | 2 | Transaction classification manipulation | Financial reporting errors |
-| **MEDIUM** | 4 | Code quality, control flow issues, checkstyle violations | Maintenance overhead, code clarity |
-| **LOW** | 3 | Field usage, architectural documentation, test code | Code clarity, testing quality |
+| **CRITICAL** | 7 | Authentication bypass, finalizer attacks, silent errors, architectural violations | System compromise, data loss, compliance failures |
+| **HIGH** | 3 | Transaction classification manipulation, dual-API architecture conflicts | Financial reporting errors, maintenance overhead |
+| **MEDIUM** | 9 | Code quality, control flow issues, checkstyle violations, new business features | Maintenance overhead, code clarity, new functionality |
+| **LOW** | 6 | Field usage, architectural documentation, test code | Code clarity, testing quality |
+| **DATABASE-FIRST** | 1 | No fallback data policy enforcement | Production deployment blocker |
 
 ## ✅ Success Criteria
 
@@ -229,7 +256,9 @@ This directory contains detailed documentation for fixing security vulnerabiliti
 - [ ] Phase 2 Implementation (0/1 tasks)
 - [ ] Phase 3 Implementation (4/5 tasks completed - TASK 4.2, TASK 4.3, TASK 4.4, TASK 4.5, TASK 4.6)
 - [ ] Checkstyle Cleanup (1/2 tasks completed - TASK 5.3 ✅, TASK 5.4 🔄 IN PROGRESS - Budget.java completed)
-- [ ] New Feature Development (0/2 tasks - TASK 6.1, TASK 6.3)
+- [ ] New Feature Development (0/4 tasks - TASK 6.1, TASK 6.3, TASK 6.4, TASK 7.1)
+- [ ] Architecture Cleanup (0/1 tasks - TASK 8.1)
+- [ ] Database-First Remediation (0/1 tasks - TASK 10)
 
 ## 📚 References
 
@@ -280,10 +309,20 @@ This directory contains detailed documentation for fixing security vulnerabiliti
   - ✅ TASK 5.9: Employee.java Holistic Checkstyle Cleanup (50+ violations: DesignForExtension, LeftCurly, OperatorWrap)
 
 ### Phase 5: New Feature Development & Architectural Refactoring (Priority: MEDIUM-LOW)
-- **Completed:** 0/5 tasks (0%)
+- **Completed:** 0/7 tasks (0%)
   - 🔄 TASK 6.1: Budget Generation and Strategic Planning
   - 🔄 TASK 6.2: PDF Services Unification and Beautification
   - 🔄 TASK 6.3: Invoice Generation and Printing System
   - 🔄 TASK 6.4: AccountClassificationService Architectural Refactoring (NEW - 2025-11-02)
-  - 🔄 TASK 6.5: BudgetReportService OutputFormatter Refactoring (NEW - 2025-11-02)</content>
+  - 🔄 TASK 6.5: BudgetReportService OutputFormatter Refactoring (NEW - 2025-11-02)
+  - 🔄 TASK 6.6: InteractiveClassificationService Architectural Refactoring (NEW - 2025-11-02)
+  - 🔄 TASK 7.1: Business Document Management System Enhancement (NEW - 2025-11-07)
+
+### Phase 6: Dual-API Architecture Cleanup (Priority: HIGH)
+- **Completed:** 0/1 tasks (0%)
+  - 📋 TASK 8.1: Dual-API Architecture Cleanup & Consolidation (NEW - 2025-11-15)
+
+### Phase 7: Database-First Architecture Enforcement (Priority: CRITICAL)
+- **Completed:** 0/1 tasks (0%)
+  - 📋 TASK 10: No Fallback Data Remediation (NEW - 2025-11-17)</content>
 <parameter name="filePath">/Users/sthwalonyoni/FIN/docs/development/tasks/TASK_3.2_Service_Dependency_Documentation.md

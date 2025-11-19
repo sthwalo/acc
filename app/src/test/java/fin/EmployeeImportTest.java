@@ -116,7 +116,7 @@ public class EmployeeImportTest {
         period.setEndDate(endOfMonth);
         period.setPayDate(payDate);
         period.setPeriodType(PayrollPeriod.PeriodType.MONTHLY);
-        period.setCreatedBy("system");
+        period.setCreatedBy("FIN");
 
         return payrollService.createPayrollPeriod(period);
     }

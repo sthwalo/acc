@@ -3,9 +3,19 @@
 ## Project Overview
 FIN is a production-ready financial management system built in Java 17 with PostgreSQL 17+, handling 7,156+ real transactions. It provides comprehensive financial document processing including bank statement processing, financial reporting, payroll management, budget planning, and REST API capabilities for South African businesses with SARS compliance.
 
+**Dual Architecture Implementation**:
+- **Legacy `app/`**: SparkJava-based with custom dependency injection (currently migrating to Spring Boot)
+- **Modern `spring-app/`**: Pure Spring Boot implementation with Spring MVC and JPA
+- **Frontend**: React/TypeScript application with container-first development workflow
+
 ## Architecture & Entry Points
 
-**Core Architecture**: Single Gradle module with dependency injection via `ApplicationContext`. Three runtime modes:
+### Implementation Options
+
+#### Option A: Legacy SparkJava Implementation (`app/` folder)
+**Status**: ACTIVE - Currently migrating to Spring Boot
+
+**Core Architecture**: Custom dependency injection via `ApplicationContext`. Three runtime modes:
 - **Console**: `java -jar app/build/libs/app.jar` → `ConsoleApplication.main()` → interactive menu system
 - **API Server**: `java -jar app/build/libs/app.jar api` → `ApiApplication.main()` → REST API on port 8080 (Docker-ready)
 - **Batch**: `java -jar app/build/libs/app.jar --batch [command]` → automated processing
@@ -16,21 +26,55 @@ FIN is a production-ready financial management system built in Java 17 with Post
 - `ApiServer`: SparkJava-based REST endpoints with `setup*` methods for route organization
 - `DatabaseConfig`: PostgreSQL connection management with environment-based configuration
 
+#### Option B: Modern Spring Boot Implementation (`spring-app/` folder)
+**Status**: RECOMMENDED - Production-ready Spring Boot application
+
+**Core Architecture**: Spring Boot 3.2.0 with Spring MVC and Spring Data JPA. Single unified runtime:
+- **API Server**: `java -jar spring-app/build/libs/spring-app.jar` → `FinApplication.main()` → REST API on port 8080
+- **Database**: Spring Data JPA repositories with Hibernate
+- **Security**: Spring Security with JWT authentication
+- **Configuration**: Standard Spring Boot `application.properties`
+
+**Key Components**:
+- `FinApplication`: Spring Boot main class with `@SpringBootApplication`
+- `Spring*Controller`: REST controllers with `@RestController` annotations
+- `Spring*Service`: Business services with `@Service` annotations
+- `Spring*Repository`: JPA repositories extending `JpaRepository`
+
+### Choosing Between Implementations
+
+| Criteria | Use `app/` (SparkJava) | Use `spring-app/` (Spring Boot) |
+|----------|----------------------|-------------------------------|
+| **New Development** | ❌ Avoid | ✅ **RECOMMENDED** |
+| **Enterprise Features** | ❌ Limited | ✅ Security, Testing, Monitoring |
+| **Learning/Prototyping** | ✅ Lightweight | ❌ More complex |
+| **Production Deployment** | ⚠️ Legacy | ✅ **PREFERRED** |
+| **Migration Status** | 🔄 In Progress | ✅ Complete |
+
 ## 🚀 JAR-First Development Workflow (Docker Production Ready)
 
 **MANDATORY**: All development and testing uses JAR files directly - same as production Docker containers.
 
-**Development Commands**:
+### Spring Boot Implementation (RECOMMENDED)
 ```bash
 # Build JAR (only when code changes)
-./gradlew build
+cd spring-app && ./gradlew build
 
 # Run API server (production-same)
-java -jar app/build/libs/app.jar api &
+java -jar spring-app/build/libs/spring-app.jar &
 
 # Test endpoints systematically
 curl http://localhost:8080/api/v1/health
 curl http://localhost:8080/api/v1/companies
+```
+
+### Legacy SparkJava Implementation
+```bash
+# Build JAR (only when code changes)
+cd app && ./gradlew build
+
+# Run API server (production-same)
+java -jar app/build/libs/app.jar api &
 
 # Run console mode
 java -jar app/build/libs/app.jar
@@ -39,7 +83,17 @@ java -jar app/build/libs/app.jar
 java -jar app/build/libs/app.jar --batch [command]
 ```
 
-**Docker Production**:
+### Docker Production Options
+
+**Spring Boot Production**:
+```dockerfile
+FROM openjdk:17-jre-slim
+COPY spring-app/build/libs/spring-app.jar /app.jar
+EXPOSE 8080
+CMD ["java", "-jar", "/app.jar"]
+```
+
+**Legacy Production**:
 ```dockerfile
 FROM openjdk:17-jre-slim
 COPY app/build/libs/app.jar /app.jar
@@ -53,6 +107,28 @@ CMD ["java", "-jar", "/app.jar", "api"]
 - ✅ **No Gradle daemon issues**: Reliable API testing
 - ✅ **Systematic endpoint testing**: Build frontend incrementally
 - ✅ **Production confidence**: Test against real deployment artifact
+
+## Implementation Migration Strategy
+
+### Current Status (November 2025)
+- **Legacy `app/`**: Contains both SparkJava and Spring Boot dependencies during migration
+- **Modern `spring-app/`**: Clean Spring Boot implementation, fully functional
+- **Migration Path**: Gradually move features from `app/` to `spring-app/`
+
+### Migration Checklist
+- [ ] Core services migrated (`CompanyService`, `TransactionClassificationService`, etc.)
+- [ ] API endpoints parity achieved
+- [ ] Database schema compatibility verified
+- [ ] Frontend integration tested with both backends
+- [ ] Performance benchmarks completed
+- [ ] Documentation updated
+- [ ] Production deployment validated
+
+### Development Recommendations
+1. **New Features**: Implement in `spring-app/` first
+2. **Bug Fixes**: Apply to both during migration
+3. **Testing**: Test both implementations against frontend
+4. **Production**: Use `spring-app/` for new deployments
 
 ## Critical Development Patterns
 
@@ -281,9 +357,11 @@ A successful refactoring should show:
   - **PDFBox**: Simple reports, text-heavy documents, PDF reading/parsing
   - **libharu**: Complex layouts, precise positioning, tables, branded documents (payslips, invoices)
 
-**Service Registration**: Always register new services in `ApplicationContext.initialize*Services()` methods:
+**Service Registration**:
+- **Spring Boot**: Use `@Service`, `@Repository`, `@Controller` annotations - Spring handles registration automatically
+- **Legacy**: Always register new services in `ApplicationContext.initialize*Services()` methods:
 ```java
-// In ApplicationContext
+// In ApplicationContext (legacy only)
 SomeService someService = new SomeService(dbUrl, dependency);
 register(SomeService.class, someService);
 ```
@@ -498,11 +576,17 @@ docker stop fin-api
 
 ## Testing & Environment
 
-**Test Structure**: JUnit 5 + Mockito in `app/src/test/java`. Integration tests use real PostgreSQL 17+.
-**Environment Variables**: Production uses `DATABASE_*`, tests use `TEST_DATABASE_*`
+**Test Structure**:
+- **Spring Boot**: JUnit 5 + Spring Boot Test with `@SpringBootTest`
+- **Legacy**: JUnit 5 + Mockito with custom test setup
+
+**Environment Variables**:
+- **Spring Boot**: Standard `application.properties` with profiles
+- **Legacy**: Production uses `DATABASE_*`, tests use `TEST_DATABASE_*`
+
 **License Check**: `LicenseManager.checkLicenseCompliance()` required on all entry points
 
-**API Testing**: CORS enabled for `localhost:3000`. Key endpoints:
+**API Testing**: CORS enabled for `localhost:3000`. Key endpoints work with both implementations:
 - `GET /api/v1/health` - system status
 - `POST /api/v1/companies/{id}/upload` - file processing
 - `GET /api/v1/companies` - company management
@@ -540,12 +624,46 @@ docker rm fin-api
 
 ## Current Development Focus
 
+**Migration Priority** (November 2025):
+- Complete migration from `app/` SparkJava to `spring-app/` Spring Boot
+- Validate feature parity between implementations
+- Update documentation and workflows
+- Frontend integration testing with both backends
+
 **Active Refactoring** (see `docs/development/tasks/TASK_6.*`):
 - `AccountClassificationService` (2,230 lines) → extract services
 - `InteractiveClassificationService` (2,066 lines) → dependency injection
 - Output formatting standardization across services
 
+**Implementation Choice for Tasks**:
+- **New Services**: Implement in `spring-app/` only
+- **Bug Fixes**: Apply to both during migration
+- **API Changes**: Design in Spring Boot first, then port to SparkJava if needed
+- **Database Changes**: Ensure compatibility with both implementations
+
 **Quality Remediation**: SpotBugs warnings addressed with defensive copying patterns. EI_EXPOSE_REP fixes documented in task files.
+
+## Architecture Decision Records
+
+### ADR-001: Dual Implementation Strategy
+**Context**: Need to modernize from SparkJava to Spring Boot while maintaining functionality
+**Decision**: Maintain parallel implementations during migration period
+**Status**: ACTIVE - Migration in progress
+**Consequences**:
+- ✅ Zero downtime during migration
+- ✅ Feature parity validation
+- ✅ Gradual adoption possible
+- ❌ Code duplication during transition
+
+### ADR-002: Spring Boot as Primary Framework
+**Context**: SparkJava limitations in enterprise features (security, testing, monitoring)
+**Decision**: Standardize on Spring Boot for all new development
+**Status**: ACCEPTED
+**Consequences**:
+- ✅ Enterprise-grade features available
+- ✅ Better ecosystem and community support
+- ✅ Improved maintainability and testing
+- ❌ Increased complexity for simple use cases
 
 ## Collaboration Protocol
 
