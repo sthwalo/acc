@@ -33,6 +33,9 @@ import jakarta.persistence.Id;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Column;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.CascadeType;
+import java.util.List;
 
 @Entity
 @Table(name = "companies")
@@ -83,6 +86,10 @@ public class Company {
     @Column(name = "vat_registered")
     private boolean vatRegistered;
     
+    // Relationships
+    @OneToMany(mappedBy = "company", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<UserCompany> userCompanies;
+    
     // Constructors, getters, and setters
     public Company() {}
     
@@ -114,6 +121,7 @@ public class Company {
         this.accountType = other.accountType;
         this.branchCode = other.branchCode;
         this.vatRegistered = other.vatRegistered;
+        this.userCompanies = other.userCompanies; // Reference copy for relationships
     }
     
     // Getters and setters
@@ -160,6 +168,10 @@ public class Company {
     // VAT registration getters and setters
     public boolean isVatRegistered() { return vatRegistered; }
     public void setVatRegistered(boolean newVatRegistered) { this.vatRegistered = newVatRegistered; }
+    
+    // Relationship getters and setters
+    public List<UserCompany> getUserCompanies() { return userCompanies; }
+    public void setUserCompanies(List<UserCompany> userCompanies) { this.userCompanies = userCompanies; }
     
     @Override
     public String toString() {

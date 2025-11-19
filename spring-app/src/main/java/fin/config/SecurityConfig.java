@@ -36,6 +36,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers("/api/v1/health").permitAll()
                 .requestMatchers("/api/v1/auth/**").permitAll()  // Allow auth endpoints without authentication
+                .requestMatchers("/api/v1/companies").permitAll()  // Allow general companies endpoint without auth
                 .requestMatchers("/api/v1/companies/user").permitAll()  // TEMPORARY: Allow testing without auth
                 .requestMatchers("/api/v1/companies/fiscal-periods/all").permitAll()  // TEMPORARY: Allow fiscal periods testing
                 .requestMatchers("/api/v1/companies/*/fiscal-periods").permitAll()  // Allow fiscal periods for any company

@@ -7,23 +7,36 @@ interface BudgetManagementViewProps {
   selectedCompany: Company;
 }
 
-interface BudgetItem {
-  id: number;
-  category: string;
-  budgeted_amount: number;
-  actual_amount: number;
-  variance: number;
-  variance_percentage: number;
-}
-
 interface Budget {
   id: number;
-  fiscal_period_id: number;
-  name: string;
-  total_budgeted: number;
-  total_actual: number;
-  total_variance: number;
-  items: BudgetItem[];
+  companyId: number;
+  fiscalPeriodId?: number;
+  title: string;
+  description?: string;
+  budgetYear: number;
+  status: string;
+  totalRevenue: number;
+  totalExpenses: number;
+  createdAt: string;
+  updatedAt: string;
+  approvedAt?: string;
+  approvedBy?: string;
+}
+
+interface BudgetVariance {
+  budgetId: number;
+  totalBudgeted: number;
+  totalActual: number;
+  totalVariance: number;
+  variancePercentage: number;
+  categories: Array<{
+    categoryId: number;
+    categoryName: string;
+    budgeted: number;
+    actual: number;
+    variance: number;
+    variancePercentage: number;
+  }>;
 }
 
 export default function BudgetManagementView({ selectedCompany }: BudgetManagementViewProps) {
@@ -32,6 +45,7 @@ export default function BudgetManagementView({ selectedCompany }: BudgetManageme
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [selectedPeriod, setSelectedPeriod] = useState<FiscalPeriod | null>(null);
   const [selectedBudget, setSelectedBudget] = useState<Budget | null>(null);
+  const [budgetVariance, setBudgetVariance] = useState<BudgetVariance | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,6 +58,12 @@ export default function BudgetManagementView({ selectedCompany }: BudgetManageme
       loadBudgets();
     }
   }, [selectedPeriod?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (selectedBudget) {
+      loadBudgetVariance();
+    }
+  }, [selectedBudget?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadFiscalPeriods = async () => {
     try {
@@ -64,56 +84,30 @@ export default function BudgetManagementView({ selectedCompany }: BudgetManageme
     try {
       setIsLoading(true);
       setError(null);
-      // TODO: Implement actual budgets API call
-      // For now, simulate loading budgets
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Mock data for demonstration
-      const mockBudgets: Budget[] = [
-        {
-          id: 1,
-          fiscal_period_id: selectedPeriod.id,
-          name: 'Operating Budget 2025',
-          total_budgeted: 1200000.00,
-          total_actual: 1150000.00,
-          total_variance: 50000.00,
-          items: [
-            {
-              id: 1,
-              category: 'Salaries',
-              budgeted_amount: 600000.00,
-              actual_amount: 580000.00,
-              variance: 20000.00,
-              variance_percentage: 3.33
-            },
-            {
-              id: 2,
-              category: 'Rent',
-              budgeted_amount: 120000.00,
-              actual_amount: 125000.00,
-              variance: -5000.00,
-              variance_percentage: -4.17
-            },
-            {
-              id: 3,
-              category: 'Marketing',
-              budgeted_amount: 80000.00,
-              actual_amount: 75000.00,
-              variance: 5000.00,
-              variance_percentage: 6.25
-            }
-          ]
-        }
-      ];
-
-      setBudgets(mockBudgets);
-      if (mockBudgets.length > 0 && !selectedBudget) {
-        setSelectedBudget(mockBudgets[0]);
+      // Get budgets for the selected fiscal period
+      const budgetsData = await api.getBudgetsByFiscalPeriod(Number(selectedPeriod.id));
+      setBudgets(budgetsData);
+      if (budgetsData.length > 0 && !selectedBudget) {
+        setSelectedBudget(budgetsData[0]);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load budgets');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadBudgetVariance = async () => {
+    if (!selectedBudget) return;
+
+    try {
+      setError(null);
+      // Get budget variance analysis
+      const varianceData = await api.getBudgetVariance(Number(selectedBudget.id));
+      setBudgetVariance(varianceData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load budget variance');
+      setBudgetVariance(null);
     }
   };
 
@@ -195,25 +189,25 @@ export default function BudgetManagementView({ selectedCompany }: BudgetManageme
                   onClick={() => setSelectedBudget(budget)}
                 >
                   <div className="budget-header">
-                    <h4>{budget.name}</h4>
-                    <div className={`variance-indicator ${getVarianceColor(budget.total_variance)}`}>
-                      {getVarianceIcon(budget.total_variance)}
-                      <span>R {Math.abs(budget.total_variance).toLocaleString()}</span>
+                    <h4>{budget.title}</h4>
+                    <div className={`variance-indicator ${getVarianceColor(budget.totalRevenue - budget.totalExpenses)}`}>
+                      {getVarianceIcon(budget.totalRevenue - budget.totalExpenses)}
+                      <span>R {Math.abs(budget.totalRevenue - budget.totalExpenses).toLocaleString()}</span>
                     </div>
                   </div>
                   <div className="budget-summary">
                     <div className="summary-item">
-                      <span className="label">Budgeted:</span>
-                      <span className="value">R {budget.total_budgeted.toLocaleString()}</span>
+                      <span className="label">Revenue:</span>
+                      <span className="value">R {budget.totalRevenue.toLocaleString()}</span>
                     </div>
                     <div className="summary-item">
-                      <span className="label">Actual:</span>
-                      <span className="value">R {budget.total_actual.toLocaleString()}</span>
+                      <span className="label">Expenses:</span>
+                      <span className="value">R {budget.totalExpenses.toLocaleString()}</span>
                     </div>
                     <div className="summary-item">
-                      <span className="label">Variance:</span>
-                      <span className={`value ${getVarianceColor(budget.total_variance)}`}>
-                        R {budget.total_variance.toLocaleString()}
+                      <span className="label">Net:</span>
+                      <span className={`value ${getVarianceColor(budget.totalRevenue - budget.totalExpenses)}`}>
+                        R {(budget.totalRevenue - budget.totalExpenses).toLocaleString()}
                       </span>
                     </div>
                   </div>
@@ -235,7 +229,7 @@ export default function BudgetManagementView({ selectedCompany }: BudgetManageme
         {selectedBudget && (
           <div className="budget-details">
             <div className="details-header">
-              <h3>{selectedBudget.name}</h3>
+              <h3>{selectedBudget.title}</h3>
               <div className="header-actions">
                 <button className="action-button edit">
                   <Edit size={16} />
@@ -248,71 +242,75 @@ export default function BudgetManagementView({ selectedCompany }: BudgetManageme
               </div>
             </div>
 
-            <div className="budget-items-table">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Category</th>
-                    <th>Budgeted</th>
-                    <th>Actual</th>
-                    <th>Variance</th>
-                    <th>Variance %</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {selectedBudget.items.map((item) => (
-                    <tr key={item.id}>
-                      <td>{item.category}</td>
-                      <td>R {item.budgeted_amount.toLocaleString()}</td>
-                      <td>R {item.actual_amount.toLocaleString()}</td>
-                      <td className={getVarianceColor(item.variance)}>
-                        R {item.variance.toLocaleString()}
+            {budgetVariance && (
+              <div className="budget-items-table">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Category</th>
+                      <th>Budgeted</th>
+                      <th>Actual</th>
+                      <th>Variance</th>
+                      <th>Variance %</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {budgetVariance.categories.map((category) => (
+                      <tr key={category.categoryId}>
+                        <td>{category.categoryName}</td>
+                        <td>R {category.budgeted.toLocaleString()}</td>
+                        <td>R {category.actual.toLocaleString()}</td>
+                        <td className={getVarianceColor(category.variance)}>
+                          R {category.variance.toLocaleString()}
+                        </td>
+                        <td className={getVarianceColor(category.variance)}>
+                          {category.variancePercentage > 0 ? '+' : ''}{category.variancePercentage.toFixed(2)}%
+                        </td>
+                        <td>
+                          <div className={`status-indicator ${getVarianceColor(category.variance)}`}>
+                            {getVarianceIcon(category.variance)}
+                            <span>
+                              {category.variance > 0 ? 'Under Budget' :
+                               category.variance < 0 ? 'Over Budget' : 'On Budget'}
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="total-row">
+                      <td><strong>Total</strong></td>
+                      <td><strong>R {budgetVariance.totalBudgeted.toLocaleString()}</strong></td>
+                      <td><strong>R {budgetVariance.totalActual.toLocaleString()}</strong></td>
+                      <td className={getVarianceColor(budgetVariance.totalVariance)}>
+                        <strong>R {budgetVariance.totalVariance.toLocaleString()}</strong>
                       </td>
-                      <td className={getVarianceColor(item.variance)}>
-                        {item.variance_percentage > 0 ? '+' : ''}{item.variance_percentage.toFixed(2)}%
+                      <td className={getVarianceColor(budgetVariance.totalVariance)}>
+                        <strong>{budgetVariance.variancePercentage.toFixed(2)}%</strong>
                       </td>
                       <td>
-                        <div className={`status-indicator ${getVarianceColor(item.variance)}`}>
-                          {getVarianceIcon(item.variance)}
+                        <div className={`status-indicator ${getVarianceColor(budgetVariance.totalVariance)}`}>
+                          {getVarianceIcon(budgetVariance.totalVariance)}
                           <span>
-                            {item.variance > 0 ? 'Under Budget' :
-                             item.variance < 0 ? 'Over Budget' : 'On Budget'}
+                            {budgetVariance.totalVariance > 0 ? 'Under Budget' :
+                             budgetVariance.totalVariance < 0 ? 'Over Budget' : 'On Budget'}
                           </span>
                         </div>
                       </td>
                     </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr className="total-row">
-                    <td><strong>Total</strong></td>
-                    <td><strong>R {selectedBudget.total_budgeted.toLocaleString()}</strong></td>
-                    <td><strong>R {selectedBudget.total_actual.toLocaleString()}</strong></td>
-                    <td className={getVarianceColor(selectedBudget.total_variance)}>
-                      <strong>R {selectedBudget.total_variance.toLocaleString()}</strong>
-                    </td>
-                    <td className={getVarianceColor(selectedBudget.total_variance)}>
-                      <strong>
-                        {selectedBudget.total_budgeted > 0
-                          ? `${((selectedBudget.total_variance / selectedBudget.total_budgeted) * 100).toFixed(2)}%`
-                          : '0.00%'
-                        }
-                      </strong>
-                    </td>
-                    <td>
-                      <div className={`status-indicator ${getVarianceColor(selectedBudget.total_variance)}`}>
-                        {getVarianceIcon(selectedBudget.total_variance)}
-                        <span>
-                          {selectedBudget.total_variance > 0 ? 'Under Budget' :
-                           selectedBudget.total_variance < 0 ? 'Over Budget' : 'On Budget'}
-                        </span>
-                      </div>
-                    </td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
+                  </tfoot>
+                </table>
+              </div>
+            )}
+
+            {!budgetVariance && selectedBudget && (
+              <div className="loading-state">
+                <div className="spinner medium"></div>
+                <p>Loading budget variance analysis...</p>
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -36,6 +36,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Column;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.JoinColumn;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
  * UserCompany entity representing the many-to-many relationship between users and companies
@@ -79,6 +80,7 @@ public class UserCompany {
     
     @ManyToOne
     @JoinColumn(name = "company_id", insertable = false, updatable = false)
+    @JsonIgnore // Prevent circular reference during JSON serialization
     private Company company;
 
     // Constructors

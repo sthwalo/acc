@@ -25,19 +25,19 @@ export interface ApiEnvelope<T> {
 export interface Company {
   id: number;
   name: string;
-  registrationNumber: string;
-  taxNumber: string;
-  address: string;
-  contactEmail: string;
-  contactPhone: string;
+  registrationNumber?: string;
+  taxNumber?: string;
+  address?: string;
+  contactEmail?: string;
+  contactPhone?: string;
   logoPath?: string;
   bankName?: string;
   accountNumber?: string;
   accountType?: string;
   branchCode?: string;
   vatRegistered?: boolean;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface FiscalPeriod {

@@ -9,14 +9,25 @@ interface PayrollManagementViewProps {
 
 interface PayrollPeriod {
   id: number;
-  name: string;
-  start_date: string;
-  end_date: string;
-  status: 'draft' | 'processing' | 'completed';
-  employee_count: number;
-  total_gross: number;
-  total_deductions: number;
-  total_net: number;
+  companyId: number;
+  fiscalPeriodId: number;
+  periodName: string;
+  payDate: string;
+  startDate: string;
+  endDate: string;
+  periodType: 'WEEKLY' | 'MONTHLY' | 'QUARTERLY';
+  status: 'OPEN' | 'PROCESSED' | 'APPROVED' | 'PAID' | 'CLOSED';
+  totalGrossPay: number;
+  totalDeductions: number;
+  totalNetPay: number;
+  employeeCount: number;
+  processedAt?: string;
+  processedBy?: string;
+  approvedAt?: string;
+  approvedBy?: string;
+  createdAt: string;
+  updatedAt: string;
+  createdBy?: string;
 }
 
 export default function PayrollManagementView({ selectedCompany }: PayrollManagementViewProps) {
@@ -58,37 +69,9 @@ export default function PayrollManagementView({ selectedCompany }: PayrollManage
     try {
       setIsLoading(true);
       setError(null);
-      // TODO: Implement actual payroll periods API call
-      // For now, simulate loading payroll periods
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Mock data for demonstration
-      const mockPayrollPeriods: PayrollPeriod[] = [
-        {
-          id: 1,
-          name: 'November 2025',
-          start_date: '2025-11-01',
-          end_date: '2025-11-30',
-          status: 'completed',
-          employee_count: 25,
-          total_gross: 250000.00,
-          total_deductions: 75000.00,
-          total_net: 175000.00
-        },
-        {
-          id: 2,
-          name: 'October 2025',
-          start_date: '2025-10-01',
-          end_date: '2025-10-31',
-          status: 'processing',
-          employee_count: 24,
-          total_gross: 240000.00,
-          total_deductions: 72000.00,
-          total_net: 168000.00
-        }
-      ];
-
-      setPayrollPeriods(mockPayrollPeriods);
+      // Get payroll periods for the selected company
+      const periods = await api.getPayrollPeriods(Number(selectedCompany.id));
+      setPayrollPeriods(periods);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load payroll periods');
     } finally {
@@ -104,10 +87,9 @@ export default function PayrollManagementView({ selectedCompany }: PayrollManage
     setSuccess(null);
 
     try {
-      // TODO: Implement actual payroll processing API call
-      // For now, simulate the process
-      await new Promise(resolve => setTimeout(resolve, 3000));
-
+      // Process payroll for the selected fiscal period
+      // Note: This might need to create a payroll period first if one doesn't exist
+      await api.processPayroll(Number(selectedPeriod.id));
       setSuccess('Payroll processing completed successfully');
       loadPayrollPeriods(); // Refresh the list
     } catch (err) {
@@ -120,11 +102,8 @@ export default function PayrollManagementView({ selectedCompany }: PayrollManage
   const generatePayslips = async (payrollPeriodId: number) => {
     try {
       setError(null);
-      // TODO: Implement actual payslip generation API call
-      // For now, simulate the process
-      console.log(`Generating payslips for payroll period ${payrollPeriodId}`);
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
+      // Generate payslips for the payroll period
+      await api.generatePayslips(payrollPeriodId);
       setSuccess('Payslips generated successfully');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to generate payslips');
@@ -133,9 +112,11 @@ export default function PayrollManagementView({ selectedCompany }: PayrollManage
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'completed': return 'success';
-      case 'processing': return 'warning';
-      case 'draft': return 'info';
+      case 'OPEN': return 'info';
+      case 'PROCESSED': return 'warning';
+      case 'APPROVED': return 'success';
+      case 'PAID': return 'success';
+      case 'CLOSED': return 'default';
       default: return 'default';
     }
   };
@@ -235,21 +216,21 @@ export default function PayrollManagementView({ selectedCompany }: PayrollManage
                 <tr key={period.id}>
                   <td>
                     <div className="period-info">
-                      <div className="period-name">{period.name}</div>
+                      <div className="period-name">{period.periodName}</div>
                       <div className="period-dates">
-                        {new Date(period.start_date).toLocaleDateString()} - {new Date(period.end_date).toLocaleDateString()}
+                        {new Date(period.startDate).toLocaleDateString()} - {new Date(period.endDate).toLocaleDateString()}
                       </div>
                     </div>
                   </td>
                   <td>
                     <span className={`status-badge ${getStatusColor(period.status)}`}>
-                      {period.status.toUpperCase()}
+                      {period.status}
                     </span>
                   </td>
-                  <td>{period.employee_count}</td>
-                  <td>R {period.total_gross.toLocaleString()}</td>
-                  <td>R {period.total_deductions.toLocaleString()}</td>
-                  <td>R {period.total_net.toLocaleString()}</td>
+                  <td>{period.employeeCount}</td>
+                  <td>R {period.totalGrossPay.toLocaleString()}</td>
+                  <td>R {period.totalDeductions.toLocaleString()}</td>
+                  <td>R {period.totalNetPay.toLocaleString()}</td>
                   <td>
                     <div className="action-buttons">
                       <button
