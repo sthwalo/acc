@@ -143,13 +143,13 @@ class AuthApiService extends BaseApiService {
 class CompanyApiService extends BaseApiService {
   async getCompanies(): Promise<Company[]> {
     try {
-      const response = await this.client.get<ApiResponse<Company[]>>('/v1/companies/user');
+      const response = await this.client.get<ApiResponse<Company[]>>('/v1/companies');
       const companies = response.data.data;
 
       if (!companies || companies.length === 0) {
         throw new Error(
-          'No companies found for your account. Please contact your administrator to grant company access. ' +
-          'SQL: INSERT INTO user_companies (user_id, company_id, role, created_by, updated_by) VALUES (?, ?, ?, ?, ?)'
+          'No companies found. Please create your first company to get started. ' +
+          'Use the "Create Company" button above to add a new company.'
         );
       }
 
@@ -287,12 +287,23 @@ class TransactionApiService extends BaseApiService {
 
   async exportTransactionsToCsv(companyId: number, fiscalPeriodId: number): Promise<Blob> {
     try {
-      const response = await this.client.get(`/v1/companies/${companyId}/fiscal-periods/${fiscalPeriodId}/export/csv`, {
-        responseType: 'blob'
+      const response = await this.client.get(`/v1/import/companies/${companyId}/fiscal-periods/${fiscalPeriodId}/transactions/export/csv`, {
+        responseType: 'blob',
       });
       return response.data;
     } catch (error) {
       this.handleError('Export transactions to CSV', error);
+    }
+  }
+
+  async exportTransactionsToPdf(companyId: number, fiscalPeriodId: number): Promise<Blob> {
+    try {
+      const response = await this.client.get(`/v1/import/companies/${companyId}/fiscal-periods/${fiscalPeriodId}/transactions/export/pdf`, {
+        responseType: 'blob',
+      });
+      return response.data;
+    } catch (error) {
+      this.handleError('Export transactions to PDF', error);
     }
   }
 }
@@ -464,7 +475,7 @@ class SystemApiService extends BaseApiService {
  * Composes all specialized services for a unified API interface
  * Provides backwards compatibility while enabling OOP structure
  */
-export class ApiService {
+export class ApiService extends BaseApiService {
   // Composition - Encapsulation principle
   public readonly auth: AuthApiService;
   public readonly companies: CompanyApiService;
@@ -476,6 +487,7 @@ export class ApiService {
   public readonly system: SystemApiService;
 
   constructor() {
+    super(); // Call BaseApiService constructor
     // Initialize all specialized services
     this.auth = new AuthApiService();
     this.companies = new CompanyApiService();
@@ -529,6 +541,14 @@ export class ApiService {
     return this.transactions.getTransactions(companyId, fiscalPeriodId);
   }
 
+  async exportTransactionsToCsv(companyId: number, fiscalPeriodId: number): Promise<Blob> {
+    return this.transactions.exportTransactionsToCsv(companyId, fiscalPeriodId);
+  }
+
+  async exportTransactionsToPdf(companyId: number, fiscalPeriodId: number): Promise<Blob> {
+    return this.transactions.exportTransactionsToPdf(companyId, fiscalPeriodId);
+  }
+
   async uploadFile(companyId: number, fiscalPeriodId: number, file: File): Promise<UploadResponse> {
     return this.uploads.uploadFile(companyId, fiscalPeriodId, file);
   }
@@ -559,5 +579,70 @@ export class ApiService {
 
   async generateAuditTrail(companyId: number, fiscalPeriodId: number, format: string = 'text'): Promise<{ reportType: string, companyId: number, fiscalPeriodId: number, format: string, content: string }> {
     return this.reports.generateAuditTrail(companyId, fiscalPeriodId, format);
+  }
+
+  // Payroll methods
+  async getPayrollPeriods(companyId: number): Promise<any[]> {
+    try {
+      const response = await this.client.get(`/v1/payroll/companies/${companyId}/periods`);
+      return response.data;
+    } catch (error) {
+      this.handleError('Get payroll periods', error);
+    }
+  }
+
+  async processPayroll(payrollPeriodId: number): Promise<any> {
+    try {
+      const response = await this.client.post(`/v1/payroll/periods/${payrollPeriodId}/process`);
+      return response.data;
+    } catch (error) {
+      this.handleError('Process payroll', error);
+    }
+  }
+
+  async generatePayslips(payrollPeriodId: number): Promise<any> {
+    try {
+      const response = await this.client.post(`/v1/payroll/payslips/generate/${payrollPeriodId}`);
+      return response.data;
+    } catch (error) {
+      this.handleError('Generate payslips', error);
+    }
+  }
+
+  // Budget methods
+  async getBudgetsByCompany(companyId: number): Promise<any[]> {
+    try {
+      const response = await this.client.get(`/v1/budgets/company/${companyId}`);
+      return response.data;
+    } catch (error) {
+      this.handleError('Get budgets by company', error);
+    }
+  }
+
+  async getBudgetsByFiscalPeriod(fiscalPeriodId: number): Promise<any[]> {
+    try {
+      const response = await this.client.get(`/v1/budgets/fiscal-period/${fiscalPeriodId}`);
+      return response.data;
+    } catch (error) {
+      this.handleError('Get budgets by fiscal period', error);
+    }
+  }
+
+  async getBudgetVariance(budgetId: number): Promise<any> {
+    try {
+      const response = await this.client.get(`/v1/budgets/${budgetId}/variance`);
+      return response.data;
+    } catch (error) {
+      this.handleError('Get budget variance', error);
+    }
+  }
+
+  async createBudget(budget: any): Promise<any> {
+    try {
+      const response = await this.client.post('/v1/budgets', budget);
+      return response.data;
+    } catch (error) {
+      this.handleError('Create budget', error);
+    }
   }
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Receipt, ArrowUpCircle, ArrowDownCircle, Search, Filter } from 'lucide-react';
+import { Receipt, ArrowUpCircle, ArrowDownCircle, Search, Filter, Download, FileText } from 'lucide-react';
 import { serviceRegistry } from '../services/ServiceRegistry';
 import { ApiService } from '../services/ApiService';
 import type { Transaction, ApiTransaction, Company, FiscalPeriod } from '../types/api';
@@ -86,6 +86,46 @@ export default function TransactionsView({ selectedCompany, selectedFiscalPeriod
     .filter(t => t.type === 'credit')
     .reduce((sum, t) => sum + Math.abs(t.amount), 0);
 
+  const handleExportCsv = async () => {
+    if (!selectedFiscalPeriod) return;
+
+    try {
+      const apiService = serviceRegistry.get<ApiService>('apiService');
+      const blob = await apiService.exportTransactionsToCsv(Number(selectedCompany.id), Number(selectedFiscalPeriod.id));
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `transactions_${selectedCompany.name}_${selectedFiscalPeriod.periodName}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      setError('Failed to export transactions to CSV');
+      console.error('Export error:', error);
+    }
+  };
+
+  const handleExportPdf = async () => {
+    if (!selectedFiscalPeriod) return;
+
+    try {
+      const apiService = serviceRegistry.get<ApiService>('apiService');
+      const blob = await apiService.exportTransactionsToPdf(Number(selectedCompany.id), Number(selectedFiscalPeriod.id));
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `transactions_${selectedCompany.name}_${selectedFiscalPeriod.periodName}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      setError('Failed to export transactions to PDF');
+      console.error('Export error:', error);
+    }
+  };
+
   if (loading) {
     return (
       <div className="loading">
@@ -111,6 +151,26 @@ export default function TransactionsView({ selectedCompany, selectedFiscalPeriod
         {selectedFiscalPeriod && (
           <p>Fiscal Period: {selectedFiscalPeriod.periodName}</p>
         )}
+        <div className="header-actions">
+          <button
+            className="action-button export"
+            onClick={handleExportCsv}
+            disabled={!selectedFiscalPeriod}
+            title="Export transactions to CSV"
+          >
+            <Download size={16} />
+            Export CSV
+          </button>
+          <button
+            className="action-button export"
+            onClick={handleExportPdf}
+            disabled={!selectedFiscalPeriod}
+            title="Export transactions to PDF"
+          >
+            <FileText size={16} />
+            Export PDF
+          </button>
+        </div>
       </div>
 
       <div className="transactions-summary">
