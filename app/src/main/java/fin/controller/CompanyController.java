@@ -27,6 +27,8 @@
 package fin.controller;
 
 import fin.model.Company;
+import fin.model.User;
+import fin.repository.UserCompanyRepository;
 import fin.service.CompanyService;
 import fin.state.ApplicationState;
 import fin.ui.ConsoleMenu;
@@ -45,6 +47,7 @@ public class CompanyController {
     private final ConsoleMenu menu;
     private final InputHandler inputHandler;
     private final OutputFormatter outputFormatter;
+    private final UserCompanyRepository userCompanyRepository;
     
     // Menu option constants
     private static final int MENU_OPTION_CREATE_COMPANY = 1;
@@ -73,12 +76,14 @@ public class CompanyController {
      * @param outputFormatter the output formatter for display formatting
      */
     public CompanyController(CompanyService initialCompanyService, ApplicationState initialApplicationState,
-                           ConsoleMenu initialMenu, InputHandler initialInputHandler, OutputFormatter initialOutputFormatter) {
+                           ConsoleMenu initialMenu, InputHandler initialInputHandler, OutputFormatter initialOutputFormatter,
+                           UserCompanyRepository initialUserCompanyRepository) {
         this.companyService = initialCompanyService;
         this.applicationState = initialApplicationState;
         this.menu = initialMenu;
         this.inputHandler = initialInputHandler;
         this.outputFormatter = initialOutputFormatter;
+        this.userCompanyRepository = initialUserCompanyRepository;
     }
     
     public void handleCompanySetup() {
@@ -150,6 +155,22 @@ public class CompanyController {
             company = companyService.createCompany(company);
             applicationState.setCurrentCompany(company);
             
+            // Grant current user ADMIN access to the newly created company
+            User currentUser = applicationState.getCurrentUser();
+            if (currentUser != null) {
+                try {
+                    userCompanyRepository.grantUserAccessToCompany(
+                        currentUser.getId(), 
+                        company.getId(), 
+                        "ADMIN", 
+                        currentUser.getEmail()
+                    );
+                    outputFormatter.printInfo("You have been granted ADMIN access to this company.");
+                } catch (Exception e) {
+                    outputFormatter.printWarning("Company created but failed to grant access: " + e.getMessage());
+                }
+            }
+            
             outputFormatter.printSuccess("Company created successfully!");
             outputFormatter.printInfo("Company ID: " + company.getId());
             outputFormatter.printInfo("Company Name: " + company.getName());
@@ -165,14 +186,22 @@ public class CompanyController {
     }
     
     public void selectCompany() {
-        List<Company> companies = companyService.getAllCompanies();
+        // Get current user for company isolation
+        User currentUser = applicationState.getCurrentUser();
+        if (currentUser == null) {
+            outputFormatter.printError("No authenticated user found. Please log in first.");
+            return;
+        }
+        
+        List<Company> companies = companyService.getCompaniesForUser(currentUser.getId());
         
         if (companies.isEmpty()) {
-            outputFormatter.printWarning("No companies found. Please create a company first.");
+            outputFormatter.printWarning("No companies found. You don't have access to any companies. Please create a company first.");
             return;
         }
         
         outputFormatter.printHeader("Select Company");
+        outputFormatter.printInfo("Showing companies you have access to:");
         for (int i = 0; i < companies.size(); i++) {
             System.out.println((i + 1) + ". " + companies.get(i).getName());
         }

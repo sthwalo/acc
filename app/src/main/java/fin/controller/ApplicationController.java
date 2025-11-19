@@ -44,6 +44,10 @@ public class ApplicationController {
     private final OutputFormatter outputFormatter;
     private final ApplicationState applicationState;
     
+    // Authentication controllers
+    private final AuthController authController;
+    private final ApiAuthController apiAuthController;
+    
     // Domain controllers
     private final CompanyController companyController;
     private final FiscalPeriodController fiscalPeriodController;
@@ -89,6 +93,8 @@ public class ApplicationController {
         InputHandler initialInputHandler,
         OutputFormatter initialOutputFormatter,
         ApplicationState initialApplicationState,
+        AuthController initialAuthController,
+        ApiAuthController initialApiAuthController,
         CompanyController initialCompanyController,
         FiscalPeriodController initialFiscalPeriodController,
         ImportController initialImportController,
@@ -102,6 +108,8 @@ public class ApplicationController {
         this.inputHandler = initialInputHandler;
         this.outputFormatter = initialOutputFormatter;
         this.applicationState = initialApplicationState;
+        this.authController = initialAuthController;
+        this.apiAuthController = initialApiAuthController;
         this.companyController = initialCompanyController;
         this.fiscalPeriodController = initialFiscalPeriodController;
         this.importController = initialImportController;
@@ -121,6 +129,15 @@ public class ApplicationController {
         outputFormatter.printInfo("Welcome to the modular FIN application");
         
         displayWelcomeMessage();
+        
+        // Select authentication mode
+        boolean useApiMode = selectAuthenticationMode();
+        
+        // Authentication required before accessing main application
+        boolean authenticated = authenticateUser(useApiMode);
+        if (!authenticated) {
+            return; // Exit if authentication failed or user chose to exit
+        }
         
         boolean exit = false;
         
@@ -457,6 +474,47 @@ public class ApplicationController {
         } else {
             outputFormatter.printWarning("Please select a company first (Option 1)");
             inputHandler.waitForEnter();
+        }
+    }
+    
+    /**
+     * Select authentication mode (Direct Service vs API Testing)
+     */
+    private boolean selectAuthenticationMode() {
+        outputFormatter.printHeader("Authentication Mode Selection");
+        outputFormatter.printInfo("Choose how you want to authenticate:");
+        outputFormatter.printSeparator();
+        outputFormatter.printPlain("1. Direct Service Mode");
+        outputFormatter.printPlain("   - Authenticate directly with database services");
+        outputFormatter.printPlain("   - Traditional console application flow");
+        outputFormatter.printSeparator();
+        outputFormatter.printPlain("2. API Testing Mode");
+        outputFormatter.printPlain("   - Test authentication via REST API calls");
+        outputFormatter.printPlain("   - Makes HTTP requests to API server");
+        outputFormatter.printPlain("   - Useful for API testing and frontend development");
+        outputFormatter.printSeparator();
+        
+        int choice = inputHandler.getInteger("Select authentication mode", 1, 2);
+        boolean useApiMode = (choice == 2);
+        
+        if (useApiMode) {
+            outputFormatter.printInfo("Selected: API Testing Mode");
+            outputFormatter.printWarning("Make sure the API server is running on http://localhost:8080");
+        } else {
+            outputFormatter.printInfo("Selected: Direct Service Mode");
+        }
+        
+        return useApiMode;
+    }
+    
+    /**
+     * Authenticate user based on selected mode
+     */
+    private boolean authenticateUser(boolean useApiMode) {
+        if (useApiMode) {
+            return apiAuthController.authenticateUser();
+        } else {
+            return authController.authenticateUser();
         }
     }
 }

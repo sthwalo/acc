@@ -1,0 +1,31 @@
+# Docker Compose override for frontend development
+# Extends the main docker-compose.yml with frontend service
+
+services:
+  # Frontend Development Server
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ../Dockerfile.frontend
+    container_name: fin-frontend-dev
+    environment:
+      - NODE_ENV=development
+      - CONTAINER_MODE=true
+      # Remove VITE_API_URL to use Vite proxy for container networking
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - fin-app
+    networks:
+      - fin-network
+    restart: unless-stopped
+    command: ["npm", "run", "dev:container"]
+
+  # Override backend CORS for frontend development
+  fin-app:
+    environment:
+      - FIN_CORS_ALLOWED_ORIGINS=http://localhost:3000,http://fin-frontend-dev:3000
+      - SPRING_PROFILES_ACTIVE=docker,dev

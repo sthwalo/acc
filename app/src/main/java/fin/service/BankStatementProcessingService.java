@@ -36,7 +36,6 @@ import fin.repository.BankTransactionRepository;
 import fin.validation.BankTransactionValidator;
 import fin.validation.ValidationResult;
 import java.io.File;
-import java.io.IOException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -81,11 +80,12 @@ public class BankStatementProcessingService {
             List<BankTransaction> transactions = processLines(lines, pdfPath, company);
             
             // Update each transaction with metadata from the document
-            String accountNumber = textExtractor.getAccountNumber();
+            // String accountNumber = textExtractor.getAccountNumber();
             
-            for (BankTransaction transaction : transactions) {
-                transaction.setAccountNumber(accountNumber);
-            }
+            // Note: accountNumber is extracted but not stored in current schema
+            // for (BankTransaction transaction : transactions) {
+            //     transaction.setAccountNumber(accountNumber);
+            // }
             
             // Validate and save each transaction
             List<BankTransaction> validTransactions = new ArrayList<>();
@@ -102,8 +102,8 @@ public class BankStatementProcessingService {
             }
             
             return validTransactions;
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to extract text from PDF: " + pdfPath, e);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to process bank statement: " + pdfPath, e);
         }
     }
     

@@ -177,17 +177,12 @@ public class AuthService {
     /**
      * Check if user has required role for company
      */
-    public boolean hasRole(Session session, String requiredRole, Long companyId) {
+    public boolean hasRole(Session session, String requiredRole) {
         if (session == null) {
             return false;
         }
 
         User user = session.getUser();
-
-        // Check if user belongs to the company
-        if (!user.getCompanyId().equals(companyId)) {
-            return false;
-        }
 
         // Check role
         return user.getRole().equalsIgnoreCase(requiredRole) ||
@@ -195,22 +190,10 @@ public class AuthService {
     }
 
     /**
-     * Check if user can access company data
-     */
-    public boolean canAccessCompany(Session session, Long companyId) {
-        if (session == null || companyId == null) {
-            return false;
-        }
-
-        return session.getUser().getCompanyId().equals(companyId) ||
-               session.getUser().getRole().equalsIgnoreCase("ADMIN");
-    }
-
-    /**
      * Create new user (admin only)
      */
     public User createUser(String email, String password, String firstName, String lastName,
-                          String role, Long companyId, String createdBy) {
+                          String role, Long planId, String createdBy) {
 
         // Validate input
         if (email == null || email.trim().isEmpty()) {
@@ -245,7 +228,7 @@ public class AuthService {
         user.setFirstName(firstName);
         user.setLastName(lastName);
         user.setRole(role.toUpperCase());
-        user.setCompanyId(companyId);
+        user.setPlanId(planId);
         user.setActive(true);
         user.setCreatedBy(createdBy);
         user.setCreatedAt(LocalDateTime.now());

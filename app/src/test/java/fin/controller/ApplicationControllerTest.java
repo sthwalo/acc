@@ -51,6 +51,9 @@ class ApplicationControllerTest {
     private ApplicationState mockApplicationState;
     
     @Mock
+    private AuthController mockAuthController;
+    
+    @Mock
     private CompanyController mockCompanyController;
     
     @Mock
@@ -73,6 +76,9 @@ class ApplicationControllerTest {
     
     @Mock
     private DepreciationController mockDepreciationController;
+    
+    @Mock
+    private ApiAuthController mockApiAuthController;
     
     private InputHandler inputHandler;
     private ApplicationController applicationController;
@@ -103,6 +109,9 @@ class ApplicationControllerTest {
         doNothing().when(mockPayrollController).handlePayrollManagement(anyLong());
         doNothing().when(mockDepreciationController).displayDepreciationMenu();
         
+        // Setup AuthController mock to return true for authentication
+        when(mockAuthController.authenticateUser()).thenReturn(true);
+        
         // Create InputHandler with exit command
         String exitInput = "13\ny\n"; // Exit is option 13, confirm with y
         Scanner scanner = new Scanner(new ByteArrayInputStream(exitInput.getBytes()));
@@ -113,6 +122,8 @@ class ApplicationControllerTest {
             inputHandler, 
             mockOutputFormatter, 
             mockApplicationState,
+            mockAuthController,
+            mockApiAuthController,
             mockCompanyController,
             mockFiscalPeriodController,
             mockImportController,
@@ -146,6 +157,8 @@ class ApplicationControllerTest {
             setupInputHandler,
             mockOutputFormatter,
             mockApplicationState,
+            mockAuthController,
+            mockApiAuthController,
             mockCompanyController,
             mockFiscalPeriodController,
             mockImportController,
@@ -178,6 +191,8 @@ class ApplicationControllerTest {
             dataInputHandler,
             mockOutputFormatter,
             mockApplicationState,
+            mockAuthController,
+            mockApiAuthController,
             mockCompanyController,
             mockFiscalPeriodController,
             mockImportController,
@@ -224,6 +239,8 @@ class ApplicationControllerTest {
             depreciationInputHandler,
             mockOutputFormatter,
             mockApplicationState,
+            mockAuthController,
+            mockApiAuthController,
             mockCompanyController,
             mockFiscalPeriodController,
             mockImportController,

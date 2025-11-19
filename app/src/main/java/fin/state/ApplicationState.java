@@ -28,6 +28,7 @@ package fin.state;
 
 import fin.model.Company;
 import fin.model.FiscalPeriod;
+import fin.model.User;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -39,10 +40,35 @@ import java.util.Map;
 public class ApplicationState {
     private Company currentCompany;
     private FiscalPeriod currentFiscalPeriod;
+    private User currentUser;
     private Map<String, Object> sessionData;
     
     public ApplicationState() {
         this.sessionData = new HashMap<>();
+    }
+    
+    // User authentication state management
+    public void setCurrentUser(User user) {
+        this.currentUser = user != null ? new User(user) : null;
+    }
+    
+    public User getCurrentUser() {
+        return currentUser != null ? new User(currentUser) : null;
+    }
+    
+    public boolean hasCurrentUser() {
+        return currentUser != null;
+    }
+    
+    public boolean isAuthenticated() {
+        return hasCurrentUser();
+    }
+    
+    public String getCurrentUserDisplayName() {
+        if (currentUser != null) {
+            return currentUser.getFirstName() + " " + currentUser.getLastName() + " (" + currentUser.getEmail() + ")";
+        }
+        return "Not authenticated";
     }
     
     // Company state management
@@ -117,6 +143,7 @@ public class ApplicationState {
     public void clearAll() {
         currentCompany = null;
         currentFiscalPeriod = null;
+        currentUser = null;
         sessionData.clear();
     }
     
@@ -158,7 +185,8 @@ public class ApplicationState {
     
     @Override
     public String toString() {
-        return String.format("ApplicationState{company=%s, fiscalPeriod=%s, sessionDataKeys=%s}",
+        return String.format("ApplicationState{user=%s, company=%s, fiscalPeriod=%s, sessionDataKeys=%s}",
+                currentUser != null ? currentUser.getEmail() : "null",
                 currentCompany != null ? currentCompany.getName() : "null",
                 currentFiscalPeriod != null ? currentFiscalPeriod.getPeriodName() : "null",
                 sessionData.keySet());

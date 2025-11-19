@@ -27,6 +27,8 @@
 package fin.context;
 
 import fin.config.DatabaseConfig;
+import fin.controller.AuthController;
+import fin.controller.ApiAuthController;
 import fin.controller.ApplicationController;
 import fin.controller.BudgetController;
 import fin.controller.CompanyController;
@@ -36,8 +38,17 @@ import fin.controller.FiscalPeriodController;
 import fin.controller.ImportController;
 import fin.controller.PayrollController;
 import fin.controller.ReportController;
+import fin.repository.PlanRepository;
+import fin.repository.UserRepository;
+import fin.service.UserService;
+import fin.service.JwtService;
+import com.google.gson.Gson;
 import fin.repository.CompanyRepository;
 import fin.repository.DepreciationRepository;
+import fin.repository.UserCompanyRepository;
+import fin.repository.ReportTemplatesRepository;
+import fin.repository.CompanyDefaultsRepository;
+import fin.repository.EmployeeImportDefaultsRepository;
 import fin.service.AccountClassificationService;
 import fin.service.AccountManagementService;
 import fin.service.BalanceSheetService;
@@ -52,6 +63,7 @@ import fin.service.CsvExportService;
 import fin.service.CsvImportService;
 import fin.service.DataManagementService;
 import fin.service.DepreciationService;
+import fin.service.ExcelFinancialReportService;
 import fin.service.FinancialReportingService;
 import fin.service.InvoicePdfService;
 import fin.service.GeneralLedgerService;
@@ -108,8 +120,8 @@ public class ApplicationContext {
         
         // Initialize all services BEFORE assigning fields (secure constructor pattern)
         try {
-            initializeServices(databaseUrl);
-            initializeUIComponents();
+            initializeUIComponents();  // Initialize UI components first (ApplicationState, InputHandler, OutputFormatter)
+            initializeServices(databaseUrl);  // Then services (which depend on UI components)
             initializeControllers();
             initializeApplicationController();
         } catch (Exception e) {
@@ -150,6 +162,10 @@ public class ApplicationContext {
         // Core services
         CompanyService companyService = new CompanyService(initialDbUrl);
         register(CompanyService.class, companyService);
+        
+        // Core repositories
+        UserCompanyRepository userCompanyRepository = new UserCompanyRepository(initialDbUrl);
+        register(UserCompanyRepository.class, userCompanyRepository);
         
         // Company logo service (depends on CompanyService)
         CompanyLogoService companyLogoService = new CompanyLogoService(initialDbUrl);
@@ -231,11 +247,66 @@ public class ApplicationContext {
         CompanyRepository companyRepository = new CompanyRepository(initialDbUrl);
         register(CompanyRepository.class, companyRepository);
         
+        // New repositories for database-first architecture (Phase 2)
+        ReportTemplatesRepository reportTemplatesRepository = new ReportTemplatesRepository(initialDbUrl);
+        register(ReportTemplatesRepository.class, reportTemplatesRepository);
+        
+        CompanyDefaultsRepository companyDefaultsRepository = new CompanyDefaultsRepository(initialDbUrl);
+        register(CompanyDefaultsRepository.class, companyDefaultsRepository);
+        
+        EmployeeImportDefaultsRepository employeeImportDefaultsRepository = new EmployeeImportDefaultsRepository(initialDbUrl);
+        register(EmployeeImportDefaultsRepository.class, employeeImportDefaultsRepository);
+        
+        // Authentication repositories
+        UserRepository userRepository = new UserRepository(initialDbUrl);
+        register(UserRepository.class, userRepository);
+        
+        UserCompanyRepository userCompanyRepository = new UserCompanyRepository(initialDbUrl);
+        register(UserCompanyRepository.class, userCompanyRepository);
+        
+        PlanRepository planRepository = new PlanRepository(initialDbUrl);
+        register(PlanRepository.class, planRepository);
+        
+        // User service for authentication
+        UserService userService = new UserService(initialDbUrl, userCompanyRepository, planRepository);
+        register(UserService.class, userService);
+        
+        // JWT service for API authentication
+        JwtService jwtService = new JwtService();
+        register(JwtService.class, jwtService);
+        
         PayslipPdfService payslipPdfService = new PayslipPdfService();
         register(PayslipPdfService.class, payslipPdfService);
         
+        // Auth controller for console authentication
+        AuthController authController = new AuthController(
+            userService,
+            planRepository,
+            get(ApplicationState.class),
+            get(InputHandler.class),
+            get(OutputFormatter.class)
+        );
+        register(AuthController.class, authController);
+        
+        // API Auth controller for REST API authentication
+        fin.api.controllers.AuthController apiAuthController = new fin.api.controllers.AuthController(
+            userService,
+            jwtService
+        );
+        register(fin.api.controllers.AuthController.class, apiAuthController);
+        
+        // API Auth Controller for console API testing mode
+        ApiAuthController apiAuthControllerConsole = new ApiAuthController(
+            get(ApplicationState.class),
+            get(InputHandler.class),
+            get(OutputFormatter.class),
+            new Gson(),
+            "http://localhost:8080"
+        );
+        register(ApiAuthController.class, apiAuthControllerConsole);
+        
         // Payroll service
-        PayrollService payrollService = new PayrollService(initialDbUrl, companyRepository, payslipPdfService, null);
+        PayrollService payrollService = new PayrollService(initialDbUrl, companyRepository, payslipPdfService, null, employeeImportDefaultsRepository);
         register(PayrollService.class, payrollService);
         
         // Payroll report service
@@ -277,6 +348,14 @@ public class ApplicationContext {
         // Balance Sheet Service (depends on General Ledger for TB data)
         BalanceSheetService balanceSheetService = new BalanceSheetService(financialDataRepository, generalLedgerService);
         register(BalanceSheetService.class, balanceSheetService);
+        
+        // Excel Financial Report Service (for Excel-based comprehensive reports)
+        ExcelFinancialReportService excelFinancialReportService = new ExcelFinancialReportService(
+            initialDbUrl,
+            get(ReportTemplatesRepository.class),
+            get(CompanyDefaultsRepository.class)
+        );
+        register(ExcelFinancialReportService.class, excelFinancialReportService);
     }
     
     /**
@@ -366,7 +445,8 @@ public class ApplicationContext {
             applicationState,
             menu,
             inputHandler,
-            outputFormatter
+            outputFormatter,
+            get(UserCompanyRepository.class)
         );
         register(CompanyController.class, companyController);
 
@@ -479,11 +559,15 @@ public class ApplicationContext {
      * Replaces main method logic from App.java
      */
     private void initializeApplicationController() {
+        // Note: AuthController and ApiAuthController are not initialized in this context
+        // They would need to be added if required by ApplicationController
         ApplicationController applicationController = new ApplicationController(
             get(ConsoleMenu.class),
             get(InputHandler.class),
             get(OutputFormatter.class),
             get(ApplicationState.class),
+            get(AuthController.class), // Console AuthController for authentication
+            get(ApiAuthController.class), // Console API testing controller
             get(CompanyController.class),
             get(FiscalPeriodController.class),
             get(ImportController.class),

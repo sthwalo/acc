@@ -18,26 +18,26 @@ This setup provides containerized deployment for the FIN application with Postgr
 2. **Build and Run:**
    ```bash
    # Build the application
-   docker-compose build
+   docker compose build
 
    # Start all services (production)
-   docker-compose up -d
+   docker compose up -d
 
    # View logs
-   docker-compose logs -f fin-app
+   docker compose logs -f fin-app
    ```
 
 3. **Access the Application:**
-   - Console UI: `docker-compose exec fin-app java -jar app/build/libs/app.jar`
-   - API Server: `docker-compose exec fin-app java -jar app/build/libs/app.jar api`
-   - Batch Processing: `docker-compose exec fin-app java -jar app/build/libs/app.jar --batch [command]`
+   - Console UI: `docker compose exec fin-app java -jar app/build/libs/app.jar`
+   - API Server: `docker compose exec fin-app java -jar app/build/libs/app.jar api`
+   - Batch Processing: `docker compose exec fin-app java -jar app/build/libs/app.jar --batch [command]`
 
 ## Services
 
-- **postgres**: Production PostgreSQL database
-- **postgres-test**: Test PostgreSQL database
-- **fin-app**: Production FIN application
-- **fin-app-test**: Test FIN application
+- **postgres**: Production PostgreSQL database (port 5432)
+- **postgres-test**: Test PostgreSQL database (port 5433)
+- **fin-app**: Production FIN application (port 8080)
+- **fin-app-test**: Test FIN application (port 8081)
 
 ## Database Initialization
 
@@ -57,34 +57,52 @@ All sensitive configuration is handled via environment variables:
 
 ```bash
 # Run tests in container
-docker-compose exec fin-app-test ./gradlew test
+docker compose exec fin-app-test ./gradlew test
 
 # Run specific test
-docker-compose exec fin-app-test ./gradlew test --tests "*TestClass*"
+docker compose exec fin-app-test ./gradlew test --tests "*TestClass*"
 ```
 
 ## Development
 
 ```bash
 # Rebuild after code changes
-docker-compose build --no-cache fin-app
+docker compose build --no-cache fin-app
 
 # View database
-docker-compose exec postgres psql -U $DATABASE_USER -d drimacc_db
+docker compose exec postgres psql -U $DATABASE_USER -d drimacc_db
 
 # Stop all services
-docker-compose down
+docker compose down
 
 # Clean up volumes (WARNING: deletes data)
-docker-compose down -v
+docker compose down -v
 ```
+
+## Current Docker Configuration
+
+**Base Images:**
+- **Build Stage**: Eclipse Temurin JDK 17 (reliable, compatible)
+- **Runtime Stage**: Eclipse Temurin JRE 17 (minimal, secure)
+
+**Security Notes:**
+- Non-root user execution (`appuser:appgroup`)
+- Minimal attack surface with JRE-only runtime
+- PostgreSQL client installed for database connectivity
+- Health checks configured for container orchestration
+
+**Build Optimizations:**
+- Multi-stage build for smaller final image
+- Dependency caching in separate layer
+- Gradle daemon disabled for container compatibility
 
 ## Troubleshooting
 
 - **Database connection issues**: Check `.env` file and ensure credentials are correct
-- **Application won't start**: Check logs with `docker-compose logs fin-app`
+- **Application won't start**: Check logs with `docker compose logs fin-app`
 - **Port conflicts**: Modify ports in `docker-compose.yml` if needed
 - **Memory issues**: Adjust `JAVA_OPTS` in `.env` file
+- **Build failures**: Use `docker compose build --no-cache` to rebuild from scratch
 
 ## Security Notes
 

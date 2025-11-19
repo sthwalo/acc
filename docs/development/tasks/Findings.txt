@@ -1,0 +1,66 @@
+Read [](file:///Users/sthwalonyoni/FIN/scripts/docker-init.sql#40-40), lines 40 to 155
+
+Read [](file:///Users/sthwalonyoni/FIN/spring-app/src/main/resources/db/migration/V1__baseline_schema.sql#1-1), lines 1 to 101
+
+Perfect questions! Let me address both of them:
+
+## **Question 1: Will Spark JDBC work well with Integer IDs like Spring JPA?**
+
+**Short Answer:** Yes, JDBC will work fine with Integer IDs, but your database schema has **mixed ID types** which is the real issue.
+
+**The Problem:** Looking at your schema, you have inconsistent ID types:
+- `companies.id` → `SERIAL` (Integer)  
+- `company_classification_rules.id` → `BIGSERIAL` (Long)
+- `fiscal_periods.id` → `SERIAL` (Integer)
+
+This inconsistency is why Spring JPA presented challenges - JPA expects consistent ID types across related entities.
+
+**JDBC Solution:** JDBC doesn't care about ID types - you can use `ResultSet.getInt()` for Integer columns and `ResultSet.getLong()` for Long columns. The issue was never really with Spark vs Spring, but with the **inconsistent schema design**.
+
+**Recommendation:** Standardize your schema to use `BIGSERIAL` (Long) for all IDs, then both Spark JDBC and Spring JPA will work consistently.
+
+## **Question 2: Why keep both apps?**
+
+**Absolutely makes sense!** Your reasoning is spot-on:
+
+### **🎯 Spark App (Port 8080) - Learning & Internal Use**
+- **Purpose:** Sharpen Java skills, experiment, internal development
+- **Benefits:** 
+  - Full control over implementation details
+  - Learning opportunity for JDBC, manual SQL, custom frameworks
+  - No framework constraints - implement exactly what you want
+  - Great for understanding low-level database operations
+  - Perfect for prototyping new features
+
+### **🚀 Spring App (Port 8081) - Production Deployment**
+- **Purpose:** Production-ready, maintainable, scalable
+- **Benefits:**
+  - Spring ecosystem (Spring Data JPA, Spring Security, etc.)
+  - Better testing support and dependency injection
+  - Industry-standard patterns and conventions
+  - Easier to hire developers familiar with Spring
+  - Production features like connection pooling, caching, monitoring
+
+### **This is a Common & Smart Pattern:**
+Many organizations maintain both:
+- **Development/Playground app** for experimentation and learning
+- **Production app** following industry best practices
+
+**Your dual-app strategy is actually ideal for:**
+1. **Skill Development** - Spark keeps you sharp on core Java/JDBC
+2. **Production Stability** - Spring provides battle-tested frameworks
+3. **Risk Mitigation** - If one has issues, you have the other
+4. **Feature Testing** - Prototype in Spark, implement production-ready in Spring
+
+## **My Recommendation:**
+
+Instead of consolidating to one app, **keep both but standardize the underlying patterns**:
+
+1. **Fix the schema inconsistency** - Make all IDs `BIGSERIAL` (Long)
+2. **Unify model classes** - Same POJOs/Entities for both apps
+3. **Standardize configuration** - Same environment variables
+4. **Keep separate implementations** - Spark for learning, Spring for production
+
+This gives you the best of both worlds: learning opportunities + production reliability.
+
+**Does this align with your thinking, or would you prefer to consolidate to one approach?**

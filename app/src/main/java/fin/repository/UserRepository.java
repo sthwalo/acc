@@ -46,16 +46,11 @@ public class UserRepository implements BaseRepository<User, Long> {
     private static final int PARAM_FIRST_NAME = 4;
     private static final int PARAM_LAST_NAME = 5;
     private static final int PARAM_ROLE = 6;
-    private static final int PARAM_COMPANY_ID = 7;
+    private static final int PARAM_PLAN_ID = 7;
     private static final int PARAM_IS_ACTIVE = 8;
     private static final int PARAM_CREATED_BY = 9;
     private static final int PARAM_CREATED_AT = 10;
     private static final int PARAM_UPDATED_AT = 11;
-
-    // Additional parameters for UPDATE operation
-    private static final int PARAM_UPDATED_BY_UPDATE = 12;
-    private static final int PARAM_UPDATED_AT_UPDATE = 13;
-    private static final int PARAM_ID_UPDATE = 14;
 
     public UserRepository(String initialDbUrl) {
         this.dbUrl = initialDbUrl;
@@ -64,8 +59,8 @@ public class UserRepository implements BaseRepository<User, Long> {
     @Override
     public User save(User user) {
         String sql = user.getId() == null ?
-            "INSERT INTO users (email, password_hash, salt, first_name, last_name, role, company_id, is_active, created_by, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)" :
-            "UPDATE users SET email = ?, password_hash = ?, salt = ?, first_name = ?, last_name = ?, role = ?, company_id = ?, is_active = ?, updated_by = ?, updated_at = ? WHERE id = ?";
+            "INSERT INTO users (email, password_hash, salt, first_name, last_name, role, plan_id, is_active, created_by, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)" :
+            "UPDATE users SET email = ?, password_hash = ?, salt = ?, first_name = ?, last_name = ?, role = ?, plan_id = ?, is_active = ?, updated_by = ?, updated_at = ?, last_login_at = ? WHERE id = ?";
 
         try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -76,16 +71,24 @@ public class UserRepository implements BaseRepository<User, Long> {
             stmt.setString(PARAM_FIRST_NAME, user.getFirstName());
             stmt.setString(PARAM_LAST_NAME, user.getLastName());
             stmt.setString(PARAM_ROLE, user.getRole());
-            stmt.setLong(PARAM_COMPANY_ID, user.getCompanyId());
+            stmt.setLong(PARAM_PLAN_ID, user.getPlanId());
             stmt.setBoolean(PARAM_IS_ACTIVE, user.isActive());
-            stmt.setString(PARAM_CREATED_BY, user.getCreatedBy());
-            stmt.setTimestamp(PARAM_CREATED_AT, Timestamp.valueOf(user.getCreatedAt()));
-            stmt.setTimestamp(PARAM_UPDATED_AT, Timestamp.valueOf(user.getUpdatedAt()));
 
-            if (user.getId() != null) {
-                stmt.setString(PARAM_UPDATED_BY_UPDATE, user.getUpdatedBy());
-                stmt.setTimestamp(PARAM_UPDATED_AT_UPDATE, Timestamp.valueOf(user.getUpdatedAt()));
-                stmt.setLong(PARAM_ID_UPDATE, user.getId());
+            if (user.getId() == null) {
+                // INSERT operation
+                stmt.setString(PARAM_CREATED_BY, user.getCreatedBy());
+                stmt.setTimestamp(PARAM_CREATED_AT, Timestamp.valueOf(user.getCreatedAt()));
+                stmt.setTimestamp(PARAM_UPDATED_AT, Timestamp.valueOf(user.getUpdatedAt()));
+            } else {
+                // UPDATE operation
+                stmt.setString(9, user.getUpdatedBy()); // updated_by
+                stmt.setTimestamp(10, Timestamp.valueOf(user.getUpdatedAt())); // updated_at
+                if (user.getLastLoginAt() != null) {
+                    stmt.setTimestamp(11, Timestamp.valueOf(user.getLastLoginAt())); // last_login_at
+                } else {
+                    stmt.setNull(11, Types.TIMESTAMP);
+                }
+                stmt.setLong(12, user.getId()); // WHERE id
             }
 
             int affectedRows = stmt.executeUpdate();
@@ -248,7 +251,7 @@ public class UserRepository implements BaseRepository<User, Long> {
         user.setFirstName(rs.getString("first_name"));
         user.setLastName(rs.getString("last_name"));
         user.setRole(rs.getString("role"));
-        user.setCompanyId(rs.getLong("company_id"));
+        user.setPlanId(rs.getLong("plan_id"));
         user.setActive(rs.getBoolean("is_active"));
         user.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
         user.setUpdatedAt(rs.getTimestamp("updated_at").toLocalDateTime());

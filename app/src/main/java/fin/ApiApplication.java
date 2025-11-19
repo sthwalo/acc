@@ -51,10 +51,47 @@ public class ApiApplication {
             // Initialize application context with dependency injection
             ApplicationContext context = new ApplicationContext();
 
-            // Start API server with access to all services
+            // Get API controllers from dependency injection context
+            fin.api.controllers.AuthController authController = context.get(fin.api.controllers.AuthController.class);
+            fin.api.controllers.CompanyController companyController = context.get(fin.api.controllers.CompanyController.class);
+            fin.api.controllers.FiscalPeriodController fiscalPeriodController = context.get(fin.api.controllers.FiscalPeriodController.class);
+            fin.api.controllers.TransactionController transactionController = context.get(fin.api.controllers.TransactionController.class);
+            fin.api.controllers.UploadController uploadController = context.get(fin.api.controllers.UploadController.class);
+            fin.api.controllers.ReportController reportController = context.get(fin.api.controllers.ReportController.class);
+            fin.api.controllers.BudgetController budgetController = context.get(fin.api.controllers.BudgetController.class);
+            fin.api.controllers.PayrollController payrollController = context.get(fin.api.controllers.PayrollController.class);
+            fin.api.controllers.ClassificationController classificationController = context.get(fin.api.controllers.ClassificationController.class);
+            fin.api.controllers.DataManagementController dataManagementController = context.get(fin.api.controllers.DataManagementController.class);
+            fin.api.controllers.AccountController accountController = context.get(fin.api.controllers.AccountController.class);
+            fin.api.controllers.DepreciationController depreciationController = context.get(fin.api.controllers.DepreciationController.class);
+            fin.api.controllers.PlanController planController = context.get(fin.api.controllers.PlanController.class);
+
+            // Start API server with access to all services and controllers
             fin.api.ApiServer apiServer = new fin.api.ApiServer(
+                context.get(fin.service.UserService.class),
                 context.get(fin.service.CompanyService.class),
-                context.get(fin.service.BankStatementProcessingService.class)
+                context.get(fin.service.BankStatementProcessingService.class),
+                context.get(fin.service.TransactionClassificationService.class),
+                context.get(fin.service.FinancialReportingService.class),
+                context.get(fin.service.BudgetService.class),
+                context.get(fin.service.PayrollService.class),
+                context.get(fin.service.DataManagementService.class),
+                context.get(fin.service.AccountManagementService.class),
+                context.get(fin.service.DepreciationService.class),
+                context.get(fin.service.JwtService.class),
+                authController,
+                companyController,
+                fiscalPeriodController,
+                transactionController,
+                uploadController,
+                reportController,
+                budgetController,
+                payrollController,
+                classificationController,
+                dataManagementController,
+                accountController,
+                depreciationController,
+                planController
             );
 
             apiServer.start();

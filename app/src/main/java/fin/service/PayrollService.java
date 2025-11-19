@@ -30,6 +30,7 @@ package fin.service;
 import fin.model.*;
 import fin.config.DatabaseConfig;
 import fin.repository.CompanyRepository;
+import fin.repository.EmployeeImportDefaultsRepository;
 
 import java.math.BigDecimal;
 import java.sql.*;
@@ -51,6 +52,7 @@ public class PayrollService {
     private final CompanyRepository companyRepository;
     private final PayslipPdfService pdfService;
     private final EmailService emailService;
+    private final EmployeeImportDefaultsRepository employeeImportDefaultsRepository;
     
     // Journal Entry Line Numbers
     private static final int JOURNAL_LINE_GROSS_SALARY = 1;
@@ -200,6 +202,7 @@ private static class PayrollAccountIds {
         this.companyRepository = null;
         this.pdfService = null;
         this.emailService = null;
+        this.employeeImportDefaultsRepository = null;
     }
     
     public PayrollService(String initialDbUrl) {
@@ -208,15 +211,18 @@ private static class PayrollAccountIds {
         CompanyRepository companyRepo = new CompanyRepository(initialDbUrl);
         PayslipPdfService pdfSvc = new PayslipPdfService();
         EmailService emailSvc = new EmailService();
+        EmployeeImportDefaultsRepository importDefaultsRepo = new EmployeeImportDefaultsRepository(initialDbUrl);
         this.dbUrl = initialDbUrl;
         this.sarsTaxCalculator = taxCalc;
         this.companyRepository = companyRepo;
         this.pdfService = pdfSvc;
         this.emailService = emailSvc;
+        this.employeeImportDefaultsRepository = importDefaultsRepo;
     }
 
     public PayrollService(String initialDbUrl, CompanyRepository initialCompanyRepository, 
-                         PayslipPdfService initialPdfService, EmailService initialEmailService) {
+                         PayslipPdfService initialPdfService, EmailService initialEmailService,
+                         EmployeeImportDefaultsRepository initialEmployeeImportDefaultsRepository) {
         SARSTaxCalculator taxCalc = new SARSTaxCalculator();
         initializeTaxCalculator(taxCalc);
         this.dbUrl = initialDbUrl;
@@ -224,6 +230,7 @@ private static class PayrollAccountIds {
         this.companyRepository = initialCompanyRepository;
         this.pdfService = initialPdfService;
         this.emailService = initialEmailService;
+        this.employeeImportDefaultsRepository = initialEmployeeImportDefaultsRepository;
     }
     
     private void initializeTaxCalculator(SARSTaxCalculator taxCalc) {
@@ -1942,7 +1949,17 @@ private static class PayrollAccountIds {
         employee.setAddressLine1(address.toString().trim());
         employee.setCity(fields[FIELD_CITY].trim()); // City/Town
         employee.setPostalCode(fields[FIELD_POSTAL_CODE].trim()); // Postal Code
-        employee.setCountry("ZA"); // Default to South Africa
+        
+        // Get default country from database instead of hardcoded value
+        String defaultCountry = "ZA"; // Fallback if repository not available
+        if (employeeImportDefaultsRepository != null) {
+            try {
+                defaultCountry = employeeImportDefaultsRepository.getDefaultCountryCode(employee.getCompanyId());
+            } catch (SQLException e) {
+                LOGGER.warning("Failed to get default country from database, using fallback: " + e.getMessage());
+            }
+        }
+        employee.setCountry(defaultCountry);
     }
 
     /**

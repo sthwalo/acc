@@ -1,0 +1,39 @@
+# Frontend Dockerfile for Container-First Development
+# Uses Node.js for development server with hot reload
+
+FROM node:20-alpine
+
+# Upgrade system packages and install dependencies
+RUN apk update && apk upgrade && apk add --no-cache git
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm ci
+
+# Copy source code
+COPY . .
+
+# Create non-root user for security
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nextjs -u 1001
+
+# Change ownership of app directory
+RUN chown -R nextjs:nodejs /app
+USER nextjs
+
+# Expose development port
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD node -e "require('http').get('http://localhost:3000', (res) => { \
+        process.exit(res.statusCode === 200 ? 0 : 1) \
+    }).on('error', () => process.exit(1))"
+
+# Start development server
+CMD ["npm", "run", "dev:container"]

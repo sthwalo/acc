@@ -21,6 +21,9 @@
 plugins {
     // Apply the application plugin to add support for building a CLI application in Java.
     application
+    // Spring Boot plugin
+    id("org.springframework.boot") version "3.2.0"
+    id("io.spring.dependency-management") version "1.1.4"
     // Code quality plugins
     checkstyle
     id("com.github.spotbugs") version "5.2.5"
@@ -39,6 +42,13 @@ repositories {
 }
 
 dependencies {
+    // Spring Boot starters
+    implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    implementation("org.springframework.boot:spring-boot-starter-security")
+    implementation("org.springframework.boot:spring-boot-starter-validation")
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+
     // Use JUnit Jupiter for testing.
     testImplementation(libs.junit.jupiter)
     testImplementation("org.mockito:mockito-core:5.5.0")
@@ -50,7 +60,7 @@ dependencies {
     implementation(libs.guava)
     
     // Database drivers
-    implementation("org.postgresql:postgresql:42.7.4")  // PostgreSQL driver (PostgreSQL 17 compatible)
+    runtimeOnly("org.postgresql:postgresql")  // PostgreSQL driver (managed by Spring Boot)
     implementation("com.zaxxer:HikariCP:5.0.1")         // Connection pooling
     
     // PDF libraries - OPEN SOURCE ONLY (no iText due to commercial licensing)
@@ -65,17 +75,34 @@ dependencies {
     implementation("net.java.dev.jna:jna:5.13.0")
     
     // JavaMail API for email functionality
-    implementation("com.sun.mail:javax.mail:1.6.2")
+    implementation("org.springframework.boot:spring-boot-starter-mail")
+    implementation("jakarta.mail:jakarta.mail-api:2.1.1")
+    runtimeOnly("org.eclipse.angus:angus-mail:2.0.2")
     
     // Excel processing libraries
     implementation("org.apache.poi:poi:5.2.4")
     implementation("org.apache.poi:poi-ooxml:5.2.4")
     implementation("org.apache.poi:poi-scratchpad:5.2.4")
     
-    // REST API dependencies
-    implementation("com.sparkjava:spark-core:2.9.4")
+    // JWT support for Spring Security
+    implementation("io.jsonwebtoken:jjwt-api:0.11.5")
+    runtimeOnly("io.jsonwebtoken:jjwt-impl:0.11.5")
+    runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.11.5")
+
+    // Keep Gson for JSON processing (Spring Boot uses Jackson by default, but we can keep Gson for compatibility)
     implementation("com.google.code.gson:gson:2.10.1")
-    implementation("org.slf4j:slf4j-simple:2.0.7")
+
+    // Jakarta EE dependencies for servlet API (needed for Spring Security filters)
+    implementation("jakarta.servlet:jakarta.servlet-api:6.0.0")
+
+    // Legacy SparkJava dependencies (temporary - will be removed after migration)
+    implementation("com.sparkjava:spark-core:2.9.4")
+    implementation("org.eclipse.jetty:jetty-server:9.4.53.v20231009")
+    implementation("org.eclipse.jetty:jetty-webapp:9.4.53.v20231009")
+    implementation("org.eclipse.jetty:jetty-security:9.4.53.v20231009")
+    implementation("org.eclipse.jetty:jetty-servlet:9.4.53.v20231009")
+    implementation("org.eclipse.jetty:jetty-util:9.4.53.v20231009")
+    implementation("org.slf4j:slf4j-simple:2.0.9")
 }
 
 // Code quality configurations
@@ -97,12 +124,12 @@ java {
 }
 
 application {
-    // Define the main class for the application.
+    // Define the main class for the application - Console application (delegates to API when "api" argument passed)
     mainClass.set("fin.ConsoleApplication")
 }
 
-// Configure the run task to pass system properties
-tasks.named<JavaExec>("run") {
+// Configure the bootRun task for Spring Boot
+tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
     jvmArgs(
         "-Xmx24g",           // Increase max heap to 24GB
         "-Xms4g",            // Start with 4GB
@@ -122,14 +149,6 @@ tasks.named<JavaExec>("run") {
         .mapValues { it.value as Any }
     // Auto-confirm license for gradle run to avoid NoSuchElementException
     systemProperty("fin.license.autoconfirm", "true")
-    
-    // Check if API mode is requested
-    if (project.hasProperty("api") || System.getProperty("api") != null) {
-        mainClass.set("fin.ApiApplication")
-        args("api")
-    } else {
-        mainClass.set("fin.ConsoleApplication")
-    }
 }
 
 // Add separate task for running classification test
