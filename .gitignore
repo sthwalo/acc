@@ -172,7 +172,7 @@ spring.pid
 **/application-*.properties
 !**/application*.properties.example
 !**/application.properties.template
-
+spring-app/src/main/resources/application.properties
 # Spring Boot application YAML files
 **/application.yml
 **/application*.yml

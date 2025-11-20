@@ -241,11 +241,28 @@ public class SpringCompanyService {
      */
     @Transactional
     public FiscalPeriod updateFiscalPeriod(Long id, FiscalPeriod updatedPeriod) {
-        if (!fiscalPeriodRepository.existsById(id)) {
+        FiscalPeriod existingPeriod = getFiscalPeriodById(id);
+        if (existingPeriod == null) {
             return null;
         }
-        updatedPeriod.setId(id);
-        return fiscalPeriodRepository.save(updatedPeriod);
+
+        // Update only the fields that are provided, preserving existing values
+        if (updatedPeriod.getPeriodName() != null) {
+            existingPeriod.setPeriodName(updatedPeriod.getPeriodName());
+        }
+        if (updatedPeriod.getStartDate() != null) {
+            existingPeriod.setStartDate(updatedPeriod.getStartDate());
+        }
+        if (updatedPeriod.getEndDate() != null) {
+            existingPeriod.setEndDate(updatedPeriod.getEndDate());
+        }
+        // Note: isClosed is a boolean, not a status enum
+        existingPeriod.setClosed(updatedPeriod.isClosed());
+
+        // Preserve company_id and other system fields
+        existingPeriod.setUpdatedAt(java.time.LocalDateTime.now());
+
+        return fiscalPeriodRepository.save(existingPeriod);
     }
 
     /**

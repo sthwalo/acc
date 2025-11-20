@@ -106,11 +106,11 @@ export interface HealthResponse {
 }
 
 export interface UploadResponse {
-  success: boolean;
-  message: string;
-  files_processed: number;
-  transactions_found: number;
-  timestamp: number;
+  transactions: BankTransaction[];
+  processedLines: number;
+  validTransactions: number;
+  invalidTransactions: number;
+  errors: string[];
 }
 
 // Authentication Types

@@ -5,8 +5,8 @@ services:
   # Frontend Development Server
   frontend:
     build:
-      context: ./frontend
-      dockerfile: ../Dockerfile.frontend
+      context: ..
+      dockerfile: ./Dockerfile.frontend
     container_name: fin-frontend-dev
     environment:
       - NODE_ENV=development
