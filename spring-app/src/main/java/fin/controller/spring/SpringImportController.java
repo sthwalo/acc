@@ -80,11 +80,11 @@ public class SpringImportController {
     /**
      * Upload and process a bank statement PDF
      */
-    @PostMapping("/bank-statement")
+    @PostMapping("/companies/{companyId}/fiscal-periods/{fiscalPeriodId}/imports/bank-statement")
     public ResponseEntity<BankStatementProcessingService.StatementProcessingResult> processBankStatement(
-            @RequestParam("file") MultipartFile file,
-            @RequestParam("companyId") Long companyId,
-            @RequestParam("fiscalPeriodId") Long fiscalPeriodId) {
+            @PathVariable Long companyId,
+            @PathVariable Long fiscalPeriodId,
+            @RequestParam("file") MultipartFile file) {
         try {
             BankStatementProcessingService.StatementProcessingResult result =
                 bankStatementService.processStatement(file, companyId, fiscalPeriodId);

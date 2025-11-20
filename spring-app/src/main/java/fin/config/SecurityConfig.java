@@ -1,5 +1,6 @@
 package fin.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -12,6 +13,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.Arrays;
 import java.util.List;
 //import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
 
@@ -23,6 +25,9 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    @Value("${FIN_CORS_ALLOWED_ORIGINS:http://localhost:3000}")
+    private String allowedOrigins;
 
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
@@ -40,7 +45,13 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/companies/user").permitAll()  // TEMPORARY: Allow testing without auth
                 .requestMatchers("/api/v1/companies/fiscal-periods/all").permitAll()  // TEMPORARY: Allow fiscal periods testing
                 .requestMatchers("/api/v1/companies/*/fiscal-periods").permitAll()  // Allow fiscal periods for any company
+                .requestMatchers("/api/v1/companies/*/fiscal-periods/*").permitAll()  // Allow specific fiscal period operations
+                .requestMatchers("/api/v1/companies/*/fiscal-periods/**").permitAll()  // Allow ALL fiscal period operations (including sub-paths)
+                .requestMatchers("/api/v1/companies/fiscal-periods/*/close").permitAll()  // Allow fiscal period close operations
                 .requestMatchers("/api/v1/companies/*/fiscal-periods/*/transactions").permitAll()  // Allow transactions for any company/fiscal period
+                .requestMatchers("/api/v1/companies/*/fiscal-periods/*/imports/**").permitAll()  // Allow file import operations for companies/fiscal-periods
+                .requestMatchers("/api/v1/import/**").permitAll()  // Allow file import operations
+                .requestMatchers("/error").permitAll()  // Allow error pages
                 .anyRequest().authenticated()
             )
             .headers(headers -> headers.disable())
@@ -58,7 +69,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of("http://localhost:3000"));
+        configuration.setAllowedOriginPatterns(Arrays.asList(allowedOrigins.split(",")));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);

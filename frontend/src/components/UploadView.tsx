@@ -191,35 +191,40 @@ export default function UploadView({ selectedCompany, selectedFiscalPeriod }: Up
 
       {uploadResult && (
         <div className="upload-result">
-          <div className={`result-header ${uploadResult.success ? 'success' : 'error'}`}>
-            {uploadResult.success ? (
+          <div className={`result-header ${uploadResult.validTransactions > 0 ? 'success' : 'error'}`}>
+            {uploadResult.validTransactions > 0 ? (
               <CheckCircle size={24} />
             ) : (
               <XCircle size={24} />
             )}
-            <h3>{uploadResult.success ? 'Upload Successful' : 'Upload Failed'}</h3>
+            <h3>{uploadResult.validTransactions > 0 ? 'Upload Successful' : 'Upload Failed'}</h3>
           </div>
 
           <div className="result-details">
             <div className="result-item">
               <span className="label">Files Processed:</span>
-              <span className="value">{uploadResult.files_processed}</span>
+              <span className="value">1</span>
             </div>
 
             <div className="result-item">
               <span className="label">Transactions Found:</span>
-              <span className="value">{uploadResult.transactions_found}</span>
+              <span className="value">{uploadResult.validTransactions}</span>
             </div>
 
             <div className="result-item">
-              <span className="label">Message:</span>
-              <span className="value">{uploadResult.message}</span>
+              <span className="label">Lines Processed:</span>
+              <span className="value">{uploadResult.processedLines}</span>
+            </div>
+
+            <div className="result-item">
+              <span className="label">Errors:</span>
+              <span className="value">{uploadResult.errors.length > 0 ? uploadResult.errors.join(', ') : 'None'}</span>
             </div>
 
             <div className="result-item">
               <span className="label">Timestamp:</span>
               <span className="value">
-                {new Date(uploadResult.timestamp).toLocaleString('en-ZA')}
+                {new Date().toLocaleString('en-ZA')}
               </span>
             </div>
           </div>

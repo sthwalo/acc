@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { FileText, Download, Search, AlertCircle, Info, CheckCircle, XCircle } from 'lucide-react';
 import type { Company } from '../types/api';
 
 interface SystemLogsViewProps {
   selectedCompany: Company;
+  onLogout?: () => void;
 }
 
 interface LogEntry {
@@ -17,7 +18,9 @@ interface LogEntry {
   details?: string;
 }
 
-export default function SystemLogsView({ selectedCompany }: SystemLogsViewProps) {
+export default function SystemLogsView({ selectedCompany, onLogout }: SystemLogsViewProps) {
+  const INACTIVITY_TIMEOUT = 5 * 60 * 1000; // 5 minutes in milliseconds
+  
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [filteredLogs, setFilteredLogs] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,6 +28,71 @@ export default function SystemLogsView({ selectedCompany }: SystemLogsViewProps)
   const [levelFilter, setLevelFilter] = useState<string>('ALL');
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
   const [dateRange, setDateRange] = useState<string>('24h');
+  const [lastActivity, setLastActivity] = useState<number>(Date.now());
+  const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [countdown, setCountdown] = useState<number>(Math.round(INACTIVITY_TIMEOUT / 60000));
+
+  // Update countdown every minute
+  useEffect(() => {
+    const countdownInterval = setInterval(() => {
+      const remaining = Math.max(0, Math.round((INACTIVITY_TIMEOUT - (Date.now() - lastActivity)) / 60000));
+      setCountdown(remaining);
+    }, 60000); // Update every minute
+
+    return () => clearInterval(countdownInterval);
+  }, [lastActivity, INACTIVITY_TIMEOUT]);
+  const updateActivity = useCallback(() => {
+    setLastActivity(Date.now());
+  }, []);
+
+  // Check for inactivity and auto-logout
+  const checkInactivity = useCallback(() => {
+    const now = Date.now();
+    if (now - lastActivity > INACTIVITY_TIMEOUT) {
+      // Add logout log entry
+      const logoutLog: LogEntry = {
+        id: Date.now(), // Use timestamp as ID for uniqueness
+        timestamp: new Date().toISOString(),
+        level: 'INFO',
+        category: 'SESSION',
+        message: 'User automatically logged out due to inactivity',
+        user_id: 1, // Assuming current user
+        company_id: selectedCompany?.id ? Number(selectedCompany.id) : undefined,
+        details: `Session expired after ${Math.round(INACTIVITY_TIMEOUT / 60000)} minutes of inactivity`
+      };
+
+      setLogs(prevLogs => [logoutLog, ...prevLogs]);
+
+      // Call logout callback if provided
+      if (onLogout) {
+        onLogout();
+      }
+    }
+  }, [lastActivity, INACTIVITY_TIMEOUT, selectedCompany, onLogout]);
+
+  // Set up activity listeners and inactivity timer
+  useEffect(() => {
+    // Activity event listeners
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+    
+    events.forEach(event => {
+      document.addEventListener(event, updateActivity, true);
+    });
+
+    // Set up inactivity check timer
+    inactivityTimerRef.current = setInterval(checkInactivity, 30000); // Check every 30 seconds
+
+    // Cleanup
+    return () => {
+      events.forEach(event => {
+        document.removeEventListener(event, updateActivity, true);
+      });
+      
+      if (inactivityTimerRef.current) {
+        clearInterval(inactivityTimerRef.current);
+      }
+    };
+  }, [updateActivity, checkInactivity]);
 
   // Mock data for demonstration - in real implementation, this would come from API
   useEffect(() => {
@@ -33,8 +101,8 @@ export default function SystemLogsView({ selectedCompany }: SystemLogsViewProps)
         id: 1,
         timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
         level: 'INFO',
-        category: 'AUTHENTICATION',
-        message: 'User logged in successfully',
+        category: 'SESSION',
+        message: 'User session started',
         user_id: 1,
         company_id: selectedCompany?.id ? Number(selectedCompany.id) : undefined,
         details: 'Login from frontend application'
@@ -198,6 +266,9 @@ export default function SystemLogsView({ selectedCompany }: SystemLogsViewProps)
         <div className="view-header">
           <h2>System Logs</h2>
           <p>Loading logs for {selectedCompany?.name}...</p>
+          <div className={`session-info ${countdown <= 1 ? 'warning' : ''}`}>
+            <small>Session active - Auto-logout in {countdown} minute{countdown !== 1 ? 's' : ''}</small>
+          </div>
         </div>
         <div className="loading-spinner">Loading...</div>
       </div>
@@ -209,6 +280,12 @@ export default function SystemLogsView({ selectedCompany }: SystemLogsViewProps)
       <div className="view-header">
         <h2>System Logs</h2>
         <p>Audit trail and system events for {selectedCompany?.name}</p>
+        <div className={`session-info ${countdown <= 1 ? 'warning' : ''}`}>
+          <small>
+            Session active - Auto-logout in {countdown} minute{countdown !== 1 ? 's' : ''}
+            {countdown <= 1 && ' - Session expiring soon!'}
+          </small>
+        </div>
       </div>
 
       {/* Filters */}

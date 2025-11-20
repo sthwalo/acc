@@ -250,6 +250,32 @@ class FiscalPeriodApiService extends BaseApiService {
     }
   }
 
+  async updateFiscalPeriod(id: number, period: Partial<FiscalPeriod>): Promise<FiscalPeriod> {
+    try {
+      const response = await this.client.put<ApiResponse<FiscalPeriod>>(`/v1/companies/fiscal-periods/${id}`, period);
+      return response.data.data;
+    } catch (error) {
+      this.handleError('Update fiscal period', error);
+    }
+  }
+
+  async deleteFiscalPeriod(id: number): Promise<void> {
+    try {
+      await this.client.delete(`/v1/companies/fiscal-periods/${id}`);
+    } catch (error) {
+      this.handleError('Delete fiscal period', error);
+    }
+  }
+
+  async closeFiscalPeriod(id: number): Promise<FiscalPeriod> {
+    try {
+      const response = await this.client.post<ApiResponse<FiscalPeriod>>(`/v1/companies/fiscal-periods/${id}/close`);
+      return response.data.data;
+    } catch (error) {
+      this.handleError('Close fiscal period', error);
+    }
+  }
+
   async selectFiscalPeriod(companyId: number, id: number): Promise<void> {
     try {
       await this.client.get(`/v1/companies/${companyId}/fiscal-periods/${id}/select`);
@@ -378,8 +404,8 @@ class UploadApiService extends BaseApiService {
       formData.append('file', file);
 
       const endpoint = importType === 'csv'
-        ? `/v1/companies/${companyId}/fiscal-periods/${fiscalPeriodId}/imports/csv`
-        : `/v1/companies/${companyId}/fiscal-periods/${fiscalPeriodId}/imports/bank-statement`;
+        ? `/v1/import/companies/${companyId}/fiscal-periods/${fiscalPeriodId}/imports/csv`
+        : `/v1/import/companies/${companyId}/fiscal-periods/${fiscalPeriodId}/imports/bank-statement`;
 
       const response = await this.client.post(endpoint, formData, {
         headers: {
@@ -406,7 +432,7 @@ class UploadApiService extends BaseApiService {
         formData.append(`file${index}`, file);
       });
 
-      const response = await this.client.post(`/v1/companies/${companyId}/fiscal-periods/${fiscalPeriodId}/imports/bank-statements/batch`, formData, {
+      const response = await this.client.post(`/v1/import/companies/${companyId}/fiscal-periods/${fiscalPeriodId}/imports/bank-statements/batch`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
