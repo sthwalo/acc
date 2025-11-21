@@ -40,7 +40,7 @@ import java.util.Optional;
  * Spring REST Controller for data management operations.
  */
 @RestController
-@RequestMapping("/api/v1/data")
+@RequestMapping("/api/v1/companies/{companyId}/data-management")
 public class SpringDataManagementController {
 
     private final SpringDataManagementService dataManagementService;
@@ -52,7 +52,7 @@ public class SpringDataManagementController {
     /**
      * Reset company data
      */
-    @PostMapping("/company/{companyId}/reset")
+    @PostMapping("/reset")
     public ResponseEntity<String> resetCompanyData(@PathVariable Long companyId,
                                                  @RequestParam(defaultValue = "true") boolean preserveMasterData) {
         try {
@@ -97,7 +97,7 @@ public class SpringDataManagementController {
     /**
      * Get all manual invoices for a company
      */
-    @GetMapping("/invoices/company/{companyId}")
+    @GetMapping("/invoices")
     public ResponseEntity<List<ManualInvoice>> getManualInvoicesByCompany(@PathVariable Long companyId) {
         try {
             List<ManualInvoice> invoices = dataManagementService.getManualInvoicesByCompany(companyId);
@@ -110,7 +110,7 @@ public class SpringDataManagementController {
     /**
      * Sync invoice journal entries
      */
-    @PostMapping("/invoices/company/{companyId}/sync-journal-entries")
+    @PostMapping("/sync-invoice-journal-entries")
     public ResponseEntity<String> syncInvoiceJournalEntries(@PathVariable Long companyId) {
         try {
             int syncedCount = dataManagementService.syncInvoiceJournalEntries(companyId);
@@ -142,7 +142,7 @@ public class SpringDataManagementController {
     /**
      * Get journal entries for a company
      */
-    @GetMapping("/journal-entries/company/{companyId}")
+    @GetMapping("/journal-entries")
     public ResponseEntity<List<JournalEntry>> getJournalEntriesByCompany(@PathVariable Long companyId) {
         try {
             List<JournalEntry> entries = dataManagementService.getJournalEntriesByCompany(companyId);
@@ -200,7 +200,7 @@ public class SpringDataManagementController {
     /**
      * Validate data integrity for a company
      */
-    @GetMapping("/integrity/company/{companyId}")
+    @GetMapping("/integrity")
     public ResponseEntity<SpringDataManagementService.DataIntegrityReport> validateDataIntegrity(@PathVariable Long companyId) {
         try {
             SpringDataManagementService.DataIntegrityReport report = dataManagementService.validateDataIntegrity(companyId);

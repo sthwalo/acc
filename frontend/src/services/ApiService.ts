@@ -344,18 +344,42 @@ class ReportApiService extends BaseApiService {
     fiscalPeriodId: number,
     reportType: string,
     format: string = 'text'
-  ): Promise<{ reportType: string, companyId: number, fiscalPeriodId: number, format: string, content: string }> {
+  ): Promise<{ reportType: string, companyId: number, fiscalPeriodId: number, format: string, content: string, filename?: string }> {
     try {
-      const response = await this.client.get(`/v1/companies/${companyId}/fiscal-periods/${fiscalPeriodId}/reports/${reportType}`, {
-        params: { format }
-      });
+      // Map frontend report types to backend endpoint paths
+      const endpointMap: { [key: string]: string } = {
+        'trial-balance': 'trial-balance',
+        'income-statement': 'income-statement',
+        'balance-sheet': 'balance-sheet',
+        'cash-flow': 'financial', // Cash flow is under financial endpoint
+        'general-ledger': 'general-ledger',
+        'cashbook': 'cashbook',
+        'audit-trail': 'audit-trail'
+      };
 
-      const result = response.data;
-      if (!result.success || !result.data || !result.data.content) {
-        throw new Error('Report generation failed: No content returned from server');
+      const endpoint = endpointMap[reportType];
+      if (!endpoint) {
+        throw new Error(`Unknown report type: ${reportType}`);
       }
 
-      return result.data;
+      // For now, we'll get text format and handle downloads on the frontend
+      // TODO: Update backend to support different formats directly
+      const response = await this.client.get(`/v1/reports/${endpoint}/company/${companyId}/fiscal-period/${fiscalPeriodId}`, {
+        params: { exportToFile: false }
+      });
+
+      // The backend returns plain text content directly
+      const content = response.data;
+      const filename = `${reportType.replace('-', '_')}_company_${companyId}_period_${fiscalPeriodId}.${format === 'text' ? 'txt' : format.toLowerCase()}`;
+
+      return {
+        reportType,
+        companyId,
+        fiscalPeriodId,
+        format,
+        content,
+        filename
+      };
     } catch (error) {
       if (error instanceof AxiosError && error.response?.status === 404) {
         throw new Error(`${reportType.replace('-', ' ')} report not available. Please ensure financial data exists for company ${companyId} and fiscal period ${fiscalPeriodId}.`);
@@ -497,6 +521,108 @@ class SystemApiService extends BaseApiService {
 }
 
 /**
+ * Classification Service - Handles transaction classification operations
+ */
+class ClassificationApiService extends BaseApiService {
+  async initializeChartOfAccounts(companyId: number): Promise<string> {
+    try {
+      const response = await this.client.post(`/v1/companies/${companyId}/classification/initialize-chart-of-accounts`);
+      return response.data;
+    } catch (error) {
+      this.handleError('Initialize chart of accounts', error);
+    }
+  }
+
+  async initializeTransactionMappingRules(companyId: number): Promise<string> {
+    try {
+      const response = await this.client.post(`/v1/companies/${companyId}/classification/initialize-mapping-rules`);
+      return response.data;
+    } catch (error) {
+      this.handleError('Initialize mapping rules', error);
+    }
+  }
+
+  async performFullInitialization(companyId: number): Promise<string> {
+    try {
+      const response = await this.client.post(`/v1/companies/${companyId}/classification/full-initialization`);
+      return response.data;
+    } catch (error) {
+      this.handleError('Full initialization', error);
+    }
+  }
+
+  async autoClassifyTransactions(companyId: number): Promise<string> {
+    try {
+      const response = await this.client.post(`/v1/companies/${companyId}/classification/auto-classify`);
+      return response.data;
+    } catch (error) {
+      this.handleError('Auto classify transactions', error);
+    }
+  }
+
+  async syncJournalEntries(companyId: number): Promise<string> {
+    try {
+      const response = await this.client.post(`/v1/companies/${companyId}/classification/sync-journal-entries`);
+      return response.data;
+    } catch (error) {
+      this.handleError('Sync journal entries', error);
+    }
+  }
+
+  async regenerateAllJournalEntries(companyId: number): Promise<string> {
+    try {
+      const response = await this.client.post(`/v1/companies/${companyId}/classification/regenerate-journal-entries`);
+      return response.data;
+    } catch (error) {
+      this.handleError('Regenerate journal entries', error);
+    }
+  }
+
+  async getClassificationSummary(companyId: number): Promise<string> {
+    try {
+      const response = await this.client.get(`/v1/companies/${companyId}/classification/summary`);
+      return response.data;
+    } catch (error) {
+      this.handleError('Get classification summary', error);
+    }
+  }
+
+  async getUncategorizedTransactions(companyId: number): Promise<string> {
+    try {
+      const response = await this.client.get(`/v1/companies/${companyId}/classification/uncategorized`);
+      return response.data;
+    } catch (error) {
+      this.handleError('Get uncategorized transactions', error);
+    }
+  }
+}
+
+/**
+ * Data Management Service - Handles data management operations
+ */
+class DataManagementApiService extends BaseApiService {
+  async syncInvoiceJournalEntries(companyId: number): Promise<string> {
+    try {
+      const response = await this.client.post(`/v1/companies/${companyId}/data-management/sync-invoice-journal-entries`);
+      return response.data;
+    } catch (error) {
+      this.handleError('Sync invoice journal entries', error);
+    }
+  }
+
+  async resetCompanyData(companyId: number, includeTransactions: boolean): Promise<string> {
+    try {
+      const response = await this.client.post(`/v1/companies/${companyId}/data-management/reset`, {
+        includeTransactions
+      });
+      return response.data;
+    } catch (error) {
+      this.handleError('Reset company data', error);
+    }
+  }
+}
+
+/**
  * Main ApiService - Composition/Inheritance principle
  * Composes all specialized services for a unified API interface
  * Provides backwards compatibility while enabling OOP structure
@@ -511,6 +637,8 @@ export class ApiService extends BaseApiService {
   public readonly uploads: UploadApiService;
   public readonly plans: PlanApiService;
   public readonly system: SystemApiService;
+  public readonly classification: ClassificationApiService;
+  public readonly dataManagement: DataManagementApiService;
 
   constructor() {
     super(); // Call BaseApiService constructor
@@ -523,6 +651,8 @@ export class ApiService extends BaseApiService {
     this.uploads = new UploadApiService();
     this.plans = new PlanApiService();
     this.system = new SystemApiService();
+    this.classification = new ClassificationApiService();
+    this.dataManagement = new DataManagementApiService();
   }
 
   // Backwards compatibility methods - Polymorphism principle
