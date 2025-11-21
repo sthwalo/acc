@@ -106,10 +106,8 @@ export interface HealthResponse {
 }
 
 export interface UploadResponse {
-  transactions: BankTransaction[];
-  processedLines: number;
   validTransactions: number;
-  invalidTransactions: number;
+  processedLines: number;
   errors: string[];
 }
 

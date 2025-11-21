@@ -4,6 +4,20 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  build: {
+    rollupOptions: {
+      // Disable native rollup binaries for ARM64 compatibility
+      experimentalLogSideEffects: false,
+      // Force rollup to not use native binaries
+      onwarn: (warning, warn) => {
+        // Suppress native binary warnings
+        if (warning.code === 'PLUGIN_WARNING' && warning.plugin === 'rollup' && warning.message.includes('native')) {
+          return;
+        }
+        warn(warning);
+      },
+    },
+  },
   server: {
     // Container-first development: Proxy to containerized backend
     port: 3000, // Match backend CORS configuration

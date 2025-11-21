@@ -52,6 +52,13 @@ const reportTypes: ReportType[] = [
     formats: ['PDF', 'Excel', 'CSV']
   },
   {
+    id: 'cashbook',
+    name: 'Cashbook Report',
+    description: 'Detailed cash transaction records and balances',
+    icon: FileText,
+    formats: ['PDF', 'Excel', 'CSV']
+  },
+  {
     id: 'audit-trail',
     name: 'Audit Trail',
     description: 'Complete audit log of all system activities',
@@ -117,6 +124,9 @@ export default function GenerateReportsView({ selectedCompany }: GenerateReports
         case 'general-ledger':
           reportData = await api.generateGeneralLedger(Number(selectedCompany.id), selectedPeriod.id, selectedFormat.toLowerCase());
           break;
+        case 'cashbook':
+          reportData = await api.generateCashbook(Number(selectedCompany.id), selectedPeriod.id, selectedFormat.toLowerCase());
+          break;
         case 'audit-trail':
           reportData = await api.generateAuditTrail(Number(selectedCompany.id), selectedPeriod.id, selectedFormat.toLowerCase());
           break;
@@ -130,14 +140,38 @@ export default function GenerateReportsView({ selectedCompany }: GenerateReports
 
       setSuccess(`${selectedReport.name} report generated successfully in ${selectedFormat} format`);
 
-      // For text format, we could display the content in a modal or new tab
-      if (selectedFormat.toLowerCase() === 'text' && reportData.content) {
+      // Handle file download for all formats
+      if (reportData) {
+        let mimeType = 'text/plain';
+        let extension = 'txt';
+
+        switch (selectedFormat.toLowerCase()) {
+          case 'pdf':
+            mimeType = 'application/pdf';
+            extension = 'pdf';
+            break;
+          case 'excel':
+          case 'xlsx':
+            mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+            extension = 'xlsx';
+            break;
+          case 'csv':
+            mimeType = 'text/csv';
+            extension = 'csv';
+            break;
+          case 'text':
+          default:
+            mimeType = 'text/plain';
+            extension = 'txt';
+            break;
+        }
+
         // Create a blob and download it
-        const blob = new Blob([reportData.content], { type: 'text/plain' });
+        const blob = new Blob([reportData.content], { type: mimeType });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `${selectedReport.name.replace(/\s+/g, '_')}_${selectedPeriod.periodName}.txt`;
+        a.download = `${selectedReport.name.replace(/\s+/g, '_')}_${selectedPeriod.periodName}.${extension}`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);

@@ -2,30 +2,33 @@
 # Extends the main docker-compose.yml with frontend service
 
 services:
-  # Frontend Development Server
+  # Frontend Production Server
   frontend:
     build:
-      context: ..
+      context: .
       dockerfile: ./Dockerfile.frontend
-    container_name: fin-frontend-dev
+    container_name: fin-frontend-prod
     environment:
-      - NODE_ENV=development
+      - NODE_ENV=production
       - CONTAINER_MODE=true
-      # Remove VITE_API_URL to use Vite proxy for container networking
+      # API communication through container network
+      - VITE_API_URL=http://fin-app:8080
     ports:
       - "3000:3000"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
     depends_on:
-      - fin-app
+      fin-app:
+        condition: service_healthy
     networks:
       - fin-network
     restart: unless-stopped
-    command: ["npm", "run", "dev:container"]
 
-  # Override backend CORS for frontend development
+  # Override backend CORS for container networking
   fin-app:
     environment:
-      - FIN_CORS_ALLOWED_ORIGINS=http://localhost:3000,http://fin-frontend-dev:3000
+      # CORS for both external access and container communication
+      - CORS_ALLOWED_ORIGINS=http://localhost:3000,https://localhost:3000,http://127.0.0.1:3000,https://127.0.0.1:3000,http://fin-frontend-prod:3000,https://fin-frontend-prod:3000
+      - SPRING_SECURITY_CORS_ALLOWED_ORIGINS=http://localhost:3000,https://localhost:3000,http://127.0.0.1:3000,https://127.0.0.1:3000,http://fin-frontend-prod:3000,https://fin-frontend-prod:3000
+      - SPRING_SECURITY_CORS_ALLOWED_HEADERS=*
+      - SPRING_SECURITY_CORS_ALLOWED_METHODS=GET,POST,PUT,DELETE,OPTIONS
+      - SPRING_SECURITY_CORS_ALLOW_CREDENTIALS=true
       - SPRING_PROFILES_ACTIVE=docker,dev

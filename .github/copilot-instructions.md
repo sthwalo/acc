@@ -1,61 +1,68 @@
 # FIN Financial Management System - Copilot Instructions
 
+## 🐳 DOCKER-FIRST DEVELOPMENT - CRITICAL REQUIREMENT
+
+**🚨 EVERYTHING RUNS THROUGH DOCKER 🚨**
+
+**MANDATORY POLICY**: All development, testing, and production deployment MUST use Docker containers. No direct JAR execution allowed. This ensures:
+- ✅ **Zero deployment surprises**: Dev environment = Production environment
+- ✅ **Environment consistency**: Same JVM, dependencies, and configuration
+- ✅ **Frontend integration**: Test against real containerized APIs
+- ✅ **Production confidence**: Container = production deployment
+
+**VIOLATION CONSEQUENCES**: Code that doesn't work in Docker containers will fail in production. All changes must be tested in Docker before commit.
+
 ## Project Overview
 FIN is a production-ready financial management system built in Java 17 with PostgreSQL 17+, handling 7,156+ real transactions. It provides comprehensive financial document processing including bank statement processing, financial reporting, payroll management, budget planning, and REST API capabilities for South African businesses with SARS compliance.
 
-**Dual Architecture Implementation**:
+**🐳 Docker-First Architecture**:
 - **Legacy `app/`**: SparkJava-based with custom dependency injection (currently migrating to Spring Boot)
 - **Modern `spring-app/`**: Pure Spring Boot implementation with Spring MVC and JPA
 - **Frontend**: React/TypeScript application with container-first development workflow
+- **Database**: PostgreSQL 17+ running in Docker containers
+- **All Services**: Containerized and orchestrated via Docker Compose
 
 ## Architecture & Entry Points
 
-### Implementation Options
+### 🐳 Docker-First Implementation Strategy
+
+**ALL DEVELOPMENT happens in Docker containers**. The system provides dual implementations, both designed to run in production Docker containers:
 
 #### Option A: Legacy SparkJava Implementation (`app/` folder)
 **Status**: ACTIVE - Currently migrating to Spring Boot
+**Runtime**: Docker container with JAR execution
 
-**Core Architecture**: Custom dependency injection via `ApplicationContext`. Three runtime modes:
-- **Console**: `java -jar app/build/libs/app.jar` → `ConsoleApplication.main()` → interactive menu system
-- **API Server**: `java -jar app/build/libs/app.jar api` → `ApiApplication.main()` → REST API on port 8080 (Docker-ready)
-- **Batch**: `java -jar app/build/libs/app.jar --batch [command]` → automated processing
+**Core Architecture**: Custom dependency injection via `ApplicationContext`. Three runtime modes (all Docker-ready):
+- **API Server**: `docker run fin-backend java -jar app.jar api` → REST API on port 8080
+- **Console**: `docker run -it fin-backend java -jar app.jar` → interactive menu system
+- **Batch**: `docker run fin-backend java -jar app.jar --batch [command]` → automated processing
 
-**Key Components**:
-- `ApplicationContext`: Central DI container - register ALL new services here using secure constructor pattern
-- `ApplicationController`: Orchestrates console flow via domain-specific controllers
-- `ApiServer`: SparkJava-based REST endpoints with `setup*` methods for route organization
-- `DatabaseConfig`: PostgreSQL connection management with environment-based configuration
+#### Option B: Modern Spring Boot Implementation (`spring-app/` folder) - **🐳 RECOMMENDED**
+**Status**: PRODUCTION-READY - Full Docker containerization
+**Runtime**: `docker run -p 8080:8080 fin-spring-backend`
 
-#### Option B: Modern Spring Boot Implementation (`spring-app/` folder)
-**Status**: RECOMMENDED - Production-ready Spring Boot application
-
-**Core Architecture**: Spring Boot 3.2.0 with Spring MVC and Spring Data JPA. Single unified runtime:
-- **API Server**: `java -jar spring-app/build/libs/spring-app.jar` → `FinApplication.main()` → REST API on port 8080
-- **Database**: Spring Data JPA repositories with Hibernate
+**Core Architecture**: Spring Boot 3.2.0 with Spring MVC and Spring Data JPA:
+- **API Server**: `docker run fin-spring-backend` → REST API on port 8080
+- **Database**: Spring Data JPA repositories with Hibernate (Docker PostgreSQL)
 - **Security**: Spring Security with JWT authentication
-- **Configuration**: Standard Spring Boot `application.properties`
-
-**Key Components**:
-- `FinApplication`: Spring Boot main class with `@SpringBootApplication`
-- `Spring*Controller`: REST controllers with `@RestController` annotations
-- `Spring*Service`: Business services with `@Service` annotations
-- `Spring*Repository`: JPA repositories extending `JpaRepository`
+- **Configuration**: Spring Boot `application.properties` with Docker environment variables
 
 ### Choosing Between Implementations
 
 | Criteria | Use `app/` (SparkJava) | Use `spring-app/` (Spring Boot) |
 |----------|----------------------|-------------------------------|
+| **🐳 Docker Compatibility** | ✅ Container-ready | ✅ **FULL CONTAINERIZATION** |
 | **New Development** | ❌ Avoid | ✅ **RECOMMENDED** |
 | **Enterprise Features** | ❌ Limited | ✅ Security, Testing, Monitoring |
 | **Learning/Prototyping** | ✅ Lightweight | ❌ More complex |
-| **Production Deployment** | ⚠️ Legacy | ✅ **PREFERRED** |
+| **Production Deployment** | ⚠️ Legacy containers | ✅ **DOCKER PRODUCTION** |
 | **Migration Status** | 🔄 In Progress | ✅ Complete |
 
-## 🚀 JAR-First Development Workflow (Docker Production Ready)
+## 🚀 JAR-First Development Workflow (🐳 Docker Production Ready)
 
 **MANDATORY**: All development and testing uses JAR files directly - same as production Docker containers.
 
-### Spring Boot Implementation (RECOMMENDED)
+### Spring Boot Implementation (🐳 RECOMMENDED - Full Docker)
 ```bash
 # Build JAR (only when code changes)
 cd spring-app && ./gradlew build
@@ -68,7 +75,7 @@ curl http://localhost:8080/api/v1/health
 curl http://localhost:8080/api/v1/companies
 ```
 
-### Legacy SparkJava Implementation
+### Legacy SparkJava Implementation (🐳 Docker Compatible)
 ```bash
 # Build JAR (only when code changes)
 cd app && ./gradlew build
@@ -83,7 +90,7 @@ java -jar app/build/libs/app.jar
 java -jar app/build/libs/app.jar --batch [command]
 ```
 
-### Docker Production Options
+### 🐳 Docker Production Options (MANDATORY)
 
 **Spring Boot Production**:
 ```dockerfile
@@ -103,10 +110,10 @@ CMD ["java", "-jar", "/app.jar", "api"]
 
 **Why JAR-First?**
 - ✅ **Dev = Prod**: Eliminates deployment surprises
-- ✅ **Docker-ready**: Containerized from day one
+- ✅ **🐳 Docker-ready**: Containerized from day one
 - ✅ **No Gradle daemon issues**: Reliable API testing
 - ✅ **Systematic endpoint testing**: Build frontend incrementally
-- ✅ **Production confidence**: Test against real deployment artifact
+- ✅ **🐳 Production confidence**: Test against real deployment artifact
 
 ## Implementation Migration Strategy
 
@@ -125,10 +132,10 @@ CMD ["java", "-jar", "/app.jar", "api"]
 - [ ] Production deployment validated
 
 ### Development Recommendations
-1. **New Features**: Implement in `spring-app/` first
-2. **Bug Fixes**: Apply to both during migration
-3. **Testing**: Test both implementations against frontend
-4. **Production**: Use `spring-app/` for new deployments
+1. **🐳 New Features**: Implement in `spring-app/` first - **TEST IN DOCKER**
+2. **🐳 Bug Fixes**: Apply to both during migration - **VERIFY IN DOCKER**
+3. **🐳 Testing**: Test both implementations against frontend - **DOCKER CONTAINERS ONLY**
+4. **🐳 Production**: Use `spring-app/` for new deployments - **DOCKER DEPLOYMENT**
 
 ## Critical Development Patterns
 
@@ -496,7 +503,7 @@ curl http://localhost:8080/api/v1/companies/1/fiscal-periods
 kill $API_PID
 ```
 
-**Docker Container Testing** (Production-Ready):
+**🐳 Docker Container Testing** (MANDATORY - Production-Ready):
 ```bash
 # Build and test in Docker (same as production)
 docker build -t fin-backend .
@@ -512,12 +519,12 @@ curl http://localhost:8080/api/v1/health
 docker stop fin-api
 ```
 
-#### 4. **CONSEQUENCES OF VIOLATION** (JAR-First Policy)
+#### 4. **CONSEQUENCES OF VIOLATION** (🐳 Docker-First Policy)
 - Committing untested JAR → production container failures
 - Skipping Docker testing → deployment surprises
 - Not testing all endpoints → broken frontend integration
 - Gradle daemon usage → unreliable API testing
-- **FAILURE TO COMPLY** will result in broken containers, runtime errors, deployment issues, and failed frontend integration. This JAR-first protocol is **STRICTLY ENFORCED** for all API development and containerization.
+- **FAILURE TO COMPLY** will result in broken containers, runtime errors, deployment issues, and failed frontend integration. This **🐳 DOCKER-FIRST** protocol is **STRICTLY ENFORCED** for all API development and containerization.
 
 ## Service Dependencies & Data Flow
 
@@ -594,9 +601,9 @@ docker stop fin-api
 - `GET /api/v1/budgets/{id}/variance` - budget analysis
 - `GET /api/v1/reports/financial` - financial report generation
 
-## 🐳 Docker Containerization Strategy
+## 🐳 Docker Containerization Strategy (MANDATORY)
 
-**MANDATORY**: Frontend development MUST use Docker containerized backend to ensure production compatibility.
+**🚨 CRITICAL REQUIREMENT 🚨**: Frontend development MUST use Docker containerized backend to ensure production compatibility.
 
 **Container Development Workflow**:
 ```bash
@@ -615,7 +622,7 @@ docker stop fin-api
 docker rm fin-api
 ```
 
-**Why Container-First?**
+**Why 🐳 Container-First?**
 - ✅ **Production accuracy**: Test against same runtime as production
 - ✅ **Environment consistency**: Same JVM, dependencies, config
 - ✅ **Deployment confidence**: No "works on my machine" issues
@@ -636,10 +643,10 @@ docker rm fin-api
 - Output formatting standardization across services
 
 **Implementation Choice for Tasks**:
-- **New Services**: Implement in `spring-app/` only
-- **Bug Fixes**: Apply to both during migration
-- **API Changes**: Design in Spring Boot first, then port to SparkJava if needed
-- **Database Changes**: Ensure compatibility with both implementations
+- **🐳 New Services**: Implement in `spring-app/` only - **DOCKER TESTING REQUIRED**
+- **🐳 Bug Fixes**: Apply to both during migration - **DOCKER VERIFICATION MANDATORY**
+- **🐳 API Changes**: Design in Spring Boot first, then port to SparkJava if needed - **CONTAINER COMPATIBILITY FIRST**
+- **🐳 Database Changes**: Ensure compatibility with both implementations - **DOCKER ENVIRONMENT TESTING**
 
 **Quality Remediation**: SpotBugs warnings addressed with defensive copying patterns. EI_EXPOSE_REP fixes documented in task files.
 
@@ -688,3 +695,9 @@ docker rm fin-api
 - **Joint Problem Solving**: Work together to identify root causes and develop solutions
 
 When modifying financial processing logic, maintain the existing transaction flow and update relevant task documentation. The system processes real financial data - ensure accuracy over speed.
+
+**🐳 FINAL REMINDER: EVERYTHING RUNS IN DOCKER** 🚨
+- **NO CODE CHANGES WITHOUT DOCKER TESTING**
+- **ALL ENDPOINTS MUST WORK IN CONTAINERS**
+- **FRONTEND INTEGRATION REQUIRES CONTAINERIZED BACKEND**
+- **PRODUCTION = DOCKER CONTAINER - TEST ACCORDINGLY**

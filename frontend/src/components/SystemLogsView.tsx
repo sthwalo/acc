@@ -29,7 +29,7 @@ export default function SystemLogsView({ selectedCompany, onLogout }: SystemLogs
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
   const [dateRange, setDateRange] = useState<string>('24h');
   const [lastActivity, setLastActivity] = useState<number>(Date.now());
-  const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const inactivityTimerRef = useRef<number | null>(null);
   const [countdown, setCountdown] = useState<number>(Math.round(INACTIVITY_TIMEOUT / 60000));
 
   // Update countdown every minute

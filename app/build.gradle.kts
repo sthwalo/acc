@@ -19,8 +19,8 @@
  */
 
 plugins {
-    // Apply the application plugin to add support for building a CLI application in Java.
-    application
+    // Apply the java-library plugin to create a library that can be depended on by other modules
+    `java-library`
     // Spring Boot plugin
     id("org.springframework.boot") version "3.2.0"
     id("io.spring.dependency-management") version "1.1.4"
@@ -123,72 +123,8 @@ java {
     }
 }
 
-application {
-    // Define the main class for the application - Console application (delegates to API when "api" argument passed)
-    mainClass.set("fin.ConsoleApplication")
-}
 
-// Configure the bootRun task for Spring Boot
-tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
-    jvmArgs(
-        "-Xmx24g",           // Increase max heap to 24GB
-        "-Xms4g",            // Start with 4GB
-        "-XX:MaxMetaspaceSize=2g",
-        "-XX:+UseG1GC",
-        "-XX:G1HeapRegionSize=32m",
-        "-XX:MaxGCPauseMillis=200",
-        "-XX:+UseStringDeduplication",
-        "-XX:+HeapDumpOnOutOfMemoryError",
-        "-XX:HeapDumpPath=/tmp/fin_heap_dump.hprof",
-        "-verbose:gc",
-        "-Djna.library.path=/opt/homebrew/lib:/usr/local/lib"  // libharu for PDF generation
-    )
-    systemProperties = System.getProperties()
-        .filter { it.key is String }
-        .mapKeys { it.key as String }
-        .mapValues { it.value as Any }
-    // Auto-confirm license for gradle run to avoid NoSuchElementException
-    systemProperty("fin.license.autoconfirm", "true")
-}
 
-// Add separate task for running classification test
-tasks.register<JavaExec>("runClassificationTest") {
-    group = "application"
-    description = "Run the ClassificationTest"
-    classpath = sourceSets["main"].runtimeClasspath + sourceSets["test"].runtimeClasspath
-    mainClass.set("fin.service.ClassificationTest")
-    systemProperties = System.getProperties()
-        .filter { it.key is String }
-        .mapKeys { it.key as String }
-        .mapValues { it.value as Any }
-    systemProperty("fin.license.autoconfirm", "true")
-}
-
-// Add task for running TestDatabaseSetup
-tasks.register<JavaExec>("runTestDatabaseSetup") {
-    group = "application"
-    description = "Run the TestDatabaseSetup"
-    classpath = sourceSets["main"].runtimeClasspath + sourceSets["test"].runtimeClasspath
-    mainClass.set("fin.TestDatabaseSetup")
-    systemProperties = System.getProperties()
-        .filter { it.key is String }
-        .mapKeys { it.key as String }
-        .mapValues { it.value as Any }
-    systemProperty("fin.license.autoconfirm", "true")
-}
-
-// Add task for running TestConfiguration
-tasks.register<JavaExec>("runTestConfiguration") {
-    group = "application"
-    description = "Run the TestConfiguration main method to test functionality"
-    classpath = sourceSets["main"].runtimeClasspath + sourceSets["test"].runtimeClasspath
-    mainClass.set("fin.TestConfiguration")
-    systemProperties = System.getProperties()
-        .filter { it.key is String }
-        .mapKeys { it.key as String }
-        .mapValues { it.value as Any }
-    systemProperty("fin.license.autoconfirm", "true")
-}
 
 tasks.named<Test>("test") {
     // Use JUnit Platform for unit tests.
@@ -262,7 +198,7 @@ tasks.register<Test>("integrationTest") {
 tasks.jar {
     manifest {
         attributes(mapOf(
-            "Main-Class" to application.mainClass
+            "Main-Class" to "fin.ConsoleApplication"
         ))
     }
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
@@ -279,7 +215,7 @@ tasks.register<Jar>("fatJar") {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     manifest {
         attributes(mapOf(
-            "Main-Class" to application.mainClass
+            "Main-Class" to "fin.ConsoleApplication"
         ))
     }
     from(configurations.runtimeClasspath.get().map { if (it.isDirectory) it else zipTree(it) }) {

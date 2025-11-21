@@ -41,13 +41,18 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * REST Controller for Authentication operations
  * Handles login and registration endpoints
  */
 @RestController
-@RequestMapping("/api/v1/auth")
+//@RequestMapping("/api/v1/auth")
 public class SpringAuthController {
+
+    private static final Logger logger = LoggerFactory.getLogger(SpringAuthController.class);
 
     private final SpringUserService userService;
     private final JwtService jwtService;
@@ -58,6 +63,7 @@ public class SpringAuthController {
         this.userService = userService;
         this.jwtService = jwtService;
         this.passwordEncoder = passwordEncoder;
+        logger.info("SpringAuthController initialized successfully");
     }
 
     /**
@@ -84,7 +90,7 @@ public class SpringAuthController {
     /**
      * Login endpoint
      */
-    @PostMapping("/login")
+    @PostMapping("/api/v1/auth/login")
     public ResponseEntity<Map<String, Object>> login(@RequestBody LoginRequest loginRequest) {
         try {
             // Find user by email
@@ -140,7 +146,7 @@ public class SpringAuthController {
     /**
      * Register endpoint
      */
-    @PostMapping("/register")
+    @PostMapping("/api/v1/auth/register")
     public ResponseEntity<Map<String, Object>> register(@RequestBody RegisterRequest registerRequest) {
         try {
             // Check if user already exists
@@ -197,7 +203,7 @@ public class SpringAuthController {
     /**
      * Get current user endpoint
      */
-    @GetMapping("/me")
+    @GetMapping("/api/v1/auth/me")
     public ResponseEntity<Map<String, Object>> getCurrentUser(@RequestAttribute("user") User user) {
         Map<String, Object> response = new HashMap<>();
         response.put("success", true);
@@ -208,7 +214,7 @@ public class SpringAuthController {
     /**
      * Logout endpoint (client-side token removal)
      */
-    @PostMapping("/logout")
+    @PostMapping("/api/v1/auth/logout")
     public ResponseEntity<Map<String, Object>> logout() {
         return ResponseEntity.ok(Map.of(
             "success", true,

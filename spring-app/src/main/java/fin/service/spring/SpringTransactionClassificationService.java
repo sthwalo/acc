@@ -32,20 +32,26 @@ import fin.repository.FiscalPeriodRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.text.NumberFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
  * Spring Service for transaction classification operations.
- * Orchestrates classification workflows using JPA repositories.
+ * Uses AccountClassificationService as the SINGLE SOURCE OF TRUTH for all classification logic.
  */
 @Service
 @Transactional
 public class SpringTransactionClassificationService {
 
     private static final Logger LOGGER = Logger.getLogger(SpringTransactionClassificationService.class.getName());
+    private final NumberFormat currencyFormat;
 
     // Console output formatting constants
     private static final int CONSOLE_SEPARATOR_WIDTH = 80;
@@ -54,20 +60,24 @@ public class SpringTransactionClassificationService {
     private final SpringCompanyService companyService;
     private final BankTransactionRepository bankTransactionRepository;
     private final FiscalPeriodRepository fiscalPeriodRepository;
+    private final SpringAccountClassificationService accountClassificationService; // SINGLE SOURCE OF TRUTH
 
     public SpringTransactionClassificationService(SpringAccountService accountService,
                                                 SpringCompanyService companyService,
                                                 BankTransactionRepository bankTransactionRepository,
-                                                FiscalPeriodRepository fiscalPeriodRepository) {
+                                                FiscalPeriodRepository fiscalPeriodRepository,
+                                                SpringAccountClassificationService accountClassificationService) {
         this.accountService = accountService;
         this.companyService = companyService;
         this.bankTransactionRepository = bankTransactionRepository;
         this.fiscalPeriodRepository = fiscalPeriodRepository;
+        this.accountClassificationService = accountClassificationService; // Inject the single source of truth
+        this.currencyFormat = NumberFormat.getCurrencyInstance(Locale.forLanguageTag("en-ZA"));
     }
 
     /**
      * Initialize chart of accounts for a company
-     * This creates the standard account structure and categories
+     * DELEGATES TO AccountClassificationService - SINGLE SOURCE OF TRUTH
      */
     @Transactional
     public boolean initializeChartOfAccounts(Long companyId) {
@@ -80,10 +90,8 @@ public class SpringTransactionClassificationService {
                 throw new IllegalArgumentException("Company not found: " + companyId);
             }
 
-            // Create standard chart of accounts
-            // This would typically involve creating predefined accounts
-            // For now, we'll create some basic accounts as an example
-            createStandardChartOfAccounts(companyId);
+            // DELEGATE TO SINGLE SOURCE OF TRUTH
+            accountClassificationService.initializeChartOfAccounts(companyId);
 
             LOGGER.info("Chart of accounts initialization completed successfully");
             return true;
@@ -99,28 +107,8 @@ public class SpringTransactionClassificationService {
      * Create standard chart of accounts for a company
      */
     private void createStandardChartOfAccounts(Long companyId) {
-        // Asset accounts (1000-1999)
-        createAccountIfNotExists(companyId, "1000", "Cash on Hand", 1, "Main cash account");
-        createAccountIfNotExists(companyId, "1100", "Bank Account", 1, "Primary business bank account");
-        createAccountIfNotExists(companyId, "1200", "Accounts Receivable", 1, "Money owed by customers");
-
-        // Liability accounts (2000-2999)
-        createAccountIfNotExists(companyId, "2000", "Accounts Payable", 2, "Money owed to suppliers");
-        createAccountIfNotExists(companyId, "2100", "Loans Payable", 2, "Outstanding loans");
-
-        // Equity accounts (3000-3999)
-        createAccountIfNotExists(companyId, "3000", "Owner's Equity", 3, "Owner's investment in business");
-        createAccountIfNotExists(companyId, "3100", "Retained Earnings", 3, "Accumulated profits");
-
-        // Income accounts (4000-4999)
-        createAccountIfNotExists(companyId, "4000", "Sales Revenue", 4, "Revenue from sales");
-        createAccountIfNotExists(companyId, "4100", "Service Revenue", 4, "Revenue from services");
-
-        // Expense accounts (5000-5999)
-        createAccountIfNotExists(companyId, "5000", "Cost of Goods Sold", 5, "Direct costs of goods sold");
-        createAccountIfNotExists(companyId, "5100", "Operating Expenses", 5, "General business expenses");
-        createAccountIfNotExists(companyId, "5200", "Rent Expense", 5, "Office or facility rent");
-        createAccountIfNotExists(companyId, "5300", "Utilities", 5, "Electricity, water, internet");
+        // REMOVED: Now delegated to SpringAccountClassificationService
+        throw new UnsupportedOperationException("Chart of accounts creation now delegated to SpringAccountClassificationService");
     }
 
     /**
@@ -128,18 +116,13 @@ public class SpringTransactionClassificationService {
      */
     private void createAccountIfNotExists(Long companyId, String accountCode, String accountName,
                                         Integer categoryId, String description) {
-        try {
-            accountService.getAccountByCompanyAndCode(companyId, accountCode);
-            // Account already exists, skip
-        } catch (Exception e) {
-            // Account doesn't exist, create it
-            accountService.createAccount(accountCode, accountName, companyId, categoryId, description, null);
-        }
+        // REMOVED: Account creation now delegated to SpringAccountClassificationService
+        throw new UnsupportedOperationException("Account creation now delegated to SpringAccountClassificationService");
     }
 
     /**
      * Initialize transaction mapping rules for a company
-     * This creates the standard pattern-matching rules for auto-classification
+     * DELEGATES TO AccountClassificationService - SINGLE SOURCE OF TRUTH
      */
     @Transactional
     public boolean initializeTransactionMappingRules(Long companyId) {
@@ -152,10 +135,8 @@ public class SpringTransactionClassificationService {
                 throw new IllegalArgumentException("Company not found: " + companyId);
             }
 
-            // Create standard mapping rules
-            // This would typically involve creating ClassificationRule entities
-            // For now, we'll just return success
-            int rulesCreated = createStandardMappingRules(companyId);
+            // DELEGATE TO SINGLE SOURCE OF TRUTH
+            int rulesCreated = accountClassificationService.initializeTransactionMappingRules(companyId);
 
             System.out.println("✅ Created " + rulesCreated + " standard mapping rules");
             LOGGER.info("Created " + rulesCreated + " mapping rules for company: " + companyId);
@@ -173,9 +154,8 @@ public class SpringTransactionClassificationService {
      * Create standard mapping rules for a company
      */
     private int createStandardMappingRules(Long companyId) {
-        // This would create ClassificationRule entities in the database
-        // For now, return a dummy count
-        return 10; // Assume 10 rules were created
+        // REMOVED: Now delegated to SpringAccountClassificationService
+        throw new UnsupportedOperationException("Mapping rules creation now delegated to SpringAccountClassificationService");
     }
 
     /**
@@ -417,12 +397,179 @@ public class SpringTransactionClassificationService {
     }
 
     /**
-     * Auto-classify transactions (simplified version for API)
+     * Auto-classify transactions (API version that returns result)
+     * DELEGATES TO AccountClassificationService - SINGLE SOURCE OF TRUTH
      */
     @Transactional
     public ClassificationResult autoClassifyTransactions(Long companyId) {
-        autoClassifyTransactions(companyId, null);
-        return new ClassificationResult(null, null, null, "AUTO", "Batch classification");
+        try {
+            System.out.println("\n" + "=".repeat(CONSOLE_SEPARATOR_WIDTH));
+            System.out.println("🤖 AUTO-CLASSIFICATION OF TRANSACTIONS");
+            System.out.println("=".repeat(CONSOLE_SEPARATOR_WIDTH));
+
+            // DELEGATE TO SINGLE SOURCE OF TRUTH
+            int classifiedCount = accountClassificationService.classifyAllUnclassifiedTransactions(companyId, "system");
+
+            System.out.println("✅ Auto-classified " + classifiedCount + " transactions");
+            return new ClassificationResult(null, null, null, "AUTO", "Batch classification: " + classifiedCount + " transactions");
+
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error auto-classifying transactions", e);
+            System.err.println("❌ Error: " + e.getMessage());
+            return new ClassificationResult(null, null, null, "ERROR", "Error: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Sync journal entries for new classified transactions
+     * DELEGATES TO AccountClassificationService - SINGLE SOURCE OF TRUTH
+     */
+    @Transactional
+    public int syncJournalEntries(Long companyId) {
+        try {
+            System.out.println("\n" + "=".repeat(CONSOLE_SEPARATOR_WIDTH));
+            System.out.println("🔄 SYNCING JOURNAL ENTRIES");
+            System.out.println("=".repeat(CONSOLE_SEPARATOR_WIDTH));
+
+            // DELEGATE TO SINGLE SOURCE OF TRUTH
+            int syncedCount = accountClassificationService.generateJournalEntriesForClassifiedTransactions(companyId, "system");
+
+            System.out.println("✅ Synced " + syncedCount + " journal entries");
+            return syncedCount;
+
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error syncing journal entries", e);
+            System.err.println("❌ Error: " + e.getMessage());
+            return 0;
+        }
+    }
+
+    /**
+     * Regenerate all journal entries after reclassification
+     * DELEGATES TO AccountClassificationService - SINGLE SOURCE OF TRUTH
+     */
+    @Transactional
+    public int regenerateAllJournalEntries(Long companyId) {
+        try {
+            System.out.println("\n" + "=".repeat(CONSOLE_SEPARATOR_WIDTH));
+            System.out.println("🔄 REGENERATING ALL JOURNAL ENTRIES");
+            System.out.println("=".repeat(CONSOLE_SEPARATOR_WIDTH));
+
+            // DELEGATE TO SINGLE SOURCE OF TRUTH - reclassify all transactions first
+            int reclassifiedCount = accountClassificationService.reclassifyAllTransactions(companyId, "system");
+            System.out.println("Reclassified " + reclassifiedCount + " transactions");
+
+            // Then regenerate journal entries
+            int regeneratedCount = accountClassificationService.generateJournalEntriesForClassifiedTransactions(companyId, "system");
+
+            System.out.println("✅ Regenerated " + regeneratedCount + " journal entries");
+            return regeneratedCount;
+
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error regenerating journal entries", e);
+            System.err.println("❌ Error: " + e.getMessage());
+            return 0;
+        }
+    }
+
+    /**
+     * Get classification summary for a company
+     */
+    @Transactional(readOnly = true)
+    public String getClassificationSummary(Long companyId) {
+        StringBuilder summary = new StringBuilder();
+        summary.append("CLASSIFICATION SUMMARY\n");
+        summary.append("=====================\n\n");
+
+        List<FiscalPeriod> periods = fiscalPeriodRepository.findByCompanyId(companyId);
+        int totalTransactions = 0;
+        int totalClassified = 0;
+
+        for (FiscalPeriod period : periods) {
+            ClassificationStats stats = getClassificationStats(companyId, period.getId());
+            summary.append(String.format("Period: %s\n", period.getPeriodName()));
+            summary.append(String.format("  Total: %d, Classified: %d, Unclassified: %d (%.1f%%)\n",
+                stats.getTotal(), stats.getClassified(), stats.getUnclassified(), stats.getClassificationRate()));
+            summary.append("\n");
+
+            totalTransactions += stats.getTotal();
+            totalClassified += stats.getClassified();
+        }
+
+        double overallRate = totalTransactions > 0 ? (double) totalClassified / totalTransactions * 100 : 0;
+        summary.append(String.format("OVERALL: %d/%d transactions classified (%.1f%%)\n",
+            totalClassified, totalTransactions, overallRate));
+
+        return summary.toString();
+    }
+
+    /**
+     * Get uncategorized transactions for a company
+     */
+    @Transactional(readOnly = true)
+    public String getUncategorizedTransactions(Long companyId) {
+        StringBuilder report = new StringBuilder();
+        report.append("UNCATEGORIZED TRANSACTIONS\n");
+        report.append("==========================\n\n");
+
+        List<FiscalPeriod> periods = fiscalPeriodRepository.findByCompanyId(companyId);
+
+        for (FiscalPeriod period : periods) {
+            List<BankTransaction> allTransactions = bankTransactionRepository
+                .findByCompanyIdAndFiscalPeriodId(companyId, period.getId());
+            List<BankTransaction> unclassified = allTransactions.stream()
+                .filter(t -> t.getAccountCode() == null)
+                .toList();
+
+            if (!unclassified.isEmpty()) {
+                report.append(String.format("Period: %s (%d transactions)\n", period.getPeriodName(), unclassified.size()));
+                report.append("-".repeat(80)).append("\n");
+                report.append(String.format("%-12s %-15s %-40s %15s\n", "Date", "Reference", "Description", "Amount"));
+                report.append("-".repeat(80)).append("\n");
+
+                for (BankTransaction transaction : unclassified) {
+                    BigDecimal debit = transaction.getDebitAmount() != null ? transaction.getDebitAmount() : BigDecimal.ZERO;
+                    BigDecimal credit = transaction.getCreditAmount() != null ? transaction.getCreditAmount() : BigDecimal.ZERO;
+                    BigDecimal netAmount = debit.subtract(credit);
+
+                    report.append(String.format("%-12s %-15s %-40s %15s\n",
+                        transaction.getTransactionDate(),
+                        transaction.getId(),
+                        truncateString(transaction.getDetails(), 40),
+                        formatCurrency(netAmount)));
+                }
+                report.append("\n");
+            }
+        }
+
+        return report.toString();
+    }
+
+    // Helper methods
+
+    private boolean journalEntryExistsForTransaction(BankTransaction transaction) {
+        // REMOVED: Journal entry creation now delegated to SpringAccountClassificationService
+        throw new UnsupportedOperationException("Journal entry operations now delegated to SpringAccountClassificationService");
+    }
+
+    private void createJournalEntryForTransaction(BankTransaction transaction) {
+        // REMOVED: Journal entry creation now delegated to SpringAccountClassificationService
+        throw new UnsupportedOperationException("Journal entry operations now delegated to SpringAccountClassificationService");
+    }
+
+    private int deleteExistingJournalEntries(Long companyId) {
+        // REMOVED: Journal entry operations now delegated to SpringAccountClassificationService
+        throw new UnsupportedOperationException("Journal entry operations now delegated to SpringAccountClassificationService");
+    }
+
+    private String truncateString(String str, int maxLength) {
+        if (str == null) return "";
+        return str.length() > maxLength ? str.substring(0, maxLength - 3) + "..." : str;
+    }
+
+    private String formatCurrency(BigDecimal amount) {
+        if (amount == null) return "0.00";
+        return currencyFormat.format(amount);
     }
 
     /**

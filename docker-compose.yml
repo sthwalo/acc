@@ -18,14 +18,25 @@ services:
       JAVA_OPTS: "-Xmx1g -Xms512m -Dfin.license.autoconfirm=true"
       SPRING_PROFILES_ACTIVE: docker
 
-      # CORS Configuration for frontend
-      CORS_ALLOWED_ORIGINS: http://localhost:3000
+      # CORS Configuration for API communication (HTTP & HTTPS)
+      CORS_ALLOWED_ORIGINS: http://localhost:3000,https://localhost:3000,http://127.0.0.1:3000,https://127.0.0.1:3000
+      SPRING_SECURITY_CORS_ALLOWED_ORIGINS: http://localhost:3000,https://localhost:3000,http://127.0.0.1:3000,https://127.0.0.1:3000
+      SPRING_SECURITY_CORS_ALLOWED_HEADERS: "*"
+      SPRING_SECURITY_CORS_ALLOWED_METHODS: GET,POST,PUT,DELETE,OPTIONS
+      SPRING_SECURITY_CORS_ALLOW_CREDENTIALS: "true"
     ports:
       - "8080:8080"
     networks:
       - fin-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
 networks:
   fin-network:
     driver: bridge
+    name: fin-network

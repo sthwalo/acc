@@ -93,6 +93,8 @@ dependencies {
     // Jakarta EE dependencies for servlet API (needed for Spring Security filters)
     implementation("jakarta.servlet:jakarta.servlet-api:6.0.0")
 
+    // Removed dependency on legacy app module - spring-app is now standalone
+    
     // Removed SparkJava dependencies - migrated to Spring Boot REST controllers
     
 }
