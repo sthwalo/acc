@@ -33,11 +33,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Clear any existing tokens on startup to force fresh login
-  useEffect(() => {
-    localStorage.removeItem('auth_token');
-  }, []);
-
   // Get API service from registry (following backend pattern)
   const apiService = useMemo(() => {
     return serviceRegistry.get<ApiService>('apiService');

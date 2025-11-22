@@ -48,10 +48,18 @@ abstract class BaseApiService {
       (response) => response,
       (error: AxiosError) => {
         if (error.response?.status === 401) {
-          // Clear invalid token and redirect to login
-          localStorage.removeItem('auth_token');
-          window.location.href = '/login';
-          throw new Error('Authentication failed. Please log in again.');
+          // If this request had an Authorization header then this 401 is
+          // likely due to an expired/invalid token, so clear and redirect.
+          // However, if the request wasn't sent with Authorization (race/unauth),
+          // we don't want to clear/redirect, because that can cause a login race
+          // where another component may successfully log in simultaneously.
+          const authHeader = (error.config as any)?.headers?.Authorization || (error.config as any)?.headers?.authorization;
+          if (authHeader) {
+            // Clear invalid token and redirect to login
+            localStorage.removeItem('auth_token');
+            window.location.href = '/login';
+            throw new Error('Authentication failed. Please log in again.');
+          }
         }
 
         if (error.response?.status === 403) {

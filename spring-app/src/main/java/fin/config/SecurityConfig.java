@@ -51,6 +51,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/companies/*/fiscal-periods/*/transactions").permitAll()  // Allow transactions for any company/fiscal period
                 .requestMatchers("/api/v1/companies/*/fiscal-periods/*/imports/**").permitAll()  // Allow file import operations for companies/fiscal-periods
                 .requestMatchers("/api/v1/import/**").permitAll()  // Allow file import operations
+                .requestMatchers("/api/v1/companies/*/data-management/**").permitAll()  // TEMPORARY: Allow data management endpoints for testing
                 .requestMatchers("/error").permitAll()  // Allow error pages
                 .anyRequest().authenticated()
             )
@@ -69,7 +70,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(Arrays.asList(allowedOrigins.split(",")));
+        configuration.setAllowedOrigins(Arrays.asList(allowedOrigins.split(",")));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);

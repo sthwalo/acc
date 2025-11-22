@@ -1,4 +1,5 @@
 import { ApiService } from './ApiService';
+// import { telemetryService } from './TelemetryService';
 
 /**
  * ServiceRegistry - Central service registry following backend ApplicationContext pattern
@@ -21,6 +22,8 @@ export class ServiceRegistry {
 
   private initializeServices(): void {
     // Register core services following backend pattern
+    // Register telemetry first so other services can use it
+    // this.register('telemetryService', telemetryService);
     this.register('apiService', new ApiService());
 
     // Future services will be registered here

@@ -33,6 +33,8 @@ import java.util.ArrayList;
 import java.util.List;
 import jakarta.persistence.*;
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 
 /**
  * Represents a journal entry header in the double-entry accounting system.
@@ -40,6 +42,7 @@ import jakarta.persistence.*;
  */
 @Entity
 @Table(name = "journal_entries")
+@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 public class JournalEntry {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

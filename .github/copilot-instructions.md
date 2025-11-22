@@ -58,43 +58,60 @@ FIN is a production-ready financial management system built in Java 17 with Post
 | **Production Deployment** | ⚠️ Legacy containers | ✅ **DOCKER PRODUCTION** |
 | **Migration Status** | 🔄 In Progress | ✅ Complete |
 
-## 🚀 JAR-First Development Workflow (🐳 Docker Production Ready)
+## 🚀 Container-First Development Workflow (🐳 Docker Production Ready)
 
-**MANDATORY**: All development and testing uses JAR files directly - same as production Docker containers.
+**MANDATORY**: All development, testing, and production deployment MUST use Docker containers via docker compose. No direct JAR execution allowed. This ensures production-same environment with container networking.
 
-### Spring Boot Implementation (🐳 RECOMMENDED - Full Docker)
+### Container-First Development Workflow
+
+**MANDATORY COMMANDS** - Use these exact commands for running the application:
+
 ```bash
-# Build JAR (only when code changes)
-cd spring-app && ./gradlew build
+# Start all services (backend and frontend) in production-same containers
+docker compose -f docker-compose.yml -f docker-compose.frontend.yml up -d
 
-# Run API server (production-same)
-java -jar spring-app/build/libs/spring-app.jar &
+# Check running containers (should show fin-app and fin-frontend-prod)
+docker ps
 
-# Test endpoints systematically
+# Test backend API endpoints
 curl http://localhost:8080/api/v1/health
 curl http://localhost:8080/api/v1/companies
+
+# Test frontend (served from container)
+curl http://localhost:3000
+
+# Stop all services
+docker compose -f docker-compose.yml -f docker-compose.frontend.yml down
 ```
 
-### Legacy SparkJava Implementation (🐳 Docker Compatible)
+### Development with Container Networking
+
+**RECOMMENDED WORKFLOW**: Run containers and develop frontend locally against containerized backend:
+
 ```bash
-# Build JAR (only when code changes)
-cd app && ./gradlew build
+# Start only backend in container
+docker compose -f docker-compose.yml up -d fin-app
 
-# Run API server (production-same)
-java -jar app/build/libs/app.jar api &
+# Verify backend container
+curl http://localhost:8080/api/v1/health
 
-# Run console mode
-java -jar app/build/libs/app.jar
+# Develop frontend locally (connects to containerized backend)
+cd frontend && npm run dev
 
-# Run batch processing
-java -jar app/build/libs/app.jar --batch [command]
+# Stop backend container
+docker compose -f docker-compose.yml down fin-app
 ```
 
 ### 🐳 Docker Production Options (MANDATORY)
 
+**Build Metadata Requirements**:
+- ✅ **Include Author**: All Docker images MUST include `LABEL author="Immaculate Nyoni <sthwaloe@gmail.com>"`
+- ✅ **Copyright**: Copyright information is in the codebase (LICENSE, NOTICE files) - ensure it's included in builds
+
 **Spring Boot Production**:
 ```dockerfile
 FROM openjdk:17-jre-slim
+LABEL author="Immaculate Nyoni <sthwaloe@gmail.com>"
 COPY spring-app/build/libs/spring-app.jar /app.jar
 EXPOSE 8080
 CMD ["java", "-jar", "/app.jar"]
@@ -103,17 +120,29 @@ CMD ["java", "-jar", "/app.jar"]
 **Legacy Production**:
 ```dockerfile
 FROM openjdk:17-jre-slim
+LABEL author="Immaculate Nyoni <sthwaloe@gmail.com>"
 COPY app/build/libs/app.jar /app.jar
 EXPOSE 8080
 CMD ["java", "-jar", "/app.jar", "api"]
 ```
 
-**Why JAR-First?**
-- ✅ **Dev = Prod**: Eliminates deployment surprises
-- ✅ **🐳 Docker-ready**: Containerized from day one
-- ✅ **No Gradle daemon issues**: Reliable API testing
-- ✅ **Systematic endpoint testing**: Build frontend incrementally
-- ✅ **🐳 Production confidence**: Test against real deployment artifact
+**Frontend Production**:
+```dockerfile
+FROM nginx:alpine
+LABEL author="Immaculate Nyoni <sthwaloe@gmail.com>"
+COPY dist/ /usr/share/nginx/html/
+EXPOSE 3000
+CMD ["nginx", "-g", "daemon off;"]
+```
+
+**Why Container-First?**
+- ✅ **Dev = Prod**: Eliminates deployment surprises with container networking
+- ✅ **🐳 Docker-ready**: Containerized from day one with production ports and networking
+- ✅ **No Gradle daemon issues**: Reliable API testing in containers
+- ✅ **Systematic endpoint testing**: Build frontend incrementally against real containers
+- ✅ **🐳 Production confidence**: Test against real deployment artifacts in containers
+- ✅ **Author Attribution**: Builds include proper author metadata
+- ✅ **Copyright Compliance**: Copyright information from codebase included in containers
 
 ## Implementation Migration Strategy
 
@@ -407,23 +436,27 @@ source .env                             # Load database credentials
 # Tests use: TEST_DATABASE_URL, TEST_DATABASE_USER, TEST_DATABASE_PASSWORD
 ```
 
-**Development Modes** (JAR-First Approach):
+**Development Modes** (Container-First Approach):
 ```bash
 # Build JAR (only when code changes)
 ./gradlew build
 
-# API Server (Docker-same as production)
-java -jar app/build/libs/app.jar api &
+# Container-First Development (MANDATORY - same as production)
+docker compose -f docker-compose.yml -f docker-compose.frontend.yml up -d
 
-# Console Application
-java -jar app/build/libs/app.jar
+# Check containers
+docker ps
 
-# Batch Processing
-java -jar app/build/libs/app.jar --batch [command]
+# Test endpoints
+curl http://localhost:8080/api/v1/health
 
-# Docker Development (optional)
-docker build -t fin-backend .
-docker run -p 8080:8080 fin-backend
+# Stop containers
+docker compose -f docker-compose.yml -f docker-compose.frontend.yml down
+
+# Legacy JAR execution (NOT RECOMMENDED - use containers instead)
+# java -jar app/build/libs/app.jar api &
+# java -jar app/build/libs/app.jar
+# java -jar app/build/libs/app.jar --batch [command]
 ```
 
 **Production Deployment**:
@@ -481,50 +514,49 @@ After making code changes:
 - ❌ **DO NOT** assume the fix works just because it compiles
 - ❌ **DO NOT** rush to commit and push
 
-#### 3. **TESTING WORKFLOW** (JAR-First - Docker Ready)
+#### 3. **TESTING WORKFLOW** (Container-First - Docker Compose Ready)
 ```bash
-# Build JAR for testing
+# Build JAR for testing (if needed)
 ./gradlew build
 
-# Start API server (same as production Docker)
-java -jar app/build/libs/app.jar api &
-API_PID=$!
+# Start services in containers (production-same)
+docker compose -f docker-compose.yml -f docker-compose.frontend.yml up -d
 
-# Test ALL endpoints systematically before frontend
+# Test ALL endpoints systematically
 curl http://localhost:8080/api/v1/health
 curl http://localhost:8080/api/v1/companies
 curl http://localhost:8080/api/v1/companies/1/fiscal-periods
 # ... test all endpoints ...
 
-# Frontend connects to containerized backend
-# Start frontend: npm run dev (connects to localhost:8080)
+# Test frontend
+curl http://localhost:3000
 
-# Stop API server
-kill $API_PID
+# Stop services
+docker compose -f docker-compose.yml -f docker-compose.frontend.yml down
 ```
 
-**🐳 Docker Container Testing** (MANDATORY - Production-Ready):
+**🐳 Docker Compose Testing** (MANDATORY - Production-Ready):
 ```bash
-# Build and test in Docker (same as production)
-docker build -t fin-backend .
-docker run -d -p 8080:8080 --name fin-api fin-backend
+# Start services in Docker compose (same as production)
+docker compose -f docker-compose.yml -f docker-compose.frontend.yml up -d
 
-# Test endpoints against container
+# Test endpoints against containers
 curl http://localhost:8080/api/v1/health
+curl http://localhost:3000
 
-# Frontend development against container
-# docker run -p 3000:3000 your-frontend-image
+# Frontend development against containerized backend
+# npm run dev (connects to localhost:8080 via container networking)
 
-# Stop container
-docker stop fin-api
+# Stop containers
+docker compose -f docker-compose.yml -f docker-compose.frontend.yml down
 ```
 
-#### 4. **CONSEQUENCES OF VIOLATION** (🐳 Docker-First Policy)
-- Committing untested JAR → production container failures
-- Skipping Docker testing → deployment surprises
+#### 4. **CONSEQUENCES OF VIOLATION** (🐳 Docker Compose-First Policy)
+- Committing untested code → production container failures
+- Skipping Docker compose testing → deployment surprises
 - Not testing all endpoints → broken frontend integration
-- Gradle daemon usage → unreliable API testing
-- **FAILURE TO COMPLY** will result in broken containers, runtime errors, deployment issues, and failed frontend integration. This **🐳 DOCKER-FIRST** protocol is **STRICTLY ENFORCED** for all API development and containerization.
+- Direct JAR execution → unreliable API testing
+- **FAILURE TO COMPLY** will result in broken containers, runtime errors, deployment issues, and failed frontend integration. This **🐳 DOCKER COMPOSE-FIRST** protocol is **STRICTLY ENFORCED** for all API development and containerization.
 
 ## Service Dependencies & Data Flow
 
@@ -603,31 +635,49 @@ docker stop fin-api
 
 ## 🐳 Docker Containerization Strategy (MANDATORY)
 
-**🚨 CRITICAL REQUIREMENT 🚨**: Frontend development MUST use Docker containerized backend to ensure production compatibility.
+**🚨 CRITICAL REQUIREMENT 🚨**: All application running MUST use Docker containers via docker compose to ensure production compatibility with container networking.
 
-**Container Development Workflow**:
+**Container Development Workflow** (MANDATORY - Use These Commands):
+
 ```bash
-# Build and run backend in Docker
-docker build -t fin-backend .
-docker run -d -p 8080:8080 --name fin-api --env-file .env fin-backend
+# Start all services in production-same containers
+docker compose -f docker-compose.yml -f docker-compose.frontend.yml up -d
 
-# Verify container is running
+# Check containers are running (fin-app on 8080, fin-frontend-prod on 3000)
+docker ps
+
+# Test backend API
 curl http://localhost:8080/api/v1/health
 
-# Frontend connects to containerized backend
-# npm run dev (configure to use http://localhost:8080)
+# Test frontend
+curl http://localhost:3000
 
-# Stop container
-docker stop fin-api
-docker rm fin-api
+# Stop all services
+docker compose -f docker-compose.yml -f docker-compose.frontend.yml down
 ```
 
-**Why 🐳 Container-First?**
-- ✅ **Production accuracy**: Test against same runtime as production
-- ✅ **Environment consistency**: Same JVM, dependencies, config
+**Alternative: Backend-Only Development**:
+```bash
+# Start only backend container
+docker compose -f docker-compose.yml up -d fin-app
+
+# Verify backend
+curl http://localhost:8080/api/v1/health
+
+# Develop frontend locally against container
+cd frontend && npm run dev
+
+# Stop backend
+docker compose -f docker-compose.yml down fin-app
+```
+
+**Why Container-First with Networking?**
+- ✅ **Production accuracy**: Test against same runtime and networking as production
+- ✅ **Environment consistency**: Same JVM, dependencies, config, and network setup
 - ✅ **Deployment confidence**: No "works on my machine" issues
-- ✅ **Frontend integration**: Test real API calls in container
-- ✅ **Zero deployment surprises**: Container = production
+- ✅ **Frontend integration**: Test real API calls in container network
+- ✅ **Zero deployment surprises**: Container networking = production networking
+- ✅ **Author and Copyright**: Builds include proper metadata and copyright attribution
 
 ## Current Development Focus
 
@@ -643,10 +693,10 @@ docker rm fin-api
 - Output formatting standardization across services
 
 **Implementation Choice for Tasks**:
-- **🐳 New Services**: Implement in `spring-app/` only - **DOCKER TESTING REQUIRED**
-- **🐳 Bug Fixes**: Apply to both during migration - **DOCKER VERIFICATION MANDATORY**
-- **🐳 API Changes**: Design in Spring Boot first, then port to SparkJava if needed - **CONTAINER COMPATIBILITY FIRST**
-- **🐳 Database Changes**: Ensure compatibility with both implementations - **DOCKER ENVIRONMENT TESTING**
+- **🐳 New Services**: Implement in `spring-app/` only - **DOCKER COMPOSE TESTING REQUIRED**
+- **🐳 Bug Fixes**: Apply to both during migration - **DOCKER COMPOSE VERIFICATION MANDATORY**
+- **🐳 API Changes**: Design in Spring Boot first, then port to SparkJava if needed - **CONTAINER NETWORKING COMPATIBILITY FIRST**
+- **🐳 Database Changes**: Ensure compatibility with both implementations - **DOCKER COMPOSE ENVIRONMENT TESTING**
 
 **Quality Remediation**: SpotBugs warnings addressed with defensive copying patterns. EI_EXPOSE_REP fixes documented in task files.
 
@@ -696,8 +746,8 @@ docker rm fin-api
 
 When modifying financial processing logic, maintain the existing transaction flow and update relevant task documentation. The system processes real financial data - ensure accuracy over speed.
 
-**🐳 FINAL REMINDER: EVERYTHING RUNS IN DOCKER** 🚨
-- **NO CODE CHANGES WITHOUT DOCKER TESTING**
-- **ALL ENDPOINTS MUST WORK IN CONTAINERS**
-- **FRONTEND INTEGRATION REQUIRES CONTAINERIZED BACKEND**
-- **PRODUCTION = DOCKER CONTAINER - TEST ACCORDINGLY**
+**🐳 FINAL REMINDER: EVERYTHING RUNS IN DOCKER COMPOSE** 🚨
+- **NO CODE CHANGES WITHOUT DOCKER COMPOSE TESTING**
+- **ALL ENDPOINTS MUST WORK IN CONTAINER NETWORKING**
+- **FRONTEND INTEGRATION REQUIRES CONTAINERIZED BACKEND VIA DOCKER COMPOSE**
+- **PRODUCTION = DOCKER COMPOSE CONTAINERS - TEST ACCORDINGLY**

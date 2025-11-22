@@ -84,6 +84,10 @@ public class BankTransaction {
     private Boolean isReconciled;
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+    @Column(name = "classification_date")
+    private LocalDateTime classificationDate;
+    @Column(name = "classified_by")
+    private String classifiedBy;
     
     // Constructors, getters, and setters
     public BankTransaction() {
@@ -612,5 +616,21 @@ public class BankTransaction {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public LocalDateTime getClassificationDate() {
+        return classificationDate;
+    }
+
+    public void setClassificationDate(LocalDateTime classificationDate) {
+        this.classificationDate = classificationDate;
+    }
+
+    public String getClassifiedBy() {
+        return classifiedBy;
+    }
+
+    public void setClassifiedBy(String classifiedBy) {
+        this.classifiedBy = classifiedBy;
     }
 }
