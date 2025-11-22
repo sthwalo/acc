@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Database, Edit, Trash2, Plus, Save, X, AlertCircle, CheckCircle, Calendar, Settings, FileText, Receipt, FileCheck, BookOpen, AlertTriangle, History, RotateCcw, Download, Loader } from 'lucide-react';
 import { useApi } from '../hooks/useApi';
-import type { Company, Transaction, FiscalPeriod } from '../types/api';
+import type { Company, Transaction, FiscalPeriod, ApiTransaction } from '../types/api';
 
 interface DataManagementViewProps {
   selectedCompany: Company;
@@ -12,11 +12,20 @@ interface EditableTransaction extends Transaction {
   originalData?: Transaction;
 }
 
+interface ApiError {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+  message?: string;
+}
+
 interface MenuItem {
   id: string;
   name: string;
   description: string;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ size?: number; className?: string }>;
   action: () => void;
   disabled?: boolean;
 }
@@ -37,18 +46,19 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
   const [currentOperation, setCurrentOperation] = useState<string | null>(null);
   const [operationResult, setOperationResult] = useState<{ success: boolean; message: string } | null>(null);
 
-  const handleOperation = useCallback(async (operation: string, action: () => Promise<any>) => {
+  const handleOperation = useCallback(async (operation: string, action: () => Promise<unknown>) => {
     setIsProcessing(true);
     setCurrentOperation(operation);
     setOperationResult(null);
 
     try {
       const response = await action();
-      setOperationResult({ success: true, message: response || `${operation} completed successfully` });
-    } catch (error: any) {
+      setOperationResult({ success: true, message: String(response) || `${operation} completed successfully` });
+    } catch (error: unknown) {
+      const apiError = error as ApiError;
       setOperationResult({
         success: false,
-        message: error.response?.data?.message || error.message || `Failed to ${operation.toLowerCase()}`
+        message: apiError.response?.data?.message || (error as Error).message || `Failed to ${operation.toLowerCase()}`
       });
     } finally {
       setIsProcessing(false);
@@ -56,174 +66,208 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
     }
   }, []);
 
-  const classificationMenuItems: MenuItem[] = [
+  // Memoize menu item actions to prevent infinite re-renders
+  const initializeAccountsAction = useCallback(() => handleOperation('Initialize Chart of Accounts', async () => {
+    const response = await api.classification.initializeChartOfAccounts(selectedCompany.id);
+    return response;
+  }), [handleOperation, api, selectedCompany.id]);
+
+  const initializeRulesAction = useCallback(() => handleOperation('Initialize Mapping Rules', async () => {
+    const response = await api.classification.initializeTransactionMappingRules(selectedCompany.id);
+    return response;
+  }), [handleOperation, api, selectedCompany.id]);
+
+  const fullInitializationAction = useCallback(() => handleOperation('Full Initialization', async () => {
+    const response = await api.classification.performFullInitialization(selectedCompany.id);
+    return response;
+  }), [handleOperation, api, selectedCompany.id]);
+
+  const autoClassifyAction = useCallback(() => handleOperation('Auto-Classify', async () => {
+    const response = await api.classification.autoClassifyTransactions(selectedCompany.id);
+    return response;
+  }), [handleOperation, api, selectedCompany.id]);
+
+  const syncEntriesAction = useCallback(() => handleOperation('Sync Journal Entries', async () => {
+    const response = await api.classification.syncJournalEntries(selectedCompany.id);
+    return response;
+  }), [handleOperation, api, selectedCompany.id]);
+
+  const regenerateEntriesAction = useCallback(() => handleOperation('Regenerate Journal Entries', async () => {
+    const response = await api.classification.regenerateAllJournalEntries(selectedCompany.id);
+    return response;
+  }), [handleOperation, api, selectedCompany.id]);
+
+  const viewSummaryAction = useCallback(() => handleOperation('View Summary', async () => {
+    const response = await api.classification.getClassificationSummary(selectedCompany.id);
+    return response;
+  }), [handleOperation, api, selectedCompany.id]);
+
+  const viewUnclassifiedAction = useCallback(() => handleOperation('View Unclassified', async () => {
+    const response = await api.classification.getUncategorizedTransactions(selectedCompany.id);
+    return response;
+  }), [handleOperation, api, selectedCompany.id]);
+
+  const classificationMenuItems: MenuItem[] = useMemo(() => [
     {
       id: 'initialize-accounts',
       name: 'Initialize Chart of Accounts',
       description: 'Set up standard accounting chart of accounts',
       icon: Settings,
-      action: () => handleOperation('Initialize Chart of Accounts', async () => {
-        const response = await api.classification.initializeChartOfAccounts(selectedCompany.id);
-        return response;
-      })
+      action: initializeAccountsAction
     },
     {
       id: 'initialize-rules',
       name: 'Initialize Mapping Rules',
       description: 'Set up transaction classification rules',
       icon: Settings,
-      action: () => handleOperation('Initialize Mapping Rules', async () => {
-        const response = await api.classification.initializeTransactionMappingRules(selectedCompany.id);
-        return response;
-      })
+      action: initializeRulesAction
     },
     {
       id: 'full-initialization',
       name: 'Full Initialization',
       description: 'Initialize both accounts and rules',
       icon: Settings,
-      action: () => handleOperation('Full Initialization', async () => {
-        const response = await api.classification.performFullInitialization(selectedCompany.id);
-        return response;
-      })
+      action: fullInitializationAction
     },
     {
       id: 'auto-classify',
       name: 'Auto-Classify Transactions',
       description: 'Automatically classify unclassified transactions',
       icon: Database,
-      action: () => handleOperation('Auto-Classify', async () => {
-        const response = await api.classification.autoClassifyTransactions(selectedCompany.id);
-        return response;
-      })
+      action: autoClassifyAction
     },
     {
       id: 'sync-entries',
       name: 'Sync Journal Entries',
       description: 'Create journal entries for classified transactions',
       icon: FileCheck,
-      action: () => handleOperation('Sync Journal Entries', async () => {
-        const response = await api.classification.syncJournalEntries(selectedCompany.id);
-        return response;
-      })
+      action: syncEntriesAction
     },
     {
       id: 'regenerate-entries',
       name: 'Regenerate All Journal Entries',
       description: 'Recreate all journal entries after reclassification',
       icon: RotateCcw,
-      action: () => handleOperation('Regenerate Journal Entries', async () => {
-        const response = await api.classification.regenerateAllJournalEntries(selectedCompany.id);
-        return response;
-      })
+      action: regenerateEntriesAction
     },
     {
       id: 'view-summary',
       name: 'View Classification Summary',
       description: 'View current classification status',
       icon: FileText,
-      action: () => handleOperation('View Summary', async () => {
-        const response = await api.classification.getClassificationSummary(selectedCompany.id);
-        return response;
-      })
+      action: viewSummaryAction
     },
     {
       id: 'view-unclassified',
       name: 'View Unclassified Transactions',
       description: 'List transactions that need classification',
       icon: AlertTriangle,
-      action: () => handleOperation('View Unclassified', async () => {
-        const response = await api.classification.getUncategorizedTransactions(selectedCompany.id);
-        return response;
-      })
+      action: viewUnclassifiedAction
     }
-  ];
+  ], [initializeAccountsAction, initializeRulesAction, fullInitializationAction, autoClassifyAction, syncEntriesAction, regenerateEntriesAction, viewSummaryAction, viewUnclassifiedAction]);
 
-  const operationsMenuItems: MenuItem[] = [
+  // Memoize operations menu item actions to prevent infinite re-renders
+  const createInvoiceAction = useCallback(() => handleOperation('Create Invoice', async () => {
+    // TODO: Implement invoice creation form
+    return 'Invoice creation not yet implemented';
+  }), [handleOperation]);
+
+  const generateInvoicePdfAction = useCallback(() => handleOperation('Generate Invoice PDF', async () => {
+    // TODO: Implement PDF generation
+    return 'PDF generation not yet implemented';
+  }), [handleOperation]);
+
+  const syncInvoiceJournalEntriesAction = useCallback(() => handleOperation('Sync Invoice Journal Entries', async () => {
+    const response = await api.dataManagement.syncInvoiceJournalEntries(selectedCompany.id);
+    return response;
+  }), [handleOperation, api, selectedCompany.id]);
+
+  const createJournalEntryAction = useCallback(() => handleOperation('Create Journal Entry', async () => {
+    // TODO: Implement journal entry creation form
+    return 'Journal entry creation not yet implemented';
+  }), [handleOperation]);
+
+  const correctCategoriesAction = useCallback(() => handleOperation('Correct Categories', async () => {
+    // TODO: Implement category correction
+    return 'Category correction not yet implemented';
+  }), [handleOperation]);
+
+  const viewHistoryAction = useCallback(() => handleOperation('View History', async () => {
+    // TODO: Implement history view
+    return 'History view not yet implemented';
+  }), [handleOperation]);
+
+  const resetDataAction = useCallback(() => handleOperation('Reset Data', async () => {
+    if (!confirm('Are you sure you want to reset all transaction data? This cannot be undone.')) {
+      throw new Error('Operation cancelled');
+    }
+    const response = await api.dataManagement.resetCompanyData(selectedCompany.id, true);
+    return response;
+  }), [handleOperation, api, selectedCompany.id]);
+
+  const exportCsvAction = useCallback(() => handleOperation('Export CSV', async () => {
+    // TODO: Implement CSV export
+    return 'CSV export not yet implemented';
+  }), [handleOperation]);
+
+  const operationsMenuItems: MenuItem[] = useMemo(() => [
     {
       id: 'create-invoice',
       name: 'Create Manual Invoice',
       description: 'Create a new invoice manually',
       icon: Receipt,
-      action: () => handleOperation('Create Invoice', async () => {
-        // TODO: Implement invoice creation form
-        return 'Invoice creation not yet implemented';
-      })
+      action: createInvoiceAction
     },
     {
       id: 'generate-invoice-pdf',
       name: 'Generate Invoice PDF',
       description: 'Generate PDF for existing invoices',
       icon: FileText,
-      action: () => handleOperation('Generate Invoice PDF', async () => {
-        // TODO: Implement PDF generation
-        return 'PDF generation not yet implemented';
-      })
+      action: generateInvoicePdfAction
     },
     {
       id: 'sync-invoice-journal-entries',
       name: 'Sync Invoice Journal Entries',
       description: 'Create journal entries for invoices',
       icon: FileCheck,
-      action: () => handleOperation('Sync Invoice Journal Entries', async () => {
-        const response = await api.dataManagement.syncInvoiceJournalEntries(selectedCompany.id);
-        return response;
-      })
+      action: syncInvoiceJournalEntriesAction
     },
     {
       id: 'create-journal-entry',
       name: 'Create Manual Journal Entry',
       description: 'Create a journal entry manually',
       icon: BookOpen,
-      action: () => handleOperation('Create Journal Entry', async () => {
-        // TODO: Implement journal entry creation form
-        return 'Journal entry creation not yet implemented';
-      })
+      action: createJournalEntryAction
     },
     {
       id: 'correct-categories',
       name: 'Correct Transaction Categories',
       description: 'Fix incorrectly categorized transactions',
       icon: AlertTriangle,
-      action: () => handleOperation('Correct Categories', async () => {
-        // TODO: Implement category correction
-        return 'Category correction not yet implemented';
-      })
+      action: correctCategoriesAction
     },
     {
       id: 'view-history',
       name: 'View Transaction History',
       description: 'View transaction correction history',
       icon: History,
-      action: () => handleOperation('View History', async () => {
-        // TODO: Implement history view
-        return 'History view not yet implemented';
-      })
+      action: viewHistoryAction
     },
     {
       id: 'reset-data',
       name: 'Reset Company Data',
       description: 'Reset transaction data for this company',
       icon: RotateCcw,
-      action: () => handleOperation('Reset Data', async () => {
-        if (!confirm('Are you sure you want to reset all transaction data? This cannot be undone.')) {
-          throw new Error('Operation cancelled');
-        }
-        const response = await api.dataManagement.resetCompanyData(selectedCompany.id, true);
-        return response;
-      })
+      action: resetDataAction
     },
     {
       id: 'export-csv',
       name: 'Export to CSV',
       description: 'Export transaction data to CSV file',
       icon: Download,
-      action: () => handleOperation('Export CSV', async () => {
-        // TODO: Implement CSV export
-        return 'CSV export not yet implemented';
-      })
+      action: exportCsvAction
     }
-  ];
+  ], [createInvoiceAction, generateInvoicePdfAction, syncInvoiceJournalEntriesAction, createJournalEntryAction, correctCategoriesAction, viewHistoryAction, resetDataAction, exportCsvAction]);
 
   const loadTransactions = useCallback(async () => {
     if (!selectedPeriod) return;
@@ -232,7 +276,7 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
       setIsLoading(true);
       setError(null);
       const result = await api.transactions.getTransactions(Number(selectedCompany.id), selectedPeriod.id);
-      const mappedTransactions: Transaction[] = result.data.map((apiTransaction: any) => ({
+      const mappedTransactions: Transaction[] = result.data.map((apiTransaction: ApiTransaction) => ({
         id: apiTransaction.id,
         company_id: apiTransaction.companyId,
         fiscal_period_id: apiTransaction.fiscalPeriodId,
