@@ -137,5 +137,15 @@ public interface BankTransactionRepository extends JpaRepository<BankTransaction
      */
     List<BankTransaction> findByCompanyIdAndBankAccountIdIsNull(Long companyId);
 
+    /**
+     * Find unclassified transactions for a company and fiscal period (account code is null)
+     */
+    List<BankTransaction> findByCompanyIdAndFiscalPeriodIdAndAccountCodeIsNull(Long companyId, Long fiscalPeriodId);
+
+    /**
+     * Find classified transactions for a company and fiscal period (account code is not null)
+     */
+    List<BankTransaction> findByCompanyIdAndFiscalPeriodIdAndAccountCodeIsNotNull(Long companyId, Long fiscalPeriodId);
+
     void deleteByCompanyId(Long companyId);
 }

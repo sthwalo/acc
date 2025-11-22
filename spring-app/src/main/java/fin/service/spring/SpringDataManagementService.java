@@ -28,6 +28,7 @@ package fin.service.spring;
 
 import fin.model.*;
 import fin.repository.*;
+import fin.util.SpringDebugger;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -58,6 +59,7 @@ public class SpringDataManagementService {
     private final JournalEntryRepository journalEntryRepository;
     private final JournalEntryLineRepository journalEntryLineRepository;
     private final DataCorrectionRepository dataCorrectionRepository;
+    private final SpringDebugger debugger;
 
     public SpringDataManagementService(SpringCompanyService companyService,
                                      SpringAccountService accountService,
@@ -67,7 +69,8 @@ public class SpringDataManagementService {
                                      ManualInvoiceRepository manualInvoiceRepository,
                                      JournalEntryRepository journalEntryRepository,
                                      JournalEntryLineRepository journalEntryLineRepository,
-                                     DataCorrectionRepository dataCorrectionRepository) {
+                                     DataCorrectionRepository dataCorrectionRepository,
+                                     SpringDebugger debugger) {
         this.companyService = companyService;
         this.accountService = accountService;
         this.accountRepository = accountRepository;
@@ -77,6 +80,7 @@ public class SpringDataManagementService {
         this.journalEntryRepository = journalEntryRepository;
         this.journalEntryLineRepository = journalEntryLineRepository;
         this.dataCorrectionRepository = dataCorrectionRepository;
+        this.debugger = debugger;
     }
 
     /**
@@ -84,37 +88,55 @@ public class SpringDataManagementService {
      */
     @Transactional
     public void resetCompanyData(Long companyId, boolean preserveMasterData) {
-        // Validate company exists
-        Company company = companyService.getCompanyById(companyId);
-        if (company == null) {
-            throw new IllegalArgumentException("Company not found: " + companyId);
-        }
+        debugger.logMethodEntry("SpringDataManagementService", "resetCompanyData", companyId, preserveMasterData);
 
         try {
+            // Validate company exists
+            Company company = companyService.getCompanyById(companyId);
+            if (company == null) {
+                debugger.logValidationError("SpringDataManagementService", "resetCompanyData", "companyId", companyId.toString(), "Company not found");
+                throw new IllegalArgumentException("Company not found: " + companyId);
+            }
+
+            debugger.logDatabaseOperation("SELECT", "companies", "id = " + companyId, 1);
+
             // Delete transactional data in correct order (due to foreign keys)
 
             // Delete journal entry lines first
             List<JournalEntry> journalEntries = journalEntryRepository.findByCompanyId(companyId);
+            debugger.logDatabaseOperation("SELECT", "journal_entries", "company_id = " + companyId, journalEntries.size());
+
             for (JournalEntry je : journalEntries) {
                 journalEntryLineRepository.deleteByJournalEntryId(je.getId());
+                debugger.logDatabaseOperation("DELETE", "journal_entry_lines", "journal_entry_id = " + je.getId(), 1);
             }
 
             // Delete other transactional data
             dataCorrectionRepository.deleteByCompanyId(companyId);
+            debugger.logDatabaseOperation("DELETE", "data_corrections", "company_id = " + companyId, 1);
+
             journalEntryRepository.deleteByCompanyId(companyId);
+            debugger.logDatabaseOperation("DELETE", "journal_entries", "company_id = " + companyId, 1);
+
             manualInvoiceRepository.deleteByCompanyId(companyId);
+            debugger.logDatabaseOperation("DELETE", "manual_invoices", "company_id = " + companyId, 1);
+
             bankTransactionRepository.deleteByCompanyId(companyId);
+            debugger.logDatabaseOperation("DELETE", "bank_transactions", "company_id = " + companyId, 1);
 
             // Optionally reset master data
             if (!preserveMasterData) {
                 accountRepository.deleteByCompanyId(companyId);
+                debugger.logDatabaseOperation("DELETE", "accounts", "company_id = " + companyId, 1);
+
                 fiscalPeriodRepository.deleteByCompanyId(companyId);
+                debugger.logDatabaseOperation("DELETE", "fiscal_periods", "company_id = " + companyId, 1);
             }
 
-            LOGGER.info("Company data reset successful for company ID: " + companyId);
+            debugger.logMethodExit("SpringDataManagementService", "resetCompanyData", "SUCCESS");
 
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Error resetting company data", e);
+            debugger.logException("Company Data Reset", "SpringDataManagementService", "resetCompanyData", e, companyId, preserveMasterData);
             throw new RuntimeException("Failed to reset company data", e);
         }
     }
@@ -419,53 +441,89 @@ public class SpringDataManagementService {
      */
     @Transactional(readOnly = true)
     public DataIntegrityReport validateDataIntegrity(Long companyId) {
-        if (companyId == null) {
-            throw new IllegalArgumentException("Company ID is required");
-        }
+        debugger.logMethodEntry("SpringDataManagementService", "validateDataIntegrity", companyId);
 
-        // Validate company exists
-        Company company = companyService.getCompanyById(companyId);
-        if (company == null) {
-            throw new IllegalArgumentException("Company not found: " + companyId);
-        }
-
-        DataIntegrityReport report = new DataIntegrityReport();
-        report.setCompanyId(companyId);
-
-        // Check journal entries balance
-        List<JournalEntry> journalEntries = journalEntryRepository.findByCompanyId(companyId);
-        int unbalancedEntries = 0;
-
-        for (JournalEntry je : journalEntries) {
-            List<JournalEntryLine> lines = journalEntryLineRepository.findByJournalEntryId(je.getId());
-
-            BigDecimal totalDebits = lines.stream()
-                .map(line -> line.getDebitAmount() != null ? line.getDebitAmount() : BigDecimal.ZERO)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-            BigDecimal totalCredits = lines.stream()
-                .map(line -> line.getCreditAmount() != null ? line.getCreditAmount() : BigDecimal.ZERO)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-            if (totalDebits.compareTo(totalCredits) != 0) {
-                unbalancedEntries++;
+        try {
+            if (companyId == null) {
+                debugger.logValidationError("SpringDataManagementService", "validateDataIntegrity", "companyId", "null", "Company ID is required");
+                throw new IllegalArgumentException("Company ID is required");
             }
+
+            // Validate company exists
+            Company company = companyService.getCompanyById(companyId);
+            if (company == null) {
+                debugger.logValidationError("SpringDataManagementService", "validateDataIntegrity", "companyId", companyId.toString(), "Company not found");
+                throw new IllegalArgumentException("Company not found: " + companyId);
+            }
+
+            debugger.logDatabaseOperation("SELECT", "companies", "id = " + companyId, 1);
+
+            DataIntegrityReport report = new DataIntegrityReport();
+            report.setCompanyId(companyId);
+
+            // Check journal entries balance
+            List<JournalEntry> journalEntries = journalEntryRepository.findByCompanyId(companyId);
+            debugger.logDatabaseOperation("SELECT", "journal_entries", "company_id = " + companyId, journalEntries.size());
+
+            int unbalancedEntries = 0;
+
+            for (JournalEntry je : journalEntries) {
+                List<JournalEntryLine> lines = journalEntryLineRepository.findByJournalEntryId(je.getId());
+                debugger.logDatabaseOperation("SELECT", "journal_entry_lines", "journal_entry_id = " + je.getId(), lines.size());
+
+                BigDecimal totalDebits = lines.stream()
+                    .map(line -> line.getDebitAmount() != null ? line.getDebitAmount() : BigDecimal.ZERO)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                BigDecimal totalCredits = lines.stream()
+                    .map(line -> line.getCreditAmount() != null ? line.getCreditAmount() : BigDecimal.ZERO)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                if (totalDebits.compareTo(totalCredits) != 0) {
+                    unbalancedEntries++;
+                    debugger.logBusinessRuleViolation("Journal Entry Balance", "Entry " + je.getId() + " unbalanced: Debits=" + totalDebits + ", Credits=" + totalCredits);
+                }
+            }
+
+            report.setUnbalancedJournalEntries(unbalancedEntries);
+
+            // Check for transactions without accounts
+            long transactionsWithoutAccounts = bankTransactionRepository
+                .findByCompanyIdAndBankAccountIdIsNull(companyId).size();
+            debugger.logDatabaseOperation("SELECT", "bank_transactions", "company_id = " + companyId + " AND bank_account_id IS NULL", (int) transactionsWithoutAccounts);
+
+            report.setTransactionsWithoutAccounts((int) transactionsWithoutAccounts);
+
+            // Check for orphaned journal entry lines
+            // This would require a custom query, but for now we'll set it to 0
+            report.setOrphanedJournalEntryLines(0);
+
+            report.setTotalIssues(unbalancedEntries + (int) transactionsWithoutAccounts);
+
+            debugger.logMethodExit("SpringDataManagementService", "validateDataIntegrity", report);
+            return report;
+
+        } catch (Exception e) {
+            debugger.logException("Data Integrity Validation", "SpringDataManagementService", "validateDataIntegrity", e, companyId);
+            throw new RuntimeException("Failed to validate data integrity", e);
         }
+    }
 
-        report.setUnbalancedJournalEntries(unbalancedEntries);
+    /**
+     * Gets a company by ID
+     */
+    @Transactional(readOnly = true)
+    public Company getCompanyById(Long companyId) {
+        return companyService.getCompanyById(companyId);
+    }
 
-        // Check for transactions without accounts
-        long transactionsWithoutAccounts = bankTransactionRepository
-            .findByCompanyIdAndBankAccountIdIsNull(companyId).size();
-        report.setTransactionsWithoutAccounts((int) transactionsWithoutAccounts);
-
-        // Check for orphaned journal entry lines
-        // This would require a custom query, but for now we'll set it to 0
-        report.setOrphanedJournalEntryLines(0);
-
-        report.setTotalIssues(unbalancedEntries + (int) transactionsWithoutAccounts);
-
-        return report;
+    /**
+     * Gets the current fiscal period for a company
+     */
+    @Transactional(readOnly = true)
+    public FiscalPeriod getCurrentFiscalPeriod(Long companyId) {
+        List<FiscalPeriod> periods = fiscalPeriodRepository.findByCompanyIdOrderByStartDateDesc(companyId);
+        return periods.isEmpty() ? null : periods.get(0);
     }
 
     /**

@@ -1,31 +1,7 @@
 # Frontend Dockerfile for Container-First Development
-# Optimized multi-stage build for minimal image size (~278MB)
-# Dependencies injected via network, not bundled in image
+# Optimized for development: uses pre-built dist instead of building inside container
 
-# Build stage
-FROM node:20-slim AS builder
-
-# Install git and other build dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    git \
-    ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
-
-# Set working directory
-WORKDIR /app
-
-# Copy package files first for better layer caching
-COPY frontend/package.json frontend/package-lock.json ./
-
-    # Install dependencies
-    RUN npm ci && npm cache clean --force# Copy only frontend source code
-COPY frontend/ ./
-
-# Build the application (if needed for production)
-# RUN npm run build
-
-# Production stage
-FROM node:20-slim AS production
+FROM node:20-slim
 
 # Install only runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -39,11 +15,8 @@ RUN groupadd -r nodejs -g 1001 && \
 # Set working directory
 WORKDIR /app
 
-# Copy built application from builder stage
-COPY --from=builder --chown=nextjs:nodejs /app ./
-
-# Build the frontend for production
-RUN npm run build
+# Copy pre-built dist from local build
+COPY frontend/dist/ ./
 
 # Install a simple HTTP server for production
 RUN npm install -g serve
@@ -64,4 +37,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
 ENTRYPOINT ["dumb-init", "--"]
 
 # Serve the built application
-CMD ["serve", "-s", "dist", "-l", "3000"]
+CMD ["serve", "-s", ".", "-l", "3000"]

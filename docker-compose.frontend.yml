@@ -12,7 +12,7 @@ services:
       - NODE_ENV=production
       - CONTAINER_MODE=true
       # API communication through container network
-      - VITE_API_URL=http://fin-app:8080
+      - VITE_API_URL=http://fin-app:8080/api
     ports:
       - "3000:3000"
     depends_on:
