@@ -65,12 +65,10 @@ public class SpringPayrollService {
                               FiscalPeriodRepository fiscalPeriodRepository,
                               PayslipRepository payslipRepository,
                               SpringCompanyService companyService) {
-        System.out.println("=== DEBUG: SpringPayrollService constructor called ===");
         this.employeeRepository = employeeRepository;
         this.fiscalPeriodRepository = fiscalPeriodRepository;
         this.payslipRepository = payslipRepository;
         this.companyService = companyService;
-        System.out.println("DEBUG: SpringPayrollService initialized successfully");
     }
 
     /**
@@ -203,6 +201,8 @@ public class SpringPayrollService {
 
     /**
      * Deactivate an employee
+     * @param id the employee ID
+     * @return the deactivated employee
      */
     @Transactional
     public Employee deactivateEmployee(Long id) {
@@ -258,28 +258,50 @@ public class SpringPayrollService {
 
     /**
      * Process payroll for a period
+     * @param fiscalPeriodId the ID of the fiscal period to process payroll for
+     * @return the result of the payroll processing
      */
     @Transactional
     public PayrollProcessingResult processPayroll(Long fiscalPeriodId) {
+        return processPayroll(fiscalPeriodId, false);
+    }
+
+    /**
+     * Reprocess payroll for a period (delete existing payslips and recalculate)
+     * @param fiscalPeriodId the ID of the fiscal period to reprocess payroll for
+     * @return the result of the payroll reprocessing
+     */
+    @Transactional
+    public PayrollProcessingResult reprocessPayroll(Long fiscalPeriodId) {
         if (fiscalPeriodId == null) {
             throw new IllegalArgumentException("Fiscal period ID is required");
         }
 
-        LOGGER.info("Processing payroll for fiscal period: " + fiscalPeriodId);
+        LOGGER.info("Reprocessing payroll for fiscal period: " + fiscalPeriodId);
+        return processPayroll(fiscalPeriodId, true);
+    }
 
-        // Get fiscal period
-        Optional<FiscalPeriod> periodOpt = fiscalPeriodRepository.findById(fiscalPeriodId);
-        if (periodOpt.isEmpty()) {
-            LOGGER.severe("Fiscal period not found: " + fiscalPeriodId);
-            throw new IllegalArgumentException("Fiscal period not found: " + fiscalPeriodId);
+    /**
+     * Process payroll for a period with optional reprocessing
+     * @param fiscalPeriodId the ID of the fiscal period to process payroll for
+     * @param reprocess if true, delete existing payslips and reprocess
+     * @return the result of the payroll processing
+     */
+    @Transactional
+    public PayrollProcessingResult processPayroll(Long fiscalPeriodId, boolean reprocess) {
+        if (fiscalPeriodId == null) {
+            throw new IllegalArgumentException("Fiscal period ID is required");
         }
 
-        FiscalPeriod period = periodOpt.get();
-        LOGGER.info("Found fiscal period: " + period.getPeriodName() + ", status: " + period.getPayrollStatus() + ", closed: " + period.isClosed());
+        LOGGER.info("Processing payroll for fiscal period: " + fiscalPeriodId + (reprocess ? " (reprocessing)" : ""));
 
-        if (!period.canBeProcessed()) {
-            LOGGER.severe("Fiscal period cannot be processed. Status: " + period.getPayrollStatus() + ", closed: " + period.isClosed());
-            throw new IllegalArgumentException("Fiscal period cannot be processed. Status: " + period.getPayrollStatus());
+        // Get and validate fiscal period
+        FiscalPeriod period = getAndValidateFiscalPeriod(fiscalPeriodId, reprocess);
+
+        // If reprocessing, clean up existing payslips and reset totals
+        if (reprocess) {
+            cleanupExistingPayslips(fiscalPeriodId);
+            resetPeriodTotals(period);
         }
 
         // Get active employees for the company
@@ -291,6 +313,82 @@ public class SpringPayrollService {
             return new PayrollProcessingResult(BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, 0);
         }
 
+        // Process all employees and calculate totals
+        PayrollProcessingResult result = processEmployeesAndCalculateTotals(employees, period);
+
+        // Update period with results and mark as processed
+        updatePeriodWithPayrollResults(period, result);
+
+        LOGGER.info("Payroll processing completed successfully for period: " + fiscalPeriodId);
+
+        return result;
+    }
+
+    /**
+     * Get and validate fiscal period for payroll processing
+     */
+    private FiscalPeriod getAndValidateFiscalPeriod(Long fiscalPeriodId) {
+        return getAndValidateFiscalPeriod(fiscalPeriodId, false);
+    }
+
+    /**
+     * Get and validate fiscal period for payroll processing with reprocessing support
+     */
+    private FiscalPeriod getAndValidateFiscalPeriod(Long fiscalPeriodId, boolean reprocess) {
+        Optional<FiscalPeriod> periodOpt = fiscalPeriodRepository.findById(fiscalPeriodId);
+        if (periodOpt.isEmpty()) {
+            LOGGER.severe("Fiscal period not found: " + fiscalPeriodId);
+            throw new IllegalArgumentException("Fiscal period not found: " + fiscalPeriodId);
+        }
+
+        FiscalPeriod period = periodOpt.get();
+        LOGGER.info("Found fiscal period: " + period.getPeriodName() + ", status: " + period.getPayrollStatus() + ", closed: " + period.isClosed());
+
+        // For reprocessing, check if period can be reprocessed
+        if (reprocess && !period.canBeReprocessed()) {
+            LOGGER.severe("Fiscal period cannot be reprocessed. Status: " + period.getPayrollStatus() + ", closed: " + period.isClosed());
+            throw new IllegalArgumentException("Fiscal period cannot be reprocessed. Status: " + period.getPayrollStatus());
+        }
+
+        // For initial processing, check if period can be processed
+        if (!reprocess && !period.canBeProcessed()) {
+            LOGGER.severe("Fiscal period cannot be processed. Status: " + period.getPayrollStatus() + ", closed: " + period.isClosed());
+            throw new IllegalArgumentException("Fiscal period cannot be processed. Status: " + period.getPayrollStatus());
+        }
+
+        return period;
+    }
+
+    /**
+     * Clean up existing payslips for reprocessing
+     */
+    private void cleanupExistingPayslips(Long fiscalPeriodId) {
+        List<Payslip> existingPayslips = payslipRepository.findByFiscalPeriodId(fiscalPeriodId);
+        if (!existingPayslips.isEmpty()) {
+            LOGGER.info("Deleting " + existingPayslips.size() + " existing payslips for reprocessing");
+            for (Payslip payslip : existingPayslips) {
+                payslipRepository.delete(payslip);
+            }
+        }
+    }
+
+    /**
+     * Reset period totals for reprocessing
+     */
+    private void resetPeriodTotals(FiscalPeriod period) {
+        LOGGER.info("Resetting period totals for reprocessing: " + period.getPeriodName());
+        period.setTotalGrossPay(BigDecimal.ZERO);
+        period.setTotalDeductions(BigDecimal.ZERO);
+        period.setTotalNetPay(BigDecimal.ZERO);
+        period.setEmployeeCount(0);
+        period.setProcessedAt(null);
+        fiscalPeriodRepository.save(period);
+    }
+
+    /**
+     * Process all employees and calculate payroll totals
+     */
+    private PayrollProcessingResult processEmployeesAndCalculateTotals(List<Employee> employees, FiscalPeriod period) {
         BigDecimal totalGross = BigDecimal.ZERO;
         BigDecimal totalDeductions = BigDecimal.ZERO;
         BigDecimal totalNet = BigDecimal.ZERO;
@@ -310,22 +408,27 @@ public class SpringPayrollService {
 
         LOGGER.info("Processed " + processedCount + " employees. Total gross: " + totalGross + ", total deductions: " + totalDeductions + ", total net: " + totalNet);
 
-        // Update period totals and mark as processed
-        period.setTotalGrossPay(totalGross);
-        period.setTotalDeductions(totalDeductions);
-        period.setTotalNetPay(totalNet);
-        period.setEmployeeCount(processedCount);
-        period.setPayrollStatus(FiscalPeriod.PayrollStatus.PROCESSED);
-        period.setProcessedAt(java.time.LocalDateTime.now());
-        fiscalPeriodRepository.save(period);
-
-        LOGGER.info("Payroll processing completed successfully for period: " + fiscalPeriodId);
-
         return new PayrollProcessingResult(totalGross, totalDeductions, totalNet, processedCount);
     }
 
     /**
+     * Update fiscal period with payroll processing results
+     */
+    private void updatePeriodWithPayrollResults(FiscalPeriod period, PayrollProcessingResult result) {
+        period.setTotalGrossPay(result.getTotalGross());
+        period.setTotalDeductions(result.getTotalDeductions());
+        period.setTotalNetPay(result.getTotalNet());
+        period.setEmployeeCount(result.getEmployeeCount());
+        period.setPayrollStatus(FiscalPeriod.PayrollStatus.PROCESSED);
+        period.setProcessedAt(java.time.LocalDateTime.now());
+        fiscalPeriodRepository.save(period);
+    }
+
+    /**
      * Calculate payslip for an employee
+     * @param employee the employee to calculate payslip for
+     * @param period the fiscal period
+     * @return the calculated payslip
      */
     private Payslip calculatePayslip(Employee employee, FiscalPeriod period) {
         // Calculate gross salary (assuming monthly salary)
@@ -389,6 +492,8 @@ public class SpringPayrollService {
 
     /**
      * Get payroll periods for a company (now returns FiscalPeriod list)
+     * @param companyId the company ID
+     * @return list of fiscal periods
      */
     @Transactional(readOnly = true)
     public List<FiscalPeriod> getPayrollPeriodsByCompany(Long companyId) {

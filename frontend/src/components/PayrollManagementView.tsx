@@ -65,20 +65,25 @@ export default function PayrollManagementView({ selectedCompany, onViewChange }:
     try {
       setIsLoading(true);
       setError(null);
-      // In the unified model, FiscalPeriod IS the payroll period
-      // Map FiscalPeriod to match PayrollPeriod interface expectations
+      // In the unified model, FiscalPeriod now contains payroll data
+      // Use the selected fiscal period directly as it now includes payroll fields
       const payrollPeriod = {
         ...selectedPeriod,
-        status: 'OPEN' as const, // Default status since FiscalPeriod doesn't have payrollStatus
-        fiscalPeriodId: selectedPeriod.id, // For compatibility
-        payDate: selectedPeriod.endDate, // Add required PayrollPeriod fields
-        periodType: 'MONTHLY' as const,
-        totalGrossPay: 0,
-        totalDeductions: 0,
-        totalNetPay: 0,
-        employeeCount: 0,
-        updatedAt: selectedPeriod.updatedAt || new Date().toISOString(), // Ensure it's not null
-        createdBy: selectedPeriod.createdBy?.toString() // Convert number|null to string|undefined
+        // Map payroll fields from FiscalPeriod to PayrollPeriod interface
+        status: (selectedPeriod.payrollStatus || 'OPEN') as 'OPEN' | 'PROCESSED' | 'APPROVED' | 'PAID' | 'CLOSED',
+        fiscalPeriodId: selectedPeriod.id,
+        payDate: selectedPeriod.payDate || selectedPeriod.endDate,
+        periodType: (selectedPeriod.periodType || 'MONTHLY') as 'WEEKLY' | 'MONTHLY' | 'QUARTERLY',
+        totalGrossPay: selectedPeriod.totalGrossPay || 0,
+        totalDeductions: selectedPeriod.totalDeductions || 0,
+        totalNetPay: selectedPeriod.totalNetPay || 0,
+        employeeCount: selectedPeriod.employeeCount || 0,
+        processedAt: selectedPeriod.processedAt || undefined,
+        processedBy: selectedPeriod.processedBy || undefined,
+        approvedAt: selectedPeriod.approvedAt || undefined,
+        approvedBy: selectedPeriod.approvedBy || undefined,
+        updatedAt: selectedPeriod.updatedAt || new Date().toISOString(),
+        createdBy: selectedPeriod.createdBy?.toString()
       };
       setPayrollPeriods([payrollPeriod]);
       if (!selectedPayrollPeriod) {
@@ -117,10 +122,55 @@ export default function PayrollManagementView({ selectedCompany, onViewChange }:
       // Process payroll for the selected payroll period
       await api.processPayroll(Number(selectedPayrollPeriod.id));
       setSuccess('Payroll processing completed successfully');
-      loadPayrollPeriods(); // Refresh the list
+      // Refresh both fiscal periods and payroll periods to show updated data
+      await loadFiscalPeriods();
+      await loadPayrollPeriods();
     } catch (err) {
       // Prefer structured API/axios error message where possible
       let message = 'Failed to process payroll';
+      try {
+        const anyErr: unknown = err;
+        if (anyErr && typeof anyErr === 'object' && 'response' in anyErr) {
+          const axiosErr = anyErr as { response?: { data?: { message?: string } } };
+          if (axiosErr.response?.data?.message) {
+            message = axiosErr.response.data.message;
+          }
+        } else if (err instanceof Error) {
+          message = err.message;
+        }
+      } catch {
+        // ignore parsing error
+      }
+      setError(message);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const reprocessPayroll = async () => {
+    if (!selectedPayrollPeriod) return;
+
+    // Confirm reprocessing action
+    const confirmed = window.confirm(
+      'Are you sure you want to reprocess this payroll period? This will delete all existing payslips and recalculate them. This action cannot be undone.'
+    );
+
+    if (!confirmed) return;
+
+    setIsProcessing(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      // Reprocess payroll for the selected payroll period
+      await api.reprocessPayroll(Number(selectedPayrollPeriod.id));
+      setSuccess('Payroll reprocessing completed successfully');
+      // Refresh both fiscal periods and payroll periods to show updated data
+      await loadFiscalPeriods();
+      await loadPayrollPeriods();
+    } catch (err) {
+      // Prefer structured API/axios error message where possible
+      let message = 'Failed to reprocess payroll';
       try {
         const anyErr: unknown = err;
         if (anyErr && typeof anyErr === 'object' && 'response' in anyErr) {
@@ -180,8 +230,8 @@ export default function PayrollManagementView({ selectedCompany, onViewChange }:
         startDate: selectedPeriod.startDate,
         endDate: selectedPeriod.endDate,
         payDate: selectedPeriod.endDate,
-        periodType: 'MONTHLY',
-        payrollStatus: 'OPEN',
+        periodType: 'MONTHLY' as const,
+        payrollStatus: 'OPEN' as const,
         closed: false
       };
 
@@ -334,6 +384,23 @@ export default function PayrollManagementView({ selectedCompany, onViewChange }:
             <>
               <Calculator size={20} />
               Process Payroll
+            </>
+          )}
+        </button>
+        <button
+          className="action-button warning"
+          onClick={reprocessPayroll}
+          disabled={isProcessing || !selectedPayrollPeriod || selectedPayrollPeriod.status !== 'PROCESSED'}
+        >
+          {isProcessing ? (
+            <>
+              <div className="spinner small"></div>
+              Reprocessing Payroll...
+            </>
+          ) : (
+            <>
+              <Calculator size={20} />
+              Reprocess Payroll
             </>
           )}
         </button>

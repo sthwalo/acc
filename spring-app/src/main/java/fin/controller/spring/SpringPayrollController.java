@@ -24,12 +24,7 @@ public class SpringPayrollController {
     private final SpringPayrollService payrollService;
 
     public SpringPayrollController(SpringPayrollService payrollService) {
-        System.out.println("=== DEBUG: SpringPayrollController constructor called ===");
         this.payrollService = payrollService;
-        System.out.println("DEBUG: payrollService injected: " + (payrollService != null));
-        if (payrollService != null) {
-            System.out.println("DEBUG: payrollService class: " + payrollService.getClass().getName());
-        }
     }
 
     // ===== EMPLOYEE MANAGEMENT ENDPOINTS =====
@@ -183,25 +178,92 @@ public class SpringPayrollController {
 
     /**
      * Process payroll for a fiscal period
+     * @param fiscalPeriodId the ID of the fiscal period to process payroll for
+     * @return the payroll processing response
      */
     @PostMapping("/process/{fiscalPeriodId}")
-    public ResponseEntity<SpringPayrollService.PayrollProcessingResult> processPayroll(
-            @PathVariable Long fiscalPeriodId) {
-        System.out.println("=== DEBUG: processPayroll method ENTERED ===");
-        System.out.println("DEBUG: payrollService is null? " + (payrollService == null));
-        System.out.println("DEBUG: Fiscal period ID: " + fiscalPeriodId);
+    public ResponseEntity<PayrollProcessingResponse> processPayroll(
+            @PathVariable Long fiscalPeriodId,
+            @RequestParam(defaultValue = "false") boolean reprocess) {
         try {
-            System.out.println("Controller: Processing payroll for fiscal period: " + fiscalPeriodId);
-            SpringPayrollService.PayrollProcessingResult result = payrollService.processPayroll(fiscalPeriodId);
-            System.out.println("Controller: Payroll processing result: " + result);
-            return ResponseEntity.ok(result);
+            SpringPayrollService.PayrollProcessingResult result;
+
+            if (reprocess) {
+                result = payrollService.reprocessPayroll(fiscalPeriodId);
+            } else {
+                result = payrollService.processPayroll(fiscalPeriodId);
+            }
+
+            // Convert to frontend-expected format
+            PayrollProcessingResponse response = new PayrollProcessingResponse(
+                true,
+                "Payroll " + (reprocess ? "re" : "") + "processed successfully for " + result.getEmployeeCount() + " employees",
+                new PayrollProcessingData(
+                    result.getEmployeeCount(),
+                    result.getTotalGross().doubleValue(),
+                    result.getTotalDeductions().doubleValue(),
+                    result.getTotalNet().doubleValue(),
+                    result.getEmployeeCount() // payslipsGenerated = employeeCount for now
+                )
+            );
+
+            return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
-            System.out.println("Controller: IllegalArgumentException: " + e.getMessage());
-            return ResponseEntity.badRequest().build();
+            PayrollProcessingResponse errorResponse = new PayrollProcessingResponse(
+                false,
+                e.getMessage(),
+                null
+            );
+            return ResponseEntity.badRequest().body(errorResponse);
         } catch (Exception e) {
-            System.out.println("Controller: Unexpected exception: " + e.getClass().getName() + " - " + e.getMessage());
-            e.printStackTrace();
-            return ResponseEntity.internalServerError().build();
+            PayrollProcessingResponse errorResponse = new PayrollProcessingResponse(
+                false,
+                "An unexpected error occurred while processing payroll",
+                null
+            );
+            return ResponseEntity.internalServerError().body(errorResponse);
+        }
+    }
+
+    /**
+     * Reprocess payroll for a fiscal period (delete existing payslips and recalculate)
+     * @param fiscalPeriodId the ID of the fiscal period to reprocess payroll for
+     * @return the payroll reprocessing response
+     */
+    @PostMapping("/reprocess/{fiscalPeriodId}")
+    public ResponseEntity<PayrollProcessingResponse> reprocessPayroll(
+            @PathVariable Long fiscalPeriodId) {
+        try {
+            SpringPayrollService.PayrollProcessingResult result = payrollService.reprocessPayroll(fiscalPeriodId);
+
+            // Convert to frontend-expected format
+            PayrollProcessingResponse response = new PayrollProcessingResponse(
+                true,
+                "Payroll reprocessed successfully for " + result.getEmployeeCount() + " employees",
+                new PayrollProcessingData(
+                    result.getEmployeeCount(),
+                    result.getTotalGross().doubleValue(),
+                    result.getTotalDeductions().doubleValue(),
+                    result.getTotalNet().doubleValue(),
+                    result.getEmployeeCount() // payslipsGenerated = employeeCount for now
+                )
+            );
+
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            PayrollProcessingResponse errorResponse = new PayrollProcessingResponse(
+                false,
+                e.getMessage(),
+                null
+            );
+            return ResponseEntity.badRequest().body(errorResponse);
+        } catch (Exception e) {
+            PayrollProcessingResponse errorResponse = new PayrollProcessingResponse(
+                false,
+                "An unexpected error occurred while reprocessing payroll",
+                null
+            );
+            return ResponseEntity.internalServerError().body(errorResponse);
         }
     }
 
@@ -370,9 +432,13 @@ public class SpringPayrollController {
 
     public static class PayrollProcessRequest {
         private Long fiscalPeriodId;
+        private boolean reprocess;
 
         public Long getFiscalPeriodId() { return fiscalPeriodId; }
         public void setFiscalPeriodId(Long fiscalPeriodId) { this.fiscalPeriodId = fiscalPeriodId; }
+
+        public boolean isReprocess() { return reprocess; }
+        public void setReprocess(boolean reprocess) { this.reprocess = reprocess; }
     }
 
     public static class PayslipGenerationRequest {
@@ -407,5 +473,50 @@ public class SpringPayrollController {
 
         public String getDocumentType() { return documentType; }
         public void setDocumentType(String documentType) { this.documentType = documentType; }
+    }
+
+    /**
+     * Response class matching frontend PayrollProcessingResult interface
+     */
+    public static class PayrollProcessingResponse {
+        private final boolean success;
+        private final String message;
+        private final PayrollProcessingData data;
+
+        public PayrollProcessingResponse(boolean success, String message, PayrollProcessingData data) {
+            this.success = success;
+            this.message = message;
+            this.data = data;
+        }
+
+        public boolean isSuccess() { return success; }
+        public String getMessage() { return message; }
+        public PayrollProcessingData getData() { return data; }
+    }
+
+    /**
+     * Data class matching frontend expectations
+     */
+    public static class PayrollProcessingData {
+        private final int processedEmployees;
+        private final double totalGrossPay;
+        private final double totalDeductions;
+        private final double totalNetPay;
+        private final int payslipsGenerated;
+
+        public PayrollProcessingData(int processedEmployees, double totalGrossPay,
+                                   double totalDeductions, double totalNetPay, int payslipsGenerated) {
+            this.processedEmployees = processedEmployees;
+            this.totalGrossPay = totalGrossPay;
+            this.totalDeductions = totalDeductions;
+            this.totalNetPay = totalNetPay;
+            this.payslipsGenerated = payslipsGenerated;
+        }
+
+        public int getProcessedEmployees() { return processedEmployees; }
+        public double getTotalGrossPay() { return totalGrossPay; }
+        public double getTotalDeductions() { return totalDeductions; }
+        public double getTotalNetPay() { return totalNetPay; }
+        public int getPayslipsGenerated() { return payslipsGenerated; }
     }
 }

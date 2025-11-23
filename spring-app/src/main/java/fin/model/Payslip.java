@@ -57,7 +57,7 @@ public class Payslip {
     private Long companyId;
     @Column(name = "employee_id")
     private Long employeeId;
-    @Column(name = "fiscal_period_id")
+    @Column(name = "payroll_period_id")
     private Long fiscalPeriodId;
     @Column(name = "payslip_number")
     private String payslipNumber;

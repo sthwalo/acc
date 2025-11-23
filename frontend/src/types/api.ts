@@ -51,6 +51,22 @@ export interface FiscalPeriod {
   updatedBy: number | null;
   updatedAt: string | null;
   closed: boolean;
+  // Payroll-related fields (added to FiscalPeriod in backend)
+  payDate?: string | null;
+  periodType?: string;
+  payrollStatus?: 'OPEN' | 'PROCESSED' | 'APPROVED' | 'PAID' | 'CLOSED';
+  totalGrossPay?: number;
+  totalDeductions?: number;
+  totalNetPay?: number;
+  employeeCount?: number;
+  processedAt?: string | null;
+  processedBy?: string | null;
+  approvedAt?: string | null;
+  approvedBy?: string | null;
+  payrollProcessed?: boolean;
+  paymentDate?: string | null;
+  payrollActive?: boolean;
+  processed?: boolean;
 }
 
 export interface Transaction {

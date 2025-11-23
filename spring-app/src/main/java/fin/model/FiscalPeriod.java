@@ -177,7 +177,14 @@ public class FiscalPeriod {
      * Check if this period can be used for payroll processing
      */
     public boolean canBeProcessed() {
-        return payrollStatus == PayrollStatus.OPEN && !isClosed;
+        return (payrollStatus == PayrollStatus.OPEN || payrollStatus == PayrollStatus.PROCESSED) && !isClosed;
+    }
+
+    /**
+     * Check if this period can be reprocessed (already processed but not closed)
+     */
+    public boolean canBeReprocessed() {
+        return payrollStatus == PayrollStatus.PROCESSED && !isClosed;
     }
 
     /**

@@ -774,6 +774,15 @@ export class ApiService extends BaseApiService {
     }
   }
 
+  async reprocessPayroll(payrollPeriodId: number): Promise<PayrollProcessingResult> {
+    try {
+      const response = await this.client.post<PayrollProcessingResult>(`/v1/payroll/reprocess/${payrollPeriodId}`);
+      return response.data;
+    } catch (error) {
+      this.handleError('Reprocess payroll', error);
+    }
+  }
+
   async createPayrollPeriod(fiscalPeriod: Omit<FiscalPeriod, 'id' | 'createdAt' | 'createdBy' | 'updatedBy' | 'updatedAt'>): Promise<FiscalPeriod> {
     try {
       const response = await this.client.post<FiscalPeriod>('/v1/payroll/periods', fiscalPeriod);
