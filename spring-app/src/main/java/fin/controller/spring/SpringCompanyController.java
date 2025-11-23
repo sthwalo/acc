@@ -450,9 +450,9 @@ public class SpringCompanyController {
             @PathVariable Long fiscalPeriodId) {
         try {
             List<BankTransaction> transactions = bankStatementService.getTransactionsByCompany(companyId);
-            // Filter by fiscal period
+            // Filter by fiscal period - handle null fiscal_period_id values safely
             transactions = transactions.stream()
-                    .filter(t -> t.getFiscalPeriodId().equals(fiscalPeriodId))
+                    .filter(t -> t.getFiscalPeriodId() != null && t.getFiscalPeriodId().equals(fiscalPeriodId))
                     .toList();
 
             if (transactions.isEmpty()) {
