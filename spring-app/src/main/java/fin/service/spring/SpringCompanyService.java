@@ -39,6 +39,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.logging.Logger;
 
 /**
  * Spring Service for Company operations
@@ -48,6 +49,8 @@ import java.util.Optional;
 @Transactional
 public class SpringCompanyService {
 
+    private static final Logger LOGGER = Logger.getLogger(SpringCompanyService.class.getName());
+
     private final CompanyRepository companyRepository;
     private final UserCompanyRepository userCompanyRepository;
     private final FiscalPeriodRepository fiscalPeriodRepository;
@@ -55,9 +58,11 @@ public class SpringCompanyService {
     public SpringCompanyService(CompanyRepository companyRepository,
                                UserCompanyRepository userCompanyRepository,
                                FiscalPeriodRepository fiscalPeriodRepository) {
+        LOGGER.info("🔧 DEBUG: SpringCompanyService constructor called - service is being instantiated");
         this.companyRepository = companyRepository;
         this.userCompanyRepository = userCompanyRepository;
         this.fiscalPeriodRepository = fiscalPeriodRepository;
+        LOGGER.info("🔧 DEBUG: SpringCompanyService constructor completed successfully");
     }
 
     /**

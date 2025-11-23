@@ -29,8 +29,8 @@ package fin.service.spring;
 import com.sun.jna.Pointer;
 import fin.model.Company;
 import fin.model.Employee;
+import fin.model.FiscalPeriod;
 import fin.model.Payslip;
-import fin.model.PayrollPeriod;
 import fin.util.Libharu;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -227,7 +227,7 @@ public class PayslipPdfService {
     /**
      * Generates a PDF payslip for an employee using libharu
      */
-    public String generatePayslipPdf(Payslip payslip, Employee employee, Company company, PayrollPeriod payrollPeriod) {
+    public String generatePayslipPdf(Payslip payslip, Employee employee, Company company, FiscalPeriod fiscalPeriod) {
         // Validate and complete payslip data
         validatePayslipData(payslip);
 
@@ -244,27 +244,27 @@ public class PayslipPdfService {
         // Generate filename with absolute path
         Path filePath = payslipsDir.resolve(String.format("payslip_%s_%s_%s.pdf",
                 employee.getEmployeeNumber(),
-                payrollPeriod.getPayDate().format(DateTimeFormatter.ofPattern("yyyyMM")),
+                fiscalPeriod.getPayDate().format(DateTimeFormatter.ofPattern("yyyyMM")),
                 LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"))));
 
         String filename = filePath.toString();
 
         try {
-            generatePayslipPDF(payslip, employee, company, payrollPeriod, filename);
+            generatePayslipPDF(payslip, employee, company, fiscalPeriod, filename);
             return filename;
         } catch (Exception e) {
             throw new RuntimeException("Failed to generate payslip PDF: " + e.getMessage(), e);
         }
     }
 
-    private static void generatePayslipPDF(Payslip payslip, Employee employee, Company company, PayrollPeriod payrollPeriod, String filename) {
+    private static void generatePayslipPDF(Payslip payslip, Employee employee, Company company, FiscalPeriod fiscalPeriod, String filename) {
         Pointer pdf = initializePdfDocument();
         Pointer page = setupPdfPage(pdf);
         PdfDimensions dimensions = calculatePageDimensions();
         FontPair fonts = loadFonts(pdf);
         Pointer logo = loadCompanyLogo(pdf, company);
 
-        PayslipContentData contentData = new PayslipContentData(company, logo, employee, payslip, payrollPeriod);
+        PayslipContentData contentData = new PayslipContentData(company, logo, employee, payslip, fiscalPeriod);
         drawPayslipContent(page, contentData, dimensions, fonts.regularFont, fonts.boldFont);
 
         saveAndCleanupPdf(pdf, filename);
@@ -324,7 +324,7 @@ public class PayslipPdfService {
 
         // Draw employee details section with borders
         DrawingContext context = new DrawingContext(page, dimensions.marginLeft, dimensions.contentWidth, font, boldFont);
-        yPosition = drawEmployeeDetailsSection(context, contentData.employee, contentData.payslip, contentData.payrollPeriod, yPosition);
+        yPosition = drawEmployeeDetailsSection(context, contentData.employee, contentData.payslip, contentData.fiscalPeriod, yPosition);
 
         // Draw earnings and deductions section with tables
         yPosition = drawEarningsDeductionsSection(page, contentData.payslip, yPosition, dimensions.marginLeft,
@@ -419,7 +419,7 @@ public class PayslipPdfService {
         return yPosition;
     }
 
-    private static float drawEmployeeDetailsSection(DrawingContext context, Employee employee, Payslip payslip, PayrollPeriod payrollPeriod, float yPosition) {
+    private static float drawEmployeeDetailsSection(DrawingContext context, Employee employee, Payslip payslip, FiscalPeriod fiscalPeriod, float yPosition) {
         // Draw employee section background
         drawEmployeeSectionBackground(context.page, context.marginLeft, yPosition, context.contentWidth);
 
@@ -427,7 +427,7 @@ public class PayslipPdfService {
         drawEmployeeSectionHeader(context, yPosition);
 
         // Draw employee details rows
-        yPosition = drawEmployeeDetailsRows(context, employee, payslip, payrollPeriod, yPosition);
+        yPosition = drawEmployeeDetailsRows(context, employee, payslip, fiscalPeriod, yPosition);
 
         return yPosition - EMPLOYEE_SECTION_BOTTOM_SPACING;
     }
@@ -458,7 +458,7 @@ public class PayslipPdfService {
         Libharu.INSTANCE.HPDF_Page_EndText(context.page);
     }
 
-    private static float drawEmployeeDetailsRows(DrawingContext context, Employee employee, Payslip payslip, PayrollPeriod payrollPeriod, float yPosition) {
+    private static float drawEmployeeDetailsRows(DrawingContext context, Employee employee, Payslip payslip, FiscalPeriod fiscalPeriod, float yPosition) {
         yPosition -= EMPLOYEE_CONTENT_START_OFFSET;
 
         float col1X = context.marginLeft + EMPLOYEE_COLUMN_SPACING;
@@ -468,7 +468,7 @@ public class PayslipPdfService {
 
         // Row 1: Employee Code and Pay Date
         EmployeeDetailRowData row1Data = new EmployeeDetailRowData("Employee Code:", employee.getEmployeeNumber(),
-                                                                 "Pay Date:", payrollPeriod.getPayDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+                                                                 "Pay Date:", fiscalPeriod.getPayDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
         drawEmployeeDetailRow(context, col1X, col2X, labelWidth, yPosition, row1Data);
         yPosition -= rowHeight;
 
@@ -478,7 +478,7 @@ public class PayslipPdfService {
             fullName = fullName.substring(0, NAME_TRUNCATE_LENGTH) + "...";
         }
         EmployeeDetailRowData row2Data = new EmployeeDetailRowData("Employee Name:", fullName,
-                                                                 "Pay Period:", payrollPeriod.getPeriodName());
+                                                                 "Pay Period:", fiscalPeriod.getPeriodName());
         drawEmployeeDetailRow(context, col1X, col2X, labelWidth, yPosition, row2Data);
         yPosition -= rowHeight;
 
@@ -566,14 +566,14 @@ public class PayslipPdfService {
         private final Pointer logo;
         private final Employee employee;
         private final Payslip payslip;
-        private final PayrollPeriod payrollPeriod;
+        private final FiscalPeriod fiscalPeriod;
 
-        PayslipContentData(Company companyData, Pointer logoData, Employee employeeData, Payslip payslipData, PayrollPeriod periodData) {
+        PayslipContentData(Company companyData, Pointer logoData, Employee employeeData, Payslip payslipData, FiscalPeriod periodData) {
             this.company = companyData;
             this.logo = logoData;
             this.employee = employeeData;
             this.payslip = payslipData;
-            this.payrollPeriod = periodData;
+            this.fiscalPeriod = periodData;
         }
     }
 

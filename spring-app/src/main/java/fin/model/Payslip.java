@@ -31,6 +31,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import jakarta.persistence.Access;
+import jakarta.persistence.AccessType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -45,6 +47,7 @@ import jakarta.persistence.Table;
  */
 @Entity
 @Table(name = "payslips")
+@Access(AccessType.FIELD)
 public class Payslip {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -54,8 +57,8 @@ public class Payslip {
     private Long companyId;
     @Column(name = "employee_id")
     private Long employeeId;
-    @Column(name = "payroll_period_id")
-    private Long payrollPeriodId;
+    @Column(name = "fiscal_period_id")
+    private Long fiscalPeriodId;
     @Column(name = "payslip_number")
     private String payslipNumber;
     
@@ -86,8 +89,8 @@ public class Payslip {
     private BigDecimal totalEarnings;
     
     // Statutory Deductions
-    @Column(name = "payee_tax")
-    private BigDecimal payeeTax = BigDecimal.ZERO;
+    @Column(name = "paye_tax")
+    private BigDecimal payeTax = BigDecimal.ZERO;
     @Column(name = "uif_employee")
     private BigDecimal uifEmployee = BigDecimal.ZERO;
     @Column(name = "uif_employer")
@@ -154,12 +157,12 @@ public class Payslip {
         this.updatedAt = LocalDateTime.now();
     }
     
-    public Payslip(Long initialCompanyId, Long initialEmployeeId, Long initialPayrollPeriodId, 
+    public Payslip(Long initialCompanyId, Long initialEmployeeId, Long initialFiscalPeriodId, 
                   String initialPayslipNumber, BigDecimal initialBasicSalary) {
         this();
         this.companyId = initialCompanyId;
         this.employeeId = initialEmployeeId;
-        this.payrollPeriodId = initialPayrollPeriodId;
+        this.fiscalPeriodId = initialFiscalPeriodId;
         this.payslipNumber = initialPayslipNumber;
         this.basicSalary = initialBasicSalary;
         this.grossSalary = initialBasicSalary;
@@ -180,7 +183,7 @@ public class Payslip {
             .add(overtimeAmount != null ? overtimeAmount : BigDecimal.ZERO);
         
         // Calculate total deductions
-        this.totalDeductions = (payeeTax != null ? payeeTax : BigDecimal.ZERO)
+        this.totalDeductions = (payeTax != null ? payeTax : BigDecimal.ZERO)
             .add(uifEmployee != null ? uifEmployee : BigDecimal.ZERO)
             .add(medicalAid != null ? medicalAid : BigDecimal.ZERO)
             .add(pensionFund != null ? pensionFund : BigDecimal.ZERO)
@@ -209,8 +212,8 @@ public class Payslip {
     public Long getEmployeeId() { return employeeId; }
     public void setEmployeeId(Long newEmployeeId) { this.employeeId = newEmployeeId; }
     
-    public Long getPayrollPeriodId() { return payrollPeriodId; }
-    public void setPayrollPeriodId(Long newPayrollPeriodId) { this.payrollPeriodId = newPayrollPeriodId; }
+    public Long getFiscalPeriodId() { return fiscalPeriodId; }
+    public void setFiscalPeriodId(Long newFiscalPeriodId) { this.fiscalPeriodId = newFiscalPeriodId; }
     
     public String getPayslipNumber() { return payslipNumber; }
     public void setPayslipNumber(String newPayslipNumber) { this.payslipNumber = newPayslipNumber; }
@@ -281,9 +284,9 @@ public class Payslip {
     public void setTotalEarnings(BigDecimal newTotalEarnings) { this.totalEarnings = newTotalEarnings; }
     
     // Deductions
-    public BigDecimal getPayeeTax() { return payeeTax; }
+    public BigDecimal getPayeeTax() { return payeTax; }
     public void setPayeeTax(BigDecimal newPayeeTax) { 
-        this.payeeTax = newPayeeTax;
+        this.payeTax = newPayeeTax;
         calculateTotals();
     }
     
@@ -363,11 +366,11 @@ public class Payslip {
     public void setCreatedBy(String newCreatedBy) { this.createdBy = newCreatedBy; }
     
     public BigDecimal getPaye() {
-        return payeeTax;
+        return payeTax;
     }
 
     public void setPaye(BigDecimal paye) {
-        this.payeeTax = paye;
+        this.payeTax = paye;
         calculateTotals();
     }
 

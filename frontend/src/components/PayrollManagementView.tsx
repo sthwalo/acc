@@ -1,44 +1,25 @@
 import { useState, useEffect } from 'react';
-import { Calculator, FileText, Users, AlertCircle, CheckCircle, Download } from 'lucide-react';
+import { Calculator, FileText, Users, AlertCircle, Download, Plus } from 'lucide-react';
 import { useApi } from '../hooks/useApi';
-import type { Company, FiscalPeriod } from '../types/api';
+import ApiMessageBanner from './shared/ApiMessageBanner';
+import type { Company, FiscalPeriod, PayrollPeriod } from '../types/api';
 
 interface PayrollManagementViewProps {
   selectedCompany: Company;
+  onViewChange?: (view: 'companies' | 'fiscal-periods' | 'upload' | 'transactions' | 'generate-reports' | 'data-management' | 'payroll-management' | 'budget-management' | 'employee-management' | 'depreciation-calculator' | 'current-time' | 'system-logs') => void;
 }
 
-interface PayrollPeriod {
-  id: number;
-  companyId: number;
-  fiscalPeriodId: number;
-  periodName: string;
-  payDate: string;
-  startDate: string;
-  endDate: string;
-  periodType: 'WEEKLY' | 'MONTHLY' | 'QUARTERLY';
-  status: 'OPEN' | 'PROCESSED' | 'APPROVED' | 'PAID' | 'CLOSED';
-  totalGrossPay: number;
-  totalDeductions: number;
-  totalNetPay: number;
-  employeeCount: number;
-  processedAt?: string;
-  processedBy?: string;
-  approvedAt?: string;
-  approvedBy?: string;
-  createdAt: string;
-  updatedAt: string;
-  createdBy?: string;
-}
-
-export default function PayrollManagementView({ selectedCompany }: PayrollManagementViewProps) {
+export default function PayrollManagementView({ selectedCompany, onViewChange }: PayrollManagementViewProps) {
   const api = useApi();
   const [fiscalPeriods, setFiscalPeriods] = useState<FiscalPeriod[]>([]);
   const [payrollPeriods, setPayrollPeriods] = useState<PayrollPeriod[]>([]);
   const [selectedPeriod, setSelectedPeriod] = useState<FiscalPeriod | null>(null);
+  const [selectedPayrollPeriod, setSelectedPayrollPeriod] = useState<PayrollPeriod | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showCreatePeriod, setShowCreatePeriod] = useState(false);
 
   useEffect(() => {
     loadFiscalPeriods();
@@ -59,7 +40,22 @@ export default function PayrollManagementView({ selectedCompany }: PayrollManage
         setSelectedPeriod(periods[0]);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load fiscal periods');
+      // Prefer structured API/axios error message where possible
+      let message = 'Failed to load fiscal periods';
+      try {
+        const anyErr: unknown = err;
+        if (anyErr && typeof anyErr === 'object' && 'response' in anyErr) {
+          const axiosErr = anyErr as { response?: { data?: { message?: string } } };
+          if (axiosErr.response?.data?.message) {
+            message = axiosErr.response.data.message;
+          }
+        } else if (err instanceof Error) {
+          message = err.message;
+        }
+      } catch {
+        // ignore parsing error
+      }
+      setError(message);
     }
   };
 
@@ -69,31 +65,76 @@ export default function PayrollManagementView({ selectedCompany }: PayrollManage
     try {
       setIsLoading(true);
       setError(null);
-      // Get payroll periods for the selected company
-      const periods = await api.getPayrollPeriods(Number(selectedCompany.id));
-      setPayrollPeriods(periods);
+      // In the unified model, FiscalPeriod IS the payroll period
+      // Map FiscalPeriod to match PayrollPeriod interface expectations
+      const payrollPeriod = {
+        ...selectedPeriod,
+        status: 'OPEN' as const, // Default status since FiscalPeriod doesn't have payrollStatus
+        fiscalPeriodId: selectedPeriod.id, // For compatibility
+        payDate: selectedPeriod.endDate, // Add required PayrollPeriod fields
+        periodType: 'MONTHLY' as const,
+        totalGrossPay: 0,
+        totalDeductions: 0,
+        totalNetPay: 0,
+        employeeCount: 0,
+        updatedAt: selectedPeriod.updatedAt || new Date().toISOString(), // Ensure it's not null
+        createdBy: selectedPeriod.createdBy?.toString() // Convert number|null to string|undefined
+      };
+      setPayrollPeriods([payrollPeriod]);
+      if (!selectedPayrollPeriod) {
+        setSelectedPayrollPeriod(payrollPeriod);
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load payroll periods');
+      // Prefer structured API/axios error message where possible
+      let message = 'Failed to load payroll periods';
+      try {
+        const anyErr: unknown = err;
+        if (anyErr && typeof anyErr === 'object' && 'response' in anyErr) {
+          const axiosErr = anyErr as { response?: { data?: { message?: string } } };
+          if (axiosErr.response?.data?.message) {
+            message = axiosErr.response.data.message;
+          }
+        } else if (err instanceof Error) {
+          message = err.message;
+        }
+      } catch {
+        // ignore parsing error
+      }
+      setError(message);
     } finally {
       setIsLoading(false);
     }
   };
 
   const processPayroll = async () => {
-    if (!selectedPeriod) return;
+    if (!selectedPayrollPeriod) return;
 
     setIsProcessing(true);
     setError(null);
     setSuccess(null);
 
     try {
-      // Process payroll for the selected fiscal period
-      // Note: This might need to create a payroll period first if one doesn't exist
-      await api.processPayroll(Number(selectedPeriod.id));
+      // Process payroll for the selected payroll period
+      await api.processPayroll(Number(selectedPayrollPeriod.id));
       setSuccess('Payroll processing completed successfully');
       loadPayrollPeriods(); // Refresh the list
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to process payroll');
+      // Prefer structured API/axios error message where possible
+      let message = 'Failed to process payroll';
+      try {
+        const anyErr: unknown = err;
+        if (anyErr && typeof anyErr === 'object' && 'response' in anyErr) {
+          const axiosErr = anyErr as { response?: { data?: { message?: string } } };
+          if (axiosErr.response?.data?.message) {
+            message = axiosErr.response.data.message;
+          }
+        } else if (err instanceof Error) {
+          message = err.message;
+        }
+      } catch {
+        // ignore parsing error
+      }
+      setError(message);
     } finally {
       setIsProcessing(false);
     }
@@ -102,11 +143,70 @@ export default function PayrollManagementView({ selectedCompany }: PayrollManage
   const generatePayslips = async (payrollPeriodId: number) => {
     try {
       setError(null);
-      // Generate payslips for the payroll period
-      await api.generatePayslips(payrollPeriodId);
+      // Generate payslips for the payroll period (processing payroll generates payslips)
+      await api.processPayroll(payrollPeriodId);
       setSuccess('Payslips generated successfully');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to generate payslips');
+      // Prefer structured API/axios error message where possible
+      let message = 'Failed to generate payslips';
+      try {
+        const anyErr: unknown = err;
+        if (anyErr && typeof anyErr === 'object' && 'response' in anyErr) {
+          const axiosErr = anyErr as { response?: { data?: { message?: string } } };
+          if (axiosErr.response?.data?.message) {
+            message = axiosErr.response.data.message;
+          }
+        } else if (err instanceof Error) {
+          message = err.message;
+        }
+      } catch {
+        // ignore parsing error
+      }
+      setError(message);
+    }
+  };
+
+  const createPayrollPeriod = async () => {
+    if (!selectedPeriod) return;
+
+    try {
+      setError(null);
+      setSuccess(null);
+      
+      // Create a new fiscal period for payroll (unified model)
+      const newFiscalPeriod = {
+        companyId: Number(selectedCompany.id),
+        periodName: `${selectedPeriod.periodName} Payroll`,
+        startDate: selectedPeriod.startDate,
+        endDate: selectedPeriod.endDate,
+        payDate: selectedPeriod.endDate,
+        periodType: 'MONTHLY',
+        payrollStatus: 'OPEN',
+        closed: false
+      };
+
+      await api.createPayrollPeriod(newFiscalPeriod);
+      setSuccess('Payroll period created successfully');
+      setShowCreatePeriod(false);
+      // Reload fiscal periods to include the new one
+      loadFiscalPeriods();
+    } catch (err) {
+      // Prefer structured API/axios error message where possible
+      let message = 'Failed to create payroll period';
+      try {
+        const anyErr: unknown = err;
+        if (anyErr && typeof anyErr === 'object' && 'response' in anyErr) {
+          const axiosErr = anyErr as { response?: { data?: { message?: string } } };
+          if (axiosErr.response?.data?.message) {
+            message = axiosErr.response.data.message;
+          }
+        } else if (err instanceof Error) {
+          message = err.message;
+        }
+      } catch {
+        // ignore parsing error
+      }
+      setError(message);
     }
   };
 
@@ -128,19 +228,8 @@ export default function PayrollManagementView({ selectedCompany }: PayrollManage
         <p>SARS-compliant payroll processing for {selectedCompany.name}</p>
       </div>
 
-      {error && (
-        <div className="alert alert-error">
-          <AlertCircle size={20} />
-          <span>{error}</span>
-        </div>
-      )}
-
-      {success && (
-        <div className="alert alert-success">
-          <CheckCircle size={20} />
-          <span>{success}</span>
-        </div>
-      )}
+      <ApiMessageBanner message={error} type="error" />
+      <ApiMessageBanner message={success} type="success" />
 
       {/* Fiscal Period Selection */}
       <div className="form-section">
@@ -164,12 +253,77 @@ export default function PayrollManagementView({ selectedCompany }: PayrollManage
         </div>
       </div>
 
+      {/* Payroll Period Selection */}
+      {selectedPeriod && (
+        <div className="form-section">
+          <h3>
+            <FileText size={20} />
+            Payroll Periods for {selectedPeriod.periodName}
+          </h3>
+          
+          {payrollPeriods.length > 0 ? (
+            <div className="period-selector">
+              {payrollPeriods.map((period) => (
+                <button
+                  key={period.id}
+                  className={`period-button ${selectedPayrollPeriod?.id === period.id ? 'active' : ''}`}
+                  onClick={() => setSelectedPayrollPeriod(period)}
+                >
+                  <div className="period-name">{period.periodName}</div>
+                  <div className="period-dates">
+                    {new Date(period.startDate).toLocaleDateString()} - {new Date(period.endDate).toLocaleDateString()}
+                  </div>
+                  <div className="period-status">
+                    <span className={`status-badge ${getStatusColor(period.status)}`}>
+                      {period.status}
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="empty-state">
+              <FileText size={48} />
+              <h3>No payroll periods found</h3>
+              <p>Create a payroll period to start processing payroll for this fiscal period.</p>
+              <button 
+                className="action-button primary"
+                onClick={() => setShowCreatePeriod(true)}
+              >
+                Create Payroll Period
+              </button>
+            </div>
+          )}
+
+          {showCreatePeriod && (
+            <div className="create-period-form">
+              <h4>Create Payroll Period</h4>
+              <p>This will create a payroll period for the selected fiscal period.</p>
+              <div className="form-actions">
+                <button 
+                  className="action-button primary"
+                  onClick={createPayrollPeriod}
+                >
+                  Create Period
+                </button>
+                <button 
+                  className="action-button secondary"
+                  onClick={() => setShowCreatePeriod(false)}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Payroll Actions */}
       <div className="payroll-actions">
         <button
           className="action-button primary"
           onClick={processPayroll}
-          disabled={isProcessing || !selectedPeriod}
+          disabled={isProcessing || !selectedPayrollPeriod || selectedPayrollPeriod.status !== 'OPEN'}
         >
           {isProcessing ? (
             <>
@@ -183,85 +337,106 @@ export default function PayrollManagementView({ selectedCompany }: PayrollManage
             </>
           )}
         </button>
-        <button className="action-button secondary">
+        <button 
+          className="action-button secondary"
+          onClick={() => onViewChange?.('employee-management')}
+        >
           <Users size={20} />
           Manage Employees
         </button>
+        {payrollPeriods.length === 0 && selectedPeriod && (
+          <button 
+            className="action-button secondary"
+            onClick={() => setShowCreatePeriod(true)}
+          >
+            <Plus size={20} />
+            Create Period
+          </button>
+        )}
       </div>
 
       {/* Payroll Periods Table */}
-      <div className="payroll-periods-container">
-        <h3>Payroll Periods</h3>
+      {selectedPeriod && (
+        <div className="payroll-periods-container">
+          <h3>Payroll Periods</h3>
 
-        {isLoading ? (
-          <div className="loading-state">
-            <div className="spinner large"></div>
-            <p>Loading payroll periods...</p>
-          </div>
-        ) : (
-          <table className="payroll-periods-table">
-            <thead>
-              <tr>
-                <th>Period</th>
-                <th>Status</th>
-                <th>Employees</th>
-                <th>Gross Pay</th>
-                <th>Deductions</th>
-                <th>Net Pay</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {payrollPeriods.map((period) => (
-                <tr key={period.id}>
-                  <td>
-                    <div className="period-info">
-                      <div className="period-name">{period.periodName}</div>
-                      <div className="period-dates">
-                        {new Date(period.startDate).toLocaleDateString()} - {new Date(period.endDate).toLocaleDateString()}
-                      </div>
-                    </div>
-                  </td>
-                  <td>
-                    <span className={`status-badge ${getStatusColor(period.status)}`}>
-                      {period.status}
-                    </span>
-                  </td>
-                  <td>{period.employeeCount}</td>
-                  <td>R {period.totalGrossPay.toLocaleString()}</td>
-                  <td>R {period.totalDeductions.toLocaleString()}</td>
-                  <td>R {period.totalNetPay.toLocaleString()}</td>
-                  <td>
-                    <div className="action-buttons">
-                      <button
-                        className="action-button view"
-                        title="View details"
-                      >
-                        <FileText size={16} />
-                      </button>
-                      <button
-                        className="action-button download"
-                        onClick={() => generatePayslips(period.id)}
-                        title="Generate payslips"
-                      >
-                        <Download size={16} />
-                      </button>
-                    </div>
-                  </td>
+          {isLoading ? (
+            <div className="loading-state">
+              <div className="spinner large"></div>
+              <p>Loading payroll periods...</p>
+            </div>
+          ) : (
+            <table className="payroll-periods-table">
+              <thead>
+                <tr>
+                  <th>Period</th>
+                  <th>Status</th>
+                  <th>Employees</th>
+                  <th>Gross Pay</th>
+                  <th>Deductions</th>
+                  <th>Net Pay</th>
+                  <th>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+              </thead>
+              <tbody>
+                {payrollPeriods.map((period) => (
+                  <tr key={period.id}>
+                    <td>
+                      <div className="period-info">
+                        <div className="period-name">{period.periodName}</div>
+                        <div className="period-dates">
+                          {new Date(period.startDate).toLocaleDateString()} - {new Date(period.endDate).toLocaleDateString()}
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <span className={`status-badge ${getStatusColor(period.status)}`}>
+                        {period.status}
+                      </span>
+                    </td>
+                    <td>{period.employeeCount}</td>
+                    <td>R {period.totalGrossPay.toLocaleString()}</td>
+                    <td>R {period.totalDeductions.toLocaleString()}</td>
+                    <td>R {period.totalNetPay.toLocaleString()}</td>
+                    <td>
+                      <div className="action-buttons">
+                        <button
+                          className="action-button view"
+                          title="View details"
+                        >
+                          <FileText size={16} />
+                        </button>
+                        <button
+                          className="action-button download"
+                          onClick={() => generatePayslips(period.id)}
+                          title="Generate payslips"
+                          disabled={period.status !== 'PROCESSED'}
+                        >
+                          <Download size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
 
-        {payrollPeriods.length === 0 && !isLoading && (
-          <div className="empty-state">
-            <Calculator size={48} />
-            <h3>No payroll periods found</h3>
-            <p>Process payroll to create payroll periods for this fiscal period.</p>
-          </div>
-        )}
-      </div>
+          {payrollPeriods.length === 0 && !isLoading && selectedPeriod && (
+            <div className="empty-state">
+              <Calculator size={48} />
+              <h3>No payroll periods found</h3>
+              <p>Create a payroll period to start processing payroll for this fiscal period.</p>
+              <button 
+                className="action-button primary"
+                onClick={() => setShowCreatePeriod(true)}
+              >
+                Create Payroll Period
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* SARS Compliance Notice */}
       <div className="compliance-notice">

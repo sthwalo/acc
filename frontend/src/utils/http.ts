@@ -1,4 +1,4 @@
-import axios, { type AxiosInstance } from 'axios';
+import axios, { type AxiosInstance, type AxiosResponse } from 'axios';
 import type { ApiEnvelope } from '../types/api';
 
 const API_BASE = (import.meta.env.VITE_API_BASE as string) || 'http://localhost:8080/api/v1';
@@ -20,7 +20,7 @@ export function setAuthToken(token: string | null) {
  * Unwraps the project's ApiResponse<T> envelope.
  * Throws an Error when the envelope indicates failure.
  */
-export async function unwrapApiResponse<T>(promise: Promise<any>): Promise<T> {
+export async function unwrapApiResponse<T>(promise: Promise<AxiosResponse>): Promise<T> {
   const res = await promise;
   if (!res || !res.data) {
     throw new Error('Invalid API response');

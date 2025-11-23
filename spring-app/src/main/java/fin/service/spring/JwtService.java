@@ -149,18 +149,19 @@ public class JwtService {
     }
 
     /**
-     * Generate HMAC-SHA256 signature (simplified for demo)
+     * Generate HMAC-SHA256 signature (proper JWT implementation)
      */
     private String generateSignature(String data) {
         try {
-            // Simple hash for demo - in production use proper HMAC-SHA256
-            java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");
-            md.update(secretKey.getBytes());
-            md.update(data.getBytes());
-            byte[] hash = md.digest();
+            // Use proper HMAC-SHA256 for JWT
+            javax.crypto.Mac mac = javax.crypto.Mac.getInstance("HmacSHA256");
+            javax.crypto.spec.SecretKeySpec secretKeySpec = new javax.crypto.spec.SecretKeySpec(
+                secretKey.getBytes(java.nio.charset.StandardCharsets.UTF_8), "HmacSHA256");
+            mac.init(secretKeySpec);
+            byte[] hash = mac.doFinal(data.getBytes(java.nio.charset.StandardCharsets.UTF_8));
             return base64Encode(new String(hash));
-        } catch (java.security.NoSuchAlgorithmException e) {
-            throw new RuntimeException("SHA-256 not available", e);
+        } catch (java.security.NoSuchAlgorithmException | java.security.InvalidKeyException e) {
+            throw new RuntimeException("HMAC-SHA256 not available", e);
         }
     }
 

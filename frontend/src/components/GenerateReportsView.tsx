@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { FileText, Download, Calendar, AlertCircle, CheckCircle } from 'lucide-react';
+import { FileText, Download, Calendar } from 'lucide-react';
 import { useApi } from '../hooks/useApi';
+import ApiMessageBanner from './shared/ApiMessageBanner';
 import type { Company, FiscalPeriod } from '../types/api';
 
 interface GenerateReportsViewProps {
@@ -86,7 +87,22 @@ export default function GenerateReportsView({ selectedCompany }: GenerateReports
         setSelectedPeriod(periods[0]);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load fiscal periods');
+      // Prefer structured API/axios error message where possible
+      let message = 'Failed to load fiscal periods';
+      try {
+        const anyErr: unknown = err;
+        if (anyErr && typeof anyErr === 'object' && 'response' in anyErr) {
+          const axiosErr = anyErr as { response?: { data?: { message?: string } } };
+          if (axiosErr.response?.data?.message) {
+            message = axiosErr.response.data.message;
+          }
+        } else if (err instanceof Error) {
+          message = err.message;
+        }
+      } catch {
+        // ignore parsing error
+      }
+      setError(message);
     }
   }, [api, selectedCompany.id, selectedPeriod]);
 
@@ -179,7 +195,22 @@ export default function GenerateReportsView({ selectedCompany }: GenerateReports
       }
 
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to generate report');
+      // Prefer structured API/axios error message where possible
+      let message = 'Failed to generate report';
+      try {
+        const anyErr: unknown = err;
+        if (anyErr && typeof anyErr === 'object' && 'response' in anyErr) {
+          const axiosErr = anyErr as { response?: { data?: { message?: string } } };
+          if (axiosErr.response?.data?.message) {
+            message = axiosErr.response.data.message;
+          }
+        } else if (err instanceof Error) {
+          message = err.message;
+        }
+      } catch {
+        // ignore parsing error
+      }
+      setError(message);
     } finally {
       setIsGenerating(false);
     }
@@ -192,19 +223,8 @@ export default function GenerateReportsView({ selectedCompany }: GenerateReports
         <p>Generate comprehensive financial reports for {selectedCompany.name}</p>
       </div>
 
-      {error && (
-        <div className="alert alert-error">
-          <AlertCircle size={20} />
-          <span>{error}</span>
-        </div>
-      )}
-
-      {success && (
-        <div className="alert alert-success">
-          <CheckCircle size={20} />
-          <span>{success}</span>
-        </div>
-      )}
+      <ApiMessageBanner message={error} type="error" />
+      <ApiMessageBanner message={success} type="success" />
 
       <div className="report-generation-form">
         {/* Fiscal Period Selection */}

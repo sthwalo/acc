@@ -424,6 +424,7 @@ public class SomeRepository {
 
 **Build & Test**:
 ```bash
+cd /Users/sthwalonyoni/FIN && ./start.sh.    
 ./gradlew clean build                    # Full build with quality checks
 ./gradlew test                          # Run test suite
 ./gradlew checkstyleMain                # Code quality scan

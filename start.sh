@@ -1,73 +1,170 @@
 #!/bin/bash
 
-# FIN Container Startup Script
-# Launches backend containers and local frontend, then opens browser
+# FIN Development Workflow Script
+# Builds applications locally and runs them in Docker containers
+# Much faster than building inside containers!
 
 set -e
 
-echo "🚀 Starting FIN Financial Management System..."
+echo "🚀 Starting FIN Development Environment..."
+echo "=========================================="
 
-# Function to check if a port is open
-wait_for_port() {
-    local port=$1
-    local service=$2
-    local max_attempts=30
-    local attempt=1
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
 
-    echo "⏳ Waiting for $service on port $port..."
-    while ! nc -z localhost $port 2>/dev/null; do
-        if [ $attempt -ge $max_attempts ]; then
-            echo "❌ Timeout waiting for $service on port $port"
-            exit 1
-        fi
-        sleep 2
-        attempt=$((attempt + 1))
-    done
-    echo "✅ $service is ready on port $port"
+# Function to print colored output
+print_status() {
+    echo -e "${BLUE}[INFO]${NC} $1"
 }
 
-# Start backend containers only
-echo "🐳 Starting backend containers..."
-docker compose up -d postgres fin-app
+print_success() {
+    echo -e "${GREEN}[SUCCESS]${NC} $1"
+}
 
-# Wait for backend to be ready
-wait_for_port 8080 "FIN Backend API"
+print_warning() {
+    echo -e "${YELLOW}[WARNING]${NC} $1"
+}
 
-# Start frontend locally (faster than container build)
-echo "⚛️  Starting frontend development server..."
-cd frontend
-npm run dev > /dev/null 2>&1 &
-FRONTEND_PID=$!
+print_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
 
-# Wait for frontend to be ready
-wait_for_port 3000 "FIN Frontend"
+# Check if required tools are installed
+check_dependencies() {
+    print_status "Checking dependencies..."
 
-echo ""
-echo "🎉 FIN System is ready!"
-echo "📱 Frontend: http://localhost:3000"
-echo "🔧 Backend API: http://localhost:8080"
-echo ""
+    if ! command -v java &> /dev/null; then
+        print_error "Java is not installed. Please install Java 17+"
+        exit 1
+    fi
 
-# Open browser (works on macOS, Linux, and WSL)
-if command -v open >/dev/null 2>&1; then
-    # macOS
-    open http://localhost:3000
-elif command -v xdg-open >/dev/null 2>&1; then
-    # Linux
-    xdg-open http://localhost:3000
-elif command -v start >/dev/null 2>&1; then
-    # WSL/Windows
-    start http://localhost:3000
-else
-    echo "🌐 Please open your browser and navigate to: http://localhost:3000"
-fi
+    if ! command -v node &> /dev/null; then
+        print_error "Node.js is not installed. Please install Node.js 20+"
+        exit 1
+    fi
 
-echo ""
-echo "💡 Useful commands:"
-echo "  • View backend logs: docker compose logs -f"
-echo "  • Stop containers: docker compose down"
-echo "  • Stop frontend: kill $FRONTEND_PID"
-echo ""
+    if ! command -v npm &> /dev/null; then
+        print_error "npm is not installed. Please install npm"
+        exit 1
+    fi
 
-# Keep script running to maintain processes
-wait $FRONTEND_PID
+    if ! command -v docker &> /dev/null; then
+        print_error "Docker is not installed. Please install Docker"
+        exit 1
+    fi
+
+    print_success "All dependencies are installed"
+}
+
+# Build backend
+build_backend() {
+    print_status "Building Spring Boot backend..."
+    cd spring-app
+
+    if [ ! -f "build/libs/fin-spring.jar" ] || [ "build.gradle.kts" -nt "build/libs/fin-spring.jar" ]; then
+        print_status "Building JAR file..."
+        ./gradlew clean build --no-daemon -x test
+        print_success "Backend built successfully"
+    else
+        print_warning "JAR file is up to date, skipping build"
+    fi
+
+    cd ..
+}
+
+# Build frontend
+build_frontend() {
+    print_status "Building React frontend..."
+    cd frontend
+
+    if [ ! -d "dist" ] || find src -newer dist -type f | read; then
+        print_status "Building frontend dist..."
+        npm install
+        npm run build
+        print_success "Frontend built successfully"
+    else
+        print_warning "Frontend dist is up to date, skipping build"
+    fi
+
+    cd ..
+}
+
+# Start containers
+start_containers() {
+    print_status "Starting Docker containers..."
+
+    # Stop any existing containers
+    docker compose -f docker-compose.yml -f docker-compose.frontend.yml down 2>/dev/null || true
+
+    # Start containers
+    docker compose -f docker-compose.yml -f docker-compose.frontend.yml up -d
+
+    print_success "Containers started successfully"
+}
+
+# Wait for services to be ready
+wait_for_services() {
+    print_status "Waiting for services to be ready..."
+
+    # Wait for backend
+    print_status "Waiting for backend (port 8080)..."
+    timeout=60
+    while [ $timeout -gt 0 ]; do
+        if curl -s http://localhost:8080/api/v1/health > /dev/null 2>&1; then
+            print_success "Backend is ready!"
+            break
+        fi
+        sleep 2
+        timeout=$((timeout - 2))
+    done
+
+    if [ $timeout -le 0 ]; then
+        print_error "Backend failed to start within 60 seconds"
+        exit 1
+    fi
+
+    # Wait for frontend
+    print_status "Waiting for frontend (port 3000)..."
+    timeout=30
+    while [ $timeout -gt 0 ]; do
+        if curl -s -I http://localhost:3000 | grep -q "200 OK"; then
+            print_success "Frontend is ready!"
+            break
+        fi
+        sleep 2
+        timeout=$((timeout - 2))
+    done
+
+    if [ $timeout -le 0 ]; then
+        print_warning "Frontend health check timed out, but service may still be starting"
+    fi
+}
+
+# Main execution
+main() {
+    check_dependencies
+    build_backend
+    build_frontend
+    start_containers
+    wait_for_services
+
+    echo ""
+    print_success "🎉 FIN Development Environment is ready!"
+    echo ""
+    echo "🌐 Frontend: http://localhost:3000"
+    echo "🔧 Backend API: http://localhost:8080"
+    echo "📊 API Health: http://localhost:8080/api/v1/health"
+    echo ""
+    echo "To stop the environment, run:"
+    echo "  docker compose -f docker-compose.yml -f docker-compose.frontend.yml down"
+    echo ""
+    echo "To rebuild and restart:"
+    echo "  $0"
+}
+
+# Run main function
+main "$@"

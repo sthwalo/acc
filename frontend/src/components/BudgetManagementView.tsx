@@ -1,42 +1,11 @@
 import { useState, useEffect } from 'react';
 import { TrendingUp, Target, AlertTriangle, CheckCircle, Plus, Edit, Trash2 } from 'lucide-react';
 import { useApi } from '../hooks/useApi';
-import type { Company, FiscalPeriod } from '../types/api';
+import ApiMessageBanner from './shared/ApiMessageBanner';
+import type { Company, FiscalPeriod, Budget, BudgetVariance } from '../types/api';
 
 interface BudgetManagementViewProps {
   selectedCompany: Company;
-}
-
-interface Budget {
-  id: number;
-  companyId: number;
-  fiscalPeriodId?: number;
-  title: string;
-  description?: string;
-  budgetYear: number;
-  status: string;
-  totalRevenue: number;
-  totalExpenses: number;
-  createdAt: string;
-  updatedAt: string;
-  approvedAt?: string;
-  approvedBy?: string;
-}
-
-interface BudgetVariance {
-  budgetId: number;
-  totalBudgeted: number;
-  totalActual: number;
-  totalVariance: number;
-  variancePercentage: number;
-  categories: Array<{
-    categoryId: number;
-    categoryName: string;
-    budgeted: number;
-    actual: number;
-    variance: number;
-    variancePercentage: number;
-  }>;
 }
 
 export default function BudgetManagementView({ selectedCompany }: BudgetManagementViewProps) {
@@ -74,7 +43,22 @@ export default function BudgetManagementView({ selectedCompany }: BudgetManageme
         setSelectedPeriod(periods[0]);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load fiscal periods');
+      // Prefer structured API/axios error message where possible
+      let message = 'Failed to load fiscal periods';
+      try {
+        const anyErr: unknown = err;
+        if (anyErr && typeof anyErr === 'object' && 'response' in anyErr) {
+          const axiosErr = anyErr as { response?: { data?: { message?: string } } };
+          if (axiosErr.response?.data?.message) {
+            message = axiosErr.response.data.message;
+          }
+        } else if (anyErr && typeof anyErr === 'object' && 'message' in anyErr && typeof anyErr.message === 'string') {
+          message = anyErr.message;
+        }
+      } catch {
+        // fallback below
+      }
+      setError(message);
     }
   };
 
@@ -91,7 +75,22 @@ export default function BudgetManagementView({ selectedCompany }: BudgetManageme
         setSelectedBudget(budgetsData[0]);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load budgets');
+      // Prefer structured API/axios error message where possible
+      let message = 'Failed to load budgets';
+      try {
+        const anyErr: unknown = err;
+        if (anyErr && typeof anyErr === 'object' && 'response' in anyErr) {
+          const axiosErr = anyErr as { response?: { data?: { message?: string } } };
+          if (axiosErr.response?.data?.message) {
+            message = axiosErr.response.data.message;
+          }
+        } else if (anyErr && typeof anyErr === 'object' && 'message' in anyErr && typeof anyErr.message === 'string') {
+          message = anyErr.message;
+        }
+      } catch {
+        // fallback below
+      }
+      setError(message);
     } finally {
       setIsLoading(false);
     }
@@ -106,7 +105,22 @@ export default function BudgetManagementView({ selectedCompany }: BudgetManageme
       const varianceData = await api.getBudgetVariance(Number(selectedBudget.id));
       setBudgetVariance(varianceData);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load budget variance');
+      // Prefer structured API/axios error message where possible
+      let message = 'Failed to load budget variance';
+      try {
+        const anyErr: unknown = err;
+        if (anyErr && typeof anyErr === 'object' && 'response' in anyErr) {
+          const axiosErr = anyErr as { response?: { data?: { message?: string } } };
+          if (axiosErr.response?.data?.message) {
+            message = axiosErr.response.data.message;
+          }
+        } else if (anyErr && typeof anyErr === 'object' && 'message' in anyErr && typeof anyErr.message === 'string') {
+          message = anyErr.message;
+        }
+      } catch {
+        // fallback below
+      }
+      setError(message);
       setBudgetVariance(null);
     }
   };
@@ -130,12 +144,7 @@ export default function BudgetManagementView({ selectedCompany }: BudgetManageme
         <p>Strategic planning, variance analysis, and cash flow forecasting for {selectedCompany.name}</p>
       </div>
 
-      {error && (
-        <div className="alert alert-error">
-          <AlertTriangle size={20} />
-          <span>{error}</span>
-        </div>
-      )}
+      <ApiMessageBanner message={error} type="error" />
 
       {/* Fiscal Period Selection */}
       <div className="form-section">

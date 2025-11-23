@@ -35,14 +35,19 @@ public interface PayslipRepository extends JpaRepository<Payslip, Long> {
     List<Payslip> findByCompanyId(Integer companyId);
 
     /**
-     * Find payslips for a specific payroll period
+     * Find payslips for a specific fiscal period
      */
-    List<Payslip> findByPayrollPeriodId(Long payrollPeriodId);
+    List<Payslip> findByFiscalPeriodId(Long fiscalPeriodId);
 
     /**
      * Find payslips for a specific employee
      */
     List<Payslip> findByEmployeeId(Long employeeId);
+
+    /**
+     * Find payslips by fiscal period and list of employee IDs
+     */
+    List<Payslip> findByFiscalPeriodIdAndEmployeeIdIn(Long fiscalPeriodId, List<Long> employeeIds);
 
     /**
      * Find payslips for a company and employee
@@ -60,70 +65,70 @@ public interface PayslipRepository extends JpaRepository<Payslip, Long> {
     List<Payslip> findByCompanyIdAndStatus(Integer companyId, Payslip.PayslipStatus status);
 
     /**
-     * Find payslips by payroll period and status
+     * Find payslips by fiscal period and status
      */
-    List<Payslip> findByPayrollPeriodIdAndStatus(Long payrollPeriodId, Payslip.PayslipStatus status);
+    List<Payslip> findByFiscalPeriodIdAndStatus(Long fiscalPeriodId, Payslip.PayslipStatus status);
 
     /**
-     * Count payslips by payroll period
+     * Count payslips by fiscal period
      */
-    long countByPayrollPeriodId(Long payrollPeriodId);
+    long countByFiscalPeriodId(Long fiscalPeriodId);
 
     /**
-     * Count payslips by payroll period and status
+     * Count payslips by fiscal period and status
      */
-    long countByPayrollPeriodIdAndStatus(Long payrollPeriodId, Payslip.PayslipStatus status);
+    long countByFiscalPeriodIdAndStatus(Long fiscalPeriodId, Payslip.PayslipStatus status);
 
     /**
-     * Sum total net pay for a payroll period
+     * Sum total net pay for a fiscal period
      */
-    @Query("SELECT COALESCE(SUM(p.netPay), 0) FROM Payslip p WHERE p.payrollPeriodId = :payrollPeriodId")
-    BigDecimal sumNetPayByPayrollPeriodId(@Param("payrollPeriodId") Long payrollPeriodId);
+    @Query("SELECT COALESCE(SUM(p.netPay), 0) FROM Payslip p WHERE p.fiscalPeriodId = :fiscalPeriodId")
+    BigDecimal sumNetPayByFiscalPeriodId(@Param("fiscalPeriodId") Long fiscalPeriodId);
 
     /**
-     * Sum total gross pay for a payroll period
+     * Sum total gross pay for a fiscal period
      */
-    @Query("SELECT COALESCE(SUM(p.totalEarnings), 0) FROM Payslip p WHERE p.payrollPeriodId = :payrollPeriodId")
-    BigDecimal sumGrossPayByPayrollPeriodId(@Param("payrollPeriodId") Long payrollPeriodId);
+    @Query("SELECT COALESCE(SUM(p.totalEarnings), 0) FROM Payslip p WHERE p.fiscalPeriodId = :fiscalPeriodId")
+    BigDecimal sumGrossPayByFiscalPeriodId(@Param("fiscalPeriodId") Long fiscalPeriodId);
 
     /**
-     * Sum total deductions for a payroll period
+     * Sum total deductions for a fiscal period
      */
-    @Query("SELECT COALESCE(SUM(p.totalDeductions), 0) FROM Payslip p WHERE p.payrollPeriodId = :payrollPeriodId")
-    BigDecimal sumDeductionsByPayrollPeriodId(@Param("payrollPeriodId") Long payrollPeriodId);
+    @Query("SELECT COALESCE(SUM(p.totalDeductions), 0) FROM Payslip p WHERE p.fiscalPeriodId = :fiscalPeriodId")
+    BigDecimal sumDeductionsByFiscalPeriodId(@Param("fiscalPeriodId") Long fiscalPeriodId);
 
     /**
-     * Sum PAYE tax for a payroll period
+     * Sum PAYE tax for a fiscal period
      */
-    @Query("SELECT COALESCE(SUM(p.payeeTax), 0) FROM Payslip p WHERE p.payrollPeriodId = :payrollPeriodId")
-    BigDecimal sumPayeeTaxByPayrollPeriodId(@Param("payrollPeriodId") Long payrollPeriodId);
+    @Query("SELECT COALESCE(SUM(p.payeTax), 0) FROM Payslip p WHERE p.fiscalPeriodId = :fiscalPeriodId")
+    BigDecimal sumPayeeTaxByFiscalPeriodId(@Param("fiscalPeriodId") Long fiscalPeriodId);
 
     /**
-     * Sum UIF employee contributions for a payroll period
+     * Sum UIF employee contributions for a fiscal period
      */
-    @Query("SELECT COALESCE(SUM(p.uifEmployee), 0) FROM Payslip p WHERE p.payrollPeriodId = :payrollPeriodId")
-    BigDecimal sumUifEmployeeByPayrollPeriodId(@Param("payrollPeriodId") Long payrollPeriodId);
+    @Query("SELECT COALESCE(SUM(p.uifEmployee), 0) FROM Payslip p WHERE p.fiscalPeriodId = :fiscalPeriodId")
+    BigDecimal sumUifEmployeeByFiscalPeriodId(@Param("fiscalPeriodId") Long fiscalPeriodId);
 
     /**
-     * Sum UIF employer contributions for a payroll period
+     * Sum UIF employer contributions for a fiscal period
      */
-    @Query("SELECT COALESCE(SUM(p.uifEmployer), 0) FROM Payslip p WHERE p.payrollPeriodId = :payrollPeriodId")
-    BigDecimal sumUifEmployerByPayrollPeriodId(@Param("payrollPeriodId") Long payrollPeriodId);
+    @Query("SELECT COALESCE(SUM(p.uifEmployer), 0) FROM Payslip p WHERE p.fiscalPeriodId = :fiscalPeriodId")
+    BigDecimal sumUifEmployerByFiscalPeriodId(@Param("fiscalPeriodId") Long fiscalPeriodId);
 
     /**
-     * Sum SDL levy for a payroll period
+     * Sum SDL levy for a fiscal period
      */
-    @Query("SELECT COALESCE(SUM(p.sdlLevy), 0) FROM Payslip p WHERE p.payrollPeriodId = :payrollPeriodId")
-    BigDecimal sumSdlLevyByPayrollPeriodId(@Param("payrollPeriodId") Long payrollPeriodId);
+    @Query("SELECT COALESCE(SUM(p.sdlLevy), 0) FROM Payslip p WHERE p.fiscalPeriodId = :fiscalPeriodId")
+    BigDecimal sumSdlLevyByFiscalPeriodId(@Param("fiscalPeriodId") Long fiscalPeriodId);
 
     /**
      * Find payslips that need to be exported (APPROVED status)
      */
-    @Query("SELECT p FROM Payslip p WHERE p.companyId = :companyId AND p.status = 'APPROVED' ORDER BY p.payrollPeriodId, p.employeeId")
+    @Query("SELECT p FROM Payslip p WHERE p.companyId = :companyId AND p.status = 'APPROVED' ORDER BY p.fiscalPeriodId, p.employeeId")
     List<Payslip> findApprovedPayslipsForExport(@Param("companyId") Integer companyId);
 
     /**
-     * Check if payslip exists for employee and payroll period
+     * Check if payslip exists for employee and fiscal period
      */
-    boolean existsByEmployeeIdAndPayrollPeriodId(Long employeeId, Long payrollPeriodId);
+    boolean existsByEmployeeIdAndFiscalPeriodId(Long employeeId, Long fiscalPeriodId);
 }

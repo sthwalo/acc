@@ -11,7 +11,12 @@ import type {
   LoginRequest,
   RegisterRequest,
   AuthResponse,
-  PlanSelection
+  PlanSelection,
+  PayrollPeriod,
+  PayrollProcessingResult,
+  Budget,
+  BudgetVariance,
+  Employee
 } from '../types/api';
 
 /**
@@ -53,7 +58,8 @@ abstract class BaseApiService {
           // However, if the request wasn't sent with Authorization (race/unauth),
           // we don't want to clear/redirect, because that can cause a login race
           // where another component may successfully log in simultaneously.
-          const authHeader = (error.config as any)?.headers?.Authorization || (error.config as any)?.headers?.authorization;
+          const authHeader = (error.config as InternalAxiosRequestConfig)?.headers?.Authorization ||
+                            (error.config as InternalAxiosRequestConfig)?.headers?.authorization;
           if (authHeader) {
             // Clear invalid token and redirect to login
             localStorage.removeItem('auth_token');
@@ -300,16 +306,20 @@ class FiscalPeriodApiService extends BaseApiService {
 class TransactionApiService extends BaseApiService {
   async getTransactions(companyId: number, fiscalPeriodId: number): Promise<{ data: ApiTransaction[], count: number, company_id: number, timestamp: number, note: string }> {
     try {
-      const response = await this.client.get(`/v1/companies/${companyId}/fiscal-periods/${fiscalPeriodId}/transactions`);
-      const result = response.data;
+      const response = await this.client.get<ApiResponse<ApiTransaction[]>>(`/v1/companies/${companyId}/fiscal-periods/${fiscalPeriodId}/transactions`);
+      const apiResponse = response.data;
 
-      if (!result.data || result.data.length === 0) {
-        throw new Error(
-          `No transactions found for company ${companyId}. Please ensure transaction data exists in the database. ` +
-          'Check tables: transactions, bank_statements, transaction_classifications'
-        );
-      }
+      // Transform ApiResponse to expected format
+      const result = {
+        data: apiResponse.data || [],
+        count: apiResponse.count || 0,
+        company_id: companyId,
+        timestamp: new Date(apiResponse.timestamp || Date.now()).getTime(),
+        note: apiResponse.message || 'Transactions loaded successfully'
+      };
 
+      // Don't throw error for empty data - that's a valid response
+      // The UI component will handle displaying empty state appropriately
       return result;
     } catch (error) {
       if (error instanceof AxiosError && error.response?.status === 404) {
@@ -532,7 +542,7 @@ class SystemApiService extends BaseApiService {
  * Classification Service - Handles transaction classification operations
  */
 class ClassificationApiService extends BaseApiService {
-  async initializeChartOfAccounts(companyId: number): Promise<string> {
+  async initializeChartOfAccounts(companyId: number): Promise<{success: boolean, message: string, data: unknown}> {
     try {
       const response = await this.client.post(`/v1/companies/${companyId}/classification/initialize-chart-of-accounts`);
       return response.data;
@@ -541,7 +551,7 @@ class ClassificationApiService extends BaseApiService {
     }
   }
 
-  async initializeTransactionMappingRules(companyId: number): Promise<string> {
+  async initializeTransactionMappingRules(companyId: number): Promise<{success: boolean, message: string, data: unknown}> {
     try {
       const response = await this.client.post(`/v1/companies/${companyId}/classification/initialize-mapping-rules`);
       return response.data;
@@ -550,7 +560,7 @@ class ClassificationApiService extends BaseApiService {
     }
   }
 
-  async performFullInitialization(companyId: number): Promise<string> {
+  async performFullInitialization(companyId: number): Promise<{success: boolean, message: string, data: unknown}> {
     try {
       const response = await this.client.post(`/v1/companies/${companyId}/classification/full-initialization`);
       return response.data;
@@ -559,7 +569,7 @@ class ClassificationApiService extends BaseApiService {
     }
   }
 
-  async autoClassifyTransactions(companyId: number): Promise<string> {
+  async autoClassifyTransactions(companyId: number): Promise<{success: boolean, message: string, data: unknown}> {
     try {
       const response = await this.client.post(`/v1/companies/${companyId}/classification/auto-classify`);
       return response.data;
@@ -568,7 +578,7 @@ class ClassificationApiService extends BaseApiService {
     }
   }
 
-  async syncJournalEntries(companyId: number): Promise<string> {
+  async syncJournalEntries(companyId: number): Promise<{success: boolean, message: string, data: unknown}> {
     try {
       const response = await this.client.post(`/v1/companies/${companyId}/classification/sync-journal-entries`);
       return response.data;
@@ -577,7 +587,7 @@ class ClassificationApiService extends BaseApiService {
     }
   }
 
-  async regenerateAllJournalEntries(companyId: number): Promise<string> {
+  async regenerateAllJournalEntries(companyId: number): Promise<{success: boolean, message: string, data: number}> {
     try {
       const response = await this.client.post(`/v1/companies/${companyId}/classification/regenerate-journal-entries`);
       return response.data;
@@ -586,7 +596,7 @@ class ClassificationApiService extends BaseApiService {
     }
   }
 
-  async getClassificationSummary(companyId: number): Promise<string> {
+  async getClassificationSummary(companyId: number): Promise<{success: boolean, message: string, data: string}> {
     try {
       const response = await this.client.get(`/v1/companies/${companyId}/classification/summary`);
       return response.data;
@@ -595,7 +605,7 @@ class ClassificationApiService extends BaseApiService {
     }
   }
 
-  async getUncategorizedTransactions(companyId: number): Promise<string> {
+  async getUncategorizedTransactions(companyId: number): Promise<{success: boolean, message: string, data: string}> {
     try {
       const response = await this.client.get(`/v1/companies/${companyId}/classification/uncategorized`);
       return response.data;
@@ -609,7 +619,7 @@ class ClassificationApiService extends BaseApiService {
  * Data Management Service - Handles data management operations
  */
 class DataManagementApiService extends BaseApiService {
-  async syncInvoiceJournalEntries(companyId: number): Promise<string> {
+  async syncInvoiceJournalEntries(companyId: number): Promise<{success: boolean, message: string, data: unknown}> {
     try {
       const response = await this.client.post(`/v1/companies/${companyId}/data-management/sync-invoice-journal-entries`);
       return response.data;
@@ -618,7 +628,7 @@ class DataManagementApiService extends BaseApiService {
     }
   }
 
-  async resetCompanyData(companyId: number, includeTransactions: boolean): Promise<string> {
+  async resetCompanyData(companyId: number, includeTransactions: boolean): Promise<{success: boolean, message: string, data: unknown}> {
     try {
       const response = await this.client.post(`/v1/companies/${companyId}/data-management/reset`, {
         includeTransactions
@@ -746,67 +756,121 @@ export class ApiService extends BaseApiService {
   }
 
   // Payroll methods
-  async getPayrollPeriods(companyId: number): Promise<any[]> {
+  async getPayrollPeriods(companyId: number): Promise<PayrollPeriod[]> {
     try {
-      const response = await this.client.get(`/v1/payroll/companies/${companyId}/periods`);
+      const response = await this.client.get<PayrollPeriod[]>(`/v1/payroll/periods?companyId=${companyId}`);
       return response.data;
     } catch (error) {
       this.handleError('Get payroll periods', error);
     }
   }
 
-  async processPayroll(payrollPeriodId: number): Promise<any> {
+  async processPayroll(payrollPeriodId: number): Promise<PayrollProcessingResult> {
     try {
-      const response = await this.client.post(`/v1/payroll/periods/${payrollPeriodId}/process`);
+      const response = await this.client.post<PayrollProcessingResult>(`/v1/payroll/process/${payrollPeriodId}`);
       return response.data;
     } catch (error) {
       this.handleError('Process payroll', error);
     }
   }
 
-  async generatePayslips(payrollPeriodId: number): Promise<any> {
+  async createPayrollPeriod(fiscalPeriod: Omit<FiscalPeriod, 'id' | 'createdAt' | 'createdBy' | 'updatedBy' | 'updatedAt'>): Promise<FiscalPeriod> {
     try {
-      const response = await this.client.post(`/v1/payroll/payslips/generate/${payrollPeriodId}`);
+      const response = await this.client.post<FiscalPeriod>('/v1/payroll/periods', fiscalPeriod);
       return response.data;
     } catch (error) {
-      this.handleError('Generate payslips', error);
+      this.handleError('Create payroll period', error);
     }
   }
 
   // Budget methods
-  async getBudgetsByCompany(companyId: number): Promise<any[]> {
+  async getBudgetsByCompany(companyId: number): Promise<Budget[]> {
     try {
-      const response = await this.client.get(`/v1/budgets/company/${companyId}`);
+      const response = await this.client.get<Budget[]>(`/v1/budgets/company/${companyId}`);
       return response.data;
     } catch (error) {
       this.handleError('Get budgets by company', error);
     }
   }
 
-  async getBudgetsByFiscalPeriod(fiscalPeriodId: number): Promise<any[]> {
+  async getBudgetsByFiscalPeriod(fiscalPeriodId: number): Promise<Budget[]> {
     try {
-      const response = await this.client.get(`/v1/budgets/fiscal-period/${fiscalPeriodId}`);
+      const response = await this.client.get<Budget[]>(`/v1/budgets/fiscal-period/${fiscalPeriodId}`);
       return response.data;
     } catch (error) {
       this.handleError('Get budgets by fiscal period', error);
     }
   }
 
-  async getBudgetVariance(budgetId: number): Promise<any> {
+  async getBudgetVariance(budgetId: number): Promise<BudgetVariance> {
     try {
-      const response = await this.client.get(`/v1/budgets/${budgetId}/variance`);
+      const response = await this.client.get<BudgetVariance>(`/v1/budgets/${budgetId}/variance`);
       return response.data;
     } catch (error) {
       this.handleError('Get budget variance', error);
     }
   }
 
-  async createBudget(budget: any): Promise<any> {
+  async createBudget(budget: Omit<Budget, 'id' | 'createdAt' | 'updatedAt'>): Promise<Budget> {
     try {
-      const response = await this.client.post('/v1/budgets', budget);
+      const response = await this.client.post<Budget>('/v1/budgets', budget);
       return response.data;
     } catch (error) {
       this.handleError('Create budget', error);
+    }
+  }
+
+  // Employee methods
+  async getEmployeesByCompany(companyId: number): Promise<Employee[]> {
+    try {
+      const response = await this.client.get<Employee[]>(`/v1/payroll/employees?companyId=${companyId}`);
+      return response.data;
+    } catch (error) {
+      this.handleError('Get employees by company', error);
+    }
+  }
+
+  async getActiveEmployeesByCompany(companyId: number): Promise<Employee[]> {
+    try {
+      const response = await this.client.get<Employee[]>(`/v1/payroll/employees?companyId=${companyId}&active=true`);
+      return response.data;
+    } catch (error) {
+      this.handleError('Get active employees by company', error);
+    }
+  }
+
+  async getEmployeeById(employeeId: number): Promise<Employee> {
+    try {
+      const response = await this.client.get<Employee>(`/v1/payroll/employees/${employeeId}`);
+      return response.data;
+    } catch (error) {
+      this.handleError('Get employee by ID', error);
+    }
+  }
+
+  async createEmployee(employee: Omit<Employee, 'id' | 'createdAt' | 'updatedAt'>): Promise<Employee> {
+    try {
+      const response = await this.client.post<Employee>('/v1/payroll/employees', employee);
+      return response.data;
+    } catch (error) {
+      this.handleError('Create employee', error);
+    }
+  }
+
+  async updateEmployee(employeeId: number, employee: Partial<Employee>): Promise<Employee> {
+    try {
+      const response = await this.client.put<Employee>(`/v1/payroll/employees/${employeeId}`, employee);
+      return response.data;
+    } catch (error) {
+      this.handleError('Update employee', error);
+    }
+  }
+
+  async deactivateEmployee(employeeId: number): Promise<void> {
+    try {
+      await this.client.delete(`/v1/payroll/employees/${employeeId}`);
+    } catch (error) {
+      this.handleError('Deactivate employee', error);
     }
   }
 }

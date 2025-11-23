@@ -30,8 +30,14 @@ import java.io.*;
 import java.nio.file.*;
 import java.util.*;
 import java.util.regex.*;
+import org.springframework.stereotype.Service;
+import jakarta.annotation.PostConstruct;
+import java.util.logging.Logger;
+import java.util.logging.Level;
 
+@Service
 public class SARSTaxCalculator {
+    private static final Logger LOGGER = Logger.getLogger(SARSTaxCalculator.class.getName());
     // SARS Tax Constants (2024/25 Tax Year)
     private static final double TAX_FREE_THRESHOLD = 5586.0;        // R5,586 annual tax-free allowance
     private static final double ANNUAL_SDL_THRESHOLD = 500000.0;    // R500,000 annual payroll threshold for SDL
@@ -60,6 +66,19 @@ public class SARSTaxCalculator {
     private static final int BRACKET_LIST_WIDTH = 50;
 
     private List<TaxBracket> taxBrackets = new ArrayList<>();
+
+    @PostConstruct
+    public void initializeTaxTables() {
+        try {
+            // Load tax tables from the PDF text file for accurate SARS 2026 calculations
+            String pdfTextPath = "input/PAYE-GEN-01-G01-A03-2026-Monthly-Tax-Deduction-Tables-External-Annexure.txt";
+            loadTaxTablesFromPDFText(pdfTextPath);
+            LOGGER.info("SARS Tax Calculator initialized with " + taxBrackets.size() + " tax brackets from official 2026 tables");
+        } catch (IOException e) {
+            LOGGER.log(Level.WARNING, "Failed to load SARS tax tables: " + e.getMessage() + " - using default calculations", e);
+            // Don't throw exception - allow service to start with empty brackets
+        }
+    }
 
     public static class TaxBracket {
         private double lower;

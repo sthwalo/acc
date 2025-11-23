@@ -29,12 +29,9 @@ package fin.service.spring;
 import fin.model.*;
 import fin.repository.AccountRepository;
 import fin.repository.BankTransactionRepository;
-import fin.repository.CompanyRepository;
-import fin.repository.FiscalPeriodRepository;
 import fin.util.SpringDebugger;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -45,21 +42,19 @@ import java.util.stream.Collectors;
 @Service
 public class SpringInteractiveClassificationService {
 
+    private static final int MAX_SUGGESTIONS = 5;
+    private static final int MAX_SIMILAR_TRANSACTIONS = 10;
+    private static final int MIN_KEYWORD_LENGTH = 3;
+
     private final BankTransactionRepository bankTransactionRepository;
     private final AccountRepository accountRepository;
-    private final CompanyRepository companyRepository;
-    private final FiscalPeriodRepository fiscalPeriodRepository;
     private final SpringDebugger debugger;
 
     public SpringInteractiveClassificationService(BankTransactionRepository bankTransactionRepository,
                                                 AccountRepository accountRepository,
-                                                CompanyRepository companyRepository,
-                                                FiscalPeriodRepository fiscalPeriodRepository,
                                                 SpringDebugger debugger) {
         this.bankTransactionRepository = bankTransactionRepository;
         this.accountRepository = accountRepository;
-        this.companyRepository = companyRepository;
-        this.fiscalPeriodRepository = fiscalPeriodRepository;
         this.debugger = debugger;
     }
 
@@ -68,6 +63,8 @@ public class SpringInteractiveClassificationService {
      */
     public List<BankTransaction> getUncategorizedTransactions(Long companyId, Long fiscalPeriodId) {
         debugger.logMethodEntry("SpringInteractiveClassificationService", "getUncategorizedTransactions", companyId, fiscalPeriodId);
+
+        validateCompanyAndFiscalPeriodIds(companyId, fiscalPeriodId);
 
         List<BankTransaction> transactions = bankTransactionRepository
             .findByCompanyIdAndFiscalPeriodIdAndAccountCodeIsNull(companyId, fiscalPeriodId);
@@ -84,13 +81,31 @@ public class SpringInteractiveClassificationService {
     public List<BankTransaction> getCategorizedTransactions(Long companyId, Long fiscalPeriodId) {
         debugger.logMethodEntry("SpringInteractiveClassificationService", "getCategorizedTransactions", companyId, fiscalPeriodId);
 
-        List<BankTransaction> transactions = bankTransactionRepository
-            .findByCompanyIdAndFiscalPeriodIdAndAccountCodeIsNotNull(companyId, fiscalPeriodId);
+        validateCompanyAndFiscalPeriodIds(companyId, fiscalPeriodId);
+
+        List<BankTransaction> allTransactions = bankTransactionRepository
+            .findByCompanyIdAndFiscalPeriodId(companyId, fiscalPeriodId);
+
+        List<BankTransaction> categorizedTransactions = allTransactions.stream()
+            .filter(tx -> tx.getAccountCode() != null && !tx.getAccountCode().trim().isEmpty())
+            .collect(Collectors.toList());
 
         debugger.logMethodExit("SpringInteractiveClassificationService", "getCategorizedTransactions",
-            String.format("Found %d categorized transactions", transactions.size()));
+            String.format("Found %d categorized transactions", categorizedTransactions.size()));
 
-        return transactions;
+        return categorizedTransactions;
+    }
+
+    /**
+     * Validate company and fiscal period IDs
+     */
+    private void validateCompanyAndFiscalPeriodIds(Long companyId, Long fiscalPeriodId) {
+        if (companyId == null || companyId <= 0) {
+            throw new IllegalArgumentException("Company ID must be a positive number");
+        }
+        if (fiscalPeriodId == null || fiscalPeriodId <= 0) {
+            throw new IllegalArgumentException("Fiscal period ID must be a positive number");
+        }
     }
 
     /**
@@ -100,14 +115,28 @@ public class SpringInteractiveClassificationService {
         debugger.logMethodEntry("SpringInteractiveClassificationService", "classifyTransaction",
             transactionId, accountCode, accountName, classifiedBy);
 
+        // Input validation
+        if (transactionId == null) {
+            throw new IllegalArgumentException("Transaction ID cannot be null");
+        }
+        if (accountCode == null || accountCode.trim().isEmpty()) {
+            throw new IllegalArgumentException("Account code cannot be null or empty");
+        }
+        if (accountName == null || accountName.trim().isEmpty()) {
+            throw new IllegalArgumentException("Account name cannot be null or empty");
+        }
+        if (classifiedBy == null || classifiedBy.trim().isEmpty()) {
+            throw new IllegalArgumentException("Classified by cannot be null or empty");
+        }
+
         BankTransaction transaction = bankTransactionRepository.findById(transactionId)
             .orElseThrow(() -> new IllegalArgumentException("Transaction not found: " + transactionId));
 
         // Update transaction classification
-        transaction.setAccountCode(accountCode);
-        transaction.setAccountName(accountName);
+        transaction.setAccountCode(accountCode.trim());
+        transaction.setAccountName(accountName.trim());
         transaction.setClassificationDate(java.time.LocalDateTime.now());
-        transaction.setClassifiedBy(classifiedBy);
+        transaction.setClassifiedBy(classifiedBy.trim());
 
         BankTransaction saved = bankTransactionRepository.save(transaction);
 
@@ -121,45 +150,56 @@ public class SpringInteractiveClassificationService {
     public List<AccountSuggestion> getAccountSuggestions(Long companyId, String transactionDescription) {
         debugger.logMethodEntry("SpringInteractiveClassificationService", "getAccountSuggestions", companyId, transactionDescription);
 
+        if (transactionDescription == null || transactionDescription.trim().isEmpty()) {
+            return getDefaultAccountSuggestions();
+        }
+
         List<Account> accounts = accountRepository.findByCompanyId(companyId);
         List<AccountSuggestion> suggestions = new ArrayList<>();
 
-        String lowerDescription = transactionDescription.toLowerCase();
+        String lowerDescription = transactionDescription.toLowerCase().trim();
 
-        // Simple keyword matching for suggestions
         for (Account account : accounts) {
-            if (account.getAccountName() != null) {
+            if (account.getAccountName() != null && suggestions.size() < MAX_SUGGESTIONS) {
                 String accountName = account.getAccountName().toLowerCase();
-                String[] accountWords = accountName.split(" ");
+                String matchedKeyword = findMatchingKeyword(lowerDescription, accountName);
 
-                for (String word : accountWords) {
-                    if (word.length() > 3 && lowerDescription.contains(word)) {
-                        suggestions.add(new AccountSuggestion(
-                            account.getAccountCode(),
-                            account.getAccountName(),
-                            "Keyword match: " + word
-                        ));
-                        break;
-                    }
-                }
-
-                if (suggestions.size() >= 5) { // Limit to 5 suggestions
-                    break;
+                if (matchedKeyword != null) {
+                    suggestions.add(new AccountSuggestion(
+                        account.getAccountCode(),
+                        account.getAccountName(),
+                        "Keyword match: " + matchedKeyword
+                    ));
                 }
             }
         }
 
-        // Add fallback suggestions if no matches
-        if (suggestions.isEmpty()) {
-            suggestions.add(new AccountSuggestion("8100", "Employee Costs", "General expense account"));
-            suggestions.add(new AccountSuggestion("4000", "Sales Revenue", "General revenue account"));
-            suggestions.add(new AccountSuggestion("5000", "Operating Expenses", "General operating costs"));
+        return suggestions.isEmpty() ? getDefaultAccountSuggestions() : suggestions;
+    }
+
+    /**
+     * Find matching keyword between transaction description and account name
+     */
+    private String findMatchingKeyword(String description, String accountName) {
+        String[] accountWords = accountName.split("\\s+");
+
+        for (String word : accountWords) {
+            if (word.length() >= MIN_KEYWORD_LENGTH && description.contains(word)) {
+                return word;
+            }
         }
+        return null;
+    }
 
-        debugger.logMethodExit("SpringInteractiveClassificationService", "getAccountSuggestions",
-            String.format("Found %d suggestions", suggestions.size()));
-
-        return suggestions;
+    /**
+     * Get default account suggestions when no matches are found
+     */
+    private List<AccountSuggestion> getDefaultAccountSuggestions() {
+        return Arrays.asList(
+            new AccountSuggestion("8100", "Employee Costs", "General expense account"),
+            new AccountSuggestion("4000", "Sales Revenue", "General revenue account"),
+            new AccountSuggestion("5000", "Operating Expenses", "General operating costs")
+        );
     }
 
     /**
@@ -169,8 +209,9 @@ public class SpringInteractiveClassificationService {
         debugger.logMethodEntry("SpringInteractiveClassificationService", "getClassificationSummary", companyId, fiscalPeriodId);
 
         List<BankTransaction> allTransactions = bankTransactionRepository.findByCompanyIdAndFiscalPeriodId(companyId, fiscalPeriodId);
-        List<BankTransaction> categorizedTransactions = bankTransactionRepository
-            .findByCompanyIdAndFiscalPeriodIdAndAccountCodeIsNotNull(companyId, fiscalPeriodId);
+        List<BankTransaction> categorizedTransactions = allTransactions.stream()
+            .filter(tx -> tx.getAccountCode() != null && !tx.getAccountCode().trim().isEmpty())
+            .collect(Collectors.toList());
 
         int total = allTransactions.size();
         int categorized = categorizedTransactions.size();
@@ -189,13 +230,18 @@ public class SpringInteractiveClassificationService {
     public List<BankTransaction> findSimilarTransactions(Long companyId, Long fiscalPeriodId, String pattern) {
         debugger.logMethodEntry("SpringInteractiveClassificationService", "findSimilarTransactions", companyId, fiscalPeriodId, pattern);
 
+        if (pattern == null || pattern.trim().isEmpty()) {
+            return new ArrayList<>();
+        }
+
         List<BankTransaction> uncategorized = bankTransactionRepository
             .findByCompanyIdAndFiscalPeriodIdAndAccountCodeIsNull(companyId, fiscalPeriodId);
 
-        String lowerPattern = pattern.toLowerCase();
+        String lowerPattern = pattern.toLowerCase().trim();
         List<BankTransaction> similar = uncategorized.stream()
-            .filter(tx -> tx.getDetails() != null && tx.getDetails().toLowerCase().contains(lowerPattern))
-            .limit(10) // Limit results
+            .filter(tx -> tx.getDetails() != null &&
+                         tx.getDetails().toLowerCase().contains(lowerPattern))
+            .limit(MAX_SIMILAR_TRANSACTIONS)
             .collect(Collectors.toList());
 
         debugger.logMethodExit("SpringInteractiveClassificationService", "findSimilarTransactions",
@@ -211,21 +257,43 @@ public class SpringInteractiveClassificationService {
         debugger.logMethodEntry("SpringInteractiveClassificationService", "batchClassifyTransactions",
             transactionIds.size(), accountCode, accountName, classifiedBy);
 
-        int classified = 0;
+        if (transactionIds == null || transactionIds.isEmpty()) {
+            debugger.logMethodExit("SpringInteractiveClassificationService", "batchClassifyTransactions",
+                "No transaction IDs provided");
+            return 0;
+        }
+
+        // Validate input parameters
+        if (accountCode == null || accountCode.trim().isEmpty()) {
+            throw new IllegalArgumentException("Account code cannot be null or empty");
+        }
+        if (accountName == null || accountName.trim().isEmpty()) {
+            throw new IllegalArgumentException("Account name cannot be null or empty");
+        }
+        if (classifiedBy == null || classifiedBy.trim().isEmpty()) {
+            throw new IllegalArgumentException("Classified by cannot be null or empty");
+        }
+
+        int successful = 0;
+        List<String> errors = new ArrayList<>();
+
         for (Long transactionId : transactionIds) {
             try {
                 classifyTransaction(transactionId, accountCode, accountName, classifiedBy);
-                classified++;
+                successful++;
             } catch (Exception e) {
+                String errorMsg = String.format("Failed to classify transaction %d: %s", transactionId, e.getMessage());
+                errors.add(errorMsg);
                 debugger.logException("Batch Classification", "SpringInteractiveClassificationService",
                     "batchClassifyTransactions", e, transactionId);
             }
         }
 
         debugger.logMethodExit("SpringInteractiveClassificationService", "batchClassifyTransactions",
-            String.format("Classified %d out of %d transactions", classified, transactionIds.size()));
+            String.format("Batch classification completed: %d successful, %d failed out of %d total",
+                successful, errors.size(), transactionIds.size()));
 
-        return classified;
+        return successful;
     }
 
     /**

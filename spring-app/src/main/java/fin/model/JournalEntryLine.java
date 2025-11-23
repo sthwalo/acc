@@ -55,6 +55,9 @@ public class JournalEntryLine {
     @Column(name = "manual_invoice_id")
     private Long manualInvoiceId;
     
+    @Column(name = "source_transaction_id")
+    private Long sourceTransactionId;
+    
     @Column(name = "line_number")
     private Integer lineNumber;
     
@@ -102,6 +105,14 @@ public class JournalEntryLine {
 
     public void setManualInvoiceId(Long manualInvoiceId) {
         this.manualInvoiceId = manualInvoiceId;
+    }
+
+    public Long getSourceTransactionId() {
+        return sourceTransactionId;
+    }
+
+    public void setSourceTransactionId(Long sourceTransactionId) {
+        this.sourceTransactionId = sourceTransactionId;
     }
 
     public Integer getLineNumber() {

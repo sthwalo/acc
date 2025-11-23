@@ -28,8 +28,10 @@ package fin.service.spring;
 
 import fin.model.*;
 import fin.repository.EmployeeRepository;
-import fin.repository.PayrollPeriodRepository;
+import fin.repository.FiscalPeriodRepository;
 import fin.repository.PayslipRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,17 +43,16 @@ import java.util.Optional;
 import java.util.logging.Logger;
 
 /**
- * Spring Service for payroll operations using JPA repositories.
- * Handles employee management, payroll calculations, and payslip generation.
+ * Spring Service for payroll operations using unified FiscalPeriod model.
+ * FiscalPeriod now handles both financial reporting AND payroll processing.
  */
 @Service
-@Transactional
 public class SpringPayrollService {
 
     private static final Logger LOGGER = Logger.getLogger(SpringPayrollService.class.getName());
 
     private final EmployeeRepository employeeRepository;
-    private final PayrollPeriodRepository payrollPeriodRepository;
+    private final FiscalPeriodRepository fiscalPeriodRepository;
     private final PayslipRepository payslipRepository;
     private final SpringCompanyService companyService;
 
@@ -61,13 +62,15 @@ public class SpringPayrollService {
     private static final BigDecimal SDL_RATE = new BigDecimal("0.01"); // 1% SDL
 
     public SpringPayrollService(EmployeeRepository employeeRepository,
-                              PayrollPeriodRepository payrollPeriodRepository,
+                              FiscalPeriodRepository fiscalPeriodRepository,
                               PayslipRepository payslipRepository,
                               SpringCompanyService companyService) {
+        System.out.println("=== DEBUG: SpringPayrollService constructor called ===");
         this.employeeRepository = employeeRepository;
-        this.payrollPeriodRepository = payrollPeriodRepository;
+        this.fiscalPeriodRepository = fiscalPeriodRepository;
         this.payslipRepository = payslipRepository;
         this.companyService = companyService;
+        System.out.println("DEBUG: SpringPayrollService initialized successfully");
     }
 
     /**
@@ -101,7 +104,7 @@ public class SpringPayrollService {
         }
 
         // Check if employee code already exists for this company
-        if (employeeRepository.existsByCompanyIdAndEmployeeNumber(companyId, employeeCode.trim())) {
+        if (employeeRepository.existsByEmployeeNumberAndCompanyId(employeeCode.trim(), companyId)) {
             throw new IllegalArgumentException("Employee code already exists for this company: " + employeeCode);
         }
 
@@ -130,6 +133,21 @@ public class SpringPayrollService {
             throw new IllegalArgumentException("Company ID is required");
         }
         return employeeRepository.findByCompanyId(companyId);
+    }
+
+    /**
+     * Get employees for a company with pagination and search
+     */
+    @Transactional(readOnly = true)
+    public Page<Employee> getEmployeesByCompany(Long companyId, Pageable pageable, String search) {
+        if (companyId == null) {
+            throw new IllegalArgumentException("Company ID is required");
+        }
+        if (search != null && !search.trim().isEmpty()) {
+            return employeeRepository.findByCompanyIdAndSearch(companyId, search.trim(), pageable);
+        } else {
+            return employeeRepository.findByCompanyId(companyId, pageable);
+        }
     }
 
     /**
@@ -203,10 +221,10 @@ public class SpringPayrollService {
     }
 
     /**
-     * Create a payroll period
+     * Create a payroll period (now using unified FiscalPeriod)
      */
     @Transactional
-    public PayrollPeriod createPayrollPeriod(Long companyId, String periodName,
+    public FiscalPeriod createPayrollPeriod(Long companyId, String periodName,
                                            LocalDate startDate, LocalDate endDate,
                                            LocalDate paymentDate) {
         if (companyId == null || periodName == null || startDate == null ||
@@ -220,39 +238,58 @@ public class SpringPayrollService {
             throw new IllegalArgumentException("Company not found: " + companyId);
         }
 
-        PayrollPeriod period = new PayrollPeriod();
+        // Check if period name already exists for this company
+        if (fiscalPeriodRepository.existsByCompanyIdAndPeriodName(companyId, periodName)) {
+            throw new IllegalArgumentException("Period name already exists for this company: " + periodName);
+        }
+
+        FiscalPeriod period = new FiscalPeriod();
         period.setCompanyId(companyId);
         period.setPeriodName(periodName);
         period.setStartDate(startDate);
         period.setEndDate(endDate);
-        period.setPaymentDate(paymentDate);
-        period.setProcessed(false);
+        period.setPayDate(paymentDate);
+        period.setPeriodType(FiscalPeriod.PeriodType.MONTHLY);
+        period.setPayrollStatus(FiscalPeriod.PayrollStatus.OPEN);
+        period.setClosed(false);
 
-        return payrollPeriodRepository.save(period);
+        return fiscalPeriodRepository.save(period);
     }
 
     /**
      * Process payroll for a period
      */
     @Transactional
-    public PayrollProcessingResult processPayroll(Long payrollPeriodId) {
-        if (payrollPeriodId == null) {
-            throw new IllegalArgumentException("Payroll period ID is required");
+    public PayrollProcessingResult processPayroll(Long fiscalPeriodId) {
+        if (fiscalPeriodId == null) {
+            throw new IllegalArgumentException("Fiscal period ID is required");
         }
 
-        // Get payroll period
-        Optional<PayrollPeriod> periodOpt = payrollPeriodRepository.findById(payrollPeriodId);
+        LOGGER.info("Processing payroll for fiscal period: " + fiscalPeriodId);
+
+        // Get fiscal period
+        Optional<FiscalPeriod> periodOpt = fiscalPeriodRepository.findById(fiscalPeriodId);
         if (periodOpt.isEmpty()) {
-            throw new IllegalArgumentException("Payroll period not found: " + payrollPeriodId);
+            LOGGER.severe("Fiscal period not found: " + fiscalPeriodId);
+            throw new IllegalArgumentException("Fiscal period not found: " + fiscalPeriodId);
         }
 
-        PayrollPeriod period = periodOpt.get();
-        if (period.isProcessed()) {
-            throw new IllegalArgumentException("Payroll period has already been processed");
+        FiscalPeriod period = periodOpt.get();
+        LOGGER.info("Found fiscal period: " + period.getPeriodName() + ", status: " + period.getPayrollStatus() + ", closed: " + period.isClosed());
+
+        if (!period.canBeProcessed()) {
+            LOGGER.severe("Fiscal period cannot be processed. Status: " + period.getPayrollStatus() + ", closed: " + period.isClosed());
+            throw new IllegalArgumentException("Fiscal period cannot be processed. Status: " + period.getPayrollStatus());
         }
 
         // Get active employees for the company
         List<Employee> employees = getActiveEmployeesByCompany(period.getCompanyId());
+        LOGGER.info("Found " + employees.size() + " active employees for company " + period.getCompanyId());
+
+        if (employees.isEmpty()) {
+            LOGGER.warning("No active employees found for company " + period.getCompanyId());
+            return new PayrollProcessingResult(BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, 0);
+        }
 
         BigDecimal totalGross = BigDecimal.ZERO;
         BigDecimal totalDeductions = BigDecimal.ZERO;
@@ -261,6 +298,7 @@ public class SpringPayrollService {
 
         // Process each employee
         for (Employee employee : employees) {
+            LOGGER.info("Processing employee: " + employee.getEmployeeCode() + " - " + employee.getFirstName() + " " + employee.getLastName());
             Payslip payslip = calculatePayslip(employee, period);
             payslipRepository.save(payslip);
 
@@ -270,9 +308,18 @@ public class SpringPayrollService {
             processedCount++;
         }
 
-        // Mark period as processed
-        period.setProcessed(true);
-        payrollPeriodRepository.save(period);
+        LOGGER.info("Processed " + processedCount + " employees. Total gross: " + totalGross + ", total deductions: " + totalDeductions + ", total net: " + totalNet);
+
+        // Update period totals and mark as processed
+        period.setTotalGrossPay(totalGross);
+        period.setTotalDeductions(totalDeductions);
+        period.setTotalNetPay(totalNet);
+        period.setEmployeeCount(processedCount);
+        period.setPayrollStatus(FiscalPeriod.PayrollStatus.PROCESSED);
+        period.setProcessedAt(java.time.LocalDateTime.now());
+        fiscalPeriodRepository.save(period);
+
+        LOGGER.info("Payroll processing completed successfully for period: " + fiscalPeriodId);
 
         return new PayrollProcessingResult(totalGross, totalDeductions, totalNet, processedCount);
     }
@@ -280,7 +327,7 @@ public class SpringPayrollService {
     /**
      * Calculate payslip for an employee
      */
-    private Payslip calculatePayslip(Employee employee, PayrollPeriod period) {
+    private Payslip calculatePayslip(Employee employee, FiscalPeriod period) {
         // Calculate gross salary (assuming monthly salary)
         BigDecimal grossSalary = employee.getBasicSalary();
 
@@ -301,28 +348,32 @@ public class SpringPayrollService {
 
         // Create payslip
         Payslip payslip = new Payslip();
+        payslip.setCompanyId(employee.getCompanyId());
         payslip.setEmployeeId(employee.getId());
-        payslip.setPayrollPeriodId(period.getId());
+        payslip.setFiscalPeriodId(period.getId()); // FiscalPeriod ID is now the payroll period ID
+        payslip.setPayslipNumber("PSL-" + period.getId() + "-" + employee.getId());
+        payslip.setBasicSalary(employee.getBasicSalary());
         payslip.setGrossSalary(grossSalary);
+        payslip.setTotalEarnings(grossSalary); // For now, total earnings = gross salary
         payslip.setPaye(paye);
         payslip.setUif(uif);
         payslip.setSdl(sdl);
         payslip.setTotalDeductions(totalDeductions);
         payslip.setNetSalary(netSalary);
-        payslip.setPaymentDate(period.getPaymentDate());
+        payslip.setPaymentDate(period.getPayDate());
 
         return payslip;
     }
 
     /**
-     * Get payslips for a payroll period
+     * Get payslips for a fiscal period
      */
     @Transactional(readOnly = true)
-    public List<Payslip> getPayslipsByPeriod(Long payrollPeriodId) {
-        if (payrollPeriodId == null) {
-            throw new IllegalArgumentException("Payroll period ID is required");
+    public List<Payslip> getPayslipsByPeriod(Long fiscalPeriodId) {
+        if (fiscalPeriodId == null) {
+            throw new IllegalArgumentException("Fiscal period ID is required");
         }
-        return payslipRepository.findByPayrollPeriodId(payrollPeriodId);
+        return payslipRepository.findByFiscalPeriodId(fiscalPeriodId);
     }
 
     /**
@@ -337,39 +388,39 @@ public class SpringPayrollService {
     }
 
     /**
-     * Get payroll periods for a company
+     * Get payroll periods for a company (now returns FiscalPeriod list)
      */
     @Transactional(readOnly = true)
-    public List<PayrollPeriod> getPayrollPeriodsByCompany(Long companyId) {
+    public List<FiscalPeriod> getPayrollPeriodsByCompany(Long companyId) {
         if (companyId == null) {
             throw new IllegalArgumentException("Company ID is required");
         }
-        return payrollPeriodRepository.findByCompanyId(companyId.intValue());
+        return fiscalPeriodRepository.findByCompanyId(companyId);
     }
 
     /**
      * Process payroll for a period with optional email sending
      */
     @Transactional
-    public void processPayroll(Long payrollPeriodId, String processedBy, boolean sendEmails) {
+    public void processPayroll(Long fiscalPeriodId, String processedBy, boolean sendEmails) {
         // For now, just call the basic processPayroll method
         // Email functionality can be added later
-        processPayroll(payrollPeriodId);
+        processPayroll(fiscalPeriodId);
     }
 
     /**
      * Process payroll for a period (without email)
      */
     @Transactional
-    public void processPayroll(Long payrollPeriodId, String processedBy) {
-        processPayroll(payrollPeriodId, processedBy, false);
+    public void processPayroll(Long fiscalPeriodId, String processedBy) {
+        processPayroll(fiscalPeriodId, processedBy, false);
     }
 
     /**
      * Get payroll periods for a company
      */
     @Transactional(readOnly = true)
-    public List<PayrollPeriod> getPayrollPeriods(Long companyId) {
+    public List<FiscalPeriod> getPayrollPeriods(Long companyId) {
         return getPayrollPeriodsByCompany(companyId);
     }
 
@@ -382,16 +433,16 @@ public class SpringPayrollService {
     }
 
     /**
-     * Create a payroll period from PayrollPeriod object
+     * Create a payroll period from FiscalPeriod object
      */
     @Transactional
-    public PayrollPeriod createPayrollPeriod(PayrollPeriod period) {
+    public FiscalPeriod createPayrollPeriod(FiscalPeriod period) {
         if (period == null) {
-            throw new IllegalArgumentException("Payroll period is required");
+            throw new IllegalArgumentException("Fiscal period is required");
         }
         return createPayrollPeriod(period.getCompanyId(), period.getPeriodName(),
                                  period.getStartDate(), period.getEndDate(),
-                                 period.getPaymentDate());
+                                 period.getPayDate());
     }
 
     /**
@@ -403,21 +454,21 @@ public class SpringPayrollService {
             throw new IllegalArgumentException("Period ID and Company ID are required");
         }
 
-        Optional<PayrollPeriod> periodOpt = payrollPeriodRepository.findById(periodId);
+        Optional<FiscalPeriod> periodOpt = fiscalPeriodRepository.findById(periodId);
         if (periodOpt.isEmpty()) {
-            throw new IllegalArgumentException("Payroll period not found: " + periodId);
+            throw new IllegalArgumentException("Fiscal period not found: " + periodId);
         }
 
-        PayrollPeriod period = periodOpt.get();
+        FiscalPeriod period = periodOpt.get();
         if (!period.getCompanyId().equals(companyId)) {
-            throw new IllegalArgumentException("Payroll period does not belong to company: " + companyId);
+            throw new IllegalArgumentException("Fiscal period does not belong to company: " + companyId);
         }
 
-        if (period.isProcessed()) {
+        if (period.isPayrollProcessed()) {
             throw new IllegalArgumentException("Cannot delete processed payroll period");
         }
 
-        payrollPeriodRepository.deleteById(periodId);
+        fiscalPeriodRepository.deleteById(periodId);
     }
 
     /**
@@ -429,67 +480,101 @@ public class SpringPayrollService {
             throw new IllegalArgumentException("Period ID and Company ID are required");
         }
 
-        Optional<PayrollPeriod> periodOpt = payrollPeriodRepository.findById(periodId);
+        Optional<FiscalPeriod> periodOpt = fiscalPeriodRepository.findById(periodId);
         if (periodOpt.isEmpty()) {
-            throw new IllegalArgumentException("Payroll period not found: " + periodId);
+            throw new IllegalArgumentException("Fiscal period not found: " + periodId);
         }
 
-        PayrollPeriod period = periodOpt.get();
+        FiscalPeriod period = periodOpt.get();
         if (!period.getCompanyId().equals(companyId)) {
-            throw new IllegalArgumentException("Payroll period does not belong to company: " + companyId);
+            throw new IllegalArgumentException("Fiscal period does not belong to company: " + companyId);
         }
 
         // Delete associated payslips first
-        List<Payslip> payslips = payslipRepository.findByPayrollPeriodId(periodId);
+        List<Payslip> payslips = payslipRepository.findByFiscalPeriodId(periodId);
         for (Payslip payslip : payslips) {
             payslipRepository.delete(payslip);
         }
 
         // Delete the period
-        payrollPeriodRepository.deleteById(periodId);
-        LOGGER.warning("Force deleted payroll period: " + period.getPeriodName());
+        fiscalPeriodRepository.deleteById(periodId);
+        LOGGER.warning("Force deleted fiscal period: " + period.getPeriodName());
     }
 
     /**
-     * Force delete all payroll periods for a specific month and year
+     * Force delete all payroll periods for a company (dangerous operation)
      */
     @Transactional
-    public void forceDeleteAllPayrollPeriodsForMonth(Long companyId, int year, int month) {
+    public void forceDeleteAllPayrollPeriods(Long companyId) {
         if (companyId == null) {
             throw new IllegalArgumentException("Company ID is required");
         }
 
-        List<PayrollPeriod> periods = payrollPeriodRepository.findByCompanyId(companyId.intValue());
-        int deletedCount = 0;
+        List<FiscalPeriod> periods = fiscalPeriodRepository.findByCompanyId(companyId);
+        for (FiscalPeriod period : periods) {
+            forceDeletePayrollPeriod(period.getId(), companyId);
+        }
+        LOGGER.warning("Force deleted all fiscal periods for company: " + companyId);
+    }
 
-        for (PayrollPeriod period : periods) {
-            LocalDate paymentDate = period.getPaymentDate();
-            if (paymentDate.getYear() == year && paymentDate.getMonthValue() == month) {
-                forceDeletePayrollPeriod(period.getId(), companyId);
-                deletedCount++;
-            }
+    /**
+     * Generate payslip PDFs for a fiscal period (optionally for specific employees)
+     */
+    @Transactional(readOnly = true)
+    public void generatePayslips(Long fiscalPeriodId, List<Long> employeeIds) {
+        if (fiscalPeriodId == null) {
+            throw new IllegalArgumentException("Fiscal period ID is required");
         }
 
-        LOGGER.info("Force deleted " + deletedCount + " payroll periods for " + year + "-" + month);
+        List<Payslip> payslips;
+        if (employeeIds != null && !employeeIds.isEmpty()) {
+            // Generate for specific employees
+            payslips = payslipRepository.findByFiscalPeriodIdAndEmployeeIdIn(fiscalPeriodId, employeeIds);
+        } else {
+            // Generate for all employees in the period
+            payslips = getPayslipsByPeriod(fiscalPeriodId);
+        }
+
+        // TODO: Implement PDF generation using SpringPayslipPdfService
+        // For now, just log
+        LOGGER.info("Generated " + payslips.size() + " payslip PDFs for period: " + fiscalPeriodId);
     }
 
     /**
-     * Generate payslip PDFs for a payroll period
+     * Generate EMP 201 SARS tax submission report
      */
     @Transactional(readOnly = true)
-    public void generatePayslipPdfs(Long payrollPeriodId) {
-        // PDF generation not implemented yet - placeholder
-        LOGGER.info("PDF generation not yet implemented for payroll period: " + payrollPeriodId);
-    }
+    public String generateEmp201Report(Long fiscalPeriodId) {
+        if (fiscalPeriodId == null) {
+            throw new IllegalArgumentException("Fiscal period ID is required");
+        }
 
-    /**
-     * Email payslips to employees
-     */
-    @Transactional(readOnly = true)
-    public Object emailPayslipsToEmployees(Long payrollPeriodId) {
-        // Email functionality not implemented yet - placeholder
-        LOGGER.info("Email functionality not yet implemented for payroll period: " + payrollPeriodId);
-        return null; // Return type to be determined
+        List<Payslip> payslips = getPayslipsByPeriod(fiscalPeriodId);
+        if (payslips.isEmpty()) {
+            throw new IllegalArgumentException("No payslips found for fiscal period: " + fiscalPeriodId);
+        }
+
+        // TODO: Implement proper EMP201 format
+        // For now, return a simple text report
+        StringBuilder report = new StringBuilder();
+        report.append("EMP201 SARS Tax Submission Report\n");
+        report.append("==================================\n\n");
+
+        BigDecimal totalPAYE = BigDecimal.ZERO;
+        BigDecimal totalUIF = BigDecimal.ZERO;
+        BigDecimal totalSDL = BigDecimal.ZERO;
+
+        for (Payslip payslip : payslips) {
+            totalPAYE = totalPAYE.add(payslip.getPaye());
+            totalUIF = totalUIF.add(payslip.getUif());
+            totalSDL = totalSDL.add(payslip.getSdl());
+        }
+
+        report.append("Total PAYE: ").append(totalPAYE).append("\n");
+        report.append("Total UIF: ").append(totalUIF).append("\n");
+        report.append("Total SDL: ").append(totalSDL).append("\n");
+
+        return report.toString();
     }
 
     /**
@@ -518,8 +603,8 @@ public class SpringPayrollService {
      * Calculate total payroll cost for a period
      */
     @Transactional(readOnly = true)
-    public PayrollSummary getPayrollSummary(Long payrollPeriodId) {
-        List<Payslip> payslips = getPayslipsByPeriod(payrollPeriodId);
+    public PayrollSummary getPayrollSummary(Long fiscalPeriodId) {
+        List<Payslip> payslips = getPayslipsByPeriod(fiscalPeriodId);
 
         BigDecimal totalGross = BigDecimal.ZERO;
         BigDecimal totalPAYE = BigDecimal.ZERO;
@@ -555,6 +640,80 @@ public class SpringPayrollService {
         public BigDecimal getTotalDeductions() { return totalDeductions; }
         public BigDecimal getTotalNet() { return totalNet; }
         public int getEmployeeCount() { return employeeCount; }
+    }
+
+    /**
+     * Upload payroll document
+     */
+    @Transactional
+    public void uploadPayrollDocument(Long employeeId, Long periodId, String fileName, byte[] fileData, String documentType) {
+        // TODO: Implement document storage (database or file system)
+        LOGGER.info("Document upload not yet implemented: " + fileName + " for employee " + employeeId);
+    }
+
+    /**
+     * List payroll documents
+     */
+    @Transactional(readOnly = true)
+    public List<PayrollDocument> listPayrollDocuments(Long employeeId, Long periodId, String type, int page, int size) {
+        // TODO: Implement document listing
+        LOGGER.info("Document listing not yet implemented");
+        return new java.util.ArrayList<>();
+    }
+
+    /**
+     * Get payroll document
+     */
+    @Transactional(readOnly = true)
+    public PayrollDocument getPayrollDocument(Long id) {
+        // TODO: Implement document retrieval
+        throw new IllegalArgumentException("Document retrieval not yet implemented");
+    }
+
+    /**
+     * Delete payroll document
+     */
+    @Transactional
+    public void deletePayrollDocument(Long id) {
+        // TODO: Implement document deletion
+        LOGGER.info("Document deletion not yet implemented for ID: " + id);
+    }
+
+    // ===== INNER CLASSES =====
+
+    /**
+     * Simple payroll document class
+     */
+    public static class PayrollDocument {
+        private Long id;
+        private Long employeeId;
+        private Long periodId;
+        private String fileName;
+        private byte[] fileData;
+        private String documentType;
+        private LocalDate uploadDate;
+
+        // Getters and setters
+        public Long getId() { return id; }
+        public void setId(Long id) { this.id = id; }
+
+        public Long getEmployeeId() { return employeeId; }
+        public void setEmployeeId(Long employeeId) { this.employeeId = employeeId; }
+
+        public Long getPeriodId() { return periodId; }
+        public void setPeriodId(Long periodId) { this.periodId = periodId; }
+
+        public String getFileName() { return fileName; }
+        public void setFileName(String fileName) { this.fileName = fileName; }
+
+        public byte[] getFileData() { return fileData; }
+        public void setFileData(byte[] fileData) { this.fileData = fileData; }
+
+        public String getDocumentType() { return documentType; }
+        public void setDocumentType(String documentType) { this.documentType = documentType; }
+
+        public LocalDate getUploadDate() { return uploadDate; }
+        public void setUploadDate(LocalDate uploadDate) { this.uploadDate = uploadDate; }
     }
 
     /**

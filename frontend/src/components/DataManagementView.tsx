@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Database, Edit, Trash2, Plus, Save, X, AlertCircle, CheckCircle, Calendar, Settings, FileText, Receipt, FileCheck, BookOpen, AlertTriangle, History, RotateCcw, Download, Loader } from 'lucide-react';
 import { useApi } from '../hooks/useApi';
-import type { Company, Transaction, FiscalPeriod, ApiTransaction } from '../types/api';
+import ApiMessageBanner from './shared/ApiMessageBanner';
+import type { Company, Transaction, FiscalPeriod, ApiTransaction, ApiError } from '../types/api';
 
 interface DataManagementViewProps {
   selectedCompany: Company;
@@ -10,15 +11,6 @@ interface DataManagementViewProps {
 interface EditableTransaction extends Transaction {
   isEditing?: boolean;
   originalData?: Transaction;
-}
-
-interface ApiError {
-  response?: {
-    data?: {
-      message?: string;
-    };
-  };
-  message?: string;
 }
 
 interface MenuItem {
@@ -40,6 +32,7 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
   const [selectedPeriod, setSelectedPeriod] = useState<FiscalPeriod | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [apiMessage, setApiMessage] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [editingTransaction, setEditingTransaction] = useState<EditableTransaction | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -53,7 +46,15 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
 
     try {
       const response = await action();
-      setOperationResult({ success: true, message: String(response) || `${operation} completed successfully` });
+      
+      // Handle structured API responses
+      if (response && typeof response === 'object' && 'message' in response) {
+        const apiResponse = response as { success: boolean; message: string; data?: unknown };
+        setOperationResult({ success: apiResponse.success ?? true, message: apiResponse.message });
+      } else {
+        // Handle plain string responses (legacy)
+        setOperationResult({ success: true, message: String(response) || `${operation} completed successfully` });
+      }
     } catch (error: unknown) {
       const apiError = error as ApiError;
       setOperationResult({
@@ -275,6 +276,7 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
     try {
       setIsLoading(true);
       setError(null);
+      setApiMessage(null);
       const result = await api.transactions.getTransactions(Number(selectedCompany.id), selectedPeriod.id);
       const mappedTransactions: Transaction[] = result.data.map((apiTransaction: ApiTransaction) => ({
         id: apiTransaction.id,
@@ -289,8 +291,27 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
         created_at: apiTransaction.createdAt
       }));
       setTransactions(mappedTransactions.map(t => ({ ...t, isEditing: false })));
+      // Show any API note/message returned by backend
+      if (result && typeof result === 'object' && 'note' in result && typeof result.note === 'string') {
+        setApiMessage(result.note);
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load transactions');
+      // Extract error message where possible
+      let message = 'Failed to load transactions';
+      try {
+        const anyErr: unknown = err;
+        if (anyErr && typeof anyErr === 'object' && 'response' in anyErr) {
+          const axiosErr = anyErr as { response?: { data?: { message?: string } } };
+          if (axiosErr.response?.data?.message) {
+            message = axiosErr.response.data.message;
+          }
+        } else if (anyErr && typeof anyErr === 'object' && 'message' in anyErr && typeof anyErr.message === 'string') {
+          message = anyErr.message;
+        }
+      } catch {
+        // ignore parsing error
+      }
+      setError(message);
     } finally {
       setIsLoading(false);
     }
@@ -455,6 +476,9 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
         <h2>Data Management</h2>
         <p>Manual data entry, corrections, and audit trails for {selectedCompany.name}</p>
       </div>
+      <ApiMessageBanner message={apiMessage} type="info" />
+      <ApiMessageBanner message={error} type="error" />
+      <ApiMessageBanner message={success} type="success" />
 
       {/* Tab Navigation */}
       <div className="tab-navigation">
@@ -569,20 +593,6 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
               ))}
             </select>
           </div>
-
-          {error && (
-            <div className="alert alert-error">
-              <AlertCircle size={20} />
-              <span>{error}</span>
-            </div>
-          )}
-
-          {success && (
-            <div className="alert alert-success">
-              <CheckCircle size={20} />
-              <span>{success}</span>
-            </div>
-          )}
 
           {!selectedPeriod && fiscalPeriods.length > 0 && (
             <div className="alert alert-info">
@@ -737,7 +747,7 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
               <div className="empty-state">
                 <Database size={48} />
                 <h3>No transactions found</h3>
-                <p>There are no transactions to manage for this company.</p>
+                <p>{apiMessage || 'There are no transactions to manage for this company.'}</p>
               </div>
             )}
           </div>

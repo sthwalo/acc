@@ -11,6 +11,7 @@ import GenerateReportsView from './components/GenerateReportsView';
 import DataManagementView from './components/DataManagementView';
 import PayrollManagementView from './components/PayrollManagementView';
 import BudgetManagementView from './components/BudgetManagementView';
+import EmployeeManagementView from './components/EmployeeManagementView';
 import DepreciationCalculatorView from './components/DepreciationCalculatorView';
 import CurrentTimeView from './components/CurrentTimeView';
 import SystemLogsView from './components/SystemLogsView';
@@ -18,7 +19,7 @@ import Login from './components/auth/Login';
 import Register from './components/auth/Register';
 import './App.css';
 
-type View = 'companies' | 'fiscal-periods' | 'upload' | 'transactions' | 'generate-reports' | 'data-management' | 'payroll-management' | 'budget-management' | 'depreciation-calculator' | 'current-time' | 'system-logs';
+type View = 'companies' | 'fiscal-periods' | 'upload' | 'transactions' | 'generate-reports' | 'data-management' | 'payroll-management' | 'budget-management' | 'employee-management' | 'depreciation-calculator' | 'current-time' | 'system-logs';
 type AuthView = 'login' | 'register';
 
 function App() {
@@ -66,6 +67,7 @@ function App() {
     { id: 'generate-reports' as View, label: 'Generate Reports', icon: FileText },
     { id: 'data-management' as View, label: 'Data Management', icon: Database },
     { id: 'payroll-management' as View, label: 'Payroll Management', icon: Calculator },
+    { id: 'employee-management' as View, label: 'Employee Management', icon: User },
     { id: 'budget-management' as View, label: 'Budget Management', icon: Settings },
     { id: 'depreciation-calculator' as View, label: 'Depreciation Calculator', icon: Calculator },
     { id: 'current-time' as View, label: 'Show current time', icon: Clock },
@@ -153,12 +155,25 @@ function App() {
         );
       case 'payroll-management':
         return selectedCompany ? (
-          <PayrollManagementView selectedCompany={selectedCompany} />
+          <PayrollManagementView 
+            selectedCompany={selectedCompany} 
+            onViewChange={setCurrentView}
+          />
         ) : (
           <div className="empty-state">
             <Building2 size={48} />
             <h3>Please select a company first</h3>
             <p>Choose a company from the Company Setup view to manage payroll.</p>
+          </div>
+        );
+      case 'employee-management':
+        return selectedCompany ? (
+          <EmployeeManagementView selectedCompany={selectedCompany} />
+        ) : (
+          <div className="empty-state">
+            <Building2 size={48} />
+            <h3>Please select a company first</h3>
+            <p>Choose a company from the Company Setup view to manage employees.</p>
           </div>
         );
       case 'budget-management':

@@ -15,6 +15,8 @@
 package fin.repository;
 
 import fin.model.Employee;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -76,7 +78,18 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
     List<Employee> findActiveEmployeesWithUifNumbers(@Param("companyId") Long companyId);
 
     /**
-     * Check if employee number exists for company
+     * Find all employees for a company with pagination
      */
-    boolean existsByCompanyIdAndEmployeeNumber(Long companyId, String employeeNumber);
+    Page<Employee> findByCompanyId(Long companyId, Pageable pageable);
+
+    /**
+     * Find employees by company with search (name or employee code)
+     */
+    @Query("SELECT e FROM Employee e WHERE e.companyId = :companyId AND " +
+           "(LOWER(e.firstName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(e.lastName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(e.employeeNumber) LIKE LOWER(CONCAT('%', :search, '%')))")
+    Page<Employee> findByCompanyIdAndSearch(@Param("companyId") Long companyId,
+                                           @Param("search") String search,
+                                           Pageable pageable);
 }

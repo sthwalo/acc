@@ -97,6 +97,9 @@ export interface ApiResponse<T> {
   data: T;
   message?: string;
   timestamp: number;
+  count?: number;
+  company_id?: number;
+  note?: string;
 }
 
 export interface HealthResponse {
@@ -171,4 +174,141 @@ export interface AuthResponse {
 export interface PlanSelection {
   planId: number;
   billingCycle: 'monthly' | 'yearly';
+}
+
+// Payroll Types
+export interface PayrollPeriod {
+  id: number;
+  companyId: number;
+  fiscalPeriodId: number; // Required, not optional
+  periodName: string;
+  payDate: string;
+  startDate: string;
+  endDate: string;
+  periodType: 'WEEKLY' | 'MONTHLY' | 'QUARTERLY';
+  status: 'OPEN' | 'PROCESSED' | 'APPROVED' | 'PAID' | 'CLOSED';
+  totalGrossPay: number;
+  totalDeductions: number;
+  totalNetPay: number;
+  employeeCount: number;
+  processedAt?: string;
+  processedBy?: string;
+  approvedAt?: string;
+  approvedBy?: string;
+  createdAt: string;
+  updatedAt: string;
+  createdBy?: string;
+}
+
+export interface PayrollPeriodCreateRequest {
+  companyId: number;
+  periodName: string;
+  startDate: string;
+  endDate: string;
+  paymentDate: string;
+}
+
+export interface PayrollProcessingResult {
+  success: boolean;
+  message: string;
+  data: {
+    processedEmployees: number;
+    totalGrossPay: number;
+    totalDeductions: number;
+    totalNetPay: number;
+    payslipsGenerated: number;
+  };
+}
+
+// Budget Types
+export interface Budget {
+  id: number;
+  companyId: number;
+  fiscalPeriodId: number;
+  title: string; // Added for component compatibility
+  budgetYear: number; // Added for component compatibility
+  status: string; // Added for component compatibility
+  totalRevenue: number; // Added for component compatibility
+  totalExpenses: number; // Added for component compatibility
+  name: string;
+  description?: string;
+  totalBudget: number;
+  totalSpent: number;
+  categories: BudgetCategory[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BudgetCategory {
+  categoryId: number; // Changed from id to categoryId for component compatibility
+  budgetId: number;
+  categoryName: string;
+  budgeted: number; // Changed from budgetedAmount to budgeted for component compatibility
+  actual: number; // Changed from spentAmount to actual for component compatibility
+  variance: number;
+  variancePercentage: number; // Added for component compatibility
+}
+
+export interface BudgetVariance {
+  budgetId: number;
+  totalBudget: number;
+  totalSpent: number;
+  totalVariance: number;
+  totalBudgeted: number; // Added for component compatibility
+  totalActual: number; // Added for component compatibility
+  variancePercentage: number; // Added for component compatibility
+  categories: BudgetCategory[];
+}
+
+// Employee Types
+export interface Employee {
+  id: number;
+  companyId: number;
+  employeeNumber: string;
+  title?: string;
+  firstName: string;
+  secondName?: string;
+  lastName: string;
+  email?: string;
+  phone?: string;
+  position: string;
+  department?: string;
+  hireDate?: string;
+  terminationDate?: string;
+  isActive: boolean;
+  addressLine1?: string;
+  addressLine2?: string;
+  city?: string;
+  province?: string;
+  postalCode?: string;
+  country?: string;
+  bankName?: string;
+  accountHolderName?: string;
+  accountNumber?: string;
+  branchCode?: string;
+  accountType?: string;
+  employmentType: 'PERMANENT' | 'CONTRACT' | 'TEMPORARY';
+  salaryType: 'MONTHLY' | 'WEEKLY' | 'HOURLY' | 'DAILY';
+  basicSalary?: number;
+  overtimeRate?: number;
+  taxNumber?: string;
+  taxRebateCode?: string;
+  uifNumber?: string;
+  medicalAidNumber?: string;
+  pensionFundNumber?: string;
+  createdAt: string;
+  updatedAt: string;
+  createdBy?: string;
+  updatedBy?: string;
+}
+
+// Error Types
+export interface ApiError {
+  response?: {
+    data?: {
+      message?: string;
+    };
+    status?: number;
+  };
+  message: string;
 }

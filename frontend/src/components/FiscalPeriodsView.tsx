@@ -3,6 +3,7 @@ import { Calendar, Plus, Edit, Trash2, Lock } from 'lucide-react';
 import { serviceRegistry } from '../services/ServiceRegistry';
 import { ApiService } from '../services/ApiService';
 import { formatDate } from '../utils/date';
+import ApiMessageBanner from './shared/ApiMessageBanner';
 import type { FiscalPeriod, Company } from '../types/api';
 
 interface FiscalPeriodsViewProps {
@@ -37,7 +38,22 @@ export default function FiscalPeriodsView({ selectedCompany, onFiscalPeriodSelec
       setFiscalPeriods(data);
       setError(null);
     } catch (err) {
-      setError('Failed to load fiscal periods');
+      // Prefer structured API/axios error message where possible
+      let message = 'Failed to load fiscal periods';
+      try {
+        const anyErr: unknown = err;
+        if (anyErr && typeof anyErr === 'object' && 'response' in anyErr) {
+          const axiosErr = anyErr as { response?: { data?: { message?: string } } };
+          if (axiosErr.response?.data?.message) {
+            message = axiosErr.response.data.message;
+          }
+        } else if (anyErr && typeof anyErr === 'object' && 'message' in anyErr && typeof anyErr.message === 'string') {
+          message = anyErr.message;
+        }
+      } catch {
+        // fallback below
+      }
+      setError(message);
       console.error('Error loading fiscal periods:', err);
     } finally {
       setLoading(false);
@@ -68,7 +84,22 @@ export default function FiscalPeriodsView({ selectedCompany, onFiscalPeriodSelec
       setFormData({ periodName: '', startDate: '', endDate: '' });
       await loadFiscalPeriods();
     } catch (err) {
-      setError('Failed to create fiscal period');
+      // Prefer structured API/axios error message where possible
+      let message = 'Failed to create fiscal period';
+      try {
+        const anyErr: unknown = err;
+        if (anyErr && typeof anyErr === 'object' && 'response' in anyErr) {
+          const axiosErr = anyErr as { response?: { data?: { message?: string } } };
+          if (axiosErr.response?.data?.message) {
+            message = axiosErr.response.data.message;
+          }
+        } else if (anyErr && typeof anyErr === 'object' && 'message' in anyErr && typeof anyErr.message === 'string') {
+          message = anyErr.message;
+        }
+      } catch {
+        // fallback below
+      }
+      setError(message);
       console.error('Error creating fiscal period:', err);
     } finally {
       setSubmitting(false);
@@ -102,7 +133,22 @@ export default function FiscalPeriodsView({ selectedCompany, onFiscalPeriodSelec
       setFormData({ periodName: '', startDate: '', endDate: '' });
       await loadFiscalPeriods();
     } catch (err) {
-      setError('Failed to update fiscal period');
+      // Prefer structured API/axios error message where possible
+      let message = 'Failed to update fiscal period';
+      try {
+        const anyErr: unknown = err;
+        if (anyErr && typeof anyErr === 'object' && 'response' in anyErr) {
+          const axiosErr = anyErr as { response?: { data?: { message?: string } } };
+          if (axiosErr.response?.data?.message) {
+            message = axiosErr.response.data.message;
+          }
+        } else if (anyErr && typeof anyErr === 'object' && 'message' in anyErr && typeof anyErr.message === 'string') {
+          message = anyErr.message;
+        }
+      } catch {
+        // fallback below
+      }
+      setError(message);
       console.error('Error updating fiscal period:', err);
     } finally {
       setSubmitting(false);
@@ -119,7 +165,22 @@ export default function FiscalPeriodsView({ selectedCompany, onFiscalPeriodSelec
       await apiService.fiscalPeriods.deleteFiscalPeriod(period.id);
       await loadFiscalPeriods();
     } catch (err) {
-      setError('Failed to delete fiscal period');
+      // Prefer structured API/axios error message where possible
+      let message = 'Failed to delete fiscal period';
+      try {
+        const anyErr: unknown = err;
+        if (anyErr && typeof anyErr === 'object' && 'response' in anyErr) {
+          const axiosErr = anyErr as { response?: { data?: { message?: string } } };
+          if (axiosErr.response?.data?.message) {
+            message = axiosErr.response.data.message;
+          }
+        } else if (anyErr && typeof anyErr === 'object' && 'message' in anyErr && typeof anyErr.message === 'string') {
+          message = anyErr.message;
+        }
+      } catch {
+        // fallback below
+      }
+      setError(message);
       console.error('Error deleting fiscal period:', err);
     }
   };
@@ -134,7 +195,22 @@ export default function FiscalPeriodsView({ selectedCompany, onFiscalPeriodSelec
       await apiService.fiscalPeriods.closeFiscalPeriod(period.id);
       await loadFiscalPeriods();
     } catch (err) {
-      setError('Failed to close fiscal period');
+      // Prefer structured API/axios error message where possible
+      let message = 'Failed to close fiscal period';
+      try {
+        const anyErr: unknown = err;
+        if (anyErr && typeof anyErr === 'object' && 'response' in anyErr) {
+          const axiosErr = anyErr as { response?: { data?: { message?: string } } };
+          if (axiosErr.response?.data?.message) {
+            message = axiosErr.response.data.message;
+          }
+        } else if (anyErr && typeof anyErr === 'object' && 'message' in anyErr && typeof anyErr.message === 'string') {
+          message = anyErr.message;
+        }
+      } catch {
+        // fallback below
+      }
+      setError(message);
       console.error('Error closing fiscal period:', err);
     }
   };
@@ -163,9 +239,15 @@ export default function FiscalPeriodsView({ selectedCompany, onFiscalPeriodSelec
 
   if (error) {
     return (
-      <div className="error">
-        <p>{error}</p>
-        <button onClick={loadFiscalPeriods}>Retry</button>
+      <div className="fiscal-periods-view">
+        <div className="view-header">
+          <h2>Fiscal Periods - {selectedCompany.name}</h2>
+          <p>Financial periods and performance metrics</p>
+        </div>
+        <ApiMessageBanner message={error} type="error" />
+        <div className="error">
+          <button onClick={loadFiscalPeriods}>Retry</button>
+        </div>
       </div>
     );
   }
@@ -191,7 +273,11 @@ export default function FiscalPeriodsView({ selectedCompany, onFiscalPeriodSelec
             <h3>{editingPeriod ? 'Edit Fiscal Period' : 'Create New Fiscal Period'}</h3>
             <form onSubmit={(e) => {
               e.preventDefault();
-              editingPeriod ? handleUpdateFiscalPeriod() : handleCreateFiscalPeriod();
+              if (editingPeriod) {
+                handleUpdateFiscalPeriod();
+              } else {
+                handleCreateFiscalPeriod();
+              }
             }}>
               <div className="form-group">
                 <label htmlFor="periodName">Period Name *</label>

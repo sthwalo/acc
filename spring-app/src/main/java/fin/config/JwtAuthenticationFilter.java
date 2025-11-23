@@ -67,6 +67,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String requestURI = request.getRequestURI();
         if (requestURI.equals("/api/v1/health") ||
             requestURI.startsWith("/api/v1/auth/") ||
+            requestURI.startsWith("/api/v1/payroll/") ||
             requestURI.matches("/api/v1/companies/\\d+/fiscal-periods/\\d+/imports/bank-statement")) {
             filterChain.doFilter(request, response);
             return;

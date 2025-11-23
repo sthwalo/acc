@@ -42,11 +42,11 @@ public class FiscalPeriodSummary {
 
     public FiscalPeriodSummary() {}
 
-    public FiscalPeriodSummary(String companyName, Long fiscalPeriodId, String fiscalYear,
+    public FiscalPeriodSummary(String companyName, Long fiscalPeriodId, String periodName,
                               LocalDate startDate, LocalDate endDate, boolean isClosed) {
         this.companyName = companyName;
         this.fiscalPeriodId = fiscalPeriodId;
-        this.fiscalYear = fiscalYear;
+        this.fiscalYear = periodName; // periodName maps to fiscalYear field
         this.startDate = startDate;
         this.endDate = endDate;
         this.isClosed = isClosed;

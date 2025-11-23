@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, memo } from 'react';
 import { Building2, Phone, Mail, Plus, Edit, Trash2, Eye, ArrowLeft, Save } from 'lucide-react';
 import { useApi } from '../hooks/useApi';
+import ApiMessageBanner from './shared/ApiMessageBanner';
 import type { Company } from '../types/api';
 
 interface CompaniesViewProps {
@@ -238,7 +239,22 @@ export default function CompaniesView({ onCompanySelect }: CompaniesViewProps) {
       setCompanies(data);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load companies');
+      // Prefer structured API/axios error message where possible
+      let message = 'Failed to load companies';
+      try {
+        const anyErr: unknown = err;
+        if (anyErr && typeof anyErr === 'object' && 'response' in anyErr) {
+          const axiosErr = anyErr as { response?: { data?: { message?: string } } };
+          if (axiosErr.response?.data?.message) {
+            message = axiosErr.response.data.message;
+          }
+        } else if (anyErr && typeof anyErr === 'object' && 'message' in anyErr && typeof anyErr.message === 'string') {
+          message = anyErr.message;
+        }
+      } catch {
+        // fallback below
+      }
+      setError(message);
       console.error('Error loading companies:', err);
     } finally {
       setLoading(false);
@@ -257,7 +273,22 @@ export default function CompaniesView({ onCompanySelect }: CompaniesViewProps) {
       setMenuMode('list');
       setFormData({});
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create company');
+      // Prefer structured API/axios error message where possible
+      let message = 'Failed to create company';
+      try {
+        const anyErr: unknown = err;
+        if (anyErr && typeof anyErr === 'object' && 'response' in anyErr) {
+          const axiosErr = anyErr as { response?: { data?: { message?: string } } };
+          if (axiosErr.response?.data?.message) {
+            message = axiosErr.response.data.message;
+          }
+        } else if (anyErr && typeof anyErr === 'object' && 'message' in anyErr && typeof anyErr.message === 'string') {
+          message = anyErr.message;
+        }
+      } catch {
+        // fallback below
+      }
+      setError(message);
     } finally {
       setSaving(false);
     }
@@ -273,7 +304,22 @@ export default function CompaniesView({ onCompanySelect }: CompaniesViewProps) {
       setSelectedCompany(null);
       setFormData({});
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update company');
+      // Prefer structured API/axios error message where possible
+      let message = 'Failed to update company';
+      try {
+        const anyErr: unknown = err;
+        if (anyErr && typeof anyErr === 'object' && 'response' in anyErr) {
+          const axiosErr = anyErr as { response?: { data?: { message?: string } } };
+          if (axiosErr.response?.data?.message) {
+            message = axiosErr.response.data.message;
+          }
+        } else if (anyErr && typeof anyErr === 'object' && 'message' in anyErr && typeof anyErr.message === 'string') {
+          message = anyErr.message;
+        }
+      } catch {
+        // fallback below
+      }
+      setError(message);
     } finally {
       setSaving(false);
     }
@@ -287,7 +333,22 @@ export default function CompaniesView({ onCompanySelect }: CompaniesViewProps) {
       await api.companies.deleteCompany(company.id);
       setCompanies(prev => prev.filter(c => c.id !== company.id));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete company');
+      // Prefer structured API/axios error message where possible
+      let message = 'Failed to delete company';
+      try {
+        const anyErr: unknown = err;
+        if (anyErr && typeof anyErr === 'object' && 'response' in anyErr) {
+          const axiosErr = anyErr as { response?: { data?: { message?: string } } };
+          if (axiosErr.response?.data?.message) {
+            message = axiosErr.response.data.message;
+          }
+        } else if (anyErr && typeof anyErr === 'object' && 'message' in anyErr && typeof anyErr.message === 'string') {
+          message = anyErr.message;
+        }
+      } catch {
+        // fallback below
+      }
+      setError(message);
     }
   };
 
@@ -341,9 +402,15 @@ export default function CompaniesView({ onCompanySelect }: CompaniesViewProps) {
 
   if (error) {
     return (
-      <div className="error">
-        <p>{error}</p>
-        <button onClick={loadCompanies}>Retry</button>
+      <div className="companies-view">
+        <div className="view-header">
+          <h2>Company Setup</h2>
+          <p>Manage your companies - create, view, edit, or delete company records</p>
+        </div>
+        <ApiMessageBanner message={error} type="error" />
+        <div className="error">
+          <button onClick={loadCompanies}>Retry</button>
+        </div>
       </div>
     );
   }

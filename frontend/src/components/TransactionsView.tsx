@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Receipt, ArrowUpCircle, ArrowDownCircle, Search, Filter, Download, FileText } from 'lucide-react';
 import { serviceRegistry } from '../services/ServiceRegistry';
 import { ApiService } from '../services/ApiService';
+import ApiMessageBanner from './shared/ApiMessageBanner';
 import type { Transaction, ApiTransaction, Company, FiscalPeriod } from '../types/api';
 
 interface TransactionsViewProps {
@@ -15,6 +16,7 @@ export default function TransactionsView({ selectedCompany, selectedFiscalPeriod
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'debit' | 'credit'>('all');
+  const [apiMessage, setApiMessage] = useState<string>('');
 
   const loadTransactions = useCallback(async () => {
     if (!selectedFiscalPeriod) return;
@@ -40,9 +42,25 @@ export default function TransactionsView({ selectedCompany, selectedFiscalPeriod
       }));
       
       setTransactions(mappedTransactions);
+      setApiMessage(response.note || '');
       setError(null);
     } catch (err) {
-      setError('Failed to load transactions');
+      // Prefer structured API/axios error message where possible
+      let message = 'Failed to load transactions';
+      try {
+        const anyErr: unknown = err;
+        if (anyErr && typeof anyErr === 'object' && 'response' in anyErr) {
+          const axiosErr = anyErr as { response?: { data?: { message?: string } } };
+          if (axiosErr.response?.data?.message) {
+            message = axiosErr.response.data.message;
+          }
+        } else if (err instanceof Error) {
+          message = err.message;
+        }
+      } catch {
+        // fallback below
+      }
+      setError(message);
       console.error('Error loading transactions:', err);
     } finally {
       setLoading(false);
@@ -101,7 +119,22 @@ export default function TransactionsView({ selectedCompany, selectedFiscalPeriod
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      setError('Failed to export transactions to CSV');
+      // Prefer structured API/axios error message where possible
+      let message = 'Failed to export transactions to CSV';
+      try {
+        const anyErr: unknown = error;
+        if (anyErr && typeof anyErr === 'object' && 'response' in anyErr) {
+          const axiosErr = anyErr as { response?: { data?: { message?: string } } };
+          if (axiosErr.response?.data?.message) {
+            message = axiosErr.response.data.message;
+          }
+        } else if (error instanceof Error) {
+          message = error.message;
+        }
+      } catch {
+        // ignore parsing error
+      }
+      setError(message);
       console.error('Export error:', error);
     }
   };
@@ -121,7 +154,22 @@ export default function TransactionsView({ selectedCompany, selectedFiscalPeriod
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      setError('Failed to export transactions to PDF');
+      // Prefer structured API/axios error message where possible
+      let message = 'Failed to export transactions to PDF';
+      try {
+        const anyErr: unknown = error;
+        if (anyErr && typeof anyErr === 'object' && 'response' in anyErr) {
+          const axiosErr = anyErr as { response?: { data?: { message?: string } } };
+          if (axiosErr.response?.data?.message) {
+            message = axiosErr.response.data.message;
+          }
+        } else if (error instanceof Error) {
+          message = error.message;
+        }
+      } catch {
+        // ignore parsing error
+      }
+      setError(message);
       console.error('Export error:', error);
     }
   };
@@ -137,9 +185,17 @@ export default function TransactionsView({ selectedCompany, selectedFiscalPeriod
 
   if (error) {
     return (
-      <div className="error">
-        <p>{error}</p>
-        <button onClick={loadTransactions}>Retry</button>
+      <div className="transactions-view">
+        <div className="view-header">
+          <h2>Transactions - {selectedCompany.name}</h2>
+          {selectedFiscalPeriod && (
+            <p>Fiscal Period: {selectedFiscalPeriod.periodName}</p>
+          )}
+        </div>
+        <ApiMessageBanner message={error} type="error" />
+        <div className="error">
+          <button onClick={loadTransactions}>Retry</button>
+        </div>
       </div>
     );
   }
@@ -172,6 +228,8 @@ export default function TransactionsView({ selectedCompany, selectedFiscalPeriod
           </button>
         </div>
       </div>
+      <ApiMessageBanner message={apiMessage} type="info" />
+      <ApiMessageBanner message={error} type="error" />
 
       <div className="transactions-summary">
         <div className="summary-card">
@@ -271,7 +329,7 @@ export default function TransactionsView({ selectedCompany, selectedFiscalPeriod
           <p>
             {searchTerm || filterType !== 'all'
               ? 'No transactions match your search criteria.'
-              : 'No transactions have been recorded for this company yet.'}
+              : apiMessage || 'No transactions have been recorded for this company yet.'}
           </p>
         </div>
       )}

@@ -27,8 +27,11 @@
 
 package fin.service.spring;
 
-import fin.model.*;
 import fin.config.DatabaseConfig;
+import fin.model.Company;
+import fin.model.Employee;
+import fin.model.FiscalPeriod;
+import fin.model.Payslip;
 import fin.repository.CompanyRepository;
 import org.springframework.stereotype.Service;
 
@@ -58,7 +61,7 @@ public class PayrollService {
     private static final int JOURNAL_LINE_GROSS_SALARY = 1;
     private static final int JOURNAL_LINE_PAYROLL_DEDUCTIONS = 2;
     private static final int JOURNAL_LINE_NET_PAY = 3;
-    
+
     // Employee Import Field Indices
     private static final int FIELD_EMPLOYEE_CODE = 0;
     private static final int FIELD_SURNAME = 1;
@@ -79,7 +82,7 @@ public class PayrollService {
     private static final int FIELD_EMAIL = 24;
     private static final int FIELD_JOB_TITLE = 28;
     private static final int FIELD_FIXED_SALARY = 39;
-    
+
     // Employee Import Constants
     private static final int MIN_EMPLOYEE_FIELDS = 40;
     private static final int MAX_ERROR_MESSAGE_LENGTH = 100;
@@ -118,7 +121,6 @@ private static class PayrollAccountIds {
         this.bankAccountId = bankId;
     }
 }
-    
     // PreparedStatement Parameter Indices
     private static final int PARAM_EMPLOYEE_NUMBER = 2;
     private static final int PARAM_FIRST_NAME = 3;
@@ -133,7 +135,7 @@ private static class PayrollAccountIds {
     private static final int PARAM_SALARY_TYPE = 12;
     private static final int PARAM_TAX_NUMBER = 13;
     private static final int PARAM_CREATED_BY = 14;
-    
+
     // Query Parameter Indices
     private static final int PARAM_MONTH = 3;
     
@@ -161,14 +163,6 @@ private static class PayrollAccountIds {
     private static final int PARAM_TOTAL_AMOUNT = 6;
     private static final int PARAM_PAYROLL_CREATED_BY = 7;
     
-    // Update Payroll Period Parameter Indices
-    private static final int PARAM_TOTAL_GROSS_PAY = 1;
-    private static final int PARAM_TOTAL_DEDUCTIONS = 2;
-    private static final int PARAM_TOTAL_NET_PAY = 3;
-    private static final int PARAM_EMPLOYEE_COUNT = 4;
-    private static final int PARAM_PROCESSED_BY = 5;
-    private static final int PARAM_PERIOD_ID = 6;
-    
     // Update Employee Parameter Indices
     private static final int PARAM_UPDATE_EMPLOYEE_NUMBER = 1;
     private static final int PARAM_UPDATE_FIRST_NAME = 2;
@@ -185,72 +179,32 @@ private static class PayrollAccountIds {
     private static final int PARAM_UPDATE_ID = 13;
     private static final int PARAM_UPDATE_COMPANY_ID = 14;
     
-    // Create Payroll Period Parameter Indices
-    private static final int PARAM_CREATE_PERIOD_NAME = 3;
-    private static final int PARAM_CREATE_PAY_DATE = 4;
-    private static final int PARAM_CREATE_START_DATE = 5;
-    private static final int PARAM_CREATE_END_DATE = 6;
-    private static final int PARAM_CREATE_PERIOD_TYPE = 7;
-    private static final int PARAM_CREATE_CREATED_BY = 8;
-    
     public PayrollService() {
         String databaseUrl = DatabaseConfig.getDatabaseUrl();
-        SARSTaxCalculator taxCalc = new SARSTaxCalculator();
-        initializeTaxCalculator(taxCalc);
         this.dbUrl = databaseUrl;
-        this.sarsTaxCalculator = taxCalc;
         this.companyRepository = null;
         this.pdfService = null;
         this.emailService = null;
+        this.sarsTaxCalculator = null;
     }
     
     public PayrollService(String initialDbUrl) {
-        SARSTaxCalculator taxCalc = new SARSTaxCalculator();
-        initializeTaxCalculator(taxCalc);
         this.dbUrl = initialDbUrl;
-        this.sarsTaxCalculator = taxCalc;
         this.companyRepository = null; // Will be injected by Spring
         this.pdfService = null;
         this.emailService = null;
+        this.sarsTaxCalculator = null;
     }
 
     public PayrollService(String initialDbUrl, CompanyRepository initialCompanyRepository, 
-                         PayslipPdfService initialPdfService, EmailService initialEmailService) {
-        SARSTaxCalculator taxCalc = new SARSTaxCalculator();
-        initializeTaxCalculator(taxCalc);
+                         PayslipPdfService initialPdfService, EmailService initialEmailService,
+                         SARSTaxCalculator initialTaxCalculator) {
         this.dbUrl = initialDbUrl;
-        this.sarsTaxCalculator = taxCalc;
         this.companyRepository = initialCompanyRepository;
         this.pdfService = initialPdfService;
         this.emailService = initialEmailService;
-    }
-    
-    private void initializeTaxCalculator(SARSTaxCalculator taxCalc) {
-        // Skip tax calculator initialization in test environment
-        if (isTestEnvironment()) {
-            LOGGER.info("Skipping SARS tax calculator initialization in test environment");
-            return;
-        }
-        
-        try {
-            // Load tax tables from the PDF text file for accurate SARS 2026 calculations
-            String pdfTextPath = "input/PAYE-GEN-01-G01-A03-2026-Monthly-Tax-Deduction-Tables-External-Annexure.txt";
-            taxCalc.loadTaxTablesFromPDFText(pdfTextPath);
-            LOGGER.info("SARS Tax Calculator initialized with official 2026 tables");
-        } catch (IOException e) {
-            LOGGER.warning("Failed to load SARS tax tables: " + e.getMessage() + " - using default calculations");
-            // Don't throw exception - allow constructor to complete
-        }
-    }
-    
-    /**
-     * Check if we're running in a test environment
-     */
-    private boolean isTestEnvironment() {
-        // Check for test system property or environment variable
-        return System.getProperty("test.mode", "false").equals("true") ||
-               System.getenv("TEST_MODE") != null ||
-               System.getProperty("java.class.path", "").contains("test");
+        this.sarsTaxCalculator = initialTaxCalculator;
+        LOGGER.info("PayrollService initialized with SARSTaxCalculator dependency");
     }
     
     public CompanyRepository getCompanyRepository() {
@@ -435,109 +389,101 @@ private static class PayrollAccountIds {
     /**
      * Create a new payroll period
      */
-    public PayrollPeriod createPayrollPeriod(PayrollPeriod period) {
-        // Auto-determine fiscal period if not set
-        if (period.getFiscalPeriodId() == null) {
-            Long fiscalPeriodId = findFiscalPeriodForDate(period.getCompanyId(), period.getStartDate());
-            if (fiscalPeriodId != null) {
-                period.setFiscalPeriodId(fiscalPeriodId);
-                LOGGER.info("Auto-assigned fiscal period ID: " + fiscalPeriodId + " for payroll period: " + period.getPeriodName());
-            } else {
-                LOGGER.warning("No fiscal period found for dates " + period.getStartDate() + " to " + period.getEndDate());
-            }
-        }
-        
+    public FiscalPeriod createPayrollPeriod(FiscalPeriod period) {
+        // In unified model, FiscalPeriod IS the period for both financial and payroll
+        LOGGER.info("Creating unified FiscalPeriod for payroll: " + period.getPeriodName());
+
         String sql = """
-            INSERT INTO payroll_periods (company_id, fiscal_period_id, period_name, pay_date, 
-                                       start_date, end_date, period_type, created_by)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO fiscal_periods (company_id, period_name, pay_date,
+                                       start_date, end_date, period_type, payroll_status,
+                                       total_gross_pay, total_deductions, total_net_pay,
+                                       employee_count, created_by, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
             RETURNING id
             """;
-        
+
         try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            
+
             pstmt.setLong(1, period.getCompanyId());
-            pstmt.setObject(2, period.getFiscalPeriodId());
-            pstmt.setString(PARAM_CREATE_PERIOD_NAME, period.getPeriodName());
-            pstmt.setDate(PARAM_CREATE_PAY_DATE, java.sql.Date.valueOf(period.getPayDate()));
-            pstmt.setDate(PARAM_CREATE_START_DATE, java.sql.Date.valueOf(period.getStartDate()));
-            pstmt.setDate(PARAM_CREATE_END_DATE, java.sql.Date.valueOf(period.getEndDate()));
-            pstmt.setString(PARAM_CREATE_PERIOD_TYPE, period.getPeriodType().name());
-            pstmt.setString(PARAM_CREATE_CREATED_BY, period.getCreatedBy());
-            
+            pstmt.setString(2, period.getPeriodName());
+            pstmt.setDate(3, java.sql.Date.valueOf(period.getPayDate()));
+            pstmt.setDate(4, java.sql.Date.valueOf(period.getStartDate()));
+            pstmt.setDate(5, java.sql.Date.valueOf(period.getEndDate()));
+            pstmt.setString(6, period.getPeriodType().name());
+            pstmt.setString(7, period.getPayrollStatus() != null ? period.getPayrollStatus().name() : "OPEN");
+            pstmt.setBigDecimal(8, period.getTotalGrossPay() != null ? period.getTotalGrossPay() : BigDecimal.ZERO);
+            pstmt.setBigDecimal(9, period.getTotalDeductions() != null ? period.getTotalDeductions() : BigDecimal.ZERO);
+            pstmt.setBigDecimal(10, period.getTotalNetPay() != null ? period.getTotalNetPay() : BigDecimal.ZERO);
+            pstmt.setInt(11, period.getEmployeeCount() != null ? period.getEmployeeCount() : 0);
+            pstmt.setString(12, period.getCreatedBy());
+
             ResultSet rs = pstmt.executeQuery();
             if (rs.next()) {
                 period.setId(rs.getLong("id"));
-                LOGGER.info("Created payroll period: " + period.getPeriodName());
-                // Retrieve the complete period data including fiscal_period_id
-                return getPayrollPeriodById(period.getId()).orElse(period);
+                LOGGER.info("Created unified FiscalPeriod for payroll: " + period.getPeriodName());
+                // Retrieve the complete period data
+                return getFiscalPeriodById(period.getId()).orElse(period);
             }
-            
+
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Error creating payroll period", e);
             throw new RuntimeException("Failed to create payroll period: " + e.getMessage());
         }
-        
+
         throw new RuntimeException("Failed to create payroll period");
-    }
-    
-    /**
-     * Find the fiscal period that contains a given date
+    }    /**
+     * Get a fiscal period by ID
      */
-    private Long findFiscalPeriodForDate(Long companyId, LocalDate date) {
+    public Optional<FiscalPeriod> getFiscalPeriodById(Long periodId) {
         String sql = """
-            SELECT id FROM fiscal_periods 
-            WHERE company_id = ? 
-            AND ? BETWEEN start_date AND end_date
-            LIMIT 1
+            SELECT * FROM fiscal_periods WHERE id = ?
             """;
-        
+
         try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            
-            pstmt.setLong(1, companyId);
-            pstmt.setDate(2, java.sql.Date.valueOf(date));
-            
+
+            pstmt.setLong(1, periodId);
             ResultSet rs = pstmt.executeQuery();
+
             if (rs.next()) {
-                return rs.getLong("id");
+                return Optional.of(mapResultSetToFiscalPeriod(rs));
             }
-            
+
         } catch (SQLException e) {
-            LOGGER.log(Level.WARNING, "Error finding fiscal period for date: " + date, e);
+            LOGGER.log(Level.SEVERE, "Error getting fiscal period by ID", e);
         }
-        
-        return null;
+
+        return Optional.empty();
     }
     
     /**
      * Get payroll periods for a company
      */
-    public List<PayrollPeriod> getPayrollPeriods(Long companyId) {
+    public List<FiscalPeriod> getPayrollPeriods(Long companyId) {
         String sql = """
-            SELECT * FROM payroll_periods 
-            WHERE company_id = ? 
+            SELECT * FROM fiscal_periods
+            WHERE company_id = ?
             ORDER BY start_date DESC
             """;
-        
-        List<PayrollPeriod> periods = new ArrayList<>();
-        
+
+        List<FiscalPeriod> periods = new ArrayList<>();
+
         try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            
+
             pstmt.setLong(1, companyId);
             ResultSet rs = pstmt.executeQuery();
-            
+
             while (rs.next()) {
-                periods.add(mapResultSetToPayrollPeriod(rs));
+                periods.add(mapResultSetToFiscalPeriod(rs));
             }
-            
+
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Error getting payroll periods", e);
             throw new RuntimeException("Failed to get payroll periods: " + e.getMessage());
         }
-        
+
         return periods;
     }
     
@@ -546,39 +492,39 @@ private static class PayrollAccountIds {
      */
     public void deletePayrollPeriod(Long periodId, Long companyId) {
         // First check if the period exists and can be deleted
-        Optional<PayrollPeriod> periodOpt = getPayrollPeriodById(periodId);
+        Optional<FiscalPeriod> periodOpt = getFiscalPeriodById(periodId);
         if (periodOpt.isEmpty()) {
             throw new RuntimeException("Payroll period not found");
         }
-        
-        PayrollPeriod period = periodOpt.get();
-        
+
+        FiscalPeriod period = periodOpt.get();
+
         // Verify the period belongs to the company
         if (!period.getCompanyId().equals(companyId)) {
             throw new RuntimeException("Payroll period does not belong to this company");
         }
-        
+
         // Only allow deletion of OPEN periods (not processed)
-        if (period.getStatus() != PayrollPeriod.PayrollStatus.OPEN) {
-            throw new RuntimeException("Cannot delete payroll period with status: " + period.getStatus() + 
+        if (period.getPayrollStatus() != FiscalPeriod.PayrollStatus.OPEN) {
+            throw new RuntimeException("Cannot delete payroll period with status: " + period.getPayrollStatus() +
                                      ". Only OPEN periods can be deleted.");
         }
-        
-        String sql = "DELETE FROM payroll_periods WHERE id = ? AND company_id = ?";
-        
+
+        String sql = "DELETE FROM fiscal_periods WHERE id = ? AND company_id = ?";
+
         try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            
+
             pstmt.setLong(1, periodId);
             pstmt.setLong(2, companyId);
-            
+
             int rowsAffected = pstmt.executeUpdate();
             if (rowsAffected == 0) {
                 throw new RuntimeException("Payroll period not found or could not be deleted");
             }
-            
+
             LOGGER.info("Deleted payroll period: " + period.getPeriodName());
-            
+
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Error deleting payroll period", e);
             throw new RuntimeException("Failed to delete payroll period: " + e.getMessage());
@@ -590,7 +536,7 @@ private static class PayrollAccountIds {
      */
     public void forceDeletePayrollPeriod(Long periodId, Long companyId) {
         // Validate the period exists and belongs to the company
-        PayrollPeriod period = validatePayrollPeriodForDeletion(periodId, companyId);
+        FiscalPeriod period = validatePayrollPeriodForDeletion(periodId, companyId);
 
         // Perform the deletion within a transaction
         try (Connection conn = DriverManager.getConnection(dbUrl)) {
@@ -607,7 +553,7 @@ private static class PayrollAccountIds {
                 deletePayrollPeriod(conn, periodId, companyId, period.getPeriodName());
 
                 conn.commit();
-                LOGGER.warning("FORCE DELETED payroll period: " + period.getPeriodName() + " (Status: " + period.getStatus() + ")");
+                LOGGER.warning("FORCE DELETED payroll period: " + period.getPeriodName() + " (Status: " + period.getPayrollStatus() + ")");
 
             } catch (RuntimeException e) {
                 conn.rollback();
@@ -623,13 +569,13 @@ private static class PayrollAccountIds {
     /**
      * Validate that a payroll period exists and belongs to the specified company
      */
-    private PayrollPeriod validatePayrollPeriodForDeletion(Long periodId, Long companyId) {
-        Optional<PayrollPeriod> periodOpt = getPayrollPeriodById(periodId);
+    private FiscalPeriod validatePayrollPeriodForDeletion(Long periodId, Long companyId) {
+        Optional<FiscalPeriod> periodOpt = getFiscalPeriodById(periodId);
         if (periodOpt.isEmpty()) {
             throw new RuntimeException("Payroll period not found");
         }
 
-        PayrollPeriod period = periodOpt.get();
+        FiscalPeriod period = periodOpt.get();
 
         // Verify the period belongs to the company
         if (!period.getCompanyId().equals(companyId)) {
@@ -683,48 +629,48 @@ private static class PayrollAccountIds {
      * Force delete all payroll periods for a specific month and year
      */
     public void forceDeleteAllPayrollPeriodsForMonth(Long companyId, int year, int month) {
-        String sql = "SELECT id, period_name, status FROM payroll_periods WHERE company_id = ? AND EXTRACT(YEAR FROM pay_date) = ? AND EXTRACT(MONTH FROM pay_date) = ?";
-        
-        List<PayrollPeriod> periodsToDelete = new ArrayList<>();
-        
+        String sql = "SELECT id, period_name, payroll_status FROM fiscal_periods WHERE company_id = ? AND EXTRACT(YEAR FROM pay_date) = ? AND EXTRACT(MONTH FROM pay_date) = ?";
+
+        List<FiscalPeriod> periodsToDelete = new ArrayList<>();
+
         try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            
+
             pstmt.setLong(1, companyId);
             pstmt.setInt(2, year);
-            pstmt.setInt(PARAM_MONTH, month);
-            
+            pstmt.setInt(3, month);
+
             ResultSet rs = pstmt.executeQuery();
             while (rs.next()) {
-                PayrollPeriod period = new PayrollPeriod();
+                FiscalPeriod period = new FiscalPeriod();
                 period.setId(rs.getLong("id"));
                 period.setPeriodName(rs.getString("period_name"));
-                period.setStatus(PayrollPeriod.PayrollStatus.valueOf(rs.getString("status")));
+                period.setPayrollStatus(FiscalPeriod.PayrollStatus.valueOf(rs.getString("payroll_status")));
                 periodsToDelete.add(period);
             }
-            
+
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Error finding payroll periods for month", e);
             throw new RuntimeException("Failed to find payroll periods: " + e.getMessage());
         }
-        
+
         if (periodsToDelete.isEmpty()) {
             LOGGER.info("No payroll periods found for " + year + "-" + String.format("%02d", month));
             return;
         }
-        
+
         LOGGER.warning("FORCE DELETING " + periodsToDelete.size() + " payroll periods for " + year + "-" + String.format("%02d", month));
-        
-        for (PayrollPeriod period : periodsToDelete) {
+
+        for (FiscalPeriod period : periodsToDelete) {
             try {
                 forceDeletePayrollPeriod(period.getId(), companyId);
-                LOGGER.warning("Deleted period: " + period.getPeriodName() + " (Status: " + period.getStatus() + ")");
+                LOGGER.warning("Deleted period: " + period.getPeriodName() + " (Status: " + period.getPayrollStatus() + ")");
             } catch (Exception e) {
                 LOGGER.log(Level.SEVERE, "Failed to delete period " + period.getPeriodName(), e);
                 // Continue with other periods
             }
         }
-        
+
         LOGGER.warning("Completed force deletion of " + periodsToDelete.size() + " payroll periods for " + year + "-" + String.format("%02d", month));
     }
     
@@ -733,20 +679,20 @@ private static class PayrollAccountIds {
     /**
      * Process payroll for a specific period (without emailing)
      */
-    public void processPayroll(Long payrollPeriodId, String processedBy) {
-        processPayroll(payrollPeriodId, processedBy, false);
+    public void processPayroll(Long fiscalPeriodId, String processedBy) {
+        processPayroll(fiscalPeriodId, processedBy, false);
     }
     
     /**
      * Process payroll for a specific period with optional email sending
      * 
-     * @param payrollPeriodId The payroll period to process
+     * @param fiscalPeriodId The fiscal period to process
      * @param processedBy User who is processing the payroll
      * @param sendEmails Whether to send payslip emails after processing
      */
-    public void processPayroll(Long payrollPeriodId, String processedBy, boolean sendEmails) {
-        PayrollPeriod period = getPayrollPeriodById(payrollPeriodId)
-            .orElseThrow(() -> new RuntimeException("Payroll period not found"));
+    public void processPayroll(Long fiscalPeriodId, String processedBy, boolean sendEmails) {
+        FiscalPeriod period = getFiscalPeriodById(fiscalPeriodId)
+            .orElseThrow(() -> new RuntimeException("Fiscal period not found"));
 
         Company company = companyRepository.findById(period.getCompanyId())
             .orElseThrow(() -> new RuntimeException("Company not found"));
@@ -756,12 +702,12 @@ private static class PayrollAccountIds {
 
             try {
                 boolean isReprocessing = handleReprocessingIfNeeded(conn, period);
-                
+
                 validatePayrollPeriodCanBeProcessed(period, isReprocessing);
-                
+
                 PayrollProcessingResult result = processAllEmployees(conn, period, company);
-                
-                updatePayrollPeriodTotals(conn, payrollPeriodId, result.totalGross, 
+
+                updatePayrollPeriodTotals(conn, fiscalPeriodId, result.totalGross, 
                                         result.totalDeductions, result.totalNet, 
                                         result.employeeCount, processedBy);
 
@@ -773,15 +719,15 @@ private static class PayrollAccountIds {
                            " (" + result.employeeCount + " employees)");
 
                 logPdfGenerationResults(result.generatedPdfPaths);
-                
+
                 // Send emails if requested
                 if (sendEmails && emailService != null) {
                     try {
                         LOGGER.info("Sending payslip emails to employees...");
-                        EmailSendSummary emailSummary = emailPayslipsToEmployees(payrollPeriodId);
+                        EmailSendSummary emailSummary = emailPayslipsToEmployees(fiscalPeriodId);
                         LOGGER.info("Email sending completed: " + emailSummary.getSuccessCount() + 
                                    " sent successfully, " + emailSummary.getFailureCount() + " failed");
-                        
+
                         if (emailSummary.hasFailures()) {
                             LOGGER.warning("Failed to send emails to: " + 
                                          String.join(", ", emailSummary.getFailedRecipients()));
@@ -809,21 +755,21 @@ private static class PayrollAccountIds {
      * Handle reprocessing of payroll if the period is already processed
      * @return true if reprocessing was performed, false if processing new period
      */
-    private boolean handleReprocessingIfNeeded(Connection conn, PayrollPeriod period) throws SQLException {
+    private boolean handleReprocessingIfNeeded(Connection conn, FiscalPeriod period) throws SQLException {
         boolean isReprocessing = false;
-        
+
         // Clear existing payslips if reprocessing
-        if (period.getStatus() == PayrollPeriod.PayrollStatus.PROCESSED) {
+        if (period.getPayrollStatus() == FiscalPeriod.PayrollStatus.PROCESSED) {
             LOGGER.info("Clearing existing payslips for reprocessing of period: " + period.getPeriodName());
             clearExistingPayslips(conn, period.getId());
-            
+
             // Reset payroll period status to allow reprocessing
             resetPayrollPeriodStatus(conn, period.getId());
             LOGGER.info("Payroll period reset to OPEN status for reprocessing");
             isReprocessing = true;
-            
+
             // Update in-memory period status to reflect database change
-            period.setStatus(PayrollPeriod.PayrollStatus.OPEN);
+            period.setPayrollStatus(FiscalPeriod.PayrollStatus.OPEN);
         }
 
         return isReprocessing;
@@ -846,7 +792,7 @@ private static class PayrollAccountIds {
     /**
      * Process all employees for the payroll period
      */
-    private PayrollProcessingResult processAllEmployees(Connection conn, PayrollPeriod period, Company company) throws SQLException {
+    private PayrollProcessingResult processAllEmployees(Connection conn, FiscalPeriod period, Company company) throws SQLException {
         // Get all active employees for the company
         List<Employee> employees = getActiveEmployees(period.getCompanyId());
 
@@ -894,7 +840,7 @@ private static class PayrollAccountIds {
      * This deletes all payslip records associated with the given payroll period
      */
     private void clearExistingPayslips(Connection conn, Long payrollPeriodId) throws SQLException {
-        String deleteSql = "DELETE FROM payslips WHERE payroll_period_id = ?";
+        String deleteSql = "DELETE FROM payslips WHERE fiscal_period_id = ?";
         
         try (PreparedStatement pstmt = conn.prepareStatement(deleteSql)) {
             pstmt.setLong(1, payrollPeriodId);
@@ -908,8 +854,8 @@ private static class PayrollAccountIds {
      */
     private void resetPayrollPeriodStatus(Connection conn, Long payrollPeriodId) throws SQLException {
         String updateSql = """
-            UPDATE payroll_periods 
-            SET status = 'OPEN', 
+            UPDATE fiscal_periods 
+            SET payroll_status = 'OPEN', 
                 total_gross_pay = 0, 
                 total_deductions = 0, 
                 total_net_pay = 0,
@@ -928,23 +874,23 @@ private static class PayrollAccountIds {
     /**
      * Generate PDFs for an already processed payroll period
      */
-    public void generatePayslipPdfs(Long payrollPeriodId) {
+    public void generatePayslipPdfs(Long fiscalPeriodId) {
         try {
-            PayrollPeriod period = getPayrollPeriodById(payrollPeriodId)
-                .orElseThrow(() -> new RuntimeException("Payroll period not found"));
+            FiscalPeriod period = getFiscalPeriodById(fiscalPeriodId)
+                .orElseThrow(() -> new RuntimeException("Fiscal period not found"));
             
             Company company = companyRepository.findById(period.getCompanyId())
                 .orElseThrow(() -> new RuntimeException("Company not found"));
             
             // Get all payslips for this period
-            String sql = "SELECT * FROM payslips WHERE payroll_period_id = ?";
+            String sql = "SELECT * FROM payslips WHERE fiscal_period_id = ?";
             List<Payslip> payslips = new ArrayList<>();
             List<Employee> employees = new ArrayList<>();
             
             try (Connection conn = DriverManager.getConnection(dbUrl);
                  PreparedStatement pstmt = conn.prepareStatement(sql)) {
                 
-                pstmt.setLong(1, payrollPeriodId);
+                pstmt.setLong(1, fiscalPeriodId);
                 ResultSet rs = pstmt.executeQuery();
                 
                 while (rs.next()) {
@@ -981,30 +927,30 @@ private static class PayrollAccountIds {
     /**
      * Email payslips to all employees for a processed payroll period
      * 
-     * @param payrollPeriodId The payroll period ID
+     * @param fiscalPeriodId The fiscal period ID
      * @return EmailSendSummary with success/failure counts
      */
-    public EmailSendSummary emailPayslipsToEmployees(Long payrollPeriodId) {
+    public EmailSendSummary emailPayslipsToEmployees(Long fiscalPeriodId) {
         if (emailService == null) {
             LOGGER.warning("EmailService not configured - cannot send emails");
             throw new RuntimeException("Email service not available");
         }
         
         try {
-            PayrollPeriod period = getPayrollPeriodById(payrollPeriodId)
-                .orElseThrow(() -> new RuntimeException("Payroll period not found"));
+            FiscalPeriod period = getFiscalPeriodById(fiscalPeriodId)
+                .orElseThrow(() -> new RuntimeException("Fiscal period not found"));
             
             Company company = companyRepository.findById(period.getCompanyId())
                 .orElseThrow(() -> new RuntimeException("Company not found"));
             
             // Get all payslips for this period
-            String sql = "SELECT * FROM payslips WHERE payroll_period_id = ?";
+            String sql = "SELECT * FROM payslips WHERE fiscal_period_id = ?";
             List<PayslipEmailData> emailDataList = new ArrayList<>();
             
             try (Connection conn = DriverManager.getConnection(dbUrl);
                  PreparedStatement pstmt = conn.prepareStatement(sql)) {
                 
-                pstmt.setLong(1, payrollPeriodId);
+                pstmt.setLong(1, fiscalPeriodId);
                 ResultSet rs = pstmt.executeQuery();
                 
                 while (rs.next()) {
@@ -1128,7 +1074,7 @@ private static class PayrollAccountIds {
     /**
      * Calculate payslip for an employee using SARSTaxCalculator
      */
-    private Payslip calculatePayslip(Employee employee, PayrollPeriod period, BigDecimal totalCompanyGross) {
+    private Payslip calculatePayslip(Employee employee, FiscalPeriod period, BigDecimal totalCompanyGross) {
         String payslipNumber = generatePayslipNumber(employee, period);
         
         Payslip payslip = new Payslip(employee.getCompanyId(), employee.getId(), 
@@ -1235,7 +1181,7 @@ private static class PayrollAccountIds {
      * Generate journal entries for payroll processing
      * Integrates with the existing accounting system
      */
-    private void generatePayrollJournalEntries(Connection conn, PayrollPeriod period, 
+    private void generatePayrollJournalEntries(Connection conn, FiscalPeriod period, 
                                              BigDecimal totalGross, BigDecimal totalDeductions, 
                                              BigDecimal totalNet) throws SQLException {
         
@@ -1259,7 +1205,7 @@ private static class PayrollAccountIds {
     /**
      * Create the main journal entry header and return its ID
      */
-    private Long createJournalEntryHeader(Connection conn, PayrollPeriod period) throws SQLException {
+    private Long createJournalEntryHeader(Connection conn, FiscalPeriod period) throws SQLException {
         String reference = "PAY-" + period.getId() + "-" + 
                           period.getPayDate().format(DateTimeFormatter.ofPattern("yyyyMM"));
         String description = "Payroll for " + period.getPeriodName();
@@ -1275,7 +1221,7 @@ private static class PayrollAccountIds {
             pstmt.setString(PARAM_REFERENCE, reference);
             pstmt.setDate(PARAM_ENTRY_DATE, java.sql.Date.valueOf(period.getPayDate()));
             pstmt.setString(PARAM_DESCRIPTION, description);
-            pstmt.setObject(PARAM_FISCAL_PERIOD_ID, period.getFiscalPeriodId());
+            pstmt.setObject(PARAM_FISCAL_PERIOD_ID, period.getId());
             pstmt.setLong(PARAM_JOURNAL_COMPANY_ID, period.getCompanyId());
             pstmt.setString(PARAM_JOURNAL_CREATED_BY, period.getCreatedBy());
             
@@ -1301,7 +1247,7 @@ private static class PayrollAccountIds {
     /**
      * Create the individual journal entry lines for payroll
      */
-    private void createJournalEntryLines(Connection conn, Long journalEntryId, PayrollPeriod period,
+    private void createJournalEntryLines(Connection conn, Long journalEntryId, FiscalPeriod period,
                                        BigDecimal totalGross, BigDecimal totalDeductions, BigDecimal totalNet,
                                        PayrollAccountIds accountIds) throws SQLException {
         
@@ -1352,13 +1298,13 @@ private static class PayrollAccountIds {
     /**
      * Record the link between payroll period and journal entry
      */
-    private void recordPayrollJournalLink(Connection conn, PayrollPeriod period, Long journalEntryId, 
+    private void recordPayrollJournalLink(Connection conn, FiscalPeriod period, Long journalEntryId, 
                                         BigDecimal totalNet) throws SQLException {
         
         String description = "Payroll for " + period.getPeriodName();
         
         String insertPayrollJournal = """
-            INSERT INTO payroll_journal_entries (company_id, payroll_period_id, journal_entry_id, 
+            INSERT INTO payroll_journal_entries (company_id, fiscal_period_id, journal_entry_id, 
                                                 entry_type, description, total_amount, created_by)
             VALUES (?, ?, ?, ?, ?, ?, ?)
             """;
@@ -1377,30 +1323,12 @@ private static class PayrollAccountIds {
     
     // ===== UTILITY METHODS =====
     
-    private String generatePayslipNumber(Employee employee, PayrollPeriod period) {
+    private String generatePayslipNumber(Employee employee, FiscalPeriod period) {
         return period.getPayDate().format(DateTimeFormatter.ofPattern("yyyyMM")) +
                "-" + period.getId() + "-" + employee.getEmployeeNumber();
     }
     
-    public Optional<PayrollPeriod> getPayrollPeriodById(Long periodId) {
-        String sql = "SELECT * FROM payroll_periods WHERE id = ?";
-        
-        try (Connection conn = DriverManager.getConnection(dbUrl);
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            
-            pstmt.setLong(1, periodId);
-            ResultSet rs = pstmt.executeQuery();
-            
-            if (rs.next()) {
-                return Optional.of(mapResultSetToPayrollPeriod(rs));
-            }
-            
-        } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Error getting payroll period by ID", e);
-        }
-        
-        return Optional.empty();
-    }
+
     
     private Long getAccountByCode(Connection conn, String accountCode) throws SQLException {
         String sql = "SELECT id FROM accounts WHERE account_code = ?";
@@ -1434,11 +1362,11 @@ private static class PayrollAccountIds {
      * Check if a payslip already exists and return its ID if found
      */
     private Long checkPayslipExists(Connection conn, Payslip payslip) throws SQLException {
-        String checkSql = "SELECT id FROM payslips WHERE payslip_number = ? AND payroll_period_id = ?";
+        String checkSql = "SELECT id FROM payslips WHERE payslip_number = ? AND fiscal_period_id = ?";
 
         try (PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
             checkStmt.setString(1, payslip.getPayslipNumber());
-            checkStmt.setLong(2, payslip.getPayrollPeriodId());
+            checkStmt.setLong(2, payslip.getFiscalPeriodId());
             ResultSet rs = checkStmt.executeQuery();
             if (rs.next()) {
                 Long existingId = rs.getLong("id");
@@ -1487,7 +1415,7 @@ private static class PayrollAccountIds {
     private void insertNewPayslip(Connection conn, Payslip payslip) throws SQLException {
         String insertSql = """
             INSERT INTO payslips (
-                company_id, employee_id, payroll_period_id, payslip_number,
+                company_id, employee_id, fiscal_period_id, payslip_number,
                 basic_salary, gross_salary, total_earnings,
                 paye_tax, uif_employee, uif_employer, sdl_levy, total_deductions,
                 net_pay, status, created_by, created_at
@@ -1499,7 +1427,7 @@ private static class PayrollAccountIds {
             int i = 1;
             pstmt.setLong(i++, payslip.getCompanyId());
             pstmt.setLong(i++, payslip.getEmployeeId());
-            pstmt.setLong(i++, payslip.getPayrollPeriodId());
+            pstmt.setLong(i++, payslip.getFiscalPeriodId());
             pstmt.setString(i++, payslip.getPayslipNumber());
             pstmt.setObject(i++, payslip.getBasicSalary());
             pstmt.setObject(i++, payslip.getGrossSalary());
@@ -1524,20 +1452,20 @@ private static class PayrollAccountIds {
                                          BigDecimal totalDeductions, BigDecimal totalNet,
                                          int employeeCount, String processedBy) throws SQLException {
         String sql = """
-            UPDATE payroll_periods 
+            UPDATE fiscal_periods 
             SET total_gross_pay = ?, total_deductions = ?, total_net_pay = ?, 
-                employee_count = ?, status = 'PROCESSED', processed_at = CURRENT_TIMESTAMP, 
+                employee_count = ?, payroll_status = 'PROCESSED', processed_at = CURRENT_TIMESTAMP, 
                 processed_by = ?, updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
             """;
         
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setBigDecimal(PARAM_TOTAL_GROSS_PAY, totalGross);
-            pstmt.setBigDecimal(PARAM_TOTAL_DEDUCTIONS, totalDeductions);
-            pstmt.setBigDecimal(PARAM_TOTAL_NET_PAY, totalNet);
-            pstmt.setInt(PARAM_EMPLOYEE_COUNT, employeeCount);
-            pstmt.setString(PARAM_PROCESSED_BY, processedBy);
-            pstmt.setLong(PARAM_PERIOD_ID, periodId);
+            pstmt.setBigDecimal(1, totalGross);
+            pstmt.setBigDecimal(2, totalDeductions);
+            pstmt.setBigDecimal(3, totalNet);
+            pstmt.setInt(4, employeeCount);
+            pstmt.setString(5, processedBy);
+            pstmt.setLong(6, periodId);
             pstmt.executeUpdate();
         }
     }
@@ -1545,15 +1473,15 @@ private static class PayrollAccountIds {
     /**
      * Validate that a payroll period can be processed
      */
-    private void validatePayrollPeriodCanBeProcessed(PayrollPeriod period, boolean isReprocessing) {
-        if (period.getStatus() == PayrollPeriod.PayrollStatus.PROCESSED && !isReprocessing) {
+    private void validatePayrollPeriodCanBeProcessed(FiscalPeriod period, boolean isReprocessing) {
+        if (period.getPayrollStatus() == FiscalPeriod.PayrollStatus.PROCESSED && !isReprocessing) {
             throw new RuntimeException("Payroll period is already processed. Use reprocessing if needed.");
         }
-        
-        if (period.getStatus() != PayrollPeriod.PayrollStatus.OPEN && !isReprocessing) {
+
+        if (period.getPayrollStatus() != FiscalPeriod.PayrollStatus.OPEN && !isReprocessing) {
             throw new RuntimeException("Payroll period must be in OPEN status to be processed.");
         }
-        
+
         // Additional validation can be added here
     }
     
@@ -1596,27 +1524,41 @@ private static class PayrollAccountIds {
         return employee;
     }
     
-    private PayrollPeriod mapResultSetToPayrollPeriod(ResultSet rs) throws SQLException {
-        PayrollPeriod period = new PayrollPeriod();
+    /**
+     * Map ResultSet to FiscalPeriod
+     */
+    private FiscalPeriod mapResultSetToFiscalPeriod(ResultSet rs) throws SQLException {
+        FiscalPeriod period = new FiscalPeriod();
         period.setId(rs.getLong("id"));
         period.setCompanyId(rs.getLong("company_id"));
-        period.setFiscalPeriodId((Long) rs.getObject("fiscal_period_id"));
         period.setPeriodName(rs.getString("period_name"));
         period.setPayDate(rs.getDate("pay_date").toLocalDate());
         period.setStartDate(rs.getDate("start_date").toLocalDate());
         period.setEndDate(rs.getDate("end_date").toLocalDate());
-        period.setStatus(PayrollPeriod.PayrollStatus.valueOf(rs.getString("status")));
+
+        String periodType = rs.getString("period_type");
+        if (periodType != null) {
+            period.setPeriodType(FiscalPeriod.PeriodType.valueOf(periodType));
+        }
+
+        String payrollStatus = rs.getString("payroll_status");
+        if (payrollStatus != null) {
+            period.setPayrollStatus(FiscalPeriod.PayrollStatus.valueOf(payrollStatus));
+        }
+
         period.setTotalGrossPay(rs.getBigDecimal("total_gross_pay"));
         period.setTotalDeductions(rs.getBigDecimal("total_deductions"));
         period.setTotalNetPay(rs.getBigDecimal("total_net_pay"));
         period.setEmployeeCount(rs.getInt("employee_count"));
+        period.setProcessedAt(rs.getTimestamp("processed_at") != null ?
+            rs.getTimestamp("processed_at").toLocalDateTime() : null);
+        period.setProcessedBy(rs.getString("processed_by"));
+        period.setApprovedAt(rs.getTimestamp("approved_at") != null ?
+            rs.getTimestamp("approved_at").toLocalDateTime() : null);
+        period.setApprovedBy(rs.getString("approved_by"));
         period.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
-        
-        String periodType = rs.getString("period_type");
-        if (periodType != null) {
-            period.setPeriodType(PayrollPeriod.PeriodType.valueOf(periodType));
-        }
-        
+        period.setUpdatedAt(rs.getTimestamp("updated_at").toLocalDateTime());
+
         return period;
     }
     
@@ -1633,7 +1575,7 @@ private static class PayrollAccountIds {
         payslip.setId(rs.getLong("id"));
         payslip.setCompanyId(rs.getLong("company_id"));
         payslip.setEmployeeId(rs.getLong("employee_id"));
-        payslip.setPayrollPeriodId(rs.getLong("payroll_period_id"));
+        payslip.setFiscalPeriodId(rs.getLong("fiscal_period_id"));
         payslip.setPayslipNumber(rs.getString("payslip_number"));
 
         // Set basic salary first

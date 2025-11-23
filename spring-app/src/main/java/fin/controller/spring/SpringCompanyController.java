@@ -26,6 +26,9 @@
 
 package fin.controller.spring;
 
+import fin.controller.spring.ApiResponse;
+import fin.controller.spring.BusinessException;
+import fin.controller.spring.ErrorCode;
 import fin.model.BankTransaction;
 import fin.model.Company;
 import fin.model.FiscalPeriod;
@@ -34,7 +37,6 @@ import fin.model.User;
 import fin.service.spring.BankStatementProcessingService;
 import fin.service.spring.SpringCompanyService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -62,19 +64,14 @@ public class SpringCompanyController {
      * Get all companies
      */
     @GetMapping
-    public ResponseEntity<Map<String, Object>> getAllCompanies() {
+    public ResponseEntity<ApiResponse<List<Company>>> getAllCompanies() {
         try {
             List<Company> companies = companyService.getAllCompanies();
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("data", companies);
-            response.put("count", companies.size());
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(ApiResponse.success("Companies retrieved successfully", companies, companies.size()));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of(
-                "success", false,
-                "message", "Failed to retrieve companies: " + e.getMessage()
-            ));
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error("Failed to retrieve companies: " + e.getMessage(), ErrorCode.INTERNAL_ERROR.getCode())
+            );
         }
     }
 
@@ -448,7 +445,7 @@ public class SpringCompanyController {
      * Get transactions for a company and fiscal period
      */
     @GetMapping("/{companyId}/fiscal-periods/{fiscalPeriodId}/transactions")
-    public ResponseEntity<Map<String, Object>> getTransactions(
+    public ResponseEntity<ApiResponse<List<BankTransaction>>> getTransactions(
             @PathVariable Long companyId,
             @PathVariable Long fiscalPeriodId) {
         try {
@@ -457,21 +454,28 @@ public class SpringCompanyController {
             transactions = transactions.stream()
                     .filter(t -> t.getFiscalPeriodId().equals(fiscalPeriodId))
                     .toList();
-            
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("data", transactions);
-            response.put("count", transactions.size());
-            response.put("company_id", companyId);
-            response.put("timestamp", System.currentTimeMillis());
-            response.put("note", "Transactions retrieved successfully");
-            
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of(
-                "success", false,
-                "message", "Failed to retrieve transactions: " + e.getMessage()
+
+            if (transactions.isEmpty()) {
+                Map<String, Object> metadata = new HashMap<>();
+                metadata.put("companyId", companyId);
+                metadata.put("fiscalPeriodId", fiscalPeriodId);
+                metadata.put("suggestion", "No transactions found for the selected fiscal period. Please check if transactions have been uploaded and classified for this period.");
+
+                return ResponseEntity.ok(ApiResponse.empty(
+                    "No transactions found for fiscal period " + fiscalPeriodId,
+                    metadata
+                ));
+            }
+
+            return ResponseEntity.ok(ApiResponse.success(
+                "Transactions retrieved successfully",
+                transactions,
+                transactions.size()
             ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error("Failed to retrieve transactions: " + e.getMessage(), ErrorCode.INTERNAL_ERROR.getCode())
+            );
         }
     }
 }
