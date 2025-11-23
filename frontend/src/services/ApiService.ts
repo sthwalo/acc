@@ -20,6 +20,56 @@ import type {
 } from '../types/api';
 
 /**
+ * Backend employee response interface (matches actual API response)
+ */
+interface BackendEmployee {
+  id: number;
+  companyId: number;
+  employeeNumber?: string;
+  employeeCode?: string;
+  title?: string;
+  firstName: string;
+  secondName?: string;
+  lastName: string;
+  email?: string;
+  phone?: string;
+  position: string;
+  department?: string;
+  hireDate?: string;
+  dateEngaged?: string;
+  terminationDate?: string;
+  active: boolean;
+  addressLine1?: string;
+  addressLine2?: string;
+  city?: string;
+  province?: string;
+  postalCode?: string;
+  country?: string;
+  bankName?: string;
+  accountHolderName?: string;
+  accountNumber?: string;
+  branchCode?: string;
+  accountType?: string;
+  employmentType: string;
+  salaryType: string;
+  basicSalary?: number;
+  overtimeRate?: number;
+  taxNumber?: string;
+  idNumber?: string;
+  taxRebateCode?: string;
+  uifNumber?: string;
+  medicalAidNumber?: string;
+  pensionFundNumber?: string;
+  createdAt: string;
+  updatedAt: string;
+  createdBy?: string;
+  updatedBy?: string;
+  displayName?: string;
+  fullName?: string;
+  currentEmployee?: boolean;
+}
+
+/**
  * Abstract base class for API services - Abstraction principle
  * Provides common HTTP functionality and error handling
  */
@@ -832,8 +882,61 @@ export class ApiService extends BaseApiService {
   // Employee methods
   async getEmployeesByCompany(companyId: number): Promise<Employee[]> {
     try {
-      const response = await this.client.get<Employee[]>(`/v1/payroll/employees?companyId=${companyId}`);
-      return response.data;
+      // First, fetch the first page to get pagination info
+      const firstResponse = await this.client.get(`/v1/payroll/employees?companyId=${companyId}&size=100`);
+      const firstPageData = firstResponse.data;
+      const totalPages = firstPageData.totalPages || 1;
+      let allEmployees: BackendEmployee[] = [...(firstPageData.content || [])];
+
+      // Fetch remaining pages if any
+      for (let page = 1; page < totalPages; page++) {
+        const response = await this.client.get(`/v1/payroll/employees?companyId=${companyId}&size=100&page=${page}`);
+        const pageData = response.data;
+        const pageEmployees = pageData.content || [];
+        allEmployees = allEmployees.concat(pageEmployees);
+      }
+
+      // Map backend field names to frontend interface
+      return allEmployees.map((emp: BackendEmployee) => ({
+        id: emp.id,
+        companyId: emp.companyId,
+        employeeNumber: emp.employeeCode || emp.employeeNumber || `EMP-${emp.id}`,
+        title: emp.title,
+        firstName: emp.firstName,
+        secondName: emp.secondName,
+        lastName: emp.lastName,
+        email: emp.email,
+        phone: emp.phone,
+        position: emp.position,
+        department: emp.department,
+        hireDate: emp.dateEngaged || emp.hireDate,
+        terminationDate: emp.terminationDate,
+        isActive: emp.active,
+        addressLine1: emp.addressLine1,
+        addressLine2: emp.addressLine2,
+        city: emp.city,
+        province: emp.province,
+        postalCode: emp.postalCode,
+        country: emp.country,
+        bankName: emp.bankName,
+        accountHolderName: emp.accountHolderName,
+        accountNumber: emp.accountNumber,
+        branchCode: emp.branchCode,
+        accountType: emp.accountType,
+        employmentType: emp.employmentType as 'PERMANENT' | 'CONTRACT' | 'TEMPORARY',
+        salaryType: emp.salaryType as 'MONTHLY' | 'WEEKLY' | 'HOURLY' | 'DAILY',
+        basicSalary: emp.basicSalary,
+        overtimeRate: emp.overtimeRate,
+        taxNumber: emp.idNumber || emp.taxNumber,
+        taxRebateCode: emp.taxRebateCode,
+        uifNumber: emp.uifNumber,
+        medicalAidNumber: emp.medicalAidNumber,
+        pensionFundNumber: emp.pensionFundNumber,
+        createdAt: emp.createdAt,
+        updatedAt: emp.updatedAt,
+        createdBy: emp.createdBy,
+        updatedBy: emp.updatedBy,
+      }));
     } catch (error) {
       this.handleError('Get employees by company', error);
     }
@@ -841,8 +944,61 @@ export class ApiService extends BaseApiService {
 
   async getActiveEmployeesByCompany(companyId: number): Promise<Employee[]> {
     try {
-      const response = await this.client.get<Employee[]>(`/v1/payroll/employees?companyId=${companyId}&active=true`);
-      return response.data;
+      // First, fetch the first page to get pagination info
+      const firstResponse = await this.client.get(`/v1/payroll/employees?companyId=${companyId}&active=true&size=100`);
+      const firstPageData = firstResponse.data;
+      const totalPages = firstPageData.totalPages || 1;
+      let allEmployees: BackendEmployee[] = [...(firstPageData.content || [])];
+
+      // Fetch remaining pages if any
+      for (let page = 1; page < totalPages; page++) {
+        const response = await this.client.get(`/v1/payroll/employees?companyId=${companyId}&active=true&size=100&page=${page}`);
+        const pageData = response.data;
+        const pageEmployees = pageData.content || [];
+        allEmployees = allEmployees.concat(pageEmployees);
+      }
+
+      // Map backend field names to frontend interface
+      return allEmployees.map((emp: BackendEmployee) => ({
+        id: emp.id,
+        companyId: emp.companyId,
+        employeeNumber: emp.employeeCode || emp.employeeNumber || `EMP-${emp.id}`,
+        title: emp.title,
+        firstName: emp.firstName,
+        secondName: emp.secondName,
+        lastName: emp.lastName,
+        email: emp.email,
+        phone: emp.phone,
+        position: emp.position,
+        department: emp.department,
+        hireDate: emp.dateEngaged || emp.hireDate,
+        terminationDate: emp.terminationDate,
+        isActive: emp.active,
+        addressLine1: emp.addressLine1,
+        addressLine2: emp.addressLine2,
+        city: emp.city,
+        province: emp.province,
+        postalCode: emp.postalCode,
+        country: emp.country,
+        bankName: emp.bankName,
+        accountHolderName: emp.accountHolderName,
+        accountNumber: emp.accountNumber,
+        branchCode: emp.branchCode,
+        accountType: emp.accountType,
+        employmentType: emp.employmentType as 'PERMANENT' | 'CONTRACT' | 'TEMPORARY',
+        salaryType: emp.salaryType as 'MONTHLY' | 'WEEKLY' | 'HOURLY' | 'DAILY',
+        basicSalary: emp.basicSalary,
+        overtimeRate: emp.overtimeRate,
+        taxNumber: emp.idNumber || emp.taxNumber,
+        taxRebateCode: emp.taxRebateCode,
+        uifNumber: emp.uifNumber,
+        medicalAidNumber: emp.medicalAidNumber,
+        pensionFundNumber: emp.pensionFundNumber,
+        createdAt: emp.createdAt,
+        updatedAt: emp.updatedAt,
+        createdBy: emp.createdBy,
+        updatedBy: emp.updatedBy,
+      }));
     } catch (error) {
       this.handleError('Get active employees by company', error);
     }
@@ -850,8 +1006,50 @@ export class ApiService extends BaseApiService {
 
   async getEmployeeById(employeeId: number): Promise<Employee> {
     try {
-      const response = await this.client.get<Employee>(`/v1/payroll/employees/${employeeId}`);
-      return response.data;
+      const response = await this.client.get<BackendEmployee>(`/v1/payroll/employees/${employeeId}`);
+      const emp = response.data;
+
+      // Map backend field names to frontend interface
+      return {
+        id: emp.id,
+        companyId: emp.companyId,
+        employeeNumber: emp.employeeCode || emp.employeeNumber || `EMP-${emp.id}`,
+        title: emp.title,
+        firstName: emp.firstName,
+        secondName: emp.secondName,
+        lastName: emp.lastName,
+        email: emp.email,
+        phone: emp.phone,
+        position: emp.position,
+        department: emp.department,
+        hireDate: emp.dateEngaged || emp.hireDate,
+        terminationDate: emp.terminationDate,
+        isActive: emp.active,
+        addressLine1: emp.addressLine1,
+        addressLine2: emp.addressLine2,
+        city: emp.city,
+        province: emp.province,
+        postalCode: emp.postalCode,
+        country: emp.country,
+        bankName: emp.bankName,
+        accountHolderName: emp.accountHolderName,
+        accountNumber: emp.accountNumber,
+        branchCode: emp.branchCode,
+        accountType: emp.accountType,
+        employmentType: emp.employmentType as 'PERMANENT' | 'CONTRACT' | 'TEMPORARY',
+        salaryType: emp.salaryType as 'MONTHLY' | 'WEEKLY' | 'HOURLY' | 'DAILY',
+        basicSalary: emp.basicSalary,
+        overtimeRate: emp.overtimeRate,
+        taxNumber: emp.idNumber || emp.taxNumber,
+        taxRebateCode: emp.taxRebateCode,
+        uifNumber: emp.uifNumber,
+        medicalAidNumber: emp.medicalAidNumber,
+        pensionFundNumber: emp.pensionFundNumber,
+        createdAt: emp.createdAt,
+        updatedAt: emp.updatedAt,
+        createdBy: emp.createdBy,
+        updatedBy: emp.updatedBy,
+      };
     } catch (error) {
       this.handleError('Get employee by ID', error);
     }

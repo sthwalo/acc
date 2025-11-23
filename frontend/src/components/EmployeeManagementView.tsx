@@ -48,43 +48,53 @@ export default function EmployeeManagementView({ selectedCompany }: EmployeeMana
   }, [api, selectedCompany.id]);
 
   const filterAndSortEmployees = useCallback(() => {
-    let filtered = employees;
+    // Ensure employees is an array
+    if (!Array.isArray(employees)) {
+      setFilteredEmployees([]);
+      return;
+    }
+
+    let filtered = [...employees]; // Create a copy to avoid mutating state
 
     // Filter by active status
     if (showActiveOnly) {
-      filtered = filtered.filter(emp => emp.isActive);
+      filtered = filtered.filter(emp => emp && emp.isActive);
     }
 
     // Filter by search term
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(emp =>
-        emp.firstName.toLowerCase().includes(term) ||
-        emp.lastName.toLowerCase().includes(term) ||
-        emp.employeeNumber.toLowerCase().includes(term) ||
-        emp.position.toLowerCase().includes(term) ||
+        emp &&
+        (emp.firstName?.toLowerCase().includes(term) ||
+        emp.lastName?.toLowerCase().includes(term) ||
+        emp.employeeNumber?.toLowerCase().includes(term) ||
+        emp.position?.toLowerCase().includes(term) ||
         emp.department?.toLowerCase().includes(term) ||
-        emp.email?.toLowerCase().includes(term)
+        emp.email?.toLowerCase().includes(term))
       );
     }
 
     // Sort employees
     filtered.sort((a, b) => {
+      // Ensure both employees exist
+      if (!a || !b) return 0;
+
       let aValue: string;
       let bValue: string;
 
       switch (sortBy) {
         case 'name':
-          aValue = `${a.lastName} ${a.firstName}`.toLowerCase();
-          bValue = `${b.lastName} ${b.firstName}`.toLowerCase();
+          aValue = `${a.lastName || ''} ${a.firstName || ''}`.toLowerCase();
+          bValue = `${b.lastName || ''} ${b.firstName || ''}`.toLowerCase();
           break;
         case 'employeeNumber':
-          aValue = a.employeeNumber.toLowerCase();
-          bValue = b.employeeNumber.toLowerCase();
+          aValue = (a.employeeNumber || '').toLowerCase();
+          bValue = (b.employeeNumber || '').toLowerCase();
           break;
         case 'position':
-          aValue = a.position.toLowerCase();
-          bValue = b.position.toLowerCase();
+          aValue = (a.position || '').toLowerCase();
+          bValue = (b.position || '').toLowerCase();
           break;
         case 'department':
           aValue = (a.department || '').toLowerCase();
@@ -258,14 +268,14 @@ export default function EmployeeManagementView({ selectedCompany }: EmployeeMana
         <div className="summary-item">
           <Users size={20} />
           <div>
-            <div className="summary-value">{employees.length}</div>
+            <div className="summary-value">{Array.isArray(employees) ? employees.length : 0}</div>
             <div className="summary-label">Total Employees</div>
           </div>
         </div>
         <div className="summary-item">
           <Users size={20} />
           <div>
-            <div className="summary-value">{employees.filter(e => e.isActive).length}</div>
+            <div className="summary-value">{Array.isArray(employees) ? employees.filter(e => e && e.isActive).length : 0}</div>
             <div className="summary-label">Active Employees</div>
           </div>
         </div>
