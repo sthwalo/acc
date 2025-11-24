@@ -71,7 +71,7 @@ public class SARSTaxCalculator {
     public void initializeTaxTables() {
         try {
             // Load tax tables from the PDF text file for accurate SARS 2026 calculations
-            String pdfTextPath = "input/PAYE-GEN-01-G01-A03-2026-Monthly-Tax-Deduction-Tables-External-Annexure.txt";
+            String pdfTextPath = "/app/input/PAYE-GEN-01-G01-A03-2026-Monthly-Tax-Deduction-Tables-External-Annexure.txt";
             loadTaxTablesFromPDFText(pdfTextPath);
             LOGGER.info("SARS Tax Calculator initialized with " + taxBrackets.size() + " tax brackets from official 2026 tables");
         } catch (IOException e) {
@@ -135,7 +135,6 @@ public class SARSTaxCalculator {
                     
                     // Add first bracket
                     taxBrackets.add(new TaxBracket(lower1, upper1, tax1));
-                    System.out.printf("✓ Added first bracket: R%.0f - R%.0f → Tax R%.0f%n", lower1, upper1, tax1);
                     
                     // Parse second bracket
                     double lower2 = parseNumber(matcher.group(REGEX_GROUP_LOWER_2));
@@ -144,7 +143,6 @@ public class SARSTaxCalculator {
                     
                     // Add second bracket
                     taxBrackets.add(new TaxBracket(lower2, upper2, tax2));
-                    System.out.printf("✓ Added second bracket: R%.0f - R%.0f → Tax R%.2f%n", lower2, upper2, tax2);
                     
                 } catch (Exception e) {
                     System.err.println("Error parsing line: " + line + " - " + e.getMessage());
@@ -191,19 +189,14 @@ public class SARSTaxCalculator {
     }
 
     public double findPAYE(double grossSalary) {
-        // Debug: Print the actual salary value
-        System.out.printf("DEBUG: findPAYE called with grossSalary = %.2f%n", grossSalary);
-        
         // Handle salaries below the tax threshold (below R5,586 based on loaded brackets)
         if (grossSalary < TAX_FREE_THRESHOLD) {
-            System.out.printf("✓ Salary R%.2f is below tax threshold, no PAYE tax%n", grossSalary);
             return 0.0;
         }
         
         // Search for the exact bracket in our loaded tax table
         for (TaxBracket bracket : taxBrackets) {
             if (grossSalary >= bracket.lower && grossSalary <= bracket.upper) {
-                System.out.printf("✓ Found bracket: %s for gross R%.2f%n", bracket, grossSalary);
                 return bracket.tax;
             }
         }
@@ -212,14 +205,11 @@ public class SARSTaxCalculator {
         if (!taxBrackets.isEmpty()) {
             // If salary is above the highest bracket, use the highest bracket's tax
             if (grossSalary > taxBrackets.get(taxBrackets.size()-1).upper) {
-                double highestTax = taxBrackets.get(taxBrackets.size()-1).tax;
-                System.out.printf("⚠ Salary R%.2f exceeds table range, using highest bracket tax: R%.2f%n", grossSalary, highestTax);
-                return highestTax;
+                return taxBrackets.get(taxBrackets.size()-1).tax;
             }
             
             // If salary is below the lowest bracket, use zero
             if (grossSalary < taxBrackets.get(0).lower) {
-                System.out.printf("✓ Salary R%.2f is below lowest bracket, no PAYE tax%n", grossSalary);
                 return 0.0;
             }
         }

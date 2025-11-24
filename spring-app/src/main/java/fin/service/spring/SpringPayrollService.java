@@ -60,24 +60,22 @@ public class SpringPayrollService {
     private final CompanyRepository companyRepository;
     private final SpringPayslipPdfService payslipPdfService;
     private final SpringCompanyService companyService;
-
-    // Tax rates (simplified - in production these would come from SARS tables)
-    private static final BigDecimal PAYE_RATE = new BigDecimal("0.18"); // 18% PAYE
-    private static final BigDecimal UIF_RATE = new BigDecimal("0.01"); // 1% UIF
-    private static final BigDecimal SDL_RATE = new BigDecimal("0.01"); // 1% SDL
+    private final SARSTaxCalculator sarsTaxCalculator;
 
     public SpringPayrollService(EmployeeRepository employeeRepository,
                               FiscalPeriodRepository fiscalPeriodRepository,
                               PayslipRepository payslipRepository,
                               CompanyRepository companyRepository,
                               SpringPayslipPdfService payslipPdfService,
-                              SpringCompanyService companyService) {
+                              SpringCompanyService companyService,
+                              SARSTaxCalculator sarsTaxCalculator) {
         this.employeeRepository = employeeRepository;
         this.fiscalPeriodRepository = fiscalPeriodRepository;
         this.payslipRepository = payslipRepository;
         this.companyRepository = companyRepository;
         this.payslipPdfService = payslipPdfService;
         this.companyService = companyService;
+        this.sarsTaxCalculator = sarsTaxCalculator;
     }
 
     /**
@@ -431,15 +429,21 @@ public class SpringPayrollService {
      * Process all employees and calculate payroll totals
      */
     private PayrollProcessingResult processEmployeesAndCalculateTotals(List<Employee> employees, FiscalPeriod period) {
+        // First pass: calculate total company payroll for SDL calculation
+        BigDecimal totalCompanyPayroll = BigDecimal.ZERO;
+        for (Employee employee : employees) {
+            totalCompanyPayroll = totalCompanyPayroll.add(employee.getBasicSalary());
+        }
+
         BigDecimal totalGross = BigDecimal.ZERO;
         BigDecimal totalDeductions = BigDecimal.ZERO;
         BigDecimal totalNet = BigDecimal.ZERO;
         int processedCount = 0;
 
-        // Process each employee
+        // Second pass: process each employee with total payroll for accurate SDL calculation
         for (Employee employee : employees) {
             LOGGER.info("Processing employee: " + employee.getEmployeeCode() + " - " + employee.getFirstName() + " " + employee.getLastName());
-            Payslip payslip = calculatePayslip(employee, period);
+            Payslip payslip = calculatePayslip(employee, period, totalCompanyPayroll);
             payslipRepository.save(payslip);
 
             totalGross = totalGross.add(payslip.getGrossSalary());
@@ -470,20 +474,26 @@ public class SpringPayrollService {
      * Calculate payslip for an employee
      * @param employee the employee to calculate payslip for
      * @param period the fiscal period
+     * @param totalCompanyPayroll the total payroll for the company (for SDL calculation)
      * @return the calculated payslip
      */
-    private Payslip calculatePayslip(Employee employee, FiscalPeriod period) {
+    private Payslip calculatePayslip(Employee employee, FiscalPeriod period, BigDecimal totalCompanyPayroll) {
         // Calculate gross salary (assuming monthly salary)
         BigDecimal grossSalary = employee.getBasicSalary();
+        double grossDouble = grossSalary.doubleValue();
+        double totalPayrollDouble = totalCompanyPayroll.doubleValue();
 
-        // Calculate PAYE (simplified)
-        BigDecimal paye = grossSalary.multiply(PAYE_RATE).setScale(2, RoundingMode.HALF_UP);
+        // Calculate PAYE using SARS tax calculator
+        double payeDouble = sarsTaxCalculator.findPAYE(grossDouble);
+        BigDecimal paye = BigDecimal.valueOf(payeDouble).setScale(2, RoundingMode.HALF_UP);
 
-        // Calculate UIF
-        BigDecimal uif = grossSalary.multiply(UIF_RATE).setScale(2, RoundingMode.HALF_UP);
+        // Calculate UIF using SARS tax calculator
+        double uifDouble = sarsTaxCalculator.calculateUIF(grossDouble);
+        BigDecimal uif = BigDecimal.valueOf(uifDouble).setScale(2, RoundingMode.HALF_UP);
 
-        // Calculate SDL (employer's contribution)
-        BigDecimal sdl = grossSalary.multiply(SDL_RATE).setScale(2, RoundingMode.HALF_UP);
+        // Calculate SDL (employer's contribution) using SARS tax calculator
+        double sdlDouble = sarsTaxCalculator.calculateSDL(grossDouble, totalPayrollDouble);
+        BigDecimal sdl = BigDecimal.valueOf(sdlDouble).setScale(2, RoundingMode.HALF_UP);
 
         // Calculate total deductions
         BigDecimal totalDeductions = paye.add(uif);

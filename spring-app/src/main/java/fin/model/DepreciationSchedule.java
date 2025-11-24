@@ -35,6 +35,7 @@ import java.time.LocalDateTime;
  */
 @Entity
 @Table(name = "depreciation_schedules")
+@SuppressWarnings("DesignForExtension")
 public class DepreciationSchedule {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -209,80 +210,80 @@ public class DepreciationSchedule {
         return accumulatedDepreciation;
     }
 
-    public void setAccumulatedDepreciation(BigDecimal accumulatedDepreciation) {
-        this.accumulatedDepreciation = accumulatedDepreciation;
+    public void setAccumulatedDepreciation(BigDecimal value) {
+        this.accumulatedDepreciation = value;
     }
 
     public java.time.LocalDate getDisposalDate() {
         return disposalDate;
     }
 
-    public void setDisposalDate(java.time.LocalDate disposalDate) {
-        this.disposalDate = disposalDate;
+    public void setDisposalDate(java.time.LocalDate date) {
+        this.disposalDate = date;
     }
 
     public BigDecimal getDisposalProceeds() {
         return disposalProceeds;
     }
 
-    public void setDisposalProceeds(BigDecimal disposalProceeds) {
-        this.disposalProceeds = disposalProceeds;
+    public void setDisposalProceeds(BigDecimal proceeds) {
+        this.disposalProceeds = proceeds;
     }
 
     public Long getCompanyId() {
         return companyId;
     }
 
-    public void setCompanyId(Long companyId) {
-        this.companyId = companyId;
+    public void setCompanyId(Long companyIdValue) {
+        this.companyId = companyIdValue;
     }
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
+    public void setCreatedAt(LocalDateTime createdAtValue) {
+        this.createdAt = createdAtValue;
     }
 
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
+    public void setUpdatedAt(LocalDateTime updatedAtValue) {
+        this.updatedAt = updatedAtValue;
     }
 
     public BigDecimal getAssetCost() {
         return cost;
     }
 
-    public void setAssetCost(BigDecimal assetCost) {
-        this.cost = assetCost;
+    public void setAssetCost(BigDecimal assetCostValue) {
+        this.cost = assetCostValue;
     }
 
     public BigDecimal getResidualValue() {
         return salvageValue;
     }
 
-    public void setResidualValue(BigDecimal residualValue) {
-        this.salvageValue = residualValue;
+    public void setResidualValue(BigDecimal residualValueAmount) {
+        this.salvageValue = residualValueAmount;
     }
 
     public String getAssetName() {
         return scheduleName;
     }
 
-    public void setAssetName(String assetName) {
-        this.scheduleName = assetName;
+    public void setAssetName(String assetNameValue) {
+        this.scheduleName = assetNameValue;
     }
 
     public Long getAccountId() {
         return assetId;
     }
 
-    public void setAccountId(Long accountId) {
-        this.assetId = accountId;
+    public void setAccountId(Long accountIdValue) {
+        this.assetId = accountIdValue;
     }
 
     public Long getAccumulatedDepreciationAccountId() {

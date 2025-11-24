@@ -27,6 +27,8 @@ services:
       SPRING_SECURITY_CORS_ALLOW_CREDENTIALS: "true"
     ports:
       - "8080:8080"
+    volumes:
+      - ./input:/app/input:ro
     networks:
       - fin-network
     restart: unless-stopped

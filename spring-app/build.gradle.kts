@@ -45,6 +45,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-validation")
+    implementation("org.flywaydb:flyway-core")  // Database migration tool
+    implementation("org.flywaydb:flyway-database-postgresql")  // PostgreSQL support
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 
     // Use JUnit Jupiter for testing.
@@ -59,6 +61,7 @@ dependencies {
     
     // Database drivers
     runtimeOnly("org.postgresql:postgresql")  // PostgreSQL driver (managed by Spring Boot)
+    testRuntimeOnly("com.h2database:h2")      // H2 in-memory database for testing
     implementation("com.zaxxer:HikariCP:5.0.1")         // Connection pooling
     
     // PDF libraries - OPEN SOURCE ONLY (no iText due to commercial licensing)
