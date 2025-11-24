@@ -425,7 +425,7 @@ public class SomeRepository {
 **Build & Test**:
 ```bash
 cd /Users/sthwalonyoni/FIN && ./start.sh.    
-./gradlew clean build                    # Full build with quality checks
+cd /Users/sthwalonyoni/FIN/spring-app && ./gradlew clean build  # Full build with quality checks
 ./gradlew test                          # Run test suite
 ./gradlew checkstyleMain                # Code quality scan
 ```
@@ -440,7 +440,7 @@ source .env                             # Load database credentials
 **Development Modes** (Container-First Approach):
 ```bash
 # Build JAR (only when code changes)
-./gradlew build
+cd /Users/sthwalonyoni/FIN/spring-app && ./gradlew clean build --no-daemon
 
 # Container-First Development (MANDATORY - same as production)
 docker compose -f docker-compose.yml -f docker-compose.frontend.yml up -d
@@ -492,7 +492,7 @@ cat docs/development/tasks/README.md
 
 #### 1. **BUILD VERIFICATION** (Required After Every Code Change)
 ```bash
-./gradlew clean build
+cd /Users/sthwalonyoni/FIN/spring-app && ./gradlew clean build --no-daemon
 ```
 This ensures:
 - All code compiles correctly

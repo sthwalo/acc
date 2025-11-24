@@ -6,7 +6,7 @@ import type { Company, FiscalPeriod, PayrollPeriod } from '../types/api';
 
 interface PayrollManagementViewProps {
   selectedCompany: Company;
-  onViewChange?: (view: 'companies' | 'fiscal-periods' | 'upload' | 'transactions' | 'generate-reports' | 'data-management' | 'payroll-management' | 'budget-management' | 'employee-management' | 'depreciation-calculator' | 'current-time' | 'system-logs') => void;
+  onViewChange?: (view: 'companies' | 'fiscal-periods' | 'upload' | 'transactions' | 'generate-reports' | 'data-management' | 'payroll-management' | 'budget-management' | 'employee-management' | 'depreciation-calculator' | 'current-time' | 'system-logs' | 'payslips') => void;
 }
 
 export default function PayrollManagementView({ selectedCompany, onViewChange }: PayrollManagementViewProps) {
@@ -472,6 +472,14 @@ export default function PayrollManagementView({ selectedCompany, onViewChange }:
                           title="View details"
                         >
                           <FileText size={16} />
+                        </button>
+                        <button
+                          className="action-button payslips"
+                          onClick={() => onViewChange?.('payslips')}
+                          title="View payslips"
+                          disabled={period.status !== 'PROCESSED'}
+                        >
+                          <Users size={16} />
                         </button>
                         <button
                           className="action-button download"

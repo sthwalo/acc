@@ -84,6 +84,8 @@ build_frontend() {
     if [ ! -d "dist" ] || find src -newer dist -type f | read; then
         print_status "Building frontend dist..."
         npm install
+        # Set API URL for containerized frontend to reach backend via host port
+        export VITE_API_URL=http://localhost:8080/api
         npm run build
         print_success "Frontend built successfully"
     else

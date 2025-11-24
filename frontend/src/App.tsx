@@ -15,11 +15,12 @@ import EmployeeManagementView from './components/EmployeeManagementView';
 import DepreciationCalculatorView from './components/DepreciationCalculatorView';
 import CurrentTimeView from './components/CurrentTimeView';
 import SystemLogsView from './components/SystemLogsView';
+import PayslipsView from './components/PayslipsView';
 import Login from './components/auth/Login';
 import Register from './components/auth/Register';
 import './App.css';
 
-type View = 'companies' | 'fiscal-periods' | 'upload' | 'transactions' | 'generate-reports' | 'data-management' | 'payroll-management' | 'budget-management' | 'employee-management' | 'depreciation-calculator' | 'current-time' | 'system-logs';
+type View = 'companies' | 'fiscal-periods' | 'upload' | 'transactions' | 'generate-reports' | 'data-management' | 'payroll-management' | 'budget-management' | 'employee-management' | 'depreciation-calculator' | 'current-time' | 'system-logs' | 'payslips';
 type AuthView = 'login' | 'register';
 
 function App() {
@@ -164,6 +165,26 @@ function App() {
             <Building2 size={48} />
             <h3>Please select a company first</h3>
             <p>Choose a company from the Company Setup view to manage payroll.</p>
+          </div>
+        );
+      case 'payslips':
+        return selectedCompany ? (
+          selectedFiscalPeriod ? (
+            <PayslipsView 
+              selectedFiscalPeriod={selectedFiscalPeriod}
+            />
+          ) : (
+            <div className="empty-state">
+              <Calendar size={48} />
+              <h3>Please select a fiscal period first</h3>
+              <p>Choose a fiscal period from the Fiscal Period Management view to view payslips.</p>
+            </div>
+          )
+        ) : (
+          <div className="empty-state">
+            <Building2 size={48} />
+            <h3>Please select a company first</h3>
+            <p>Choose a company from the Company Setup view to view payslips.</p>
           </div>
         );
       case 'employee-management':

@@ -36,8 +36,28 @@ import com.sun.jna.Pointer;
  * Provides Java access to libharu's native C functions for manual PDF generation
  */
 public interface Libharu extends Library {
-    // Load the library explicitly from the Homebrew path
-    Libharu INSTANCE = (Libharu) Native.load("/opt/homebrew/lib/libhpdf.dylib", Libharu.class);
+    // Load the library - try Linux first (Docker), then macOS (development)
+    Libharu INSTANCE = loadLibharu();
+
+    private static Libharu loadLibharu() {
+        // Try Linux paths first (for Docker containers)
+        String[] linuxPaths = {"/usr/lib/libhpdf.so", "/usr/local/lib/libhpdf.so", "libhpdf.so"};
+        for (String path : linuxPaths) {
+            try {
+                return (Libharu) Native.load(path, Libharu.class);
+            } catch (UnsatisfiedLinkError e) {
+                // Continue to next path
+            }
+        }
+
+        // Try macOS path (for local development)
+        try {
+            return (Libharu) Native.load("/opt/homebrew/lib/libhpdf.dylib", Libharu.class);
+        } catch (UnsatisfiedLinkError e) {
+            throw new RuntimeException("Failed to load libharu library. Please ensure libharu is installed. " +
+                "On macOS: brew install libharu. On Linux/Docker: apt-get install libhpdf-dev", e);
+        }
+    }
 
     // PDF document creation and management
     Pointer HPDF_New(Pointer errorHandler, Pointer userData);

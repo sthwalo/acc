@@ -4,9 +4,9 @@
 # Runtime image only (no build stage)
 FROM eclipse-temurin:17-jre
 
-# Install PostgreSQL client
+# Install PostgreSQL client and libharu for PDF generation
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends postgresql-client wget unzip && \
+    apt-get install -y --no-install-recommends postgresql-client wget unzip libhpdf-dev fonts-dejavu-core fonts-liberation && \
     rm -rf /var/lib/apt/lists/* && \
     apt-get clean
 

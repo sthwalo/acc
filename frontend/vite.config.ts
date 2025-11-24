@@ -34,6 +34,14 @@ export default defineConfig({
             const url = req.url ?? '';
             console.log('Proxying request:', req.method, url, '->', options.target + url);
           });
+          // Log proxied responses to detect any header/content modifications
+          proxy.on('proxyRes', (proxyRes, req) => {
+            try {
+              console.log('Proxy response:', req.method, req.url, 'status=', proxyRes.statusCode, 'headers=', proxyRes.headers);
+            } catch (e) {
+              console.warn('Failed to log proxy response:', e);
+            }
+          });
         }
       }
     },

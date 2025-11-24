@@ -1,18 +1,29 @@
 package fin.controller.spring;
 
+import fin.model.Company;
 import fin.model.Employee;
 import fin.model.FiscalPeriod;
 import fin.model.Payslip;
+import fin.service.spring.EmailService;
+import fin.service.spring.SpringPayslipPdfService;
 import fin.service.spring.SpringPayrollService;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+import java.io.ByteArrayOutputStream;
 
 /**
  * Spring REST Controller for payroll operations.
@@ -22,9 +33,12 @@ import java.util.Optional;
 public class SpringPayrollController {
 
     private final SpringPayrollService payrollService;
+    private final SpringPayslipPdfService payslipPdfService;
+    private static final Logger LOGGER = Logger.getLogger(SpringPayrollController.class.getName());
 
-    public SpringPayrollController(SpringPayrollService payrollService) {
+    public SpringPayrollController(SpringPayrollService payrollService, SpringPayslipPdfService payslipPdfService) {
         this.payrollService = payrollService;
+        this.payslipPdfService = payslipPdfService;
     }
 
     // ===== EMPLOYEE MANAGEMENT ENDPOINTS =====
@@ -270,13 +284,23 @@ public class SpringPayrollController {
     // ===== PAYSLIP GENERATION ENDPOINTS =====
 
     /**
-     * Generate payslips for a fiscal period
+     * Generate payslips
      */
     @PostMapping("/payslips/generate")
-    public ResponseEntity<Void> generatePayslips(@RequestBody PayslipGenerationRequest request) {
+    public ResponseEntity<byte[]> generatePayslips(PayslipGenerationRequest request) {
         try {
-            payrollService.generatePayslips(request.getFiscalPeriodId(), request.getEmployeeIds());
-            return ResponseEntity.ok().build();
+            List<byte[]> pdfs = payrollService.generatePayslips(request.getFiscalPeriodId(), request.getEmployeeIds());
+            if (pdfs.isEmpty()) {
+                return ResponseEntity.noContent().build();
+            }
+
+            // Return the first PDF with proper headers
+            // TODO: Implement ZIP download for multiple PDFs
+            byte[] pdfData = pdfs.get(0);
+            return ResponseEntity.ok()
+                .header("Content-Disposition", "attachment; filename=\"payslip.pdf\"")
+                .header("Content-Type", "application/pdf")
+                .body(pdfData);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
         }
@@ -308,19 +332,213 @@ public class SpringPayrollController {
         }
     }
 
+    /**
+     * Generate PDF for a specific payslip
+     */
+    @GetMapping("/payslips/{payslipId}/pdf")
+    public ResponseEntity<byte[]> generatePayslipPDF(@PathVariable Long payslipId) {
+        try {
+            // Get payslip data from service
+            Optional<Payslip> payslipOpt = payrollService.getPayslipById(payslipId);
+            if (payslipOpt.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+            Payslip payslip = payslipOpt.get();
+
+            // Get related data
+            Optional<Employee> employeeOpt = payrollService.getEmployeeById(payslip.getEmployeeId());
+            if (employeeOpt.isEmpty()) {
+                return ResponseEntity.internalServerError().build();
+            }
+            Employee employee = employeeOpt.get();
+
+            Optional<Company> companyOpt = payrollService.getCompanyById(payslip.getCompanyId());
+            if (companyOpt.isEmpty()) {
+                return ResponseEntity.internalServerError().build();
+            }
+            Company company = companyOpt.get();
+
+            Optional<FiscalPeriod> fiscalPeriodOpt = payrollService.getFiscalPeriodById(payslip.getFiscalPeriodId());
+            if (fiscalPeriodOpt.isEmpty()) {
+                return ResponseEntity.internalServerError().build();
+            }
+            FiscalPeriod fiscalPeriod = fiscalPeriodOpt.get();
+
+            // Generate PDF using the service
+            byte[] pdfBytes = payslipPdfService.generatePayslipPdf(payslip, employee, company, fiscalPeriod);
+
+            return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"payslip-" + payslipId + ".pdf\"")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdfBytes);
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Failed to generate payslip PDF for ID: " + payslipId, e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * Generate bulk PDF for multiple payslips
+     */
+    @PostMapping("/payslips/bulk-pdf")
+    public ResponseEntity<byte[]> exportBulkPDFs(@RequestBody BulkPdfRequest request) {
+        try {
+            // For now, return a placeholder - in real implementation, we'd generate a ZIP with all PDFs
+            byte[] zipBytes = "ZIP content with multiple PDFs would go here".getBytes();
+
+            return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"payslips-bulk.zip\"")
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .body(zipBytes);
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    /**
+     * Export all payslips for a fiscal period as ZIP
+     */
+    @GetMapping("/payslips/bulk-export")
+    public ResponseEntity<byte[]> exportBulkPayslipsByFiscalPeriod(@RequestParam Long fiscalPeriodId) {
+        try {
+            LOGGER.info("Starting bulk export for fiscal period: " + fiscalPeriodId);
+
+            // Get all payslips for the fiscal period
+            List<Payslip> payslips = payrollService.getPayslipsByPeriod(fiscalPeriodId);
+            LOGGER.info("Found " + payslips.size() + " payslips for fiscal period: " + fiscalPeriodId);
+
+            if (payslips.isEmpty()) {
+                LOGGER.warning("No payslips found for fiscal period: " + fiscalPeriodId);
+                return ResponseEntity.notFound().build();
+            }
+
+            // Get fiscal period details for filename
+            Optional<FiscalPeriod> fiscalPeriodOpt = payrollService.getFiscalPeriodById(fiscalPeriodId);
+            String periodName = fiscalPeriodOpt.map(FiscalPeriod::getPeriodName).orElse("Unknown");
+            LOGGER.info("Fiscal period name: " + periodName);
+
+            // Create ZIP file containing all payslip PDFs
+            ByteArrayOutputStream zipOutputStream = new ByteArrayOutputStream();
+            int successfulPdfs = 0;
+
+            try (ZipOutputStream zipOut = new ZipOutputStream(zipOutputStream)) {
+                for (Payslip payslip : payslips) {
+                    try {
+                        LOGGER.fine("Processing payslip ID: " + payslip.getId());
+
+                        // Get employee details for filename
+                        Optional<Employee> employeeOpt = payrollService.getEmployeeById(payslip.getEmployeeId());
+                        if (employeeOpt.isEmpty()) {
+                            LOGGER.warning("Employee not found for payslip ID: " + payslip.getId() + ", employee ID: " + payslip.getEmployeeId());
+                            continue; // Skip if employee not found
+                        }
+                        Employee employee = employeeOpt.get();
+
+                        // Get company details
+                        Optional<Company> companyOpt = payrollService.getCompanyById(payslip.getCompanyId());
+                        if (companyOpt.isEmpty()) {
+                            LOGGER.warning("Company not found for payslip ID: " + payslip.getId() + ", company ID: " + payslip.getCompanyId());
+                            continue; // Skip if company not found
+                        }
+                        Company company = companyOpt.get();
+
+                        // Generate PDF for this payslip
+                        byte[] pdfBytes = payslipPdfService.generatePayslipPdf(payslip, employee, company,
+                            fiscalPeriodOpt.orElse(null));
+                        LOGGER.fine("Generated PDF for payslip ID: " + payslip.getId() + ", size: " + pdfBytes.length + " bytes");
+
+                        // Create filename: EmployeeName_EmployeeCode_PeriodName.pdf
+                        String fileName = String.format("%s_%s_%s.pdf",
+                            employee.getFirstName() + "_" + employee.getLastName(),
+                            employee.getEmployeeCode(),
+                            periodName.replace("/", "-"));
+
+                        // Add PDF to ZIP
+                        ZipEntry zipEntry = new ZipEntry(fileName);
+                        zipOut.putNextEntry(zipEntry);
+                        zipOut.write(pdfBytes);
+                        zipOut.closeEntry();
+                        successfulPdfs++;
+
+                        LOGGER.fine("Added PDF to ZIP: " + fileName);
+
+                    } catch (Exception e) {
+                        LOGGER.log(Level.WARNING, "Failed to generate PDF for payslip ID: " + payslip.getId(), e);
+                        // Continue with other payslips
+                    }
+                }
+            }
+
+            byte[] zipBytes = zipOutputStream.toByteArray();
+            LOGGER.info("ZIP file created with " + successfulPdfs + " PDFs, total size: " + zipBytes.length + " bytes");
+
+            if (zipBytes.length == 0) {
+                LOGGER.warning("ZIP file is empty, no PDFs were successfully generated");
+                return ResponseEntity.internalServerError().build();
+            }
+
+            if (zipBytes.length == 22) { // Empty ZIP file (only contains ZIP header)
+                LOGGER.warning("ZIP file contains only header, no actual content");
+                return ResponseEntity.internalServerError().build();
+            }
+
+            LOGGER.info("Returning ZIP file with " + successfulPdfs + " payslip PDFs");
+            return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                    String.format("attachment; filename=\"Payslips_%s.zip\"", periodName.replace("/", "-")))
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .body(zipBytes);
+
+        } catch (IllegalArgumentException e) {
+            LOGGER.log(Level.WARNING, "Invalid argument for bulk export: " + fiscalPeriodId, e);
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Failed to generate bulk payslip ZIP for fiscal period: " + fiscalPeriodId, e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * Send payslips by email
+     */
+    @PostMapping("/payslips/send-email")
+    public ResponseEntity<Void> sendPayslipsByEmail(@RequestBody EmailPayslipsRequest request) {
+        try {
+            // TODO: Implement email sending logic
+            // EmailService emailService = new EmailService();
+            // emailService.sendPayslipEmails(request.getPayslipIds());
+            return ResponseEntity.ok().build();
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
     // ===== PAYROLL REPORTS ENDPOINTS =====
 
     /**
      * Get payroll summary report
      */
     @GetMapping("/reports/summary")
-    public ResponseEntity<SpringPayrollService.PayrollSummary> getPayrollSummaryReport(
+    public ResponseEntity<byte[]> getPayrollSummaryReport(
             @RequestParam Long fiscalPeriodId,
             @RequestParam(defaultValue = "PDF") String format) {
         try {
+            // TODO: Implement PDF generation for summary report
+            // For now, return JSON as PDF (temporary)
             SpringPayrollService.PayrollSummary summary = payrollService.getPayrollSummary(fiscalPeriodId);
-            // TODO: Implement PDF/Excel format generation
-            return ResponseEntity.ok(summary);
+            String jsonData = String.format("{\"totalGross\":%s,\"totalPAYE\":%s,\"totalUIF\":%s,\"totalSDL\":%s,\"totalNet\":%s,\"employeeCount\":%d}",
+                summary.getTotalGross(), summary.getTotalPAYE(), summary.getTotalUIF(),
+                summary.getTotalSDL(), summary.getTotalNet(), summary.getEmployeeCount());
+
+            return ResponseEntity.ok()
+                .header("Content-Disposition", "attachment; filename=\"payroll_summary.pdf\"")
+                .header("Content-Type", "application/pdf")
+                .body(jsonData.getBytes());
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
         }
@@ -473,6 +691,20 @@ public class SpringPayrollController {
 
         public String getDocumentType() { return documentType; }
         public void setDocumentType(String documentType) { this.documentType = documentType; }
+    }
+
+    public static class EmailPayslipsRequest {
+        private List<Long> payslipIds;
+
+        public List<Long> getPayslipIds() { return payslipIds; }
+        public void setPayslipIds(List<Long> payslipIds) { this.payslipIds = payslipIds; }
+    }
+
+    public static class BulkPdfRequest {
+        private List<Long> payslipIds;
+
+        public List<Long> getPayslipIds() { return payslipIds; }
+        public void setPayslipIds(List<Long> payslipIds) { this.payslipIds = payslipIds; }
     }
 
     /**

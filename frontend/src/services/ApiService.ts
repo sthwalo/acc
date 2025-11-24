@@ -1080,4 +1080,45 @@ export class ApiService extends BaseApiService {
       this.handleError('Deactivate employee', error);
     }
   }
+
+  // Payslips methods
+  async getPayslipsByFiscalPeriod(fiscalPeriodId: number): Promise<any[]> {
+    try {
+      const response = await this.client.get(`/v1/payroll/payslips/period/${fiscalPeriodId}`);
+      return response.data;
+    } catch (error) {
+      this.handleError('Get payslips by fiscal period', error);
+    }
+  }
+
+  async generatePayslipPDF(payslipId: number): Promise<Blob> {
+    try {
+      const response = await this.client.get(`/v1/payroll/payslips/${payslipId}/pdf`, {
+        responseType: 'blob'
+      });
+      return response.data;
+    } catch (error) {
+      this.handleError('Generate payslip PDF', error);
+    }
+  }
+
+  async exportBulkPDFs(payslipIds: number[]): Promise<Blob> {
+    try {
+      const response = await this.client.post('/v1/payroll/payslips/bulk-pdf', 
+        { payslipIds },
+        { responseType: 'blob' }
+      );
+      return response.data;
+    } catch (error) {
+      this.handleError('Export bulk PDFs', error);
+    }
+  }
+
+  async sendPayslipsByEmail(payslipIds: number[]): Promise<void> {
+    try {
+      await this.client.post('/v1/payroll/payslips/send-email', { payslipIds });
+    } catch (error) {
+      this.handleError('Send payslips by email', error);
+    }
+  }
 }

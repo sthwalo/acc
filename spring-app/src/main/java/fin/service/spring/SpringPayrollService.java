@@ -30,6 +30,7 @@ import fin.model.*;
 import fin.repository.EmployeeRepository;
 import fin.repository.FiscalPeriodRepository;
 import fin.repository.PayslipRepository;
+import fin.repository.CompanyRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -38,8 +39,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -54,6 +57,8 @@ public class SpringPayrollService {
     private final EmployeeRepository employeeRepository;
     private final FiscalPeriodRepository fiscalPeriodRepository;
     private final PayslipRepository payslipRepository;
+    private final CompanyRepository companyRepository;
+    private final SpringPayslipPdfService payslipPdfService;
     private final SpringCompanyService companyService;
 
     // Tax rates (simplified - in production these would come from SARS tables)
@@ -64,10 +69,14 @@ public class SpringPayrollService {
     public SpringPayrollService(EmployeeRepository employeeRepository,
                               FiscalPeriodRepository fiscalPeriodRepository,
                               PayslipRepository payslipRepository,
+                              CompanyRepository companyRepository,
+                              SpringPayslipPdfService payslipPdfService,
                               SpringCompanyService companyService) {
         this.employeeRepository = employeeRepository;
         this.fiscalPeriodRepository = fiscalPeriodRepository;
         this.payslipRepository = payslipRepository;
+        this.companyRepository = companyRepository;
+        this.payslipPdfService = payslipPdfService;
         this.companyService = companyService;
     }
 
@@ -168,6 +177,39 @@ public class SpringPayrollService {
             throw new IllegalArgumentException("Employee ID is required");
         }
         return employeeRepository.findById(employeeId);
+    }
+
+    /**
+     * Get a payslip by ID
+     */
+    @Transactional(readOnly = true)
+    public Optional<Payslip> getPayslipById(Long payslipId) {
+        if (payslipId == null) {
+            throw new IllegalArgumentException("Payslip ID is required");
+        }
+        return payslipRepository.findById(payslipId);
+    }
+
+    /**
+     * Get a company by ID
+     */
+    @Transactional(readOnly = true)
+    public Optional<Company> getCompanyById(Long companyId) {
+        if (companyId == null) {
+            throw new IllegalArgumentException("Company ID is required");
+        }
+        return companyRepository.findById(companyId);
+    }
+
+    /**
+     * Get a fiscal period by ID
+     */
+    @Transactional(readOnly = true)
+    public Optional<FiscalPeriod> getFiscalPeriodById(Long fiscalPeriodId) {
+        if (fiscalPeriodId == null) {
+            throw new IllegalArgumentException("Fiscal period ID is required");
+        }
+        return fiscalPeriodRepository.findById(fiscalPeriodId);
     }
 
     /**
@@ -626,7 +668,7 @@ public class SpringPayrollService {
      * Generate payslip PDFs for a fiscal period (optionally for specific employees)
      */
     @Transactional(readOnly = true)
-    public void generatePayslips(Long fiscalPeriodId, List<Long> employeeIds) {
+    public List<byte[]> generatePayslips(Long fiscalPeriodId, List<Long> employeeIds) {
         if (fiscalPeriodId == null) {
             throw new IllegalArgumentException("Fiscal period ID is required");
         }
@@ -640,9 +682,31 @@ public class SpringPayrollService {
             payslips = getPayslipsByPeriod(fiscalPeriodId);
         }
 
-        // TODO: Implement PDF generation using SpringPayslipPdfService
-        // For now, just log
-        LOGGER.info("Generated " + payslips.size() + " payslip PDFs for period: " + fiscalPeriodId);
+        List<byte[]> pdfs = new ArrayList<>();
+        for (Payslip payslip : payslips) {
+            try {
+                // Get related data from database
+                Employee employee = employeeRepository.findById(payslip.getEmployeeId())
+                    .orElseThrow(() -> new IllegalArgumentException("Employee not found: " + payslip.getEmployeeId()));
+
+                Company company = companyRepository.findById(employee.getCompanyId())
+                    .orElseThrow(() -> new IllegalArgumentException("Company not found: " + employee.getCompanyId()));
+
+                FiscalPeriod fiscalPeriod = fiscalPeriodRepository.findById(fiscalPeriodId)
+                    .orElseThrow(() -> new IllegalArgumentException("Fiscal period not found: " + fiscalPeriodId));
+
+                // Generate PDF using SpringPayslipPdfService
+                byte[] pdfBytes = payslipPdfService.generatePayslipPdf(payslip, employee, company, fiscalPeriod);
+                pdfs.add(pdfBytes);
+
+            } catch (Exception e) {
+                LOGGER.log(Level.SEVERE, "Failed to generate PDF for payslip: " + payslip.getId(), e);
+                // Continue with other payslips
+            }
+        }
+
+        LOGGER.info("Generated " + pdfs.size() + " payslip PDFs for period: " + fiscalPeriodId);
+        return pdfs;
     }
 
     /**
