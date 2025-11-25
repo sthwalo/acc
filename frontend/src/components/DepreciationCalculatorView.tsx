@@ -140,6 +140,7 @@ export default function DepreciationCalculatorView({ selectedCompany }: Deprecia
               </label>
               <input
                 id="assetCost"
+                name="assetCost"
                 type="number"
                 value={assetCost}
                 onChange={(e) => setAssetCost(e.target.value)}
@@ -156,6 +157,7 @@ export default function DepreciationCalculatorView({ selectedCompany }: Deprecia
               </label>
               <input
                 id="salvageValue"
+                name="salvageValue"
                 type="number"
                 value={salvageValue}
                 onChange={(e) => setSalvageValue(e.target.value)}
@@ -172,6 +174,7 @@ export default function DepreciationCalculatorView({ selectedCompany }: Deprecia
               </label>
               <input
                 id="usefulLife"
+                name="usefulLife"
                 type="number"
                 value={usefulLife}
                 onChange={(e) => setUsefulLife(e.target.value)}
@@ -184,6 +187,7 @@ export default function DepreciationCalculatorView({ selectedCompany }: Deprecia
               <label htmlFor="depreciationMethod">Depreciation Method</label>
               <select
                 id="depreciationMethod"
+                name="depreciationMethod"
                 value={depreciationMethod}
                 onChange={(e) => setDepreciationMethod(e.target.value as 'straight-line' | 'declining-balance')}
               >
@@ -200,6 +204,7 @@ export default function DepreciationCalculatorView({ selectedCompany }: Deprecia
                 </label>
                 <input
                   id="depreciationRate"
+                  name="depreciationRate"
                   type="number"
                   value={depreciationRate}
                   onChange={(e) => setDepreciationRate(e.target.value)}

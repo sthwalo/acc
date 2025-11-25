@@ -442,6 +442,7 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
           </label>
           <select
             id="fiscal-period-select"
+            name="fiscal-period-select"
             value={selectedPeriod?.id || ''}
             onChange={(e) => {
               const periodId = parseInt(e.target.value);
@@ -577,6 +578,7 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
             </label>
             <select
               id="fiscal-period-select"
+              name="fiscal-period-select"
               value={selectedPeriod?.id || ''}
               onChange={(e) => {
                 const periodId = parseInt(e.target.value);
@@ -632,8 +634,11 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
                       {transaction.isEditing ? (
                         <input
                           type="date"
+                          id={`transaction-date-${transaction.id}`}
+                          name={`transaction-date-${transaction.id}`}
                           value={editingTransaction?.date || transaction.date}
                           onChange={(e) => updateEditingTransaction('date', e.target.value)}
+                          autoComplete="off"
                         />
                       ) : (
                         new Date(transaction.date).toLocaleDateString()
@@ -643,8 +648,11 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
                       {transaction.isEditing ? (
                         <input
                           type="text"
+                          id={`transaction-description-${transaction.id}`}
+                          name={`transaction-description-${transaction.id}`}
                           value={editingTransaction?.description || transaction.description}
                           onChange={(e) => updateEditingTransaction('description', e.target.value)}
+                          autoComplete="off"
                         />
                       ) : (
                         transaction.description
@@ -654,9 +662,12 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
                       {transaction.isEditing ? (
                         <input
                           type="number"
+                          id={`transaction-amount-${transaction.id}`}
+                          name={`transaction-amount-${transaction.id}`}
                           step="0.01"
                           value={editingTransaction?.amount || transaction.amount || 0}
                           onChange={(e) => updateEditingTransaction('amount', parseFloat(e.target.value))}
+                          autoComplete="off"
                         />
                       ) : (
                         `R ${(transaction.amount || 0).toFixed(2)}`
@@ -665,6 +676,8 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
                     <td>
                       {transaction.isEditing ? (
                         <select
+                          id={`transaction-type-${transaction.id}`}
+                          name={`transaction-type-${transaction.id}`}
                           value={editingTransaction?.type || transaction.type}
                           onChange={(e) => updateEditingTransaction('type', e.target.value as 'debit' | 'credit')}
                         >
@@ -681,8 +694,11 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
                       {transaction.isEditing ? (
                         <input
                           type="text"
+                          id={`transaction-category-${transaction.id}`}
+                          name={`transaction-category-${transaction.id}`}
                           value={editingTransaction?.category || transaction.category}
                           onChange={(e) => updateEditingTransaction('category', e.target.value)}
+                          autoComplete="off"
                         />
                       ) : (
                         transaction.category
@@ -692,8 +708,11 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
                       {transaction.isEditing ? (
                         <input
                           type="text"
+                          id={`transaction-reference-${transaction.id}`}
+                          name={`transaction-reference-${transaction.id}`}
                           value={editingTransaction?.reference || transaction.reference}
                           onChange={(e) => updateEditingTransaction('reference', e.target.value)}
+                          autoComplete="off"
                         />
                       ) : (
                         transaction.reference

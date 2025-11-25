@@ -31,6 +31,8 @@ import fin.repository.EmployeeRepository;
 import fin.repository.FiscalPeriodRepository;
 import fin.repository.PayslipRepository;
 import fin.repository.CompanyRepository;
+import fin.validation.EmployeeValidator;
+import fin.validation.ValidationResult;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -61,6 +63,7 @@ public class SpringPayrollService {
     private final SpringPayslipPdfService payslipPdfService;
     private final SpringCompanyService companyService;
     private final SARSTaxCalculator sarsTaxCalculator;
+    private final EmployeeValidator employeeValidator;
 
     public SpringPayrollService(EmployeeRepository employeeRepository,
                               FiscalPeriodRepository fiscalPeriodRepository,
@@ -68,7 +71,8 @@ public class SpringPayrollService {
                               CompanyRepository companyRepository,
                               SpringPayslipPdfService payslipPdfService,
                               SpringCompanyService companyService,
-                              SARSTaxCalculator sarsTaxCalculator) {
+                              SARSTaxCalculator sarsTaxCalculator,
+                              EmployeeValidator employeeValidator) {
         this.employeeRepository = employeeRepository;
         this.fiscalPeriodRepository = fiscalPeriodRepository;
         this.payslipRepository = payslipRepository;
@@ -76,6 +80,7 @@ public class SpringPayrollService {
         this.payslipPdfService = payslipPdfService;
         this.companyService = companyService;
         this.sarsTaxCalculator = sarsTaxCalculator;
+        this.employeeValidator = employeeValidator;
     }
 
     /**
@@ -83,23 +88,34 @@ public class SpringPayrollService {
      */
     @Transactional
     public Employee createEmployee(String employeeCode, String firstName, String lastName,
-                                 Long companyId, BigDecimal basicSalary, LocalDate dateOfBirth,
-                                 LocalDate dateEngaged, String idNumber, String email) {
-        // Validate inputs
-        if (employeeCode == null || employeeCode.trim().isEmpty()) {
-            throw new IllegalArgumentException("Employee code is required");
-        }
-        if (firstName == null || firstName.trim().isEmpty()) {
-            throw new IllegalArgumentException("First name is required");
-        }
-        if (lastName == null || lastName.trim().isEmpty()) {
-            throw new IllegalArgumentException("Last name is required");
-        }
-        if (companyId == null) {
-            throw new IllegalArgumentException("Company ID is required");
-        }
-        if (basicSalary == null || basicSalary.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("Valid basic salary is required");
+                                 String email, String phone, String bankName, String accountNumber,
+                                 String branchCode, String taxNumber, LocalDate hireDate, BigDecimal salary,
+                                 Long companyId) {
+        // Create employee object from parameters
+        Employee employee = new Employee();
+        employee.setEmployeeCode(employeeCode);
+        employee.setFirstName(firstName);
+        employee.setLastName(lastName);
+        employee.setEmail(email);
+        employee.setPhone(phone);
+        employee.setBankName(bankName);
+        employee.setAccountNumber(accountNumber);
+        employee.setBranchCode(branchCode);
+        employee.setTaxNumber(taxNumber);
+        employee.setHireDate(hireDate);
+        employee.setBasicSalary(salary);
+        employee.setCompanyId(companyId);
+        employee.setActive(true);
+
+        // Validate the employee using the validator
+        ValidationResult validationResult = employeeValidator.validate(employee);
+        if (!validationResult.isValid()) {
+            // Collect all validation error messages
+            StringBuilder errorMessage = new StringBuilder("Validation failed: ");
+            for (ValidationResult.ValidationError error : validationResult.getErrors()) {
+                errorMessage.append(error.getField()).append(": ").append(error.getMessage()).append("; ");
+            }
+            throw new IllegalArgumentException(errorMessage.toString());
         }
 
         // Validate company exists
@@ -112,19 +128,6 @@ public class SpringPayrollService {
         if (employeeRepository.existsByEmployeeNumberAndCompanyId(employeeCode.trim(), companyId)) {
             throw new IllegalArgumentException("Employee code already exists for this company: " + employeeCode);
         }
-
-        // Create employee
-        Employee employee = new Employee();
-        employee.setEmployeeCode(employeeCode.trim());
-        employee.setFirstName(firstName.trim());
-        employee.setLastName(lastName.trim());
-        employee.setCompanyId(companyId);
-        employee.setBasicSalary(basicSalary);
-        employee.setDateOfBirth(dateOfBirth);
-        employee.setDateEngaged(dateEngaged);
-        employee.setIdNumber(idNumber);
-        employee.setEmail(email);
-        employee.setActive(true);
 
         return employeeRepository.save(employee);
     }
@@ -211,17 +214,23 @@ public class SpringPayrollService {
     }
 
     /**
-     * Update an employee
+     * Update an employee with comprehensive validation and audit logging
+     * Supports partial updates - only non-null parameters will be updated
      */
     @Transactional
-    public Employee updateEmployee(Long id, Employee updatedEmployee) {
+    public Employee updateEmployee(Long id, String title, String firstName, String secondName, String lastName,
+                                 String email, String phone, String position, String department, LocalDate hireDate,
+                                 LocalDate terminationDate, Boolean isActive, String addressLine1, String addressLine2,
+                                 String city, String province, String postalCode, String country, String bankName,
+                                 String accountHolderName, String accountNumber, String branchCode, String accountType,
+                                 String employmentType, String salaryType, BigDecimal basicSalary, BigDecimal overtimeRate,
+                                 String taxNumber, String taxRebateCode, String uifNumber, String medicalAidNumber,
+                                 String pensionFundNumber, String updatedBy) {
         if (id == null) {
             throw new IllegalArgumentException("Employee ID is required");
         }
-        if (updatedEmployee == null) {
-            throw new IllegalArgumentException("Updated employee data is required");
-        }
 
+        // Retrieve existing employee
         Optional<Employee> existingEmployeeOpt = employeeRepository.findById(id);
         if (existingEmployeeOpt.isEmpty()) {
             throw new IllegalArgumentException("Employee not found: " + id);
@@ -229,14 +238,98 @@ public class SpringPayrollService {
 
         Employee existingEmployee = existingEmployeeOpt.get();
 
-        // Update fields
-        existingEmployee.setFirstName(updatedEmployee.getFirstName());
-        existingEmployee.setLastName(updatedEmployee.getLastName());
-        existingEmployee.setBasicSalary(updatedEmployee.getBasicSalary());
-        existingEmployee.setEmail(updatedEmployee.getEmail());
-        existingEmployee.setActive(updatedEmployee.isActive());
+        // Apply partial updates (only non-null values)
+        if (title != null) existingEmployee.setTitle(title);
+        if (firstName != null) existingEmployee.setFirstName(firstName);
+        if (secondName != null) existingEmployee.setSecondName(secondName);
+        if (lastName != null) existingEmployee.setLastName(lastName);
+        if (email != null) existingEmployee.setEmail(email);
+        if (phone != null) existingEmployee.setPhone(phone);
+        if (position != null) existingEmployee.setPosition(position);
+        if (department != null) existingEmployee.setDepartment(department);
+        if (hireDate != null) existingEmployee.setHireDate(hireDate);
+        if (terminationDate != null) existingEmployee.setTerminationDate(terminationDate);
+        if (isActive != null) existingEmployee.setActive(isActive);
+        if (addressLine1 != null) existingEmployee.setAddressLine1(addressLine1);
+        if (addressLine2 != null) existingEmployee.setAddressLine2(addressLine2);
+        if (city != null) existingEmployee.setCity(city);
+        if (province != null) existingEmployee.setProvince(province);
+        if (postalCode != null) existingEmployee.setPostalCode(postalCode);
+        if (country != null) existingEmployee.setCountry(country);
+        if (bankName != null) existingEmployee.setBankName(bankName);
+        if (accountHolderName != null) existingEmployee.setAccountHolderName(accountHolderName);
+        if (accountNumber != null) existingEmployee.setAccountNumber(accountNumber);
+        if (branchCode != null) existingEmployee.setBranchCode(branchCode);
+        if (accountType != null) existingEmployee.setAccountType(accountType);
+        if (employmentType != null) existingEmployee.setEmploymentType(Employee.EmploymentType.valueOf(employmentType));
+        if (salaryType != null) existingEmployee.setSalaryType(Employee.SalaryType.valueOf(salaryType));
+        if (basicSalary != null) existingEmployee.setBasicSalary(basicSalary);
+        if (overtimeRate != null) existingEmployee.setOvertimeRate(overtimeRate);
+        if (taxNumber != null) existingEmployee.setTaxNumber(taxNumber);
+        if (taxRebateCode != null) existingEmployee.setTaxRebateCode(taxRebateCode);
+        if (uifNumber != null) existingEmployee.setUifNumber(uifNumber);
+        if (medicalAidNumber != null) existingEmployee.setMedicalAidNumber(medicalAidNumber);
+        if (pensionFundNumber != null) existingEmployee.setPensionFundNumber(pensionFundNumber);
 
-        return employeeRepository.save(existingEmployee);
+        // Validate the updated employee data
+        ValidationResult validationResult = employeeValidator.validateForUpdate(existingEmployee);
+        if (!validationResult.isValid()) {
+            // Collect all validation error messages
+            StringBuilder errorMessage = new StringBuilder("Validation failed: ");
+            for (ValidationResult.ValidationError error : validationResult.getErrors()) {
+                errorMessage.append(error.getField()).append(": ").append(error.getMessage()).append("; ");
+            }
+            throw new IllegalArgumentException(errorMessage.toString());
+        }
+
+        // Check data integrity constraints
+        validateEmployeeUpdateIntegrity(existingEmployee);
+
+        // Update audit fields
+        existingEmployee.setUpdatedAt(java.time.LocalDateTime.now());
+        if (updatedBy != null && !updatedBy.trim().isEmpty()) {
+            existingEmployee.setUpdatedBy(updatedBy);
+        }
+
+        // Save and return updated employee
+        Employee savedEmployee = employeeRepository.save(existingEmployee);
+        LOGGER.info("Employee updated successfully: " + savedEmployee.getEmployeeNumber() +
+                   " (" + savedEmployee.getFirstName() + " " + savedEmployee.getLastName() + ")");
+
+        return savedEmployee;
+    }
+
+    /**
+     * Validate data integrity constraints for employee updates
+     */
+    private void validateEmployeeUpdateIntegrity(Employee employee) {
+        // Validate termination date logic
+        if (employee.getTerminationDate() != null) {
+            if (employee.getHireDate() != null && employee.getTerminationDate().isBefore(employee.getHireDate())) {
+                throw new IllegalArgumentException("Termination date cannot be before hire date");
+            }
+
+            if (employee.getTerminationDate().isAfter(java.time.LocalDate.now())) {
+                throw new IllegalArgumentException("Termination date cannot be in the future");
+            }
+        }
+
+        // Validate salary
+        if (employee.getBasicSalary() != null &&
+            employee.getBasicSalary().compareTo(java.math.BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Basic salary must be greater than zero");
+        }
+
+        // Validate overtime rate
+        if (employee.getOvertimeRate() != null) {
+            if (employee.getOvertimeRate().compareTo(BigDecimal.ONE) < 0) {
+                throw new IllegalArgumentException("Overtime rate cannot be less than 1.0");
+            }
+
+            if (employee.getOvertimeRate().compareTo(new BigDecimal("3.0")) > 0) {
+                throw new IllegalArgumentException("Overtime rate seems unusually high. Please verify");
+            }
+        }
     }
 
     /**
@@ -258,6 +351,100 @@ public class SpringPayrollService {
         Employee employee = employeeOpt.get();
         employee.setActive(false);
         return employeeRepository.save(employee);
+    }
+
+    /**
+     * Activate an employee
+     * @param id the employee ID
+     * @return the activated employee
+     */
+    @Transactional
+    public Employee activateEmployee(Long id) {
+        if (id == null) {
+            throw new IllegalArgumentException("Employee ID is required");
+        }
+
+        Optional<Employee> employeeOpt = employeeRepository.findById(id);
+        if (employeeOpt.isEmpty()) {
+            throw new IllegalArgumentException("Employee not found: " + id);
+        }
+
+        Employee employee = employeeOpt.get();
+        employee.setActive(true);
+        return employeeRepository.save(employee);
+    }
+
+    /**
+     * Change employee active status
+     * @param id the employee ID
+     * @param active the new active status
+     * @return the updated employee
+     */
+    @Transactional
+    public Employee changeEmployeeStatus(Long id, boolean active) {
+        if (id == null) {
+            throw new IllegalArgumentException("Employee ID is required");
+        }
+
+        Optional<Employee> employeeOpt = employeeRepository.findById(id);
+        if (employeeOpt.isEmpty()) {
+            throw new IllegalArgumentException("Employee not found: " + id);
+        }
+
+        Employee employee = employeeOpt.get();
+        employee.setActive(active);
+        return employeeRepository.save(employee);
+    }
+
+    /**
+     * Hard delete an employee (permanently remove from database)
+     * @param id the employee ID
+     * @throws IllegalArgumentException if employee has payroll history or doesn't exist
+     */
+    @Transactional
+    public void hardDeleteEmployee(Long id) {
+        if (id == null) {
+            throw new IllegalArgumentException("Employee ID is required");
+        }
+
+        Optional<Employee> employeeOpt = employeeRepository.findById(id);
+        if (employeeOpt.isEmpty()) {
+            throw new IllegalArgumentException("Employee not found: " + id);
+        }
+
+        Employee employee = employeeOpt.get();
+
+        // Check if employee has any payslips (payroll history)
+        List<Payslip> payslips = payslipRepository.findByEmployeeId(id);
+        if (!payslips.isEmpty()) {
+            throw new IllegalArgumentException(
+                "Cannot hard delete employee " + employee.getEmployeeCode() + " " +
+                employee.getFirstName() + " " + employee.getLastName() +
+                ". Employee has " + payslips.size() + " payslip(s) in the system. " +
+                "Use deactivate instead to preserve payroll history."
+            );
+        }
+
+        // Check if employee has any payroll documents
+        // Note: Document management is not fully implemented yet, but we should check anyway
+        try {
+            List<PayrollDocument> documents = listPayrollDocuments(id, null, null, 0, Integer.MAX_VALUE);
+            if (!documents.isEmpty()) {
+                throw new IllegalArgumentException(
+                    "Cannot hard delete employee " + employee.getEmployeeCode() + " " +
+                    employee.getFirstName() + " " + employee.getLastName() +
+                    ". Employee has " + documents.size() + " document(s) in the system."
+                );
+            }
+        } catch (Exception e) {
+            // Document listing might not be implemented yet, continue with deletion
+            LOGGER.warning("Could not check for employee documents during hard delete: " + e.getMessage());
+        }
+
+        // Safe to delete - no payroll history
+        employeeRepository.deleteById(id);
+        LOGGER.info("Hard deleted employee: " + employee.getEmployeeCode() + " " +
+                   employee.getFirstName() + " " + employee.getLastName());
     }
 
     /**

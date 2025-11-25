@@ -33,6 +33,7 @@ import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
 import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
 import org.apache.pdfbox.pdmodel.PDDocumentInformation;
+import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import fin.model.Company;
 import fin.model.FiscalPeriod;
 
@@ -139,7 +140,7 @@ public class TextReportToPdfService {
     }
     
     /**
-     * Adds title section with company info
+     * Adds title section with company info and logo
      */
     private void addTitleSection(PDDocument document, PDPage page, String reportName, 
                                  Company company, FiscalPeriod fiscalPeriod) throws IOException {
@@ -148,6 +149,43 @@ public class TextReportToPdfService {
         try {
             float yPosition = PDRectangle.A4.getHeight() - 100;
             float centerX = PDRectangle.A4.getWidth() / 2;
+            
+            // Add company logo if available
+            if (company != null && company.getLogoPath() != null && !company.getLogoPath().trim().isEmpty()) {
+                try {
+                    Path logoPath = Paths.get("logos", company.getLogoPath());
+                    if (Files.exists(logoPath)) {
+                        PDImageXObject logoImage = PDImageXObject.createFromFile(logoPath.toString(), document);
+                        
+                        // Calculate logo dimensions (max 100x100 pixels, maintain aspect ratio)
+                        float maxLogoSize = 100f;
+                        float logoWidth = logoImage.getWidth();
+                        float logoHeight = logoImage.getHeight();
+                        
+                        // Scale to fit within max size while maintaining aspect ratio
+                        float scale = Math.min(maxLogoSize / logoWidth, maxLogoSize / logoHeight);
+                        logoWidth *= scale;
+                        logoHeight *= scale;
+                        
+                        // Center the logo horizontally
+                        float logoX = centerX - logoWidth / 2;
+                        float logoY = yPosition - logoHeight - 20; // Position above title
+                        
+                        // Draw the logo
+                        contentStream.drawImage(logoImage, logoX, logoY, logoWidth, logoHeight);
+                        
+                        // Adjust yPosition to account for logo
+                        yPosition = logoY - 30;
+                        
+                        LOGGER.info("Added company logo to PDF: " + company.getLogoPath());
+                    } else {
+                        LOGGER.warning("Company logo file not found: " + logoPath.toAbsolutePath());
+                    }
+                } catch (IOException e) {
+                    LOGGER.log(Level.WARNING, "Error loading company logo: " + company.getLogoPath(), e);
+                    // Continue without logo
+                }
+            }
             
             // Report title
             contentStream.beginText();

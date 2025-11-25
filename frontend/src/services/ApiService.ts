@@ -16,7 +16,9 @@ import type {
   PayrollProcessingResult,
   Budget,
   BudgetVariance,
-  Employee
+  Employee,
+  EmployeeCreateRequest,
+  EmployeeUpdateRequest
 } from '../types/api';
 
 /**
@@ -217,7 +219,13 @@ class CompanyApiService extends BaseApiService {
         );
       }
 
-      return companies;
+      // Add logo URLs for companies that have logo paths
+      const companiesWithLogos = companies.map(company => ({
+        ...company,
+        logoUrl: company.logoPath ? `/api/v1/logos?path=${encodeURIComponent(company.logoPath)}` : undefined
+      }));
+
+      return companiesWithLogos;
     } catch (error) {
       if (error instanceof AxiosError && error.response?.status === 404) {
         throw new Error('Companies endpoint not found. Please ensure the backend API is running.');
@@ -1057,14 +1065,49 @@ export class ApiService extends BaseApiService {
 
   async createEmployee(employee: Omit<Employee, 'id' | 'createdAt' | 'updatedAt'>): Promise<Employee> {
     try {
-      const response = await this.client.post<Employee>('/v1/payroll/employees', employee);
+      // Map Employee interface to EmployeeCreateRequest for backend API
+      const createRequest: EmployeeCreateRequest = {
+        companyId: employee.companyId,
+        employeeCode: employee.employeeNumber, // Map employeeNumber to employeeCode for backend
+        title: employee.title,
+        firstName: employee.firstName,
+        secondName: employee.secondName,
+        lastName: employee.lastName,
+        email: employee.email,
+        phone: employee.phone,
+        position: employee.position,
+        department: employee.department,
+        hireDate: employee.hireDate || '',
+        addressLine1: employee.addressLine1,
+        addressLine2: employee.addressLine2,
+        city: employee.city,
+        province: employee.province,
+        postalCode: employee.postalCode,
+        country: employee.country,
+        bankName: employee.bankName,
+        accountHolderName: employee.accountHolderName,
+        accountNumber: employee.accountNumber,
+        branchCode: employee.branchCode,
+        accountType: employee.accountType,
+        employmentType: employee.employmentType,
+        salaryType: employee.salaryType,
+        basicSalary: employee.basicSalary,
+        overtimeRate: employee.overtimeRate,
+        taxNumber: employee.taxNumber,
+        taxRebateCode: employee.taxRebateCode,
+        uifNumber: employee.uifNumber,
+        medicalAidNumber: employee.medicalAidNumber,
+        pensionFundNumber: employee.pensionFundNumber,
+      };
+
+      const response = await this.client.post<Employee>('/v1/payroll/employees', createRequest);
       return response.data;
     } catch (error) {
       this.handleError('Create employee', error);
     }
   }
 
-  async updateEmployee(employeeId: number, employee: Partial<Employee>): Promise<Employee> {
+  async updateEmployee(employeeId: number, employee: EmployeeUpdateRequest): Promise<Employee> {
     try {
       const response = await this.client.put<Employee>(`/v1/payroll/employees/${employeeId}`, employee);
       return response.data;
@@ -1078,6 +1121,31 @@ export class ApiService extends BaseApiService {
       await this.client.delete(`/v1/payroll/employees/${employeeId}`);
     } catch (error) {
       this.handleError('Deactivate employee', error);
+    }
+  }
+
+  async activateEmployee(employeeId: number): Promise<void> {
+    try {
+      await this.client.put(`/v1/payroll/employees/${employeeId}/activate`);
+    } catch (error) {
+      this.handleError('Activate employee', error);
+    }
+  }
+
+  async changeEmployeeStatus(employeeId: number, active: boolean): Promise<void> {
+    try {
+      await this.client.put(`/v1/payroll/employees/${employeeId}/status?active=${active}`);
+    } catch (error) {
+      this.handleError('Change employee status', error);
+    }
+  }
+
+  async hardDeleteEmployee(employeeId: number): Promise<string> {
+    try {
+      const response = await this.client.delete(`/v1/payroll/employees/${employeeId}/hard`);
+      return response.data;
+    } catch (error) {
+      this.handleError('Hard delete employee', error);
     }
   }
 

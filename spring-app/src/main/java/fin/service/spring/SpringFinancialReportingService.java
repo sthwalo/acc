@@ -553,6 +553,9 @@ public class SpringFinancialReportingService {
 
         if (company != null) {
             header.append(String.format("Company: %s%n", company.getName()));
+            if (company.getLogoPath() != null && !company.getLogoPath().trim().isEmpty()) {
+                header.append(String.format("Company Logo: Available (%s)%n", company.getLogoPath()));
+            }
         }
         if (period != null) {
             header.append(String.format("Fiscal Period: %s (%s to %s)%n",

@@ -31,6 +31,7 @@ export interface Company {
   contactEmail?: string;
   contactPhone?: string;
   logoPath?: string;
+  logoUrl?: string;
   bankName?: string;
   accountNumber?: string;
   accountType?: string;
@@ -316,6 +317,75 @@ export interface Employee {
   updatedAt: string;
   createdBy?: string;
   updatedBy?: string;
+}
+
+export interface EmployeeCreateRequest {
+  companyId: number;
+  employeeCode: string;
+  title?: string;
+  firstName: string;
+  secondName?: string;
+  lastName: string;
+  email?: string;
+  phone?: string;
+  position: string;
+  department?: string;
+  hireDate: string;
+  addressLine1?: string;
+  addressLine2?: string;
+  city?: string;
+  province?: string;
+  postalCode?: string;
+  country?: string;
+  bankName?: string;
+  accountHolderName?: string;
+  accountNumber?: string;
+  branchCode?: string;
+  accountType?: string;
+  employmentType: 'PERMANENT' | 'CONTRACT' | 'TEMPORARY';
+  salaryType: 'MONTHLY' | 'WEEKLY' | 'HOURLY' | 'DAILY';
+  basicSalary?: number;
+  overtimeRate?: number;
+  taxNumber?: string;
+  taxRebateCode?: string;
+  uifNumber?: string;
+  medicalAidNumber?: string;
+  pensionFundNumber?: string;
+}
+
+export interface EmployeeUpdateRequest {
+  employeeCode?: string;
+  title?: string;
+  firstName?: string;
+  secondName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+  position?: string;
+  department?: string;
+  hireDate?: string;
+  terminationDate?: string;
+  isActive?: boolean;
+  addressLine1?: string;
+  addressLine2?: string;
+  city?: string;
+  province?: string;
+  postalCode?: string;
+  country?: string;
+  bankName?: string;
+  accountHolderName?: string;
+  accountNumber?: string;
+  branchCode?: string;
+  accountType?: string;
+  employmentType?: 'PERMANENT' | 'CONTRACT' | 'TEMPORARY';
+  salaryType?: 'MONTHLY' | 'WEEKLY' | 'HOURLY' | 'DAILY';
+  basicSalary?: number;
+  overtimeRate?: number;
+  taxNumber?: string;
+  taxRebateCode?: string;
+  uifNumber?: string;
+  medicalAidNumber?: string;
+  pensionFundNumber?: string;
 }
 
 // Error Types

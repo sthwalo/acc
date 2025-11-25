@@ -4,10 +4,19 @@ import fin.model.Company;
 import fin.model.Employee;
 import fin.model.FiscalPeriod;
 import fin.model.Payslip;
-import fin.service.spring.EmailService;
+//import fin.service.spring.EmailService;
 import fin.service.spring.SpringPayslipPdfService;
 import fin.service.spring.SpringPayrollService;
-import org.springframework.core.io.ByteArrayResource;
+import fin.dto.BulkPdfRequest;
+import fin.dto.DocumentUploadRequest;
+import fin.dto.EmailPayslipsRequest;
+import fin.dto.EmployeeCreateRequest;
+import fin.dto.EmployeeUpdateRequest;
+import fin.dto.ErrorResponse;
+import fin.dto.PayrollProcessRequest;
+import fin.dto.PayrollProcessingData;
+import fin.dto.PayrollProcessingResponse;
+import fin.dto.PayslipGenerationRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -66,22 +75,25 @@ public class SpringPayrollController {
      * Create a new employee
      */
     @PostMapping("/employees")
-    public ResponseEntity<Employee> createEmployee(@RequestBody Employee employee) {
+    public ResponseEntity<?> createEmployee(@RequestBody EmployeeCreateRequest request) {
         try {
             Employee createdEmployee = payrollService.createEmployee(
-                employee.getEmployeeCode(),
-                employee.getFirstName(),
-                employee.getLastName(),
-                employee.getCompanyId(),
-                employee.getBasicSalary(),
-                employee.getDateOfBirth(),
-                employee.getDateEngaged(),
-                employee.getIdNumber(),
-                employee.getEmail()
+                request.getEmployeeCode(),
+                request.getFirstName(),
+                request.getLastName(),
+                request.getEmail(),
+                request.getPhone(),
+                request.getBankName(),
+                request.getAccountNumber(),
+                request.getBranchCode(),
+                request.getTaxNumber(),
+                request.getHireDate(),
+                request.getBasicSalary(),
+                request.getCompanyId()
             );
             return ResponseEntity.ok(createdEmployee);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
         }
     }
 
@@ -98,17 +110,51 @@ public class SpringPayrollController {
      * Update an employee
      */
     @PutMapping("/employees/{id}")
-    public ResponseEntity<Employee> updateEmployee(@PathVariable Long id, @RequestBody Employee employee) {
+    public ResponseEntity<?> updateEmployee(@PathVariable Long id, @RequestBody EmployeeUpdateRequest request) {
         try {
-            Employee updatedEmployee = payrollService.updateEmployee(id, employee);
+            Employee updatedEmployee = payrollService.updateEmployee(
+                id,
+                request.getTitle(),
+                request.getFirstName(),
+                request.getSecondName(),
+                request.getLastName(),
+                request.getEmail(),
+                request.getPhone(),
+                request.getPosition(),
+                request.getDepartment(),
+                request.getHireDate(),
+                request.getTerminationDate(),
+                request.getIsActive(),
+                request.getAddressLine1(),
+                request.getAddressLine2(),
+                request.getCity(),
+                request.getProvince(),
+                request.getPostalCode(),
+                request.getCountry(),
+                request.getBankName(),
+                request.getAccountHolderName(),
+                request.getAccountNumber(),
+                request.getBranchCode(),
+                request.getAccountType(),
+                request.getEmploymentType(),
+                request.getSalaryType(),
+                request.getBasicSalary(),
+                request.getOvertimeRate(),
+                request.getTaxNumber(),
+                request.getTaxRebateCode(),
+                request.getUifNumber(),
+                request.getMedicalAidNumber(),
+                request.getPensionFundNumber(),
+                null // updatedBy - could be extracted from security context in future
+            );
             return ResponseEntity.ok(updatedEmployee);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
         }
     }
 
     /**
-     * Delete (deactivate) an employee
+     * Delete (deactivate) an employee - soft delete preserving payroll history
      */
     @DeleteMapping("/employees/{id}")
     public ResponseEntity<Void> deactivateEmployee(@PathVariable Long id) {
@@ -117,6 +163,46 @@ public class SpringPayrollController {
             return ResponseEntity.ok().build();
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
+        }
+    }
+
+    /**
+     * Activate an employee
+     */
+    @PutMapping("/employees/{id}/activate")
+    public ResponseEntity<Void> activateEmployee(@PathVariable Long id) {
+        try {
+            payrollService.activateEmployee(id);
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    /**
+     * Change employee active status
+     */
+    @PutMapping("/employees/{id}/status")
+    public ResponseEntity<Void> changeEmployeeStatus(@PathVariable Long id, @RequestParam boolean active) {
+        try {
+            payrollService.changeEmployeeStatus(id, active);
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    /**
+     * Hard delete an employee - permanently remove from database
+     * Only allowed if employee has no payroll history
+     */
+    @DeleteMapping("/employees/{id}/hard")
+    public ResponseEntity<String> hardDeleteEmployee(@PathVariable Long id) {
+        try {
+            payrollService.hardDeleteEmployee(id);
+            return ResponseEntity.ok("Employee permanently deleted");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
@@ -192,26 +278,24 @@ public class SpringPayrollController {
 
     /**
      * Process payroll for a fiscal period
-     * @param fiscalPeriodId the ID of the fiscal period to process payroll for
+     * @param request the payroll process request containing fiscal period ID and reprocess flag
      * @return the payroll processing response
      */
-    @PostMapping("/process/{fiscalPeriodId}")
-    public ResponseEntity<PayrollProcessingResponse> processPayroll(
-            @PathVariable Long fiscalPeriodId,
-            @RequestParam(defaultValue = "false") boolean reprocess) {
+    @PostMapping("/process")
+    public ResponseEntity<PayrollProcessingResponse> processPayroll(@RequestBody PayrollProcessRequest request) {
         try {
             SpringPayrollService.PayrollProcessingResult result;
 
-            if (reprocess) {
-                result = payrollService.reprocessPayroll(fiscalPeriodId);
+            if (request.isReprocess()) {
+                result = payrollService.reprocessPayroll(request.getFiscalPeriodId());
             } else {
-                result = payrollService.processPayroll(fiscalPeriodId);
+                result = payrollService.processPayroll(request.getFiscalPeriodId());
             }
 
             // Convert to frontend-expected format
             PayrollProcessingResponse response = new PayrollProcessingResponse(
                 true,
-                "Payroll " + (reprocess ? "re" : "") + "processed successfully for " + result.getEmployeeCount() + " employees",
+                "Payroll " + (request.isReprocess() ? "re" : "") + "processed successfully for " + result.getEmployeeCount() + " employees",
                 new PayrollProcessingData(
                     result.getEmployeeCount(),
                     result.getTotalGross().doubleValue(),
@@ -241,14 +325,13 @@ public class SpringPayrollController {
 
     /**
      * Reprocess payroll for a fiscal period (delete existing payslips and recalculate)
-     * @param fiscalPeriodId the ID of the fiscal period to reprocess payroll for
+     * @param request the payroll process request containing fiscal period ID (reprocess flag ignored, always true)
      * @return the payroll reprocessing response
      */
-    @PostMapping("/reprocess/{fiscalPeriodId}")
-    public ResponseEntity<PayrollProcessingResponse> reprocessPayroll(
-            @PathVariable Long fiscalPeriodId) {
+    @PostMapping("/reprocess")
+    public ResponseEntity<PayrollProcessingResponse> reprocessPayroll(@RequestBody PayrollProcessRequest request) {
         try {
-            SpringPayrollService.PayrollProcessingResult result = payrollService.reprocessPayroll(fiscalPeriodId);
+            SpringPayrollService.PayrollProcessingResult result = payrollService.reprocessPayroll(request.getFiscalPeriodId());
 
             // Convert to frontend-expected format
             PayrollProcessingResponse response = new PayrollProcessingResponse(
@@ -648,107 +731,5 @@ public class SpringPayrollController {
 
     // ===== REQUEST/RESPONSE CLASSES =====
 
-    public static class PayrollProcessRequest {
-        private Long fiscalPeriodId;
-        private boolean reprocess;
-
-        public Long getFiscalPeriodId() { return fiscalPeriodId; }
-        public void setFiscalPeriodId(Long fiscalPeriodId) { this.fiscalPeriodId = fiscalPeriodId; }
-
-        public boolean isReprocess() { return reprocess; }
-        public void setReprocess(boolean reprocess) { this.reprocess = reprocess; }
-    }
-
-    public static class PayslipGenerationRequest {
-        private Long fiscalPeriodId;
-        private List<Long> employeeIds;
-
-        public Long getFiscalPeriodId() { return fiscalPeriodId; }
-        public void setFiscalPeriodId(Long fiscalPeriodId) { this.fiscalPeriodId = fiscalPeriodId; }
-
-        public List<Long> getEmployeeIds() { return employeeIds; }
-        public void setEmployeeIds(List<Long> employeeIds) { this.employeeIds = employeeIds; }
-    }
-
-    public static class DocumentUploadRequest {
-        private Long employeeId;
-        private Long fiscalPeriodId;
-        private String fileName;
-        private byte[] fileData;
-        private String documentType;
-
-        public Long getEmployeeId() { return employeeId; }
-        public void setEmployeeId(Long employeeId) { this.employeeId = employeeId; }
-
-        public Long getFiscalPeriodId() { return fiscalPeriodId; }
-        public void setFiscalPeriodId(Long fiscalPeriodId) { this.fiscalPeriodId = fiscalPeriodId; }
-
-        public String getFileName() { return fileName; }
-        public void setFileName(String fileName) { this.fileName = fileName; }
-
-        public byte[] getFileData() { return fileData; }
-        public void setFileData(byte[] fileData) { this.fileData = fileData; }
-
-        public String getDocumentType() { return documentType; }
-        public void setDocumentType(String documentType) { this.documentType = documentType; }
-    }
-
-    public static class EmailPayslipsRequest {
-        private List<Long> payslipIds;
-
-        public List<Long> getPayslipIds() { return payslipIds; }
-        public void setPayslipIds(List<Long> payslipIds) { this.payslipIds = payslipIds; }
-    }
-
-    public static class BulkPdfRequest {
-        private List<Long> payslipIds;
-
-        public List<Long> getPayslipIds() { return payslipIds; }
-        public void setPayslipIds(List<Long> payslipIds) { this.payslipIds = payslipIds; }
-    }
-
-    /**
-     * Response class matching frontend PayrollProcessingResult interface
-     */
-    public static class PayrollProcessingResponse {
-        private final boolean success;
-        private final String message;
-        private final PayrollProcessingData data;
-
-        public PayrollProcessingResponse(boolean success, String message, PayrollProcessingData data) {
-            this.success = success;
-            this.message = message;
-            this.data = data;
-        }
-
-        public boolean isSuccess() { return success; }
-        public String getMessage() { return message; }
-        public PayrollProcessingData getData() { return data; }
-    }
-
-    /**
-     * Data class matching frontend expectations
-     */
-    public static class PayrollProcessingData {
-        private final int processedEmployees;
-        private final double totalGrossPay;
-        private final double totalDeductions;
-        private final double totalNetPay;
-        private final int payslipsGenerated;
-
-        public PayrollProcessingData(int processedEmployees, double totalGrossPay,
-                                   double totalDeductions, double totalNetPay, int payslipsGenerated) {
-            this.processedEmployees = processedEmployees;
-            this.totalGrossPay = totalGrossPay;
-            this.totalDeductions = totalDeductions;
-            this.totalNetPay = totalNetPay;
-            this.payslipsGenerated = payslipsGenerated;
-        }
-
-        public int getProcessedEmployees() { return processedEmployees; }
-        public double getTotalGrossPay() { return totalGrossPay; }
-        public double getTotalDeductions() { return totalDeductions; }
-        public double getTotalNetPay() { return totalNetPay; }
-        public int getPayslipsGenerated() { return payslipsGenerated; }
-    }
+    // Moved to fin.dto package for better organization
 }

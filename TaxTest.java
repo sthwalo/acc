@@ -9,7 +9,7 @@ public class TaxTest {
             // Initialize tax tables
             calculator.initializeTaxTables();
 
-            double grossSalary = 10500.0;
+            double grossSalary = 25000;
             double totalCompanyPayroll = 50000.0; // For SDL calculation
 
             System.out.println("=== TAX CALCULATION TEST ===");

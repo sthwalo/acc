@@ -47,6 +47,11 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.flywaydb:flyway-core")  // Database migration tool
     implementation("org.flywaydb:flyway-database-postgresql")  // PostgreSQL support
+
+    // Lombok for reducing boilerplate code
+    compileOnly("org.projectlombok:lombok:1.18.30")
+    annotationProcessor("org.projectlombok:lombok:1.18.30")
+
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 
     // Use JUnit Jupiter for testing.

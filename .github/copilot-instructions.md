@@ -10,97 +10,23 @@
 - ✅ **Frontend integration**: Test against real containerized APIs
 - ✅ **Production confidence**: Container = production deployment
 
-**VIOLATION CONSEQUENCES**: Code that doesn't work in Docker containers will fail in production. All changes must be tested in Docker before commit.
-
 ## Project Overview
 FIN is a production-ready financial management system built in Java 17 with PostgreSQL 17+, handling 7,156+ real transactions. It provides comprehensive financial document processing including bank statement processing, financial reporting, payroll management, budget planning, and REST API capabilities for South African businesses with SARS compliance.
 
-**🐳 Docker-First Architecture**:
-- **Legacy `app/`**: SparkJava-based with custom dependency injection (currently migrating to Spring Boot)
-- **Modern `spring-app/`**: Pure Spring Boot implementation with Spring MVC and JPA
+**Architecture Overview**:
+- **Spring Boot `spring-app/`**: Pure Spring Boot implementation with Spring MVC and JPA
 - **Frontend**: React/TypeScript application with container-first development workflow
 - **Database**: PostgreSQL 17+ running in Docker containers
 - **All Services**: Containerized and orchestrated via Docker Compose
 
 ## Architecture & Entry Points
 
-### 🐳 Docker-First Implementation Strategy
+The system is built with Spring Boot and runs in production Docker containers:
 
-**ALL DEVELOPMENT happens in Docker containers**. The system provides dual implementations, both designed to run in production Docker containers:
-
-#### Option A: Legacy SparkJava Implementation (`app/` folder)
-**Status**: ACTIVE - Currently migrating to Spring Boot
-**Runtime**: Docker container with JAR execution
-
-**Core Architecture**: Custom dependency injection via `ApplicationContext`. Three runtime modes (all Docker-ready):
-- **API Server**: `docker run fin-backend java -jar app.jar api` → REST API on port 8080
-- **Console**: `docker run -it fin-backend java -jar app.jar` → interactive menu system
-- **Batch**: `docker run fin-backend java -jar app.jar --batch [command]` → automated processing
-
-#### Option B: Modern Spring Boot Implementation (`spring-app/` folder) - **🐳 RECOMMENDED**
-**Status**: PRODUCTION-READY - Full Docker containerization
-**Runtime**: `docker run -p 8080:8080 fin-spring-backend`
-
-**Core Architecture**: Spring Boot 3.2.0 with Spring MVC and Spring Data JPA:
-- **API Server**: `docker run fin-spring-backend` → REST API on port 8080
-- **Database**: Spring Data JPA repositories with Hibernate (Docker PostgreSQL)
-- **Security**: Spring Security with JWT authentication
-- **Configuration**: Spring Boot `application.properties` with Docker environment variables
-
-### Choosing Between Implementations
-
-| Criteria | Use `app/` (SparkJava) | Use `spring-app/` (Spring Boot) |
-|----------|----------------------|-------------------------------|
-| **🐳 Docker Compatibility** | ✅ Container-ready | ✅ **FULL CONTAINERIZATION** |
-| **New Development** | ❌ Avoid | ✅ **RECOMMENDED** |
-| **Enterprise Features** | ❌ Limited | ✅ Security, Testing, Monitoring |
-| **Learning/Prototyping** | ✅ Lightweight | ❌ More complex |
-| **Production Deployment** | ⚠️ Legacy containers | ✅ **DOCKER PRODUCTION** |
-| **Migration Status** | 🔄 In Progress | ✅ Complete |
-
-## 🚀 Container-First Development Workflow (🐳 Docker Production Ready)
-
-**MANDATORY**: All development, testing, and production deployment MUST use Docker containers via docker compose. No direct JAR execution allowed. This ensures production-same environment with container networking.
-
-### Container-First Development Workflow
-
-**MANDATORY COMMANDS** - Use these exact commands for running the application:
-
-```bash
-# Start all services (backend and frontend) in production-same containers
-docker compose -f docker-compose.yml -f docker-compose.frontend.yml up -d
-
-# Check running containers (should show fin-app and fin-frontend-prod)
-docker ps
-
-# Test backend API endpoints
-curl http://localhost:8080/api/v1/health
-curl http://localhost:8080/api/v1/companies
-
-# Test frontend (served from container)
-curl http://localhost:3000
-
-# Stop all services
-docker compose -f docker-compose.yml -f docker-compose.frontend.yml down
-```
-
-### Development with Container Networking
-
-**RECOMMENDED WORKFLOW**: Run containers and develop frontend locally against containerized backend:
-
-```bash
-# Start only backend in container
-docker compose -f docker-compose.yml up -d fin-app
-
-# Verify backend container
-curl http://localhost:8080/api/v1/health
-
-# Develop frontend locally (connects to containerized backend)
-cd frontend && npm run dev
-
-# Stop backend container
-docker compose -f docker-compose.yml down fin-app
-```
+#### Spring Boot Implementation (`spring-app/` folder)
+- **Status**: Production-ready with full containerization
+- **Runtime**: `docker run -p 8080:8080 fin-app`
+- **Features**: Spring MVC, JPA, Security, JWT authentication
 
 ### 🐳 Docker Production Options (MANDATORY)
 
@@ -112,18 +38,9 @@ docker compose -f docker-compose.yml down fin-app
 ```dockerfile
 FROM openjdk:17-jre-slim
 LABEL author="Immaculate Nyoni <sthwaloe@gmail.com>"
-COPY spring-app/build/libs/spring-app.jar /app.jar
+COPY spring-app/build/libs/fin-spring.jar /app.jar
 EXPOSE 8080
 CMD ["java", "-jar", "/app.jar"]
-```
-
-**Legacy Production**:
-```dockerfile
-FROM openjdk:17-jre-slim
-LABEL author="Immaculate Nyoni <sthwaloe@gmail.com>"
-COPY app/build/libs/app.jar /app.jar
-EXPOSE 8080
-CMD ["java", "-jar", "/app.jar", "api"]
 ```
 
 **Frontend Production**:
@@ -135,36 +52,15 @@ EXPOSE 3000
 CMD ["nginx", "-g", "daemon off;"]
 ```
 
-**Why Container-First?**
-- ✅ **Dev = Prod**: Eliminates deployment surprises with container networking
-- ✅ **🐳 Docker-ready**: Containerized from day one with production ports and networking
-- ✅ **No Gradle daemon issues**: Reliable API testing in containers
-- ✅ **Systematic endpoint testing**: Build frontend incrementally against real containers
-- ✅ **🐳 Production confidence**: Test against real deployment artifacts in containers
-- ✅ **Author Attribution**: Builds include proper author metadata
-- ✅ **Copyright Compliance**: Copyright information from codebase included in containers
+## Implementation Strategy
 
-## Implementation Migration Strategy
+**Current Status**: Spring Boot is the primary and only implementation for new development.
 
-### Current Status (November 2025)
-- **Legacy `app/`**: Contains both SparkJava and Spring Boot dependencies during migration
-- **Modern `spring-app/`**: Clean Spring Boot implementation, fully functional
-- **Migration Path**: Gradually move features from `app/` to `spring-app/`
-
-### Migration Checklist
-- [ ] Core services migrated (`CompanyService`, `TransactionClassificationService`, etc.)
-- [ ] API endpoints parity achieved
-- [ ] Database schema compatibility verified
-- [ ] Frontend integration tested with both backends
-- [ ] Performance benchmarks completed
-- [ ] Documentation updated
-- [ ] Production deployment validated
-
-### Development Recommendations
-1. **🐳 New Features**: Implement in `spring-app/` first - **TEST IN DOCKER**
-2. **🐳 Bug Fixes**: Apply to both during migration - **VERIFY IN DOCKER**
-3. **🐳 Testing**: Test both implementations against frontend - **DOCKER CONTAINERS ONLY**
-4. **🐳 Production**: Use `spring-app/` for new deployments - **DOCKER DEPLOYMENT**
+**Development Recommendations**:
+- **🐳 New Features**: Implement in `spring-app/` - **TEST IN DOCKER**
+- **🐳 Bug Fixes**: Apply fixes in `spring-app/` - **VERIFY IN DOCKER**
+- **🐳 Testing**: Test implementation against frontend - **DOCKER CONTAINERS ONLY**
+- **🐳 Production**: Use `spring-app/` for all deployments - **DOCKER DEPLOYMENT**
 
 ## Critical Development Patterns
 
@@ -184,61 +80,25 @@ CMD ["nginx", "-g", "daemon off;"]
 
 **Pattern 1: Silent Fallback on Null**
 ```java
-// ❌ WRONG - Silent fallback
 Data data = fetchFromDatabase(conn, id);
 if (data == null) {
     data = createDefaultData(); // FORBIDDEN!
 }
-return data;
 ```
 
 **Pattern 2: Try-Catch with Fallback**
 ```java
-// ❌ WRONG - Fallback in catch block
 try {
     return fetchFromDatabase(conn, id);
 } catch (SQLException e) {
-    LOGGER.warning("Database error, using defaults"); // FORBIDDEN!
     return createDefaultData(); // FORBIDDEN!
 }
 ```
 
-**Pattern 3: Default/Template Methods**
-```java
-// ❌ WRONG - Hardcoded template method
-private String createDefaultAuditReport() { // FORBIDDEN method name!
-    return "We have audited the financial statements in accordance with ISA..."; // FORBIDDEN hardcoded text!
-}
-
-private List<String> getDefaultAccountingPolicies() { // FORBIDDEN!
-    return Arrays.asList(
-        "Revenue is recognized when control transfers, in accordance with IFRS 15...", // FORBIDDEN!
-        "Property, plant and equipment are stated at cost, in accordance with IAS 16..." // FORBIDDEN!
-    );
-}
-```
-
-**Pattern 4: Hardcoded Business Text**
-```java
-// ❌ WRONG - Hardcoded compliance/business text
-String disclaimer = "The financial statements have been prepared in accordance " + 
-                   "with International Financial Reporting Standards (IFRS) " +
-                   "and the Companies Act, 2008..."; // FORBIDDEN!
-
-String taxNotice = "For SARS tax purposes, this document serves as proof of..."; // FORBIDDEN!
-```
-
-**Pattern 5: Inline Default Values**
-```java
-// ❌ WRONG - Inline defaults for business data
-String auditorName = company.getAuditor() != null ? 
-    company.getAuditor() : "Independent Auditors (Pty) Ltd"; // FORBIDDEN default!
-
-String complianceText = rs.getString("compliance_text");
-if (complianceText == null) {
-    complianceText = "Prepared in accordance with IFRS and IAS standards"; // FORBIDDEN!
-}
-```
+**Pattern 3: Hardcoded Business Data**
+- Avoid methods named `createDefault*()`, `useFallback*()`, `getTemplate*()`
+- No hardcoded strings > 50 characters (except SQL/log messages)
+- No inline default values for business data
 
 #### ✅ REQUIRED PATTERN (Mandatory Across Entire Codebase)
 
@@ -265,112 +125,14 @@ processData(data);
 5. ✅ **Testing**: Easy to test error conditions
 6. ✅ **Production Safety**: No silent failures with wrong data
 
-#### 📋 REFACTORING METHODOLOGY (Apply to Any Service)
-
-When you encounter fallback/hardcoded data patterns in ANY file:
-
-**Step 1: AUDIT - Identify All Violations**
-```bash
-# Search for forbidden patterns
-grep -rn "createDefault" app/src/main/java/
-grep -rn "useFallback" app/src/main/java/
-grep -rn "getTemplate" app/src/main/java/
-grep -rn "catch.*SQLException.*{" app/src/main/java/ | grep -A 5 "return"
-```
-
-**Step 2: INVENTORY - Document What You Find**
-Create a list:
-- Method names with "default", "fallback", "template"
-- Try-catch blocks that create data on exception
-- Hardcoded strings > 50 characters (likely business text)
-- `if (data == null) { ... }` blocks that create data
-
-**Step 3: DELETE - Remove All Fallback Methods**
-- Delete ENTIRE methods named `createDefault*()`, `useFallback*()`, `getTemplate*()`
-- Do NOT refactor them - DELETE them completely
-- Remove 100% of hardcoded business text from these methods
-
-**Step 4: UPDATE - Fix Callers to Throw Exceptions**
-```java
-// Before (BAD):
-try {
-    data = fetchData();
-    if (data.isEmpty()) {
-        createDefaultData(); // Delete this!
-    }
-} catch (SQLException e) {
-    createDefaultData(); // Delete this!
-}
-
-// After (GOOD):
-List<Data> data = fetchData(conn, id);
-if (data.isEmpty()) {
-    throw new SQLException("Data not found in table_name for id " + id + 
-        ". Please insert: INSERT INTO table_name (...) VALUES (...)");
-}
-// Use real data
-```
-
-**Step 5: VERIFY - Test and Document**
-```bash
-# Compile to catch errors
-./gradlew compileJava --no-daemon
-
-# Verify no forbidden patterns remain
-grep -c "createDefault" YourService.java  # Should be 0
-grep -c "useFallback" YourService.java    # Should be 0
-
-# Document line reduction
-wc -l YourService.java  # Should be significantly smaller
-```
-
-**Step 6: SEED - Create Database Migration (If Needed)**
-If you removed hardcoded templates, create SQL seed data:
-```sql
--- scripts/migrations/seed_your_templates.sql
-INSERT INTO your_table (company_id, template_text, created_at) VALUES
-(1, 'The actual business text that was hardcoded', NOW()),
-(2, 'Another template that was in code', NOW());
-```
-
-#### 🎯 SPECIFIC FORBIDDEN PATTERNS BY SERVICE TYPE
-
-**Report Generation Services (ExcelFinancialReportService, PDF services, etc.):**
-- ❌ NO hardcoded IFRS/IAS/ISA compliance text
-- ❌ NO default audit opinions, director statements, or disclaimers
-- ❌ NO template financial notes or accounting policies
-- ✅ ALL regulatory text MUST come from: `audit_reports`, `directors_reports`, `financial_notes`, `compliance_statements` tables
-
-**Document Generation Services (Invoice, Receipt, Letter generators):**
-- ❌ NO hardcoded terms & conditions
-- ❌ NO default payment instructions or disclaimers
-- ❌ NO template business addresses or contact info
-- ✅ ALL document text MUST come from: `document_templates`, `company_settings`, `terms_conditions` tables
-
-**Email/Notification Services:**
-- ❌ NO hardcoded email subject lines or body text
-- ❌ NO default greeting/closing templates
-- ❌ NO hardcoded notification messages
-- ✅ ALL email content MUST come from: `email_templates`, `notification_templates` tables
-
-**Validation/Business Rule Services:**
-- ❌ NO hardcoded error messages (except system errors)
-- ❌ NO hardcoded validation messages
-- ❌ NO default warning texts
-- ✅ ALL business messages MUST come from: `validation_rules`, `business_messages` tables
-
 #### 🔍 CODE REVIEW CHECKLIST
 
 Before committing ANY code, verify:
-- [ ] No methods named `createDefault*`, `useFallback*`, `getTemplate*`
-- [ ] No try-catch blocks that create data on exception
-- [ ] No hardcoded strings > 50 chars (except SQL queries, log messages)
-- [ ] No `if (data == null) { create data }` patterns
+- [ ] No fallback methods (`createDefault*`, `useFallback*`, `getTemplate*`)
+- [ ] No hardcoded strings > 50 chars (except SQL/log messages)
 - [ ] All database fetch methods throw SQLException when empty
 - [ ] Exception messages specify exact table and SQL INSERT example
-- [ ] File size reduced if removing fallback code
 - [ ] `./gradlew compileJava` succeeds
-- [ ] No compiler warnings about unused fields/methods
 
 #### 📊 SUCCESS METRICS
 
@@ -379,28 +141,15 @@ A successful refactoring should show:
 - **Zero Fallbacks**: 0 occurrences of forbidden patterns
 - **Clear Errors**: All SQLException messages specify table + INSERT statement
 - **Clean Build**: No compilation errors or warnings
-- **Maintainability**: All business text in database, not code
 
 **PDF Library Standards - CRITICAL**: 
-- ✅ **MUST USE**: Apache PDFBox 3.0.0 (open source) for PDF reading/text extraction/document generation
-- ✅ **MUST USE**: libharu via JNA (open source) for complex PDF generation (payslips, invoices, reports with precise layouts)
-- ❌ **NEVER USE**: iText (commercial licensing restrictions - removed from project)
-- 📚 **Reference Implementations**:
-  - `PayslipPdfService.java` → libharu pattern (JNA with Pointer, precise layout control)
-  - `TextReportToPdfService.java` → PDFBox pattern (PDDocument, PDPage, PDPageContentStream)
-  - `PdfTextExtractionService.java` → PDFBox for reading PDFs
-- **When to Use Which**:
-  - **PDFBox**: Simple reports, text-heavy documents, PDF reading/parsing
-  - **libharu**: Complex layouts, precise positioning, tables, branded documents (payslips, invoices)
+- ✅ **MUST USE**: Apache PDFBox 3.0.0 for PDF reading/text extraction
+- ✅ **MUST USE**: libharu via JNA for complex PDF generation (payslips, invoices)
+- ❌ **NEVER USE**: iText (commercial licensing restrictions)
+- **When to Use Which**: PDFBox for simple reports/PDF reading; libharu for complex layouts
 
 **Service Registration**:
 - **Spring Boot**: Use `@Service`, `@Repository`, `@Controller` annotations - Spring handles registration automatically
-- **Legacy**: Always register new services in `ApplicationContext.initialize*Services()` methods:
-```java
-// In ApplicationContext (legacy only)
-SomeService someService = new SomeService(dbUrl, dependency);
-register(SomeService.class, someService);
-```
 
 **Database Access**: Use repositories over direct JDBC. Connection pooling via HikariCP is pre-configured:
 ```java
@@ -437,32 +186,39 @@ source .env                             # Load database credentials
 # Tests use: TEST_DATABASE_URL, TEST_DATABASE_USER, TEST_DATABASE_PASSWORD
 ```
 
-**Development Modes** (Container-First Approach):
+**Local Development**:
 ```bash
-# Build JAR (only when code changes)
-cd /Users/sthwalonyoni/FIN/spring-app && ./gradlew clean build --no-daemon
+# Start both backend and frontend locally for development (hot reload enabled)
+./dev.sh
 
-# Container-First Development (MANDATORY - same as production)
+# Alternative: Start services individually
+# Backend only: cd spring-app && ./gradlew bootRun
+# Frontend only: cd frontend && npm run dev
+```
+
+**Container Management**:
+```bash
+# Start both backend (fin-app) and frontend (fin-frontend-prod) containers
 docker compose -f docker-compose.yml -f docker-compose.frontend.yml up -d
 
-# Check containers
-docker ps
+# Start backend container only (fin-app)
+docker compose -f docker-compose.yml up -d fin-app
 
-# Test endpoints
-curl http://localhost:8080/api/v1/health
+# Restart backend container
+docker compose -f docker-compose.yml restart fin-app
 
-# Stop containers
+# Check container status
+docker compose -f docker-compose.yml -f docker-compose.frontend.yml ps
+
+# Stop all containers
 docker compose -f docker-compose.yml -f docker-compose.frontend.yml down
 
-# Legacy JAR execution (NOT RECOMMENDED - use containers instead)
-# java -jar app/build/libs/app.jar api &
-# java -jar app/build/libs/app.jar
-# java -jar app/build/libs/app.jar --batch [command]
+# View container logs
+docker compose -f docker-compose.yml -f docker-compose.frontend.yml logs -f
 ```
 
 **Production Deployment**:
 ```bash
-# Build and deploy JAR to Docker
 ./gradlew build
 docker build -t fin-backend .
 docker run -d -p 8080:8080 --env-file .env fin-backend
@@ -473,18 +229,16 @@ docker run -d -p 8080:8080 --env-file .env fin-backend
 **Mandatory Pre-Work Check**: Before ANY file modification:
 ```bash
 # Check existing task documentation
-ls -la docs/development/tasks/
-grep -r "TASK.*" docs/development/tasks/ | grep -i "[your-topic]"
-cat docs/development/tasks/README.md
+ls -la spring-app/docs/development/tasks/
+grep -r "TASK.*" spring-app/docs/development/tasks/ | grep -i "[your-topic]"
+cat spring-app/docs/development/tasks/README.md
 ```
 
 **Quality Protocol**:
-1. **Inventory violations**: `./gradlew clean checkstyleMain --no-daemon 2>&1 | grep -E "(MethodLength|MagicNumber|HiddenField)" > violations_inventory.txt`
+1. **Inventory violations**: `./gradlew clean checkstyleMain --no-daemon 2>&1 | grep -E "(ALL)" > violations_inventory.txt`
 2. **Fix ONE file at a time** - address ALL violations before moving on
-3. **Document ALL work** in `docs/development/tasks/TASK_[NUMBER]_[Name].md`
+3. **Document ALL work** in `spring-app/docs/development/tasks/TASK_[NUMBER]_[Name].md`
 4. **Build verification**: `./gradlew clean build` after every change
-
-**File Processing**: PDFs go in `input/`, reports generate to `output/`. Scripts in `scripts/` expect this structure.
 
 ### ⚠️ CRITICAL ENFORCEMENT: Code Changes & Testing Protocol
 
@@ -515,49 +269,41 @@ After making code changes:
 - ❌ **DO NOT** assume the fix works just because it compiles
 - ❌ **DO NOT** rush to commit and push
 
-#### 3. **TESTING WORKFLOW** (Container-First - Docker Compose Ready)
+#### 3. **TESTING WORKFLOW** (Local Development + Container Validation)
 ```bash
+# Option A: Local Development Testing (during active development)
+./dev.sh                                 # Start both services locally
+# Test endpoints in browser or with curl
+curl http://localhost:8080/api/v1/health
+curl http://localhost:3000
+
+# Option B: Container Testing (production-same environment)
 # Build JAR for testing (if needed)
 ./gradlew build
 
 # Start services in containers (production-same)
 docker compose -f docker-compose.yml -f docker-compose.frontend.yml up -d
 
-# Test ALL endpoints systematically
+# Test backend health (fin-app container)
 curl http://localhost:8080/api/v1/health
+
+# Test frontend health (fin-frontend-prod container)  
+curl http://localhost:3000
+
+# Test API endpoints
 curl http://localhost:8080/api/v1/companies
 curl http://localhost:8080/api/v1/companies/1/fiscal-periods
-# ... test all endpoints ...
-
-# Test frontend
-curl http://localhost:3000
 
 # Stop services
 docker compose -f docker-compose.yml -f docker-compose.frontend.yml down
 ```
 
-**🐳 Docker Compose Testing** (MANDATORY - Production-Ready):
-```bash
-# Start services in Docker compose (same as production)
-docker compose -f docker-compose.yml -f docker-compose.frontend.yml up -d
-
-# Test endpoints against containers
-curl http://localhost:8080/api/v1/health
-curl http://localhost:3000
-
-# Frontend development against containerized backend
-# npm run dev (connects to localhost:8080 via container networking)
-
-# Stop containers
-docker compose -f docker-compose.yml -f docker-compose.frontend.yml down
-```
-
-#### 4. **CONSEQUENCES OF VIOLATION** (🐳 Docker Compose-First Policy)
+#### 4. **CONSEQUENCES OF VIOLATION**
 - Committing untested code → production container failures
+- Skipping local development testing → development workflow issues
 - Skipping Docker compose testing → deployment surprises
 - Not testing all endpoints → broken frontend integration
 - Direct JAR execution → unreliable API testing
-- **FAILURE TO COMPLY** will result in broken containers, runtime errors, deployment issues, and failed frontend integration. This **🐳 DOCKER COMPOSE-FIRST** protocol is **STRICTLY ENFORCED** for all API development and containerization.
 
 ## Service Dependencies & Data Flow
 
@@ -582,19 +328,12 @@ docker compose -f docker-compose.yml -f docker-compose.frontend.yml down
 6. **Output Generation**: Financial reports, tax returns, payroll documents, budget analysis
 7. **Security & Compliance**: POPIA compliance, role-based access, audit logging
 
-**Reporting**: All reports go through `FinancialDataRepository` for caching/pooling. Excel generation uses Apache POI, console reports use `OutputFormatter`. The system generates comprehensive financial reports including:
-- Standard financial statements (Trial Balance, Income Statement, Balance Sheet, Cash Flow)
-- SARS-compliant tax returns and compliance reports
-- Payroll documents (payslips, tax certificates, IRP5 certificates)
-- Budget reports and variance analysis (forecasts, strategic plans)
-- Custom reports with multiple export formats (PDF, Excel, CSV)
-
 ## Database Schema Notes
 
-**Companies Table Schema** (as of November 2025 - PostgreSQL 17):
+**Companies Table Schema** (PostgreSQL 17):
 - Core fields: `id`, `name`, `registration_number`, `tax_number`, `address`, `contact_email`, `contact_phone`, `created_at`, `updated_at`, `logo_path`
-- Banking fields: `bank_name`, `account_number`, `account_type`, `branch_code` (added Nov 4, 2025)
-- Tax compliance: `vat_registered` (boolean, added Nov 4, 2025)
+- Banking fields: `bank_name`, `account_number`, `account_type`, `branch_code` (recently added)
+- Tax compliance: `vat_registered` (boolean, recently added)
 - **IMPORTANT**: When restoring from backups, verify banking columns exist: `bank_name`, `account_number`, `account_type`, `branch_code`, `vat_registered`
 - **Migration Command** if columns missing:
   ```sql
@@ -606,122 +345,23 @@ docker compose -f docker-compose.yml -f docker-compose.frontend.yml down
   ADD COLUMN IF NOT EXISTS vat_registered BOOLEAN DEFAULT FALSE;
   ```
 
-**Current Database Status** (November 4, 2025):
-- PostgreSQL 17 running on localhost:5432
-- Database: `drimacc_db` owned by user `sthwalonyoni`
-- Restored from backup: `drimacc_db_20251028_132936.dump`
-- Active companies: 3 (Xinghizana Group, Rock Of Ages Fellowship Church, Limelight Academy Institutions)
-- Total transactions: 3,813 bank transactions
-- Total payslips: 26
-
 ## Testing & Environment
 
 **Test Structure**:
 - **Spring Boot**: JUnit 5 + Spring Boot Test with `@SpringBootTest`
-- **Legacy**: JUnit 5 + Mockito with custom test setup
 
 **Environment Variables**:
 - **Spring Boot**: Standard `application.properties` with profiles
-- **Legacy**: Production uses `DATABASE_*`, tests use `TEST_DATABASE_*`
 
 **License Check**: `LicenseManager.checkLicenseCompliance()` required on all entry points
 
-**API Testing**: CORS enabled for `localhost:3000`. Key endpoints work with both implementations:
-- `GET /api/v1/health` - system status
-- `POST /api/v1/companies/{id}/upload` - file processing
-- `GET /api/v1/companies` - company management
-- `POST /api/v1/payroll/process` - payroll processing
-- `GET /api/v1/budgets/{id}/variance` - budget analysis
-- `GET /api/v1/reports/financial` - financial report generation
-
-## 🐳 Docker Containerization Strategy (MANDATORY)
-
-**🚨 CRITICAL REQUIREMENT 🚨**: All application running MUST use Docker containers via docker compose to ensure production compatibility with container networking.
-
-**Container Development Workflow** (MANDATORY - Use These Commands):
-
-```bash
-# Start all services in production-same containers
-docker compose -f docker-compose.yml -f docker-compose.frontend.yml up -d
-
-# Check containers are running (fin-app on 8080, fin-frontend-prod on 3000)
-docker ps
-
-# Test backend API
-curl http://localhost:8080/api/v1/health
-
-# Test frontend
-curl http://localhost:3000
-
-# Stop all services
-docker compose -f docker-compose.yml -f docker-compose.frontend.yml down
-```
-
-**Alternative: Backend-Only Development**:
-```bash
-# Start only backend container
-docker compose -f docker-compose.yml up -d fin-app
-
-# Verify backend
-curl http://localhost:8080/api/v1/health
-
-# Develop frontend locally against container
-cd frontend && npm run dev
-
-# Stop backend
-docker compose -f docker-compose.yml down fin-app
-```
-
-**Why Container-First with Networking?**
-- ✅ **Production accuracy**: Test against same runtime and networking as production
-- ✅ **Environment consistency**: Same JVM, dependencies, config, and network setup
-- ✅ **Deployment confidence**: No "works on my machine" issues
-- ✅ **Frontend integration**: Test real API calls in container network
-- ✅ **Zero deployment surprises**: Container networking = production networking
-- ✅ **Author and Copyright**: Builds include proper metadata and copyright attribution
-
 ## Current Development Focus
 
-**Migration Priority** (November 2025):
-- Complete migration from `app/` SparkJava to `spring-app/` Spring Boot
-- Validate feature parity between implementations
-- Update documentation and workflows
-- Frontend integration testing with both backends
-
-**Active Refactoring** (see `docs/development/tasks/TASK_6.*`):
-- `AccountClassificationService` (2,230 lines) → extract services
-- `InteractiveClassificationService` (2,066 lines) → dependency injection
-- Output formatting standardization across services
-
-**Implementation Choice for Tasks**:
-- **🐳 New Services**: Implement in `spring-app/` only - **DOCKER COMPOSE TESTING REQUIRED**
-- **🐳 Bug Fixes**: Apply to both during migration - **DOCKER COMPOSE VERIFICATION MANDATORY**
-- **🐳 API Changes**: Design in Spring Boot first, then port to SparkJava if needed - **CONTAINER NETWORKING COMPATIBILITY FIRST**
-- **🐳 Database Changes**: Ensure compatibility with both implementations - **DOCKER COMPOSE ENVIRONMENT TESTING**
-
-**Quality Remediation**: SpotBugs warnings addressed with defensive copying patterns. EI_EXPOSE_REP fixes documented in task files.
+**Primary Framework**: Spring Boot is the standard framework for all new development and maintenance.
 
 ## Architecture Decision Records
 
-### ADR-001: Dual Implementation Strategy
-**Context**: Need to modernize from SparkJava to Spring Boot while maintaining functionality
-**Decision**: Maintain parallel implementations during migration period
-**Status**: ACTIVE - Migration in progress
-**Consequences**:
-- ✅ Zero downtime during migration
-- ✅ Feature parity validation
-- ✅ Gradual adoption possible
-- ❌ Code duplication during transition
-
-### ADR-002: Spring Boot as Primary Framework
-**Context**: SparkJava limitations in enterprise features (security, testing, monitoring)
-**Decision**: Standardize on Spring Boot for all new development
-**Status**: ACCEPTED
-**Consequences**:
-- ✅ Enterprise-grade features available
-- ✅ Better ecosystem and community support
-- ✅ Improved maintainability and testing
-- ❌ Increased complexity for simple use cases
+**ADR-001: Spring Boot as Primary Framework** - Standardize on Spring Boot for enterprise features, security, and testing capabilities.
 
 ## Collaboration Protocol
 
@@ -744,11 +384,3 @@ docker compose -f docker-compose.yml down fin-app
 - **Clear Explanations**: Always explain WHAT you plan to do, WHY, and HOW before proceeding
 - **User Confirmation Required**: Wait for explicit statements like "yes, proceed" or "that approach looks good" before implementing
 - **Joint Problem Solving**: Work together to identify root causes and develop solutions
-
-When modifying financial processing logic, maintain the existing transaction flow and update relevant task documentation. The system processes real financial data - ensure accuracy over speed.
-
-**🐳 FINAL REMINDER: EVERYTHING RUNS IN DOCKER COMPOSE** 🚨
-- **NO CODE CHANGES WITHOUT DOCKER COMPOSE TESTING**
-- **ALL ENDPOINTS MUST WORK IN CONTAINER NETWORKING**
-- **FRONTEND INTEGRATION REQUIRES CONTAINERIZED BACKEND VIA DOCKER COMPOSE**
-- **PRODUCTION = DOCKER COMPOSE CONTAINERS - TEST ACCORDINGLY**

@@ -1,4 +1,4 @@
-# TASK_12_Payroll_Menu_Endpoints_Implementation_and_Testing
+# TASK_2_Payroll_Menu_Endpoints_Implementation_and_Testing
 
 ## Overview
 This task documents the comprehensive implementation and testing plan for all Payroll Management menu endpoints and submenus as defined in the FIN application console menu. The payroll system provides complete employee lifecycle management, payroll processing, reporting, and document management capabilities.
@@ -112,12 +112,39 @@ This task implements Payroll Management as one module within the **CENTRALIZED F
   - Controller: `PayrollController.updateEmployee()`
   - Service: `EmployeeService.updateEmployee()`
 
-#### 1.4 Delete Employee
+#### 1.4 Delete Employee (Soft Delete)
 - **Endpoint**: `DELETE /api/v1/payroll/employees/{id}`
 - **Logic**: Soft delete (deactivate) to preserve payroll history
 - **Implementation**:
   - Controller: `PayrollController.deactivateEmployee()`
   - Service: `EmployeeService.deactivateEmployee()`
+  - Sets `isActive = false` on employee record
+
+#### 1.5 Activate Employee
+- **Endpoint**: `PUT /api/v1/payroll/employees/{id}/activate`
+- **Logic**: Reactivate a previously deactivated employee
+- **Implementation**:
+  - Controller: `PayrollController.activateEmployee()`
+  - Service: `EmployeeService.activateEmployee()`
+  - Sets `isActive = true` on employee record
+
+#### 1.6 Change Employee Status
+- **Endpoint**: `PUT /api/v1/payroll/employees/{id}/status?active={true|false}`
+- **Logic**: Change employee active/inactive status
+- **Implementation**:
+  - Controller: `PayrollController.changeEmployeeStatus()`
+  - Service: `EmployeeService.changeEmployeeStatus()`
+  - Sets `isActive` to specified value
+
+#### 1.7 Hard Delete Employee
+- **Endpoint**: `DELETE /api/v1/payroll/employees/{id}/hard`
+- **Logic**: Permanently remove employee from database
+- **Validation**: Only allowed if employee has no payslips or documents
+- **Implementation**:
+  - Controller: `PayrollController.hardDeleteEmployee()`
+  - Service: `EmployeeService.hardDeleteEmployee()`
+  - Checks for existing payslips before deletion
+  - Physically removes employee record if safe
 
 ### 2. Fiscal Period Payroll Configuration Endpoints
 **Base Path**: `/api/v1/fiscal-periods/{id}/payroll`
@@ -310,10 +337,19 @@ curl -X POST http://localhost:8080/api/v1/payroll/employees \
 # Update employee
 curl -X PUT http://localhost:8080/api/v1/payroll/employees/1 \
   -H "Content-Type: application/json" \
-  -d '{"name":"John Smith",...}'
+  -d '{"name":"John Smith","salary":55000.00}'
 
-# Delete employee
+# Deactivate employee (soft delete)
 curl -X DELETE http://localhost:8080/api/v1/payroll/employees/1
+
+# Activate employee
+curl -X PUT http://localhost:8080/api/v1/payroll/employees/1/activate
+
+# Change employee status
+curl -X PUT "http://localhost:8080/api/v1/payroll/employees/1/status?active=false"
+
+# Hard delete employee (only if no payroll history)
+curl -X DELETE http://localhost:8080/api/v1/payroll/employees/1/hard
 ```
 
 #### Fiscal Period Payroll Configuration Testing
@@ -514,19 +550,24 @@ curl "http://localhost:8080/api/v1/payroll/documents/search?query=payslip"
 5. Begin Phase 1 implementation with database fixes in place
 6. Set up automated testing pipeline for cross-module consistency
 
-## Current Implementation Status (November 24, 2025)
+## Current Implementation Status (November 25, 2025)
 
 ### ✅ **FULLY WORKING ENDPOINTS**
 
-**Employee Management** - **100% COMPLETE**
-- ✅ `GET /api/v1/payroll/employees?companyId=1` - Lists 13 employees with complete details
-- ✅ Pagination and sorting by name working perfectly
-- ✅ All employee data (salaries, tax numbers, banking info) properly returned
+**Employee Management** - **100% COMPLETE** (All 7 Endpoints Working)
+- ✅ `GET /api/v1/payroll/employees?companyId=1` - Lists employees with complete details
+- ✅ `POST /api/v1/payroll/employees` - Creates new employees (tested: returned ID 46)
+- ✅ `PUT /api/v1/payroll/employees/{id}` - Updates existing employees
+- ✅ `DELETE /api/v1/payroll/employees/{id}` - Soft delete (deactivates employees)
+- ✅ `PUT /api/v1/payroll/employees/{id}/activate` - Reactivates employees
+- ✅ `PUT /api/v1/payroll/employees/{id}/status?active={boolean}` - Changes employee status
+- ✅ `DELETE /api/v1/payroll/employees/{id}/hard` - Hard delete (permanent removal)
+- ✅ **Frontend Integration**: All delete operations connected with confirmation modals
 
-**Payroll Reports** - **100% COMPLETE**  
+**Payroll Reports** - **100% COMPLETE** (All 3 Endpoints Working)
 - ✅ `GET /api/v1/payroll/reports/summary?fiscalPeriodId=13` - Complete payroll summary
-- ✅ `GET /api/v1/payroll/reports/emp201?fiscalPeriodId=13` - SARS EMP 201 tax report
 - ✅ `GET /api/v1/payroll/reports/employee?employeeId=2&fiscalPeriodId=13` - Employee-specific reports
+- ✅ `GET /api/v1/payroll/reports/emp201?fiscalPeriodId=13` - SARS EMP 201 tax report
 
 **Bulk Payslip Operations** - **100% COMPLETE**
 - ✅ `GET /api/v1/payroll/payslips/bulk-export?fiscalPeriodId=13` - Generates valid ZIP with 13 PDFs
@@ -538,44 +579,92 @@ curl "http://localhost:8080/api/v1/payroll/documents/search?query=payslip"
 - ✅ Payroll totals integrated: R170,100 gross, R137,781 net, 13 employees
 - ✅ Unified model working: Fiscal periods serve as payroll periods
 
-**Document Management** - **90% COMPLETE**
-- ✅ `GET /api/v1/payroll/documents?employeeId=2` - Returns empty array (expected)
+### ❌ **BROKEN ENDPOINTS (Need Implementation/Fixes)**
 
-### ⚠️ **PREVIOUSLY REPORTED AS BROKEN - NOW CONFIRMED WORKING**
+**Fiscal Period Payroll Configuration** - **0% COMPLETE** (All 3 Endpoints Broken)
+- ❌ `GET /api/v1/fiscal-periods/{id}/payroll-config` → 200 but returns null
+- ❌ `GET /api/v1/fiscal-periods/payroll-status?companyId=1` → 500 Internal Error
+- ❌ `DELETE /api/v1/fiscal-periods/{id}/payroll-config` → 500 Internal Error
 
-**Individual PDF Download** - **WORKING** ✅
-- ✅ `GET /api/v1/payroll/payslips/{id}/pdf` - Generates individual payslip PDFs
-- ✅ Previous testing used incorrect parameters/commands
-- ✅ Endpoint confirmed working with proper authentication/parameters
+**Payroll Processing** - **0% COMPLETE** (1 Endpoint Broken)
+- ❌ `POST /api/v1/payroll/process` → 400 "Tax brackets not found for fiscal period"
 
-**Payroll Configuration** - **WORKING** ✅  
-- ✅ `GET /api/v1/fiscal-periods/{id}/payroll-config` - Retrieves payroll configuration
-- ✅ `GET /api/v1/fiscal-periods/payroll-status?companyId=1` - Lists fiscal periods by payroll status
-- ✅ Previous testing used incorrect parameters/commands
-- ✅ Endpoints confirmed working with proper authentication/parameters
+**Payslip Generation** - **25% COMPLETE** (2/4 Endpoints Working)
+- ✅ `GET /api/v1/payroll/payslips?fiscalPeriodId=13` → 200 (lists 39 payslips)
+- ❌ `POST /api/v1/payroll/payslips/generate` → 400 Error
+- ❌ `GET /api/v1/payroll/payslips/{id}/pdf` → 404 Not Found
 
-**Payslip Listing** - **WORKING** ✅
-- ✅ `GET /api/v1/payroll/payslips?fiscalPeriodId=13` - Lists payslips for fiscal period
-- ✅ Previous testing used incorrect parameters/commands  
-- ✅ Endpoint confirmed working with proper query parameters
+**Document Management** - **17% COMPLETE** (1/5 Endpoints Working)
+- ✅ `GET /api/v1/payroll/documents` → 200 (returns empty array as expected)
+- ❌ `POST /api/v1/payroll/documents` → Internal Error (upload)
+- ❌ `GET /api/v1/payroll/documents/{id}/download` → 400 Bad Request
+- ❌ `DELETE /api/v1/payroll/documents/{id}` → Not tested
+- ❌ `GET /api/v1/payroll/documents/search?query=test` → 500 Internal Error
 
 ### 📊 **OVERALL COMPLETION STATUS**
 
-| Component | Status | Completion | Notes |
-|-----------|--------|------------|-------|
-| **Employee Management** | ✅ **COMPLETE** | 100% | 13 employees, full CRUD |
-| **Payroll Processing** | ✅ **COMPLETE** | 100% | FY2025-2026 processed |
-| **Bulk Payslip Export** | ✅ **COMPLETE** | 100% | ZIP with 13 PDFs |
-| **Payroll Reports** | ✅ **COMPLETE** | 100% | Summary, EMP 201, Employee |
-| **Fiscal Period Integration** | ✅ **COMPLETE** | 100% | Unified model working |
-| **Individual PDF Download** | ✅ **WORKING** | 100% | Confirmed operational |
-| **Payroll Configuration** | ✅ **WORKING** | 100% | Confirmed operational |
-| **Payslip Listing** | ✅ **WORKING** | 100% | Confirmed operational |
-| **Document Management** | ⚠️ **MOSTLY COMPLETE** | 90% | Basic operations working |
+| Component | Status | Completion | Working Endpoints | Broken Endpoints |
+|-----------|--------|------------|-------------------|------------------|
+| **Employee Management** | ✅ **COMPLETE** | 100% | 7/7 | 0/7 |
+| **Fiscal Period Payroll Config** | ❌ **BROKEN** | 0% | 0/3 | 3/3 |
+| **Payroll Processing** | ❌ **BROKEN** | 0% | 0/1 | 1/1 |
+| **Payslip Operations** | ⚠️ **PARTIAL** | 25% | 2/4 | 2/4 |
+| **Payroll Reports** | ✅ **COMPLETE** | 100% | 3/3 | 0/3 |
+| **Document Management** | ❌ **BROKEN** | 17% | 1/5 | 4/5 |
 
-**TOTAL COMPLETION: 98%** - All core payroll functionality operational and tested.
+**TOTAL COMPLETION: 48%** - Employee Management fully complete with frontend integration, but multiple critical endpoints broken and need fixes.
+
+## 🚨 **IMMEDIATE NEXT STEPS - FIX BROKEN ENDPOINTS**
+
+### **Priority 1: Fix Tax Brackets Issue (Blocks Payroll Processing)**
+- **Issue**: `POST /api/v1/payroll/process` fails with "Tax brackets not found for fiscal period"
+- **Root Cause**: Missing tax bracket data for fiscal periods
+- **Solution**: 
+  - Add tax bracket configuration to fiscal periods
+  - Create tax bracket tables and data
+  - Update payroll processing to use configured tax brackets
+- **Impact**: Critical - payroll processing completely blocked
+
+### **Priority 2: Fix Fiscal Period Payroll Configuration Endpoints**
+- **Issue**: All 3 fiscal period payroll config endpoints returning 500 errors
+- **Endpoints**:
+  - `GET /api/v1/fiscal-periods/{id}/payroll-config` → returns null
+  - `GET /api/v1/fiscal-periods/payroll-status?companyId=1` → 500 error
+  - `DELETE /api/v1/fiscal-periods/{id}/payroll-config` → 500 error
+- **Solution**: Implement missing payroll configuration logic on fiscal period entities
+
+### **Priority 3: Fix Payslip PDF Generation**
+- **Issue**: Individual PDF downloads failing with 404
+- **Endpoints**:
+  - `POST /api/v1/payroll/payslips/generate` → 400 error
+  - `GET /api/v1/payroll/payslips/{id}/pdf` → 404 error
+- **Solution**: Fix PDF generation service and endpoint routing
+
+### **Priority 4: Fix Document Management Endpoints**
+- **Issue**: 4/5 document endpoints failing
+- **Broken Endpoints**:
+  - `POST /api/v1/payroll/documents` → Internal error
+  - `GET /api/v1/payroll/documents/{id}/download` → 400 error
+  - `GET /api/v1/payroll/documents/search?query=test` → 500 error
+- **Solution**: Implement document upload/download/search functionality
+
+### **Updated Success Criteria**
+- [x] `POST /api/v1/payroll/employees` creates new employees successfully
+- [x] `PUT /api/v1/payroll/employees/{id}` updates existing employees
+- [x] `DELETE /api/v1/payroll/employees/{id}` deactivates employees (soft delete)
+- [x] `PUT /api/v1/payroll/employees/{id}/activate` reactivates employees
+- [x] `PUT /api/v1/payroll/employees/{id}/status?active={boolean}` changes employee status
+- [x] `DELETE /api/v1/payroll/employees/{id}/hard` permanently deletes employees (only if no payroll history)
+- [x] Frontend forms work end-to-end for all CRUD operations
+- [x] Employee list updates correctly after operations
+- [ ] `POST /api/v1/payroll/process` processes payroll successfully (blocked by tax brackets)
+- [ ] `GET /api/v1/fiscal-periods/{id}/payroll-config` returns valid payroll configuration
+- [ ] `GET /api/v1/payroll/payslips/{id}/pdf` generates individual payslip PDFs
+- [ ] `POST /api/v1/payroll/documents` uploads payroll documents successfully
+- [ ] All operations work in Docker container environment
 
 ---
 **Task Owner**: Development Team
-**Review Date**: November 29, 2025
-**Completion Target**: December 31, 2025
+**Review Date**: November 25, 2025
+**Completion Target**: January 15, 2026
+**Current Status**: 48% Complete - Employee Management fully implemented, critical endpoint fixes needed

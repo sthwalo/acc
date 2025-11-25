@@ -295,13 +295,18 @@ export default function SystemLogsView({ selectedCompany, onLogout }: SystemLogs
             <Search size={16} />
             <input
               type="text"
+              id="logs-search"
+              name="logs-search"
               placeholder="Search logs..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              autoComplete="off"
             />
           </div>
 
           <select
+            id="level-filter"
+            name="level-filter"
             value={levelFilter}
             onChange={(e) => setLevelFilter(e.target.value)}
             className="filter-select"
@@ -314,6 +319,8 @@ export default function SystemLogsView({ selectedCompany, onLogout }: SystemLogs
           </select>
 
           <select
+            id="category-filter"
+            name="category-filter"
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
             className="filter-select"
@@ -326,6 +333,8 @@ export default function SystemLogsView({ selectedCompany, onLogout }: SystemLogs
           </select>
 
           <select
+            id="date-range-filter"
+            name="date-range-filter"
             value={dateRange}
             onChange={(e) => setDateRange(e.target.value)}
             className="filter-select"

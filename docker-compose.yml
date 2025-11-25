@@ -29,6 +29,7 @@ services:
       - "8080:8080"
     volumes:
       - ./input:/app/input:ro
+      - ./logos:/app/logos:ro
     networks:
       - fin-network
     restart: unless-stopped

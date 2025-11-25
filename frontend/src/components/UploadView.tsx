@@ -120,6 +120,8 @@ export default function UploadView({ selectedCompany, selectedFiscalPeriod }: Up
           <input
             ref={fileInputRef}
             type="file"
+            id="file-upload"
+            name="file-upload"
             accept=".pdf,.csv,.txt"
             onChange={handleFileSelect}
             style={{ display: 'none' }}

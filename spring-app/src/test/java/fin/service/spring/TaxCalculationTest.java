@@ -37,7 +37,7 @@ public class TaxCalculationTest {
 
         try {
             // Load tax tables
-            String pdfTextPath = "spring-app/src/main/java/fin/context/PAYE-GEN-01-G01-A03-2026-Monthly-Tax-Deduction-Tables-External-Annexure.txt";
+            String pdfTextPath = "../input/PAYE-GEN-01-G01-A03-2026-Monthly-Tax-Deduction-Tables-External-Annexure.txt";
             calculator.loadTaxTablesFromPDFText(pdfTextPath);
 
             // Test R25,000 salary

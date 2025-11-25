@@ -71,7 +71,7 @@ public class SARSTaxCalculator {
     public void initializeTaxTables() {
         try {
             // Load tax tables from the PDF text file for accurate SARS 2026 calculations
-            String pdfTextPath = "/app/input/PAYE-GEN-01-G01-A03-2026-Monthly-Tax-Deduction-Tables-External-Annexure.txt";
+            String pdfTextPath = "spring-app/src/main/java/context/PAYE-GEN-01-G01-A03-2026-Monthly-Tax-Deduction-Tables-External-Annexure.txt";
             loadTaxTablesFromPDFText(pdfTextPath);
             LOGGER.info("SARS Tax Calculator initialized with " + taxBrackets.size() + " tax brackets from official 2026 tables");
         } catch (IOException e) {

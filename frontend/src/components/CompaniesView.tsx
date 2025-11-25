@@ -75,6 +75,7 @@ const CompanyForm = memo(({ isEdit, formData, onFormDataChange, onSave, onCancel
           <label htmlFor="name">Company Name *</label>
           <input
             id="name"
+            name="name"
             type="text"
             value={formData.name || ''}
             onChange={handleNameChange}
@@ -87,6 +88,7 @@ const CompanyForm = memo(({ isEdit, formData, onFormDataChange, onSave, onCancel
           <label htmlFor="registrationNumber">Registration Number</label>
           <input
             id="registrationNumber"
+            name="registrationNumber"
             type="text"
             value={formData.registrationNumber || ''}
             onChange={handleRegistrationChange}
@@ -98,6 +100,7 @@ const CompanyForm = memo(({ isEdit, formData, onFormDataChange, onSave, onCancel
           <label htmlFor="taxNumber">Tax Number</label>
           <input
             id="taxNumber"
+            name="taxNumber"
             type="text"
             value={formData.taxNumber || ''}
             onChange={handleTaxNumberChange}
@@ -109,6 +112,7 @@ const CompanyForm = memo(({ isEdit, formData, onFormDataChange, onSave, onCancel
           <label htmlFor="address">Address</label>
           <textarea
             id="address"
+            name="address"
             value={formData.address || ''}
             onChange={handleAddressChange}
             placeholder="Enter company address"
@@ -120,6 +124,7 @@ const CompanyForm = memo(({ isEdit, formData, onFormDataChange, onSave, onCancel
           <label htmlFor="contactEmail">Contact Email</label>
           <input
             id="contactEmail"
+            name="contactEmail"
             type="email"
             value={formData.contactEmail || ''}
             onChange={handleEmailChange}
@@ -131,6 +136,7 @@ const CompanyForm = memo(({ isEdit, formData, onFormDataChange, onSave, onCancel
           <label htmlFor="contactPhone">Contact Phone</label>
           <input
             id="contactPhone"
+            name="contactPhone"
             type="tel"
             value={formData.contactPhone || ''}
             onChange={handlePhoneChange}
@@ -142,6 +148,7 @@ const CompanyForm = memo(({ isEdit, formData, onFormDataChange, onSave, onCancel
           <label htmlFor="bankName">Bank Name</label>
           <input
             id="bankName"
+            name="bankName"
             type="text"
             value={formData.bankName || ''}
             onChange={handleBankNameChange}
@@ -153,6 +160,7 @@ const CompanyForm = memo(({ isEdit, formData, onFormDataChange, onSave, onCancel
           <label htmlFor="accountNumber">Account Number</label>
           <input
             id="accountNumber"
+            name="accountNumber"
             type="text"
             value={formData.accountNumber || ''}
             onChange={handleAccountNumberChange}
@@ -164,6 +172,7 @@ const CompanyForm = memo(({ isEdit, formData, onFormDataChange, onSave, onCancel
           <label htmlFor="accountType">Account Type</label>
           <select
             id="accountType"
+            name="accountType"
             value={formData.accountType || ''}
             onChange={handleAccountTypeChange}
           >
@@ -179,6 +188,7 @@ const CompanyForm = memo(({ isEdit, formData, onFormDataChange, onSave, onCancel
           <label htmlFor="branchCode">Branch Code</label>
           <input
             id="branchCode"
+            name="branchCode"
             type="text"
             value={formData.branchCode || ''}
             onChange={handleBranchCodeChange}
@@ -187,8 +197,10 @@ const CompanyForm = memo(({ isEdit, formData, onFormDataChange, onSave, onCancel
         </div>
 
         <div className="form-group">
-          <label className="checkbox-label">
+          <label htmlFor="vatRegistered" className="checkbox-label">
             <input
+              id="vatRegistered"
+              name="vatRegistered"
               type="checkbox"
               checked={formData.vatRegistered || false}
               onChange={handleVatRegisteredChange}
