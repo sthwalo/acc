@@ -7,6 +7,7 @@ import fin.model.Payslip;
 //import fin.service.spring.EmailService;
 import fin.service.spring.SpringPayslipPdfService;
 import fin.service.spring.SpringPayrollService;
+import fin.service.spring.SpringPayrollReportService;
 import fin.dto.BulkPdfRequest;
 import fin.dto.DocumentUploadRequest;
 import fin.dto.EmailPayslipsRequest;
@@ -44,11 +45,13 @@ public class SpringPayrollController {
 
     private final SpringPayrollService payrollService;
     private final SpringPayslipPdfService payslipPdfService;
+    private final SpringPayrollReportService payrollReportService;
     private static final Logger LOGGER = Logger.getLogger(SpringPayrollController.class.getName());
 
-    public SpringPayrollController(SpringPayrollService payrollService, SpringPayslipPdfService payslipPdfService) {
+    public SpringPayrollController(SpringPayrollService payrollService, SpringPayslipPdfService payslipPdfService, SpringPayrollReportService payrollReportService) {
         this.payrollService = payrollService;
         this.payslipPdfService = payslipPdfService;
+        this.payrollReportService = payrollReportService;
     }
 
     // ===== EMPLOYEE MANAGEMENT ENDPOINTS =====
@@ -631,17 +634,20 @@ public class SpringPayrollController {
             @RequestParam Long fiscalPeriodId,
             @RequestParam(defaultValue = "PDF") String format) {
         try {
-            // TODO: Implement PDF generation for summary report
-            // For now, return JSON as PDF (temporary)
-            SpringPayrollService.PayrollSummary summary = payrollService.getPayrollSummary(fiscalPeriodId);
-            String jsonData = String.format("{\"totalGross\":%s,\"totalPAYE\":%s,\"totalUIF\":%s,\"totalSDL\":%s,\"totalNet\":%s,\"employeeCount\":%d}",
-                summary.getTotalGross(), summary.getTotalPAYE(), summary.getTotalUIF(),
-                summary.getTotalSDL(), summary.getTotalNet(), summary.getEmployeeCount());
-
-            return ResponseEntity.ok()
-                .header("Content-Disposition", "attachment; filename=\"payroll_summary.pdf\"")
-                .header("Content-Type", "application/pdf")
-                .body(jsonData.getBytes());
+            if ("PDF".equalsIgnoreCase(format)) {
+                SpringPayrollService.PayrollSummary summary = payrollService.getPayrollSummary(fiscalPeriodId);
+                byte[] pdfData = payrollReportService.generatePayrollSummaryPdf(summary);
+                return ResponseEntity.ok()
+                    .header("Content-Type", "application/pdf")
+                    .header("Content-Disposition", "attachment; filename=\"payroll_summary.pdf\"")
+                    .body(pdfData);
+            } else {
+                // Return JSON for API consumers
+                SpringPayrollService.PayrollSummary summary = payrollService.getPayrollSummary(fiscalPeriodId);
+                return ResponseEntity.ok()
+                    .header("Content-Type", "application/json")
+                    .body(summary.toString().getBytes());
+            }
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
         }
@@ -651,20 +657,33 @@ public class SpringPayrollController {
      * Get employee payroll report
      */
     @GetMapping("/reports/employee")
-    public ResponseEntity<List<Payslip>> getEmployeePayrollReport(
+    public ResponseEntity<byte[]> getEmployeePayrollReport(
             @RequestParam Long employeeId,
             @RequestParam Long fiscalPeriodId,
             @RequestParam(defaultValue = "PDF") String format) {
         try {
-            List<Payslip> payslips = payrollService.getPayslipsByEmployee(employeeId);
-            // Filter by fiscal period if specified
-            if (fiscalPeriodId != null) {
+            if ("PDF".equalsIgnoreCase(format)) {
+                List<Payslip> payslips = payrollService.getPayslipsByEmployee(employeeId);
+                // Filter by fiscal period
                 payslips = payslips.stream()
                     .filter(p -> p.getFiscalPeriodId().equals(fiscalPeriodId))
                     .toList();
+                byte[] pdfData = payrollReportService.generateEmployeePayrollPdf(payslips);
+                return ResponseEntity.ok()
+                    .header("Content-Type", "application/pdf")
+                    .header("Content-Disposition", "attachment; filename=\"employee_payroll.pdf\"")
+                    .body(pdfData);
+            } else {
+                // Return JSON for API consumers
+                List<Payslip> payslips = payrollService.getPayslipsByEmployee(employeeId);
+                // Filter by fiscal period
+                payslips = payslips.stream()
+                    .filter(p -> p.getFiscalPeriodId().equals(fiscalPeriodId))
+                    .toList();
+                return ResponseEntity.ok()
+                    .header("Content-Type", "application/json")
+                    .body(payslips.toString().getBytes());
             }
-            // TODO: Implement PDF/Excel format generation
-            return ResponseEntity.ok(payslips);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
         }
@@ -674,13 +693,24 @@ public class SpringPayrollController {
      * Get EMP 201 SARS tax submission report
      */
     @GetMapping("/reports/emp201")
-    public ResponseEntity<String> getEmp201Report(
+    public ResponseEntity<byte[]> getEmp201Report(
             @RequestParam Long fiscalPeriodId,
             @RequestParam(defaultValue = "PDF") String format) {
         try {
-            String report = payrollService.generateEmp201Report(fiscalPeriodId);
-            // TODO: Implement PDF format generation
-            return ResponseEntity.ok(report);
+            if ("PDF".equalsIgnoreCase(format)) {
+                String emp201Data = payrollService.generateEmp201Report(fiscalPeriodId);
+                byte[] pdfData = payrollReportService.generateEmp201Pdf(emp201Data);
+                return ResponseEntity.ok()
+                    .header("Content-Type", "application/pdf")
+                    .header("Content-Disposition", "attachment; filename=\"emp201_report.pdf\"")
+                    .body(pdfData);
+            } else {
+                // Return JSON for API consumers
+                String emp201Data = payrollService.generateEmp201Report(fiscalPeriodId);
+                return ResponseEntity.ok()
+                    .header("Content-Type", "application/json")
+                    .body(emp201Data.getBytes());
+            }
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
         }
