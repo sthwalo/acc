@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Calculator, FileText, Users, AlertCircle, Download, Plus, Settings, Search, Trash2, File } from 'lucide-react';
 import { useApi } from '../hooks/useApi';
 import ApiMessageBanner from './shared/ApiMessageBanner';
-import type { Company, FiscalPeriod, PayrollPeriod, FiscalPeriodPayrollConfigRequest, FiscalPeriodPayrollConfigResponse } from '../types/api';
+import type { Company, FiscalPeriod, PayrollPeriod, FiscalPeriodPayrollConfigRequest, FiscalPeriodPayrollConfigResponse, Employee } from '../types/api';
 
 interface PayrollDocument {
   id: number;
@@ -45,6 +45,13 @@ export default function PayrollManagementView({ selectedCompany, onViewChange }:
   const [documentSearchQuery, setDocumentSearchQuery] = useState('');
   const [selectedDocumentType, setSelectedDocumentType] = useState<string>('ALL');
   const [isUploadingDocument, setIsUploadingDocument] = useState(false);
+
+  // Payroll Reports Modal State
+  const [showPayrollReportsModal, setShowPayrollReportsModal] = useState(false);
+  const [selectedPayrollPeriodForReports, setSelectedPayrollPeriodForReports] = useState<PayrollPeriod | null>(null);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [isEmployeesLoading, setIsEmployeesLoading] = useState(false);
+  const [selectedEmployeeForReport, setSelectedEmployeeForReport] = useState<Employee | null>(null);
 
   useEffect(() => {
     loadFiscalPeriods();
@@ -563,6 +570,151 @@ export default function PayrollManagementView({ selectedCompany, onViewChange }:
     }
   };
 
+  // Payroll Reports Functions
+  const loadEmployees = async () => {
+    try {
+      setIsEmployeesLoading(true);
+      setError(null);
+      const emps = await api.getEmployeesByCompany(Number(selectedCompany.id));
+      setEmployees(emps);
+    } catch (err) {
+      let message = 'Failed to load employees';
+      try {
+        const anyErr: unknown = err;
+        if (anyErr && typeof anyErr === 'object' && 'response' in anyErr) {
+          const axiosErr = anyErr as { response?: { data?: { message?: string } } };
+          if (axiosErr.response?.data?.message) {
+            message = axiosErr.response.data.message;
+          }
+        } else if (err instanceof Error) {
+          message = err.message;
+        }
+      } catch {
+        // ignore parsing error
+      }
+      setError(message);
+    } finally {
+      setIsEmployeesLoading(false);
+    }
+  };
+
+  const openPayrollReportsModal = (payrollPeriod: PayrollPeriod) => {
+    setSelectedPayrollPeriodForReports(payrollPeriod);
+    setShowPayrollReportsModal(true);
+    loadEmployees(); // Load employees for employee report selection
+  };
+
+  const generatePayrollSummaryReport = async () => {
+    if (!selectedPayrollPeriodForReports) return;
+
+    try {
+      setError(null);
+      const blob = await api.generatePayrollSummaryReport(selectedPayrollPeriodForReports.fiscalPeriodId);
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Payroll_Summary_${selectedPayrollPeriodForReports.periodName}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      setSuccess('Payroll Summary Report downloaded successfully');
+    } catch (err) {
+      let message = 'Failed to generate Payroll Summary Report';
+      try {
+        const anyErr: unknown = err;
+        if (anyErr && typeof anyErr === 'object' && 'response' in anyErr) {
+          const axiosErr = anyErr as { response?: { data?: { message?: string } } };
+          if (axiosErr.response?.data?.message) {
+            message = axiosErr.response.data.message;
+          }
+        } else if (err instanceof Error) {
+          message = err.message;
+        }
+      } catch {
+        // ignore parsing error
+      }
+      setError(message);
+    }
+  };
+
+  const generateEmployeePayrollReport = async () => {
+    if (!selectedPayrollPeriodForReports || !selectedEmployeeForReport) return;
+
+    try {
+      setError(null);
+      const blob = await api.generateEmployeePayrollReport(selectedEmployeeForReport.id, selectedPayrollPeriodForReports.fiscalPeriodId);
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Employee_Payroll_${selectedEmployeeForReport.firstName}_${selectedEmployeeForReport.lastName}_${selectedPayrollPeriodForReports.periodName}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      setSuccess('Employee Payroll Report downloaded successfully');
+    } catch (err) {
+      let message = 'Failed to generate Employee Payroll Report';
+      try {
+        const anyErr: unknown = err;
+        if (anyErr && typeof anyErr === 'object' && 'response' in anyErr) {
+          const axiosErr = anyErr as { response?: { data?: { message?: string } } };
+          if (axiosErr.response?.data?.message) {
+            message = axiosErr.response.data.message;
+          }
+        } else if (err instanceof Error) {
+          message = err.message;
+        }
+      } catch {
+        // ignore parsing error
+      }
+      setError(message);
+    }
+  };
+
+  const generateEMP201Report = async () => {
+    if (!selectedPayrollPeriodForReports) return;
+
+    try {
+      setError(null);
+      const blob = await api.generateEMP201Report(selectedPayrollPeriodForReports.fiscalPeriodId);
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `EMP201_${selectedPayrollPeriodForReports.periodName}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      setSuccess('EMP 201 Report downloaded successfully');
+    } catch (err) {
+      let message = 'Failed to generate EMP 201 Report';
+      try {
+        const anyErr: unknown = err;
+        if (anyErr && typeof anyErr === 'object' && 'response' in anyErr) {
+          const axiosErr = anyErr as { response?: { data?: { message?: string } } };
+          if (axiosErr.response?.data?.message) {
+            message = axiosErr.response.data.message;
+          }
+        } else if (err instanceof Error) {
+          message = err.message;
+        }
+      } catch {
+        // ignore parsing error
+      }
+      setError(message);
+    }
+  };
+
   const getDocumentTypeIcon = (type: string) => {
     switch (type) {
       case 'PAYSLIP': return '💰';
@@ -926,7 +1078,8 @@ export default function PayrollManagementView({ selectedCompany, onViewChange }:
                       <div className="action-buttons">
                         <button
                           className="action-button view"
-                          title="View details"
+                          onClick={() => openPayrollReportsModal(period)}
+                          title="View payroll reports"
                         >
                           <FileText size={16} />
                         </button>
@@ -1122,6 +1275,104 @@ export default function PayrollManagementView({ selectedCompany, onViewChange }:
           <p>All payroll calculations comply with South African Revenue Service (SARS) regulations including PAYE, UIF, and SDL requirements.</p>
         </div>
       </div>
+
+      {/* Payroll Reports Modal */}
+      {showPayrollReportsModal && selectedPayrollPeriodForReports && (
+        <div className="modal-overlay" onClick={() => setShowPayrollReportsModal(false)}>
+          <div className="modal-content payroll-reports-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Payroll Reports - {selectedPayrollPeriodForReports.periodName}</h3>
+              <button
+                className="modal-close"
+                onClick={() => setShowPayrollReportsModal(false)}
+              >
+                ×
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="reports-list">
+                <div className="report-item">
+                  <div className="report-info">
+                    <h4>Payroll Summary Report</h4>
+                    <p>Aggregates payroll data for the fiscal period (gross pay, deductions, net pay, employee count)</p>
+                  </div>
+                  <button
+                    className="action-button primary"
+                    onClick={generatePayrollSummaryReport}
+                  >
+                    <Download size={16} />
+                    Generate PDF
+                  </button>
+                </div>
+
+                <div className="report-item">
+                  <div className="report-info">
+                    <h4>Employee Payroll Report</h4>
+                    <p>Detailed payroll history for specific employees within the fiscal period</p>
+                    {isEmployeesLoading ? (
+                      <div className="loading-state">
+                        <div className="spinner small"></div>
+                        <p>Loading employees...</p>
+                      </div>
+                    ) : (
+                      <div className="form-group">
+                        <label htmlFor="employeeSelect">Select Employee:</label>
+                        <select
+                          id="employeeSelect"
+                          value={selectedEmployeeForReport?.id || ''}
+                          onChange={(e) => {
+                            const empId = parseInt(e.target.value);
+                            const emp = employees.find(emp => emp.id === empId);
+                            setSelectedEmployeeForReport(emp || null);
+                          }}
+                        >
+                          <option value="">Select an employee...</option>
+                          {employees.map((emp) => (
+                            <option key={emp.id} value={emp.id}>
+                              {emp.firstName} {emp.lastName} ({emp.employeeNumber})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    className="action-button primary"
+                    onClick={generateEmployeePayrollReport}
+                    disabled={!selectedEmployeeForReport}
+                  >
+                    <Download size={16} />
+                    Generate PDF
+                  </button>
+                </div>
+
+                <div className="report-item">
+                  <div className="report-info">
+                    <h4>EMP 201 Report (SARS Tax Submission)</h4>
+                    <p>SARS-compliant tax submission format required for South African tax authorities</p>
+                  </div>
+                  <button
+                    className="action-button primary"
+                    onClick={generateEMP201Report}
+                  >
+                    <Download size={16} />
+                    Generate PDF
+                  </button>
+                </div>
+              </div>
+
+              <div className="modal-actions">
+                <button
+                  className="action-button secondary"
+                  onClick={() => setShowPayrollReportsModal(false)}
+                >
+                  Back to Payroll Management
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

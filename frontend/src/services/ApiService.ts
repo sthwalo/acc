@@ -1289,4 +1289,41 @@ export class ApiService extends BaseApiService {
       this.handleError('Search payroll documents', error);
     }
   }
+
+  // Payroll Reports methods
+  async generatePayrollSummaryReport(fiscalPeriodId: number): Promise<Blob> {
+    try {
+      const response = await this.client.get(`/v1/payroll/reports/summary`, {
+        params: { fiscalPeriodId, format: 'PDF' },
+        responseType: 'blob'
+      });
+      return response.data;
+    } catch (error) {
+      this.handleError('Generate payroll summary report', error);
+    }
+  }
+
+  async generateEmployeePayrollReport(employeeId: number, fiscalPeriodId: number): Promise<Blob> {
+    try {
+      const response = await this.client.get(`/v1/payroll/reports/employee`, {
+        params: { employeeId, fiscalPeriodId, format: 'PDF' },
+        responseType: 'blob'
+      });
+      return response.data;
+    } catch (error) {
+      this.handleError('Generate employee payroll report', error);
+    }
+  }
+
+  async generateEMP201Report(fiscalPeriodId: number): Promise<Blob> {
+    try {
+      const response = await this.client.get(`/v1/payroll/reports/emp201`, {
+        params: { fiscalPeriodId, format: 'PDF' },
+        responseType: 'blob'
+      });
+      return response.data;
+    } catch (error) {
+      this.handleError('Generate EMP 201 report', error);
+    }
+  }
 }
