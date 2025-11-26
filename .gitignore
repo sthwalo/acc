@@ -311,6 +311,13 @@ app/src/main/resources/db/migration/
 backups/
 /test_schema.sql
 
+# Binary dumps and SQL dumps
+*.dump
+*.sql
+
+# Application bin folders
+app/bin/
+
 # But allow test schema in test resources (needed for CI/CD)
 !app/src/test/resources/test_schema.sql
 
