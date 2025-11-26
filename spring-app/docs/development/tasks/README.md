@@ -1,6 +1,6 @@
 # Development Tasks Directory
 **Status:** 🔄 Active Development - Sequential Implementation
-**Total Tasks:** 5 (Present) + 22 (Planned)
+**Total Tasks:** 6 (Present) + 21 (Planned)
 **Current Focus:** Database-First Architecture & API Development
 **Risk Distribution:** Critical (Database-First), High (API Security), Medium (New Features)
 
@@ -13,8 +13,9 @@ This directory contains sequential task documentation for FIN's Spring Boot impl
 - **TASK 1:** Data Management API Endpoints (High Priority)
 - **TASK 2:** Payroll Management API Endpoints (High Priority)
 - **TASK 3:** Email Functionality Implementation (High Priority)
+- **TASK 4:** Unified Transaction Extraction System (High Priority)
 - **TASK INTEGRATION:** JavaScript/TypeScript Dashboard Integration (Medium Priority)
-- **TASK 4-25:** Additional planned tasks (Security, Features, Cleanup)
+- **TASK 5-25:** Additional planned tasks (Security, Features, Cleanup)
 
 ## 📁 Current Task Files
 
@@ -50,6 +51,14 @@ This directory contains sequential task documentation for FIN's Spring Boot impl
 - **Feature:** Complete email system with SMTP encryption, rate limiting, POPIA compliance, and audit logging
 - **Effort:** 5-7 days (40-56 hours)
 
+### TASK 4: Unified Transaction Extraction System (HIGH)
+**[TASK_4_Unified_Transaction_Extraction_System.md](TASK_4_Unified_Transaction_Extraction_System.md)**
+- **Risk:** HIGH - Transaction processing accuracy and multi-bank support
+- **Status:** 📋 PLANNED (Created: 2025-11-26)
+- **Files:** UniversalDocumentExtractor, BankDetectionService, TransactionParser implementations, RawDocument/ParsedTransaction models
+- **Feature:** Extract data from any file type (PDF/TXT/CSV) and parse transactions from Standard Bank, FNB, ABSA, Capitec, Nedbank
+- **Effort:** 10-14 days (80-112 hours)
+
 ### TASK INTEGRATION: JavaScript/TypeScript Dashboard (MEDIUM)
 **[TASK_INTEGRATION_JAVA_TYPESCRIPT_DASHBOARD.md](TASK_INTEGRATION_JAVA_TYPESCRIPT_DASHBOARD.md)**
 - **Risk:** MEDIUM - Frontend-backend integration
@@ -77,9 +86,9 @@ This directory contains sequential task documentation for FIN's Spring Boot impl
 | Risk Level | Count | Description | Impact |
 |------------|-------|-------------|---------|
 | **CRITICAL** | 1 | Database-first architecture violations | System integrity, compliance failures |
-| **HIGH** | 3 | API functionality, payroll systems, email security | Core business operations, compliance |
+| **HIGH** | 4 | API functionality, payroll systems, email security, transaction processing | Core business operations, compliance |
 | **MEDIUM** | 1 | Frontend-backend integration | User experience and functionality |
-| **PLANNED** | 22 | Security fixes, new features, cleanup | Future development phases |
+| **PLANNED** | 21 | Security fixes, new features, cleanup | Future development phases |
 
 ## ✅ Success Criteria
 
@@ -107,8 +116,9 @@ This directory contains sequential task documentation for FIN's Spring Boot impl
 2. **TASK 1: Data Management APIs** (Next Priority)
 3. **TASK 2: Payroll APIs** (Following Priority)
 4. **TASK 3: Email Functionality Implementation** (Active Development)
-5. **TASK INTEGRATION: Dashboard** (Integration Phase)
-6. **TASK 4-23: Security & Features** (Future Phases)
+5. **TASK 4: Unified Transaction Extraction System** (Next Major Feature)
+6. **TASK INTEGRATION: Dashboard** (Integration Phase)
+7. **TASK 5-24: Security & Features** (Future Phases)
 
 ## 📈 Progress Tracking
 
@@ -117,29 +127,30 @@ This directory contains sequential task documentation for FIN's Spring Boot impl
 - [ ] **TASK 1:** Data Management API Endpoints
 - [ ] **TASK 2:** Payroll Management API Endpoints
 - [ ] **TASK 3:** Email Functionality Implementation
+- [ ] **TASK 4:** Unified Transaction Extraction System
 - [ ] **TASK INTEGRATION:** JavaScript/TypeScript Dashboard
 
 ### Planned Tasks (To Be Created)
-- [ ] **TASK 3:** Security fixes (authentication, authorization)
-- [ ] **TASK 4:** Input validation and sanitization
-- [ ] **TASK 5:** SQL injection prevention
-- [ ] **TASK 6:** Secure file upload implementation
-- [ ] **TASK 7:** XSS prevention measures
-- [ ] **TASK 8:** CSRF protection
-- [ ] **TASK 9:** Memory leak fixes
-- [ ] **TASK 10:** Resource management optimization
-- [ ] **TASK 11:** Database connection pooling
-- [ ] **TASK 12:** Caching strategy implementation
-- [ ] **TASK 13:** Code quality improvements
-- [ ] **TASK 14:** Method complexity reduction
-- [ ] **TASK 15:** Class design optimization
-- [ ] **TASK 16:** Checkstyle cleanup
-- [ ] **TASK 17:** Budget generation features
-- [ ] **TASK 18:** PDF services unification
-- [ ] **TASK 19:** Invoice generation system
-- [ ] **TASK 20:** Account classification refactoring
-- [ ] **TASK 21:** Business document management
-- [ ] **TASK 22:** Dual-API architecture cleanup
+- [ ] **TASK 5:** Security fixes (authentication, authorization)
+- [ ] **TASK 6:** Input validation and sanitization
+- [ ] **TASK 7:** SQL injection prevention
+- [ ] **TASK 8:** Secure file upload implementation
+- [ ] **TASK 9:** XSS prevention measures
+- [ ] **TASK 10:** CSRF protection
+- [ ] **TASK 11:** Memory leak fixes
+- [ ] **TASK 12:** Resource management optimization
+- [ ] **TASK 13:** Database connection pooling
+- [ ] **TASK 14:** Caching strategy implementation
+- [ ] **TASK 15:** Code quality improvements
+- [ ] **TASK 16:** Method complexity reduction
+- [ ] **TASK 17:** Class design optimization
+- [ ] **TASK 18:** Checkstyle cleanup
+- [ ] **TASK 19:** Budget generation features
+- [ ] **TASK 20:** PDF services unification
+- [ ] **TASK 21:** Invoice generation system
+- [ ] **TASK 22:** Account classification refactoring
+- [ ] **TASK 23:** Business document management
+- [ ] **TASK 24:** Dual-API architecture cleanup
 
 ## 📚 References
 
@@ -155,11 +166,12 @@ This directory contains sequential task documentation for FIN's Spring Boot impl
 - **TASK 1:** Data Management APIs (HIGH) - 📋 PLANNED
 - **TASK 2:** Payroll APIs (HIGH) - 📋 PLANNED
 - **TASK 3:** Email Functionality Implementation (HIGH) - 🔄 ACTIVE DEVELOPMENT
+- **TASK 4:** Unified Transaction Extraction System (HIGH) - 📋 PLANNED
 - **TASK INTEGRATION:** Dashboard Integration (MEDIUM) - 📋 PLANNED
 
 ### Planned Development (Future Tasks)
-- **TASK 4-9:** Security Implementation (HIGH PRIORITY)
-- **TASK 10-13:** Performance & Reliability (MEDIUM PRIORITY)
-- **TASK 14-17:** Code Quality (LOW PRIORITY)
-- **TASK 18-25:** New Features & Architecture (MEDIUM PRIORITY)</content>
+- **TASK 5-10:** Security Implementation (HIGH PRIORITY)
+- **TASK 11-14:** Performance & Reliability (MEDIUM PRIORITY)
+- **TASK 15-18:** Code Quality (LOW PRIORITY)
+- **TASK 19-24:** New Features & Architecture (MEDIUM PRIORITY)</content>
 <parameter name="filePath">/Users/sthwalonyoni/FIN/docs/development/tasks/TASK_3.2_Service_Dependency_Documentation.md

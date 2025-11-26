@@ -292,14 +292,10 @@ class FiscalPeriodApiService extends BaseApiService {
       const response = await this.client.get<ApiResponse<FiscalPeriod[]>>(`/v1/companies/${companyId}/fiscal-periods`);
       const periods = response.data.data;
 
-      if (!periods || periods.length === 0) {
-        throw new Error(
-          `No fiscal periods found for company ${companyId}. Please create fiscal periods in the database. ` +
-          'SQL: INSERT INTO fiscal_periods (company_id, name, start_date, end_date, is_active) VALUES (?, ?, ?, ?, ?)'
-        );
-      }
-
-      return periods;
+      // Don't throw error for empty arrays - let backend handle database-first logic
+      // The backend will throw SQLException if no fiscal periods exist, which will be
+      // handled as a specific error code by the frontend
+      return periods || [];
     } catch (error) {
       if (error instanceof AxiosError && error.response?.status === 404) {
         throw new Error(`Company ${companyId} not found. Please verify the company exists.`);

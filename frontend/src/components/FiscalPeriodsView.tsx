@@ -38,13 +38,23 @@ export default function FiscalPeriodsView({ selectedCompany, onFiscalPeriodSelec
       setFiscalPeriods(data);
       setError(null);
     } catch (err) {
-      // Prefer structured API/axios error message where possible
+      // Check if this is a "no fiscal periods" error that should trigger create mode
       let message = 'Failed to load fiscal periods';
+      let shouldShowCreateForm = false;
+
       try {
         const anyErr: unknown = err;
         if (anyErr && typeof anyErr === 'object' && 'response' in anyErr) {
-          const axiosErr = anyErr as { response?: { data?: { message?: string } } };
-          if (axiosErr.response?.data?.message) {
+          const axiosErr = anyErr as { response?: { data?: { errorCode?: string; message?: string } } };
+          if (axiosErr.response?.data?.errorCode === 'NO_FISCAL_PERIODS') {
+            // This is expected for new companies - show create form instead of error
+            shouldShowCreateForm = true;
+            setShowCreateForm(true);
+            setError(null);
+            setFiscalPeriods([]);
+            setLoading(false);
+            return;
+          } else if (axiosErr.response?.data?.message) {
             message = axiosErr.response.data.message;
           }
         } else if (anyErr && typeof anyErr === 'object' && 'message' in anyErr && typeof anyErr.message === 'string') {
@@ -53,10 +63,15 @@ export default function FiscalPeriodsView({ selectedCompany, onFiscalPeriodSelec
       } catch {
         // fallback below
       }
-      setError(message);
-      console.error('Error loading fiscal periods:', err);
+
+      if (!shouldShowCreateForm) {
+        setError(message);
+        console.error('Error loading fiscal periods:', err);
+      }
     } finally {
-      setLoading(false);
+      if (!showCreateForm) {
+        setLoading(false);
+      }
     }
   }, [selectedCompany.id]);
 
