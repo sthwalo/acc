@@ -67,7 +67,7 @@ export default function EmployeeManagementView({ selectedCompany }: EmployeeMana
 
     // Filter by active status
     if (showActiveOnly) {
-      filtered = filtered.filter(emp => emp && emp.isActive);
+      filtered = filtered.filter(emp => emp && emp.active);
     }
 
     // Filter by search term
@@ -150,7 +150,7 @@ export default function EmployeeManagementView({ selectedCompany }: EmployeeMana
   };
 
   const getStatusBadge = (employee: Employee) => {
-    return employee.isActive ? (
+    return employee.active ? (
       <span className="status-badge success">Active</span>
     ) : (
       <span className="status-badge default">Inactive</span>
@@ -220,7 +220,7 @@ export default function EmployeeManagementView({ selectedCompany }: EmployeeMana
       await api.deactivateEmployee(employeeToDelete.id);
       // Update the employee in the list
       setEmployees(prev => prev.map(emp =>
-        emp.id === employeeToDelete.id ? { ...emp, isActive: false } : emp
+        emp.id === employeeToDelete.id ? { ...emp, active: false } : emp
       ));
       setError(null);
       handleCloseConfirmations();
@@ -250,7 +250,7 @@ export default function EmployeeManagementView({ selectedCompany }: EmployeeMana
       await api.activateEmployee(employeeToDelete.id);
       // Update the employee in the list
       setEmployees(prev => prev.map(emp =>
-        emp.id === employeeToDelete.id ? { ...emp, isActive: true } : emp
+        emp.id === employeeToDelete.id ? { ...emp, active: true } : emp
       ));
       setError(null);
       handleCloseConfirmations();
@@ -391,7 +391,7 @@ export default function EmployeeManagementView({ selectedCompany }: EmployeeMana
                       <button className="action-button edit" title="Edit employee" onClick={() => handleOpenEditModal(employee)}>
                         <Edit size={16} />
                       </button>
-                      {employee.isActive ? (
+                      {employee.active ? (
                         <button className="action-button deactivate" title="Deactivate employee" onClick={() => handleOpenDeactivateConfirm(employee)}>
                           <UserX size={16} />
                         </button>
@@ -444,7 +444,7 @@ export default function EmployeeManagementView({ selectedCompany }: EmployeeMana
         <div className="summary-item">
           <Users size={20} />
           <div>
-            <div className="summary-value">{Array.isArray(employees) ? employees.filter(e => e && e.isActive).length : 0}</div>
+            <div className="summary-value">{Array.isArray(employees) ? employees.filter(e => e && e.active).length : 0}</div>
             <div className="summary-label">Active Employees</div>
           </div>
         </div>

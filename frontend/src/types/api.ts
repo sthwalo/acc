@@ -292,7 +292,7 @@ export interface Employee {
   department?: string;
   hireDate?: string;
   terminationDate?: string;
-  isActive: boolean;
+  active: boolean; // Changed from isActive to match API response
   addressLine1?: string;
   addressLine2?: string;
   city?: string;
@@ -317,6 +317,13 @@ export interface Employee {
   updatedAt: string;
   createdBy?: string;
   updatedBy?: string;
+  employeeCode?: string; // Added to match API response
+  currentEmployee?: boolean; // Added to match API response
+  dateOfBirth?: string; // Added to match API response
+  dateEngaged?: string; // Added to match API response
+  idNumber?: string; // Added to match API response
+  displayName?: string; // Added to match API response
+  fullName?: string; // Added to match API response
 }
 
 export interface EmployeeCreateRequest {
@@ -365,7 +372,7 @@ export interface EmployeeUpdateRequest {
   department?: string;
   hireDate?: string;
   terminationDate?: string;
-  isActive?: boolean;
+  isActive?: boolean; // Keep isActive for updates as that's what the API expects
   addressLine1?: string;
   addressLine2?: string;
   city?: string;

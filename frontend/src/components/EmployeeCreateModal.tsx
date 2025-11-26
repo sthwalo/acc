@@ -142,7 +142,7 @@ export default function EmployeeCreateModal({
         position: formData.position,
         department: formData.department || undefined,
         hireDate: formData.hireDate,
-        isActive: true, // New employees are active by default
+        active: true, // New employees are active by default
         addressLine1: formData.addressLine1 || undefined,
         addressLine2: formData.addressLine2 || undefined,
         city: formData.city || undefined,

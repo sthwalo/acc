@@ -20,6 +20,7 @@ interface EmployeeFormData {
   phone: string;
   position: string;
   department: string;
+  hireDate: string;
   isActive: boolean;
   addressLine1: string;
   addressLine2: string;
@@ -81,6 +82,7 @@ export default function EmployeeEditModal({
     uifNumber: '',
     medicalAidNumber: '',
     pensionFundNumber: '',
+    isActive: true, // Add default value to prevent undefined.toString() error
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -119,7 +121,7 @@ export default function EmployeeEditModal({
         uifNumber: employee.uifNumber || '',
         medicalAidNumber: employee.medicalAidNumber || '',
         pensionFundNumber: employee.pensionFundNumber || '',
-        isActive: employee.isActive || true,
+        isActive: employee.active || true, // Changed from isActive to active to match API response
       });
       setError(null);
     }

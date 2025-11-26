@@ -866,6 +866,9 @@ public class SpringPayrollService {
      */
     @Transactional(readOnly = true)
     public List<byte[]> generatePayslips(Long fiscalPeriodId, List<Long> employeeIds) {
+        LOGGER.info("Service: generatePayslips called with fiscalPeriodId=" + fiscalPeriodId +
+                   ", employeeIds=" + (employeeIds != null ? employeeIds.size() : 0) + " employees");
+
         if (fiscalPeriodId == null) {
             throw new IllegalArgumentException("Fiscal period ID is required");
         }
@@ -878,6 +881,8 @@ public class SpringPayrollService {
             // Generate for all employees in the period
             payslips = getPayslipsByPeriod(fiscalPeriodId);
         }
+
+        LOGGER.info("Service: Found " + payslips.size() + " payslips for fiscal period " + fiscalPeriodId);
 
         List<byte[]> pdfs = new ArrayList<>();
         for (Payslip payslip : payslips) {

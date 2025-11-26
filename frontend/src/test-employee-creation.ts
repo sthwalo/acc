@@ -12,7 +12,7 @@ async function testCreateEmployee() {
     lastName: 'Doe',
     position: 'Software Developer',
     hireDate: '2024-01-15',
-    isActive: true, // Required field
+    active: true, // Required field
     employmentType: 'PERMANENT' as const,
     salaryType: 'MONTHLY' as const,
     basicSalary: 50000,

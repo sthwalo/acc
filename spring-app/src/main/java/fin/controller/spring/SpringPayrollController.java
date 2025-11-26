@@ -370,7 +370,18 @@ public class SpringPayrollController {
      * Generate payslips
      */
     @PostMapping("/payslips/generate")
-    public ResponseEntity<byte[]> generatePayslips(PayslipGenerationRequest request) {
+    public ResponseEntity<byte[]> generatePayslips(@RequestBody PayslipGenerationRequest request) {
+        LOGGER.info("DEBUG: generatePayslips method called with request: " + request);
+        if (request == null) {
+            LOGGER.info("DEBUG: Request is null");
+            return ResponseEntity.badRequest().build();
+        }
+        LOGGER.info("DEBUG: fiscalPeriodId = " + request.getFiscalPeriodId());
+        LOGGER.info("DEBUG: employeeIds = " + request.getEmployeeIds());
+
+        LOGGER.info("Received payslip generation request: fiscalPeriodId=" + request.getFiscalPeriodId() +
+                   ", employeeIds=" + (request.getEmployeeIds() != null ? request.getEmployeeIds().size() : 0) + " employees");
+
         try {
             List<byte[]> pdfs = payrollService.generatePayslips(request.getFiscalPeriodId(), request.getEmployeeIds());
             if (pdfs.isEmpty()) {
@@ -385,7 +396,11 @@ public class SpringPayrollController {
                 .header("Content-Type", "application/pdf")
                 .body(pdfData);
         } catch (IllegalArgumentException e) {
+            LOGGER.log(Level.WARNING, "Invalid request for payslip generation: " + e.getMessage(), e);
             return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Unexpected error during payslip generation: " + e.getMessage(), e);
+            return ResponseEntity.internalServerError().build();
         }
     }
 
@@ -501,7 +516,12 @@ public class SpringPayrollController {
 
             // Get fiscal period details for filename
             Optional<FiscalPeriod> fiscalPeriodOpt = payrollService.getFiscalPeriodById(fiscalPeriodId);
-            String periodName = fiscalPeriodOpt.map(FiscalPeriod::getPeriodName).orElse("Unknown");
+            if (fiscalPeriodOpt.isEmpty()) {
+                LOGGER.warning("Fiscal period not found: " + fiscalPeriodId);
+                return ResponseEntity.notFound().build();
+            }
+            FiscalPeriod fiscalPeriod = fiscalPeriodOpt.get();
+            String periodName = fiscalPeriod.getPeriodName();
             LOGGER.info("Fiscal period name: " + periodName);
 
             // Create ZIP file containing all payslip PDFs
@@ -530,8 +550,7 @@ public class SpringPayrollController {
                         Company company = companyOpt.get();
 
                         // Generate PDF for this payslip
-                        byte[] pdfBytes = payslipPdfService.generatePayslipPdf(payslip, employee, company,
-                            fiscalPeriodOpt.orElse(null));
+                        byte[] pdfBytes = payslipPdfService.generatePayslipPdf(payslip, employee, company, fiscalPeriod);
                         LOGGER.fine("Generated PDF for payslip ID: " + payslip.getId() + ", size: " + pdfBytes.length + " bytes");
 
                         // Create filename: EmployeeName_EmployeeCode_PeriodName.pdf

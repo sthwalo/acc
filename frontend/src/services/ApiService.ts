@@ -825,7 +825,10 @@ export class ApiService extends BaseApiService {
 
   async processPayroll(payrollPeriodId: number): Promise<PayrollProcessingResult> {
     try {
-      const response = await this.client.post<PayrollProcessingResult>(`/v1/payroll/process/${payrollPeriodId}`);
+      const response = await this.client.post<PayrollProcessingResult>('/v1/payroll/process', {
+        fiscalPeriodId: payrollPeriodId,
+        reprocess: false
+      });
       return response.data;
     } catch (error) {
       this.handleError('Process payroll', error);
@@ -834,7 +837,10 @@ export class ApiService extends BaseApiService {
 
   async reprocessPayroll(payrollPeriodId: number): Promise<PayrollProcessingResult> {
     try {
-      const response = await this.client.post<PayrollProcessingResult>(`/v1/payroll/reprocess/${payrollPeriodId}`);
+      const response = await this.client.post<PayrollProcessingResult>('/v1/payroll/reprocess', {
+        fiscalPeriodId: payrollPeriodId,
+        reprocess: true
+      });
       return response.data;
     } catch (error) {
       this.handleError('Reprocess payroll', error);
@@ -919,7 +925,7 @@ export class ApiService extends BaseApiService {
         department: emp.department,
         hireDate: emp.dateEngaged || emp.hireDate,
         terminationDate: emp.terminationDate,
-        isActive: emp.active,
+        active: emp.active,
         addressLine1: emp.addressLine1,
         addressLine2: emp.addressLine2,
         city: emp.city,
@@ -981,7 +987,7 @@ export class ApiService extends BaseApiService {
         department: emp.department,
         hireDate: emp.dateEngaged || emp.hireDate,
         terminationDate: emp.terminationDate,
-        isActive: emp.active,
+        active: emp.active,
         addressLine1: emp.addressLine1,
         addressLine2: emp.addressLine2,
         city: emp.city,
@@ -1032,7 +1038,7 @@ export class ApiService extends BaseApiService {
         department: emp.department,
         hireDate: emp.dateEngaged || emp.hireDate,
         terminationDate: emp.terminationDate,
-        isActive: emp.active,
+        active: emp.active,
         addressLine1: emp.addressLine1,
         addressLine2: emp.addressLine2,
         city: emp.city,
