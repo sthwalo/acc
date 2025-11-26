@@ -217,6 +217,41 @@ export interface PayrollPeriod {
   createdBy?: string;
 }
 
+// Payroll Configuration Types
+export interface FiscalPeriodPayrollConfigRequest {
+  payDate?: string;
+  periodType: 'WEEKLY' | 'MONTHLY' | 'QUARTERLY';
+  payrollStatus: 'OPEN' | 'PROCESSED' | 'APPROVED' | 'PAID' | 'CLOSED';
+}
+
+export interface FiscalPeriodPayrollConfigResponse {
+  fiscalPeriodId: number;
+  periodName: string;
+  startDate: string;
+  endDate: string;
+  payDate: string | null;
+  periodType: 'WEEKLY' | 'MONTHLY' | 'QUARTERLY';
+  payrollStatus: 'OPEN' | 'PROCESSED' | 'APPROVED' | 'PAID' | 'CLOSED';
+  totalGrossPay: number;
+  totalDeductions: number;
+  totalNetPay: number;
+  employeeCount: number;
+  closed: boolean;
+}
+
+export interface FiscalPeriodPayrollStatusResponse {
+  id: number;
+  periodName: string;
+  startDate: string;
+  endDate: string;
+  payDate: string | null;
+  payrollStatus: 'OPEN' | 'PROCESSED' | 'APPROVED' | 'PAID' | 'CLOSED';
+  totalGrossPay: number;
+  totalNetPay: number;
+  employeeCount: number;
+  closed: boolean;
+}
+
 export interface PayrollPeriodCreateRequest {
   companyId: number;
   periodName: string;
@@ -404,4 +439,15 @@ export interface ApiError {
     status?: number;
   };
   message: string;
+}
+
+// Document Management Types
+export interface PayrollDocument {
+  id: number;
+  employeeId: number;
+  periodId: number;
+  fileName: string;
+  fileData: string | null;
+  documentType: 'PAYSLIP' | 'TAX_CERTIFICATE' | 'EMPLOYEE_CONTRACT' | 'BANK_STATEMENT' | 'OTHER';
+  uploadDate: string;
 }

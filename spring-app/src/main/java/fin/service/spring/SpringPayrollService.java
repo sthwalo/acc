@@ -38,8 +38,13 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import fin.config.DatabaseConfig;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -1018,8 +1023,45 @@ public class SpringPayrollService {
      */
     @Transactional
     public void uploadPayrollDocument(Long employeeId, Long periodId, String fileName, byte[] fileData, String documentType) {
-        // TODO: Implement document storage (database or file system)
-        LOGGER.info("Document upload not yet implemented: " + fileName + " for employee " + employeeId);
+        if (employeeId == null || periodId == null || fileName == null || fileData == null) {
+            throw new IllegalArgumentException("Employee ID, period ID, file name, and file data are required");
+        }
+
+        // Validate employee exists
+        Optional<Employee> employeeOpt = employeeRepository.findById(employeeId);
+        if (employeeOpt.isEmpty()) {
+            throw new IllegalArgumentException("Employee not found: " + employeeId);
+        }
+
+        // Validate fiscal period exists
+        Optional<FiscalPeriod> periodOpt = fiscalPeriodRepository.findById(periodId);
+        if (periodOpt.isEmpty()) {
+            throw new IllegalArgumentException("Fiscal period not found: " + periodId);
+        }
+
+        String sql = "INSERT INTO payroll_documents (employee_id, fiscal_period_id, file_name, file_data, document_type, upload_date) VALUES (?, ?, ?, ?, ?, ?)";
+
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setLong(1, employeeId);
+            stmt.setLong(2, periodId);
+            stmt.setString(3, fileName);
+            stmt.setBytes(4, fileData);
+            stmt.setString(5, documentType != null ? documentType : "GENERAL");
+            stmt.setObject(6, LocalDate.now());
+
+            int rowsAffected = stmt.executeUpdate();
+            if (rowsAffected != 1) {
+                throw new SQLException("Failed to insert document, rows affected: " + rowsAffected);
+            }
+
+            LOGGER.info("Document uploaded successfully: " + fileName + " for employee " + employeeId);
+
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Failed to upload document: " + fileName, e);
+            throw new RuntimeException("Failed to upload document: " + e.getMessage(), e);
+        }
     }
 
     /**
@@ -1027,9 +1069,63 @@ public class SpringPayrollService {
      */
     @Transactional(readOnly = true)
     public List<PayrollDocument> listPayrollDocuments(Long employeeId, Long periodId, String type, int page, int size) {
-        // TODO: Implement document listing
-        LOGGER.info("Document listing not yet implemented");
-        return new java.util.ArrayList<>();
+        List<PayrollDocument> documents = new ArrayList<>();
+        StringBuilder sql = new StringBuilder("SELECT id, employee_id, fiscal_period_id, file_name, document_type, upload_date FROM payroll_documents WHERE 1=1");
+        List<Object> params = new ArrayList<>();
+
+        if (employeeId != null) {
+            sql.append(" AND employee_id = ?");
+            params.add(employeeId);
+        }
+
+        if (periodId != null) {
+            sql.append(" AND fiscal_period_id = ?");
+            params.add(periodId);
+        }
+
+        if (type != null && !type.trim().isEmpty()) {
+            sql.append(" AND document_type = ?");
+            params.add(type.trim());
+        }
+
+        sql.append(" ORDER BY upload_date DESC, id DESC");
+
+        // Add pagination if size > 0
+        if (size > 0) {
+            sql.append(" LIMIT ? OFFSET ?");
+            params.add(size);
+            params.add(page * size);
+        }
+
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
+
+            for (int i = 0; i < params.size(); i++) {
+                stmt.setObject(i + 1, params.get(i));
+            }
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    PayrollDocument doc = new PayrollDocument();
+                    doc.setId(rs.getLong("id"));
+                    doc.setEmployeeId(rs.getLong("employee_id"));
+                    doc.setPeriodId(rs.getLong("fiscal_period_id"));
+                    doc.setFileName(rs.getString("file_name"));
+                    doc.setDocumentType(rs.getString("document_type"));
+                    doc.setUploadDate(rs.getObject("upload_date", LocalDate.class));
+                    // Note: fileData is not loaded in list operations for performance
+                    documents.add(doc);
+                }
+            }
+
+            LOGGER.info("Found " + documents.size() + " documents for employee " + employeeId + ", period " + periodId);
+
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Failed to list documents", e);
+            throw new RuntimeException("Failed to list documents: " + e.getMessage(), e);
+        }
+
+        return documents;
     }
 
     /**
@@ -1037,8 +1133,37 @@ public class SpringPayrollService {
      */
     @Transactional(readOnly = true)
     public PayrollDocument getPayrollDocument(Long id) {
-        // TODO: Implement document retrieval
-        throw new IllegalArgumentException("Document retrieval not yet implemented");
+        if (id == null) {
+            throw new IllegalArgumentException("Document ID is required");
+        }
+
+        String sql = "SELECT id, employee_id, fiscal_period_id, file_name, file_data, document_type, upload_date FROM payroll_documents WHERE id = ?";
+
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setLong(1, id);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    PayrollDocument doc = new PayrollDocument();
+                    doc.setId(rs.getLong("id"));
+                    doc.setEmployeeId(rs.getLong("employee_id"));
+                    doc.setPeriodId(rs.getLong("fiscal_period_id"));
+                    doc.setFileName(rs.getString("file_name"));
+                    doc.setFileData(rs.getBytes("file_data"));
+                    doc.setDocumentType(rs.getString("document_type"));
+                    doc.setUploadDate(rs.getObject("upload_date", LocalDate.class));
+                    return doc;
+                } else {
+                    throw new IllegalArgumentException("Document not found: " + id);
+                }
+            }
+
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Failed to get document: " + id, e);
+            throw new RuntimeException("Failed to get document: " + e.getMessage(), e);
+        }
     }
 
     /**
@@ -1046,8 +1171,28 @@ public class SpringPayrollService {
      */
     @Transactional
     public void deletePayrollDocument(Long id) {
-        // TODO: Implement document deletion
-        LOGGER.info("Document deletion not yet implemented for ID: " + id);
+        if (id == null) {
+            throw new IllegalArgumentException("Document ID is required");
+        }
+
+        String sql = "DELETE FROM payroll_documents WHERE id = ?";
+
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setLong(1, id);
+            int rowsAffected = stmt.executeUpdate();
+
+            if (rowsAffected == 0) {
+                throw new IllegalArgumentException("Document not found: " + id);
+            }
+
+            LOGGER.info("Document deleted successfully: " + id);
+
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Failed to delete document: " + id, e);
+            throw new RuntimeException("Failed to delete document: " + e.getMessage(), e);
+        }
     }
 
     // ===== INNER CLASSES =====

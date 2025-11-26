@@ -25,6 +25,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Optional;
@@ -691,14 +692,24 @@ public class SpringPayrollController {
      * Upload payroll document
      */
     @PostMapping("/documents")
-    public ResponseEntity<Void> uploadPayrollDocument(@RequestBody DocumentUploadRequest request) {
+    public ResponseEntity<Void> uploadPayrollDocument(
+            @RequestParam Long employeeId,
+            @RequestParam Long fiscalPeriodId,
+            @RequestParam String fileName,
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(required = false) String documentType) {
         try {
-            payrollService.uploadPayrollDocument(request.getEmployeeId(), request.getFiscalPeriodId(),
-                                               request.getFileName(), request.getFileData(),
-                                               request.getDocumentType());
+            if (file.isEmpty()) {
+                return ResponseEntity.badRequest().build();
+            }
+
+            byte[] fileData = file.getBytes();
+            payrollService.uploadPayrollDocument(employeeId, fiscalPeriodId, fileName, fileData, documentType);
             return ResponseEntity.ok().build();
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
         }
     }
 

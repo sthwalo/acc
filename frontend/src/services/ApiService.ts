@@ -18,7 +18,11 @@ import type {
   BudgetVariance,
   Employee,
   EmployeeCreateRequest,
-  EmployeeUpdateRequest
+  EmployeeUpdateRequest,
+  FiscalPeriodPayrollConfigRequest,
+  FiscalPeriodPayrollConfigResponse,
+  FiscalPeriodPayrollStatusResponse,
+  PayrollDocument
 } from '../types/api';
 
 /**
@@ -856,6 +860,43 @@ export class ApiService extends BaseApiService {
     }
   }
 
+  // Payroll Configuration methods
+  async getFiscalPeriodPayrollConfig(fiscalPeriodId: number): Promise<FiscalPeriodPayrollConfigResponse> {
+    try {
+      const response = await this.client.get<ApiResponse<FiscalPeriodPayrollConfigResponse>>(`/v1/fiscal-periods/${fiscalPeriodId}/payroll-config`);
+      return response.data.data;
+    } catch (error) {
+      this.handleError('Get fiscal period payroll config', error);
+    }
+  }
+
+  async updateFiscalPeriodPayrollConfig(fiscalPeriodId: number, config: FiscalPeriodPayrollConfigRequest): Promise<FiscalPeriodPayrollConfigResponse> {
+    try {
+      const response = await this.client.put<ApiResponse<FiscalPeriodPayrollConfigResponse>>(`/v1/fiscal-periods/${fiscalPeriodId}/payroll-config`, config);
+      return response.data.data;
+    } catch (error) {
+      this.handleError('Update fiscal period payroll config', error);
+    }
+  }
+
+  async getFiscalPeriodsPayrollStatus(): Promise<FiscalPeriodPayrollStatusResponse[]> {
+    try {
+      const response = await this.client.get<ApiResponse<FiscalPeriodPayrollStatusResponse[]>>(`/v1/fiscal-periods/payroll-status`);
+      return response.data.data;
+    } catch (error) {
+      this.handleError('Get fiscal periods payroll status', error);
+    }
+  }
+
+  async resetFiscalPeriodPayrollConfig(fiscalPeriodId: number): Promise<string> {
+    try {
+      const response = await this.client.delete<ApiResponse<string>>(`/v1/fiscal-periods/${fiscalPeriodId}/payroll-config`);
+      return response.data.data;
+    } catch (error) {
+      this.handleError('Reset fiscal period payroll config', error);
+    }
+  }
+
   // Budget methods
   async getBudgetsByCompany(companyId: number): Promise<Budget[]> {
     try {
@@ -1193,6 +1234,59 @@ export class ApiService extends BaseApiService {
       await this.client.post('/v1/payroll/payslips/send-email', { payslipIds });
     } catch (error) {
       this.handleError('Send payslips by email', error);
+    }
+  }
+
+  // Document Management methods
+  async getPayrollDocuments(): Promise<PayrollDocument[]> {
+    try {
+      const response = await this.client.get<PayrollDocument[]>('/v1/payroll/documents');
+      return response.data;
+    } catch (error) {
+      this.handleError('Get payroll documents', error);
+    }
+  }
+
+  async uploadPayrollDocument(formData: FormData): Promise<PayrollDocument> {
+    try {
+      const response = await this.client.post<PayrollDocument>('/v1/payroll/documents', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      this.handleError('Upload payroll document', error);
+    }
+  }
+
+  async downloadPayrollDocument(documentId: number): Promise<Blob> {
+    try {
+      const response = await this.client.get(`/v1/payroll/documents/${documentId}/download`, {
+        responseType: 'blob'
+      });
+      return response.data;
+    } catch (error) {
+      this.handleError('Download payroll document', error);
+    }
+  }
+
+  async deletePayrollDocument(documentId: number): Promise<void> {
+    try {
+      await this.client.delete(`/v1/payroll/documents/${documentId}`);
+    } catch (error) {
+      this.handleError('Delete payroll document', error);
+    }
+  }
+
+  async searchPayrollDocuments(params: { query?: string; type?: string }): Promise<PayrollDocument[]> {
+    try {
+      const response = await this.client.get<PayrollDocument[]>('/v1/payroll/documents/search', {
+        params
+      });
+      return response.data;
+    } catch (error) {
+      this.handleError('Search payroll documents', error);
     }
   }
 }

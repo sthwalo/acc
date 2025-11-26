@@ -1,8 +1,18 @@
 import { useState, useEffect } from 'react';
-import { Calculator, FileText, Users, AlertCircle, Download, Plus } from 'lucide-react';
+import { Calculator, FileText, Users, AlertCircle, Download, Plus, Settings, Search, Trash2, File } from 'lucide-react';
 import { useApi } from '../hooks/useApi';
 import ApiMessageBanner from './shared/ApiMessageBanner';
-import type { Company, FiscalPeriod, PayrollPeriod } from '../types/api';
+import type { Company, FiscalPeriod, PayrollPeriod, FiscalPeriodPayrollConfigRequest, FiscalPeriodPayrollConfigResponse } from '../types/api';
+
+interface PayrollDocument {
+  id: number;
+  employeeId: number;
+  periodId: number;
+  fileName: string;
+  fileData: string | null;
+  documentType: 'PAYSLIP' | 'TAX_CERTIFICATE' | 'EMPLOYEE_CONTRACT' | 'BANK_STATEMENT' | 'OTHER';
+  uploadDate: string;
+}
 
 interface PayrollManagementViewProps {
   selectedCompany: Company;
@@ -20,6 +30,21 @@ export default function PayrollManagementView({ selectedCompany, onViewChange }:
   const [success, setSuccess] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showCreatePeriod, setShowCreatePeriod] = useState(false);
+  const [payrollConfig, setPayrollConfig] = useState<FiscalPeriodPayrollConfigResponse | null>(null);
+  const [isConfigLoading, setIsConfigLoading] = useState(false);
+  const [showConfigForm, setShowConfigForm] = useState(false);
+  const [configFormData, setConfigFormData] = useState<FiscalPeriodPayrollConfigRequest>({
+    payDate: '',
+    periodType: 'MONTHLY',
+    payrollStatus: 'OPEN'
+  });
+
+  // Document Management State
+  const [documents, setDocuments] = useState<PayrollDocument[]>([]);
+  const [isDocumentsLoading, setIsDocumentsLoading] = useState(false);
+  const [documentSearchQuery, setDocumentSearchQuery] = useState('');
+  const [selectedDocumentType, setSelectedDocumentType] = useState<string>('ALL');
+  const [isUploadingDocument, setIsUploadingDocument] = useState(false);
 
   useEffect(() => {
     loadFiscalPeriods();
@@ -28,6 +53,8 @@ export default function PayrollManagementView({ selectedCompany, onViewChange }:
   useEffect(() => {
     if (selectedPeriod) {
       loadPayrollPeriods();
+      loadPayrollConfig();
+      loadDocuments();
     }
   }, [selectedPeriod?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -108,6 +135,42 @@ export default function PayrollManagementView({ selectedCompany, onViewChange }:
       setError(message);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadPayrollConfig = async () => {
+    if (!selectedPeriod) return;
+
+    try {
+      setIsConfigLoading(true);
+      setError(null);
+      const config = await api.getFiscalPeriodPayrollConfig(selectedPeriod.id);
+      setPayrollConfig(config);
+      // Initialize form data with current config
+      setConfigFormData({
+        payDate: config.payDate || '',
+        periodType: config.periodType,
+        payrollStatus: config.payrollStatus
+      });
+    } catch (err) {
+      // Prefer structured API/axios error message where possible
+      let message = 'Failed to load payroll configuration';
+      try {
+        const anyErr: unknown = err;
+        if (anyErr && typeof anyErr === 'object' && 'response' in anyErr) {
+          const axiosErr = anyErr as { response?: { data?: { message?: string } } };
+          if (axiosErr.response?.data?.message) {
+            message = axiosErr.response.data.message;
+          }
+        } else if (err instanceof Error) {
+          message = err.message;
+        }
+      } catch {
+        // ignore parsing error
+      }
+      setError(message);
+    } finally {
+      setIsConfigLoading(false);
     }
   };
 
@@ -260,6 +323,256 @@ export default function PayrollManagementView({ selectedCompany, onViewChange }:
     }
   };
 
+  const updatePayrollConfig = async () => {
+    if (!selectedPeriod) return;
+
+    try {
+      setError(null);
+      setSuccess(null);
+      setIsConfigLoading(true);
+
+      const updatedConfig = await api.updateFiscalPeriodPayrollConfig(selectedPeriod.id, configFormData);
+      setPayrollConfig(updatedConfig);
+      setSuccess('Payroll configuration updated successfully');
+      setShowConfigForm(false);
+      // Refresh fiscal periods to show updated data
+      await loadFiscalPeriods();
+    } catch (err) {
+      // Prefer structured API/axios error message where possible
+      let message = 'Failed to update payroll configuration';
+      try {
+        const anyErr: unknown = err;
+        if (anyErr && typeof anyErr === 'object' && 'response' in anyErr) {
+          const axiosErr = anyErr as { response?: { data?: { message?: string } } };
+          if (axiosErr.response?.data?.message) {
+            message = axiosErr.response.data.message;
+          }
+        } else if (err instanceof Error) {
+          message = err.message;
+        }
+      } catch {
+        // ignore parsing error
+      }
+      setError(message);
+    } finally {
+      setIsConfigLoading(false);
+    }
+  };
+
+  const resetPayrollConfig = async () => {
+    if (!selectedPeriod) return;
+
+    // Confirm reset action
+    const confirmed = window.confirm(
+      'Are you sure you want to reset the payroll configuration? This will clear pay date and reset status to OPEN. This action cannot be undone.'
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setError(null);
+      setSuccess(null);
+      setIsConfigLoading(true);
+
+      await api.resetFiscalPeriodPayrollConfig(selectedPeriod.id);
+      setSuccess('Payroll configuration reset successfully');
+      // Reload config and fiscal periods
+      await loadPayrollConfig();
+      await loadFiscalPeriods();
+    } catch (err) {
+      // Prefer structured API/axios error message where possible
+      let message = 'Failed to reset payroll configuration';
+      try {
+        const anyErr: unknown = err;
+        if (anyErr && typeof anyErr === 'object' && 'response' in anyErr) {
+          const axiosErr = anyErr as { response?: { data?: { message?: string } } };
+          if (axiosErr.response?.data?.message) {
+            message = axiosErr.response.data.message;
+          }
+        } else if (err instanceof Error) {
+          message = err.message;
+        }
+      } catch {
+        // ignore parsing error
+      }
+      setError(message);
+    } finally {
+      setIsConfigLoading(false);
+    }
+  };
+
+  // Document Management Functions
+  const loadDocuments = async () => {
+    try {
+      setIsDocumentsLoading(true);
+      setError(null);
+      const docs = await api.getPayrollDocuments();
+      setDocuments(docs);
+    } catch (err) {
+      let message = 'Failed to load documents';
+      try {
+        const anyErr: unknown = err;
+        if (anyErr && typeof anyErr === 'object' && 'response' in anyErr) {
+          const axiosErr = anyErr as { response?: { data?: { message?: string } } };
+          if (axiosErr.response?.data?.message) {
+            message = axiosErr.response.data.message;
+          }
+        } else if (err instanceof Error) {
+          message = err.message;
+        }
+      } catch {
+        // ignore parsing error
+      }
+      setError(message);
+    } finally {
+      setIsDocumentsLoading(false);
+    }
+  };
+
+  const uploadDocument = async (file: File, documentType: string) => {
+    if (!selectedPeriod) return;
+
+    setIsUploadingDocument(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('employeeId', '9'); // Default employee for now
+      formData.append('fiscalPeriodId', selectedPeriod.id.toString());
+      formData.append('fileName', file.name);
+      formData.append('documentType', documentType);
+
+      await api.uploadPayrollDocument(formData);
+      setSuccess('Document uploaded successfully');
+      await loadDocuments(); // Refresh document list
+    } catch (err) {
+      let message = 'Failed to upload document';
+      try {
+        const anyErr: unknown = err;
+        if (anyErr && typeof anyErr === 'object' && 'response' in anyErr) {
+          const axiosErr = anyErr as { response?: { data?: { message?: string } } };
+          if (axiosErr.response?.data?.message) {
+            message = axiosErr.response.data.message;
+          }
+        } else if (err instanceof Error) {
+          message = err.message;
+        }
+      } catch {
+        // ignore parsing error
+      }
+      setError(message);
+    } finally {
+      setIsUploadingDocument(false);
+    }
+  };
+
+  const downloadDocument = async (documentId: number, fileName: string) => {
+    try {
+      setError(null);
+      const blob = await api.downloadPayrollDocument(documentId);
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      setSuccess('Document downloaded successfully');
+    } catch (err) {
+      let message = 'Failed to download document';
+      try {
+        const anyErr: unknown = err;
+        if (anyErr && typeof anyErr === 'object' && 'response' in anyErr) {
+          const axiosErr = anyErr as { response?: { data?: { message?: string } } };
+          if (axiosErr.response?.data?.message) {
+            message = axiosErr.response.data.message;
+          }
+        } else if (err instanceof Error) {
+          message = err.message;
+        }
+      } catch {
+        // ignore parsing error
+      }
+      setError(message);
+    }
+  };
+
+  const deleteDocument = async (documentId: number) => {
+    const confirmed = window.confirm('Are you sure you want to delete this document? This action cannot be undone.');
+    if (!confirmed) return;
+
+    try {
+      setError(null);
+      setSuccess(null);
+      await api.deletePayrollDocument(documentId);
+      setSuccess('Document deleted successfully');
+      await loadDocuments(); // Refresh document list
+    } catch (err) {
+      let message = 'Failed to delete document';
+      try {
+        const anyErr: unknown = err;
+        if (anyErr && typeof anyErr === 'object' && 'response' in anyErr) {
+          const axiosErr = anyErr as { response?: { data?: { message?: string } } };
+          if (axiosErr.response?.data?.message) {
+            message = axiosErr.response.data.message;
+          }
+        } else if (err instanceof Error) {
+          message = err.message;
+        }
+      } catch {
+        // ignore parsing error
+      }
+      setError(message);
+    }
+  };
+
+  const searchDocuments = async () => {
+    try {
+      setIsDocumentsLoading(true);
+      setError(null);
+      const searchParams = {
+        query: documentSearchQuery,
+        type: selectedDocumentType === 'ALL' ? undefined : selectedDocumentType
+      };
+      const docs = await api.searchPayrollDocuments(searchParams);
+      setDocuments(docs);
+    } catch (err) {
+      let message = 'Failed to search documents';
+      try {
+        const anyErr: unknown = err;
+        if (anyErr && typeof anyErr === 'object' && 'response' in anyErr) {
+          const axiosErr = anyErr as { response?: { data?: { message?: string } } };
+          if (axiosErr.response?.data?.message) {
+            message = axiosErr.response.data.message;
+          }
+        } else if (err instanceof Error) {
+          message = err.message;
+        }
+      } catch {
+        // ignore parsing error
+      }
+      setError(message);
+    } finally {
+      setIsDocumentsLoading(false);
+    }
+  };
+
+  const getDocumentTypeIcon = (type: string) => {
+    switch (type) {
+      case 'PAYSLIP': return '💰';
+      case 'TAX_CERTIFICATE': return '📄';
+      case 'EMPLOYEE_CONTRACT': return '📋';
+      case 'BANK_STATEMENT': return '🏦';
+      default: return '📁';
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'OPEN': return 'info';
@@ -302,6 +615,150 @@ export default function PayrollManagementView({ selectedCompany, onViewChange }:
           ))}
         </div>
       </div>
+
+      {/* Payroll Configuration Section */}
+      {selectedPeriod && (
+        <div className="form-section">
+          <h3>
+            <Settings size={20} />
+            Payroll Configuration for {selectedPeriod.periodName}
+          </h3>
+
+          {isConfigLoading ? (
+            <div className="loading-state">
+              <div className="spinner small"></div>
+              <p>Loading configuration...</p>
+            </div>
+          ) : payrollConfig ? (
+            <div className="payroll-config-display">
+              <div className="config-grid">
+                <div className="config-item">
+                  <label>Pay Date:</label>
+                  <span>{payrollConfig.payDate ? new Date(payrollConfig.payDate).toLocaleDateString() : 'Not set'}</span>
+                </div>
+                <div className="config-item">
+                  <label>Period Type:</label>
+                  <span>{payrollConfig.periodType}</span>
+                </div>
+                <div className="config-item">
+                  <label>Payroll Status:</label>
+                  <span className={`status-badge ${getStatusColor(payrollConfig.payrollStatus)}`}>
+                    {payrollConfig.payrollStatus}
+                  </span>
+                </div>
+                <div className="config-item">
+                  <label>Total Gross Pay:</label>
+                  <span>R {payrollConfig.totalGrossPay.toLocaleString()}</span>
+                </div>
+                <div className="config-item">
+                  <label>Total Deductions:</label>
+                  <span>R {payrollConfig.totalDeductions.toLocaleString()}</span>
+                </div>
+                <div className="config-item">
+                  <label>Total Net Pay:</label>
+                  <span>R {payrollConfig.totalNetPay.toLocaleString()}</span>
+                </div>
+                <div className="config-item">
+                  <label>Employee Count:</label>
+                  <span>{payrollConfig.employeeCount}</span>
+                </div>
+                <div className="config-item">
+                  <label>Closed:</label>
+                  <span>{payrollConfig.closed ? 'Yes' : 'No'}</span>
+                </div>
+              </div>
+
+              <div className="config-actions">
+                <button
+                  className="action-button secondary"
+                  onClick={() => setShowConfigForm(true)}
+                  disabled={payrollConfig.payrollStatus === 'PROCESSED'}
+                >
+                  <Settings size={16} />
+                  Edit Configuration
+                </button>
+                <button
+                  className="action-button warning"
+                  onClick={resetPayrollConfig}
+                  disabled={payrollConfig.payrollStatus === 'PROCESSED'}
+                >
+                  Reset Configuration
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="empty-state">
+              <Settings size={48} />
+              <h3>No payroll configuration found</h3>
+              <p>Set up payroll configuration for this fiscal period.</p>
+              <button
+                className="action-button primary"
+                onClick={() => setShowConfigForm(true)}
+              >
+                Configure Payroll
+              </button>
+            </div>
+          )}
+
+          {showConfigForm && (
+            <div className="config-form-modal">
+              <div className="modal-content">
+                <h4>Edit Payroll Configuration</h4>
+                <div className="form-group">
+                  <label htmlFor="payDate">Pay Date:</label>
+                  <input
+                    id="payDate"
+                    type="date"
+                    value={configFormData.payDate}
+                    onChange={(e) => setConfigFormData(prev => ({ ...prev, payDate: e.target.value }))}
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="periodType">Period Type:</label>
+                  <select
+                    id="periodType"
+                    value={configFormData.periodType}
+                    onChange={(e) => setConfigFormData(prev => ({ ...prev, periodType: e.target.value as 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' }))}
+                  >
+                    <option value="WEEKLY">Weekly</option>
+                    <option value="MONTHLY">Monthly</option>
+                    <option value="QUARTERLY">Quarterly</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label htmlFor="payrollStatus">Payroll Status:</label>
+                  <select
+                    id="payrollStatus"
+                    value={configFormData.payrollStatus}
+                    onChange={(e) => setConfigFormData(prev => ({ ...prev, payrollStatus: e.target.value as 'OPEN' | 'PROCESSED' | 'APPROVED' | 'PAID' | 'CLOSED' }))}
+                  >
+                    <option value="OPEN">Open</option>
+                    <option value="PROCESSED">Processed</option>
+                    <option value="APPROVED">Approved</option>
+                    <option value="PAID">Paid</option>
+                    <option value="CLOSED">Closed</option>
+                  </select>
+                </div>
+                <div className="form-actions">
+                  <button
+                    className="action-button primary"
+                    onClick={updatePayrollConfig}
+                    disabled={isConfigLoading}
+                  >
+                    {isConfigLoading ? 'Updating...' : 'Update Configuration'}
+                  </button>
+                  <button
+                    className="action-button secondary"
+                    onClick={() => setShowConfigForm(false)}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Payroll Period Selection */}
       {selectedPeriod && (
@@ -512,6 +969,150 @@ export default function PayrollManagementView({ selectedCompany, onViewChange }:
           )}
         </div>
       )}
+
+      {/* Document Management Section */}
+      <div className="form-section">
+        <h3>
+          <File size={20} />
+          Document Management
+        </h3>
+
+        {/* Document Upload */}
+        <div className="document-upload-section">
+          <h4>Upload Document</h4>
+          <div className="upload-form">
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="documentFile">Select File:</label>
+                <input
+                  id="documentFile"
+                  type="file"
+                  accept=".pdf,.txt,.doc,.docx,.jpg,.jpeg,.png"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const documentType = window.prompt('Enter document type (PAYSLIP, TAX_CERTIFICATE, EMPLOYEE_CONTRACT, BANK_STATEMENT, OTHER):', 'PAYSLIP');
+                      if (documentType) {
+                        uploadDocument(file, documentType);
+                      }
+                    }
+                  }}
+                  disabled={isUploadingDocument}
+                />
+              </div>
+            </div>
+            {isUploadingDocument && (
+              <div className="loading-state">
+                <div className="spinner small"></div>
+                <p>Uploading document...</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Document Search and Filter */}
+        <div className="document-search-section">
+          <div className="search-controls">
+            <div className="form-group">
+              <label htmlFor="searchQuery">Search:</label>
+              <input
+                id="searchQuery"
+                type="text"
+                placeholder="Search documents..."
+                value={documentSearchQuery}
+                onChange={(e) => setDocumentSearchQuery(e.target.value)}
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="documentTypeFilter">Filter by Type:</label>
+              <select
+                id="documentTypeFilter"
+                value={selectedDocumentType}
+                onChange={(e) => setSelectedDocumentType(e.target.value)}
+              >
+                <option value="ALL">All Types</option>
+                <option value="PAYSLIP">Payslip</option>
+                <option value="TAX_CERTIFICATE">Tax Certificate</option>
+                <option value="EMPLOYEE_CONTRACT">Employee Contract</option>
+                <option value="BANK_STATEMENT">Bank Statement</option>
+                <option value="OTHER">Other</option>
+              </select>
+            </div>
+            <button
+              className="action-button secondary"
+              onClick={searchDocuments}
+              disabled={isDocumentsLoading}
+            >
+              <Search size={16} />
+              Search
+            </button>
+            <button
+              className="action-button secondary"
+              onClick={() => {
+                setDocumentSearchQuery('');
+                setSelectedDocumentType('ALL');
+                loadDocuments();
+              }}
+            >
+              Clear Filters
+            </button>
+          </div>
+        </div>
+
+        {/* Document List */}
+        <div className="document-list-section">
+          <h4>Documents ({documents.length})</h4>
+
+          {isDocumentsLoading ? (
+            <div className="loading-state">
+              <div className="spinner large"></div>
+              <p>Loading documents...</p>
+            </div>
+          ) : documents.length > 0 ? (
+            <div className="document-grid">
+              {documents.map((doc) => (
+                <div key={doc.id} className="document-card">
+                  <div className="document-icon">
+                    {getDocumentTypeIcon(doc.documentType)}
+                  </div>
+                  <div className="document-info">
+                    <h5>{doc.fileName}</h5>
+                    <p className="document-type">{doc.documentType.replace('_', ' ')}</p>
+                    <p className="document-date">
+                      Uploaded: {new Date(doc.uploadDate).toLocaleDateString()}
+                    </p>
+                    <p className="document-meta">
+                      Employee ID: {doc.employeeId} | Period ID: {doc.periodId}
+                    </p>
+                  </div>
+                  <div className="document-actions">
+                    <button
+                      className="action-button view"
+                      onClick={() => downloadDocument(doc.id, doc.fileName)}
+                      title="Download document"
+                    >
+                      <Download size={16} />
+                    </button>
+                    <button
+                      className="action-button delete"
+                      onClick={() => deleteDocument(doc.id)}
+                      title="Delete document"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="empty-state">
+              <File size={48} />
+              <h3>No documents found</h3>
+              <p>Upload payroll documents to get started.</p>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* SARS Compliance Notice */}
       <div className="compliance-notice">

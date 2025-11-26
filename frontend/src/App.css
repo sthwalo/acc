@@ -1912,3 +1912,586 @@ body {
     min-width: 600px;
   }
 }
+
+/* Payroll Configuration Styles */
+.payroll-config-display {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+}
+
+.config-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.config-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.config-item label {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+}
+
+.config-item span {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.config-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.config-form-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: var(--bg-primary);
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-content h4 {
+  margin-bottom: 1rem;
+  color: var(--text-primary);
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.form-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+
+/* Document Management Styles */
+.document-upload-section {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+}
+
+.document-upload-section h4 {
+  margin-bottom: 1rem;
+  color: var(--text-primary);
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.upload-form .form-row {
+  display: flex;
+  gap: 1rem;
+  align-items: end;
+}
+
+.upload-form .form-group {
+  flex: 1;
+}
+
+.upload-form input[type="file"] {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 0.375rem;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.document-search-section {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+}
+
+.search-controls {
+  display: flex;
+  gap: 1rem;
+  align-items: end;
+  flex-wrap: wrap;
+}
+
+.search-controls .form-group {
+  flex: 1;
+  min-width: 200px;
+}
+
+.search-controls input,
+.search-controls select {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 0.375rem;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.document-list-section {
+  padding: 1.5rem;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+}
+
+.document-list-section h4 {
+  margin-bottom: 1rem;
+  color: var(--text-primary);
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.document-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+.document-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.document-card:hover {
+  border-color: var(--primary-color);
+  box-shadow: var(--shadow);
+}
+
+.document-icon {
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.document-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.document-info h5 {
+  margin: 0 0 0.5rem 0;
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.document-type {
+  color: var(--primary-color);
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin: 0 0 0.25rem 0;
+  text-transform: capitalize;
+}
+
+.document-date {
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  margin: 0 0 0.25rem 0;
+}
+
+.document-meta {
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  margin: 0;
+}
+
+.document-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.document-actions .action-button {
+  padding: 0.375rem;
+  min-width: auto;
+  width: 32px;
+  height: 32px;
+  justify-content: center;
+}
+
+.document-actions .action-button.view {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+.document-actions .action-button.delete {
+  background: var(--error-color);
+  color: white;
+  border-color: var(--error-color);
+}
+
+/* Payroll Management View Styles */
+.payroll-management-view {
+  padding: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.payroll-management-view .view-header {
+  margin-bottom: 2rem;
+}
+
+.payroll-management-view .view-header h2 {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.payroll-management-view .view-header p {
+  color: var(--text-secondary);
+}
+
+.payroll-management-view .form-section {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  box-shadow: var(--shadow);
+}
+
+.payroll-management-view .form-section h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  color: var(--text-primary);
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.payroll-management-view .form-section h3 svg {
+  color: var(--primary-color);
+}
+
+.payroll-management-view .period-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.payroll-management-view .period-button {
+  padding: 1rem;
+  border: 2px solid var(--border-color);
+  border-radius: 0.5rem;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 200px;
+  text-align: left;
+}
+
+.payroll-management-view .period-button:hover {
+  border-color: var(--primary-color);
+  box-shadow: var(--shadow);
+}
+
+.payroll-management-view .period-button.active {
+  border-color: var(--primary-color);
+  background: var(--primary-color);
+  color: white;
+}
+
+.payroll-management-view .period-name {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.payroll-management-view .period-dates {
+  font-size: 0.875rem;
+  opacity: 0.8;
+}
+
+.payroll-management-view .period-status {
+  margin-top: 0.5rem;
+}
+
+.payroll-management-view .payroll-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.payroll-management-view .payroll-periods-container {
+  margin-bottom: 2rem;
+}
+
+.payroll-management-view .payroll-periods-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.payroll-management-view .payroll-periods-table th {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+}
+
+.payroll-management-view .payroll-periods-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.payroll-management-view .payroll-periods-table tbody tr:hover {
+  background: var(--bg-secondary);
+}
+
+.payroll-management-view .period-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.payroll-management-view .action-buttons {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.payroll-management-view .action-buttons .action-button {
+  padding: 0.375rem;
+  min-width: auto;
+  width: 32px;
+  height: 32px;
+  justify-content: center;
+}
+
+.payroll-management-view .action-buttons .action-button.view {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+.payroll-management-view .action-buttons .action-button.payslips {
+  background: var(--success-color);
+  color: white;
+  border-color: var(--success-color);
+}
+
+.payroll-management-view .action-buttons .action-button.download {
+  background: var(--warning-color);
+  color: white;
+  border-color: var(--warning-color);
+}
+
+.payroll-management-view .create-period-form {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: var(--bg-secondary);
+  border-radius: 0.5rem;
+}
+
+.payroll-management-view .compliance-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 0.5rem;
+  color: #2563eb;
+}
+
+.payroll-management-view .compliance-notice svg {
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+}
+
+.payroll-management-view .compliance-notice h4 {
+  margin: 0 0 0.5rem 0;
+  color: #1e40af;
+}
+
+.payroll-management-view .compliance-notice p {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.payroll-management-view .status-badge {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.payroll-management-view .status-badge.info {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.payroll-management-view .status-badge.warning {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.payroll-management-view .status-badge.success {
+  background: #dbeafe;
+  color: #065f46;
+}
+
+.payroll-management-view .status-badge.default {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.payroll-management-view .loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: var(--text-secondary);
+}
+
+.payroll-management-view .loading-state .spinner {
+  margin-bottom: 1rem;
+}
+
+.payroll-management-view .loading-state.small .spinner {
+  width: 24px;
+  height: 24px;
+}
+
+.payroll-management-view .loading-state.large .spinner {
+  width: 48px;
+  height: 48px;
+}
+
+.payroll-management-view .spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border-color);
+  border-top: 3px solid var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Responsive Design for Payroll Management */
+@media (max-width: 768px) {
+  .payroll-management-view {
+    padding: 1rem;
+  }
+
+  .payroll-management-view .period-selector {
+    flex-direction: column;
+  }
+
+  .payroll-management-view .period-button {
+    min-width: auto;
+  }
+
+  .payroll-management-view .payroll-actions {
+    flex-direction: column;
+  }
+
+  .payroll-management-view .payroll-actions .action-button {
+    justify-content: center;
+  }
+
+  .payroll-management-view .payroll-periods-table {
+    overflow-x: auto;
+  }
+
+  .payroll-management-view .payroll-periods-table {
+    min-width: 600px;
+  }
+
+  .payroll-management-view .config-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .payroll-management-view .document-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .payroll-management-view .search-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .payroll-management-view .search-controls .form-group {
+    min-width: auto;
+  }
+}
