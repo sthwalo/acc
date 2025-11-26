@@ -172,6 +172,7 @@ function App() {
           selectedFiscalPeriod ? (
             <PayslipsView 
               selectedFiscalPeriod={selectedFiscalPeriod}
+              onViewChange={setCurrentView}
             />
           ) : (
             <div className="empty-state">
@@ -189,7 +190,10 @@ function App() {
         );
       case 'employee-management':
         return selectedCompany ? (
-          <EmployeeManagementView selectedCompany={selectedCompany} />
+          <EmployeeManagementView 
+            selectedCompany={selectedCompany} 
+            onViewChange={setCurrentView}
+          />
         ) : (
           <div className="empty-state">
             <Building2 size={48} />

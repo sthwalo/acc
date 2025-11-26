@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { FileText, Download, Mail, Users, AlertCircle, CheckCircle, Eye } from 'lucide-react';
+import { FileText, Download, Mail, Users, AlertCircle, CheckCircle, Eye, ArrowLeft } from 'lucide-react';
 import { useApi } from '../hooks/useApi';
 import ApiMessageBanner from './shared/ApiMessageBanner';
 import type { FiscalPeriod } from '../types/api';
@@ -21,9 +21,10 @@ interface Payslip {
 
 interface PayslipsViewProps {
   selectedFiscalPeriod: FiscalPeriod;
+  onViewChange?: (view: string) => void;
 }
 
-export default function PayslipsView({ selectedFiscalPeriod }: PayslipsViewProps) {
+export default function PayslipsView({ selectedFiscalPeriod, onViewChange }: PayslipsViewProps) {
   const api = useApi();
   const [payslips, setPayslips] = useState<Payslip[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -369,6 +370,16 @@ export default function PayslipsView({ selectedFiscalPeriod }: PayslipsViewProps
   return (
     <div className="payslips-view">
       <div className="view-header">
+        <div className="header-actions">
+          <button
+            className="back-button"
+            onClick={() => onViewChange?.('payroll-management')}
+            title="Back to Payroll Management"
+          >
+            <ArrowLeft size={20} />
+            Back to Payroll Management
+          </button>
+        </div>
         <h2>Payslips Management</h2>
         <p>Generate and distribute payslips for {selectedFiscalPeriod.periodName}</p>
       </div>

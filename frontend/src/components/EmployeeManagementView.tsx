@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Users, UserPlus, Edit, Trash2, Search, SortAsc, SortDesc, AlertTriangle, UserCheck, UserX } from 'lucide-react';
+import { Users, UserPlus, Edit, Trash2, Search, SortAsc, SortDesc, AlertTriangle, UserCheck, UserX, ArrowLeft } from 'lucide-react';
 import { useApi } from '../hooks/useApi';
 import ApiMessageBanner from './shared/ApiMessageBanner';
 import EmployeeCreateModal from './EmployeeCreateModal';
@@ -8,9 +8,10 @@ import type { Company, Employee } from '../types/api';
 
 interface EmployeeManagementViewProps {
   selectedCompany: Company;
+  onViewChange?: (view: string) => void;
 }
 
-export default function EmployeeManagementView({ selectedCompany }: EmployeeManagementViewProps) {
+export default function EmployeeManagementView({ selectedCompany, onViewChange }: EmployeeManagementViewProps) {
   const api = useApi();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [filteredEmployees, setFilteredEmployees] = useState<Employee[]>([]);
@@ -304,6 +305,16 @@ export default function EmployeeManagementView({ selectedCompany }: EmployeeMana
   return (
     <div className="employee-management-view">
       <div className="view-header">
+        <div className="header-actions">
+          <button
+            className="back-button"
+            onClick={() => onViewChange?.('payroll-management')}
+            title="Back to Payroll Management"
+          >
+            <ArrowLeft size={20} />
+            Back to Payroll Management
+          </button>
+        </div>
         <h2>Employee Management</h2>
         <p>Manage employees for {selectedCompany.name}</p>
       </div>
