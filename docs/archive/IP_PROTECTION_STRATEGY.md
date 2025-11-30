@@ -2,7 +2,7 @@
 
 **Document for:** Sthwalo Holdings (Pty) Ltd.  
 **Owner:** Immaculate Nyoni  
-**Contact:** sthwaloe@gmail.com | +27 61 514 6185  
+**Contact:** [redacted-email@example.com] | [redacted-phone]
 **Purpose:** Protecting intellectual property while maintaining public portfolio visibility
 
 ---
@@ -34,11 +34,11 @@ You've made an excellent strategic decision to develop publicly for recruitment 
 
 ### **🔐 1. Database Credentials & Production Data**
 ```bash
-# ❌ NEVER expose:
-DATABASE_PASSWORD=LeZipho24#
-DATABASE_USER=sthwalonyoni
-API_KEYS=sk-xxxxx
-PRODUCTION_URLS=https://your-actual-domain.com
+# ❌ NEVER expose real credentials; use placeholders instead:
+DATABASE_PASSWORD=REPLACE_WITH_SECRET
+DATABASE_USER=REPLACE_WITH_USER
+API_KEYS=REPLACE_WITH_API_KEYS
+PRODUCTION_URLS=https://your-actual-domain.example
 ```
 
 **✅ What to do:**
@@ -422,4 +422,4 @@ Your protection strategy creates multiple competitive advantages:
 ---
 
 **© 2024-2025 Sthwalo Holdings (Pty) Ltd.**  
-**Owner: Immaculate Nyoni | sthwaloe@gmail.com | +27 61 514 6185**
+**Owner: Immaculate Nyoni | [redacted-email@example.com] | [redacted-phone]**

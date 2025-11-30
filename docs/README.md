@@ -407,7 +407,7 @@ cp .env.example .env
 # Edit .env with your database credentials:
 #   DATABASE_URL=jdbc:postgresql://localhost:5432/drimacc_db
 #   DATABASE_USER=your_username
-#   DATABASE_PASSWORD=your_password
+#   DATABASE_PASSWORD=REPLACE_WITH_SECURE_PASSWORD
 
 # 3. Build application
 ./gradlew clean build

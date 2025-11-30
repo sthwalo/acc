@@ -34,7 +34,7 @@ brew services start postgresql@15
 
 # Step 2: Create production database
 createdb fin_production
-psql fin_production -c "CREATE USER fin_prod WITH PASSWORD 'secure_prod_password';"
+psql fin_production -c "CREATE USER fin_prod WITH PASSWORD 'REPLACE_WITH_SECURE_PROD_PASSWORD';"
 psql fin_production -c "GRANT ALL PRIVILEGES ON DATABASE fin_production TO fin_prod;"
 
 # Step 3: Run schema migration
@@ -47,12 +47,9 @@ psql -U fin_prod -d fin_production -f app/src/main/resources/db/migration/V2__Po
 package fin.config;
 
 public class ProductionConfig {
-    public static final String DATABASE_URL = System.getenv()
-        .getOrDefault("DATABASE_URL", "jdbc:postgresql://localhost:5432/fin_production");
-    public static final String DATABASE_USER = System.getenv()
-        .getOrDefault("DATABASE_USER", "fin_prod");
-    public static final String DATABASE_PASSWORD = System.getenv()
-        .getOrDefault("DATABASE_PASSWORD", "secure_prod_password");
+    public static final String DATABASE_URL = System.getenv("DATABASE_URL");
+    public static final String DATABASE_USER = System.getenv("DATABASE_USER");
+    public static final String DATABASE_PASSWORD = System.getenv("DATABASE_PASSWORD");
     
     // API Configuration
     public static final int API_PORT = Integer.parseInt(
@@ -412,7 +409,7 @@ services:
     environment:
       POSTGRES_DB: fin_production
       POSTGRES_USER: fin_prod
-      POSTGRES_PASSWORD: secure_password
+      POSTGRES_PASSWORD: REPLACE_WITH_SECURE_POSTGRES_PASSWORD
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:

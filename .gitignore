@@ -314,6 +314,7 @@ backups/
 # Binary dumps and SQL dumps
 *.dump
 *.sql
+*.sqlite
 
 # Application bin folders
 app/bin/

@@ -61,10 +61,10 @@ psql -h localhost -d drimacc_db -U sthwalonyoni -c "\dt"
 source .env && psql -U $DATABASE_USER -d drimacc_db -c "SELECT id, email, first_name, last_name, is_active, created_at FROM users;"
 
 # View specific user password hash
-source .env && psql -U $DATABASE_USER -d drimacc_db -c "SELECT id, email, password_hash, salt FROM users WHERE email = 'sthwaloe@gmail.com';"
+source .env && psql -U $DATABASE_USER -d drimacc_db -c "SELECT id, email, password_hash, salt FROM users WHERE email = 'your-user@example.com';"
 
 # Update user password (bcrypt hash)
-source .env && psql -U $DATABASE_USER -d drimacc_db -c "UPDATE users SET password_hash = '\$2a\$10\$bXOqemA63tpn0OrXpFhkAOL0m29vjzVHbVhOK7U9PGi40asMUaTh6' WHERE email = 'sthwaloe@gmail.com';"
+source .env && psql -U $DATABASE_USER -d drimacc_db -c "UPDATE users SET password_hash = '\$2a\$10\$bXOqemA63tpn0OrXpFhkAOL0m29vjzVHbVhOK7U9PGi40asMUaTh6' WHERE email = 'your-user@example.com';"
 
 # Restore database from backup
 source .env && psql -U $DATABASE_USER -d drimacc_db < backups/drimacc_db_backup_2025-11-10_020000.dump
@@ -135,10 +135,10 @@ ps aux | grep -E "(java|node)" | grep -v grep | grep -E "(vite|spring-app)"
 curl -s http://localhost:8080/api/v1/health | jq .
 
 # Test authentication login (FIXED: AuthContext no longer clears tokens on app load)
-curl -s -X POST http://localhost:8080/api/v1/auth/login -H "Content-Type: application/json" -d '{"email":"sthwaloe@gmail.com","password":"password"}' | jq .
+curl -s -X POST http://localhost:8080/api/v1/auth/login -H "Content-Type: application/json" -d '{"email":"your-test-email@example.com","password":"your-test-password"}' | jq .
 
 # Test authentication with different user
-curl -s -X POST http://localhost:8080/api/v1/auth/login -H "Content-Type: application/json" -d '{"email":"test@example.com","password":"password"}' | jq .
+curl -s -X POST http://localhost:8080/api/v1/auth/login -H "Content-Type: application/json" -d '{"email":"another-test@example.com","password":"another-test-password"}' | jq .
 
 # Test API with JWT token (fiscal periods) - Replace YOUR_JWT_TOKEN with actual token
 curl -s -H "Authorization: Bearer YOUR_JWT_TOKEN" http://localhost:8080/api/v1/companies/2/fiscal-periods | jq .
