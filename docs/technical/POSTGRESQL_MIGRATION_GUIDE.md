@@ -59,7 +59,7 @@ dependencies {
 // Update database URL in App.java
 private static final String DB_URL = "jdbc:postgresql://localhost:5432/fin_database";
 private static final String DB_USER = "fin_user";
-private static final String DB_PASSWORD = "secure_password";
+private static final String DB_PASSWORD = "REPLACE_WITH_SECURE_PASSWORD";
 
 // Update connection creation throughout services
 Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
@@ -73,7 +73,7 @@ brew services start postgresql@15
 
 # Create database and user
 createdb fin_database
-psql fin_database -c "CREATE USER fin_user WITH PASSWORD 'secure_password';"
+psql fin_database -c "CREATE USER fin_user WITH PASSWORD 'REPLACE_WITH_SECURE_PASSWORD';"
 psql fin_database -c "GRANT ALL PRIVILEGES ON DATABASE fin_database TO fin_user;"
 ```
 
@@ -342,10 +342,9 @@ public class DatabaseConfig {
     
     static {
         HikariConfig config = new HikariConfig();
-        config.setJdbcUrl(System.getenv().getOrDefault("DATABASE_URL", 
-            "jdbc:postgresql://localhost:5432/fin_database"));
-        config.setUsername(System.getenv().getOrDefault("DATABASE_USER", "fin_user"));
-        config.setPassword(System.getenv().getOrDefault("DATABASE_PASSWORD", "secure_password"));
+        config.setJdbcUrl(System.getenv("DATABASE_URL"));
+        config.setUsername(System.getenv("DATABASE_USER"));
+        config.setPassword(System.getenv("DATABASE_PASSWORD"));
         config.setDriverClassName("org.postgresql.Driver");
         config.setMaximumPoolSize(10);
         config.setMinimumIdle(2);
@@ -440,7 +439,7 @@ public class TestDatabaseConfig {
 ```bash
 export DATABASE_URL="jdbc:postgresql://prod-server:5432/fin_production"
 export DATABASE_USER="fin_prod_user"
-export DATABASE_PASSWORD="very_secure_production_password"
+export DATABASE_PASSWORD="REPLACE_WITH_VERY_SECURE_PRODUCTION_PASSWORD"
 ```
 
 ### Security Enhancements
