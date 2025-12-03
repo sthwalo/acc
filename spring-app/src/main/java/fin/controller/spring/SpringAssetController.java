@@ -64,14 +64,19 @@ public class SpringAssetController {
             }
 
             // Determine base path based on environment
-            String basePath;
-            if (System.getProperty("os.name").toLowerCase().contains("mac") ||
-                System.getProperty("user.home").startsWith("/Users")) {
-                // Running locally on macOS
-                basePath = "/Users/sthwalonyoni/FIN";
-            } else {
-                // Running in Docker container
-                basePath = "/app";
+            // Priority: 1. Environment variable, 2. System property, 3. Docker default, 4. Current directory
+            String basePath = System.getenv("FIN_BASE_PATH");
+            if (basePath == null) {
+                basePath = System.getProperty("fin.base.path");
+            }
+            if (basePath == null) {
+                // Check if running in Docker container
+                if (new File("/app").exists() && new File("/app/logos").exists()) {
+                    basePath = "/app";
+                } else {
+                    // Use current working directory as fallback
+                    basePath = System.getProperty("user.dir");
+                }
             }
 
             // Construct full path

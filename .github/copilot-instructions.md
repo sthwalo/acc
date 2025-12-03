@@ -363,6 +363,163 @@ docker compose -f docker-compose.yml -f docker-compose.frontend.yml down
 
 **ADR-001: Spring Boot as Primary Framework** - Standardize on Spring Boot for enterprise features, security, and testing capabilities.
 
+## 🔒 CRITICAL SECURITY POLICY - ZERO TOLERANCE
+
+### ⚠️ MANDATORY SECURITY REQUIREMENTS - NEVER COMMIT CREDENTIALS
+
+**SECURITY PRINCIPLE**: `.env` file is the SINGLE SOURCE OF TRUTH for all credentials. NO credentials, passwords, database names, usernames, API keys, or secrets should EVER be hardcoded in committed files.
+
+#### 🚫 ABSOLUTELY FORBIDDEN (Will Be Rejected in Code Review)
+
+**Pattern 1: Hardcoded Credentials in Code**
+```java
+// ❌ FORBIDDEN - Never hardcode credentials
+String dbUrl = "jdbc:postgresql://localhost:5432/your_database";
+String dbUser = "your_username";
+String dbPassword = "your_password";
+Connection conn = DriverManager.getConnection(dbUrl, dbUser, dbPassword);
+```
+
+**Pattern 2: Default/Fallback Credentials in Properties**
+```properties
+# ❌ FORBIDDEN - Never use real credentials as defaults
+spring.datasource.url=${DATABASE_URL:jdbc:postgresql://localhost:5432/your_database}
+spring.datasource.username=${DATABASE_USER:your_username}
+spring.datasource.password=${DATABASE_PASSWORD:your_password}
+```
+
+**Pattern 3: Hardcoded Paths with Usernames**
+```java
+// ❌ FORBIDDEN - Never hardcode user-specific paths
+String basePath = "/Users/your_username/your_project";
+```
+
+**Pattern 4: Weak Default Secrets**
+```properties
+# ❌ FORBIDDEN - Never use weak defaults for production secrets
+fin.jwt.secret=${JWT_SECRET:fin-secret-key-change-in-production}
+```
+
+**Pattern 5: Database Names in Documentation**
+```bash
+# ❌ AVOID - Use environment variables in docs
+psql -U your_username -d your_database
+```
+
+#### ✅ REQUIRED SECURITY PATTERNS (Mandatory Across Entire Codebase)
+
+**Correct Pattern 1: Environment Variables Only**
+```java
+// ✅ CORRECT - Always fetch from environment
+String dbUrl = System.getenv("DATABASE_URL");
+String dbUser = System.getenv("DATABASE_USER");
+String dbPassword = System.getenv("DATABASE_PASSWORD");
+
+if (dbUrl == null || dbUser == null || dbPassword == null) {
+    throw new IllegalStateException(
+        "Database credentials missing. Set DATABASE_URL, DATABASE_USER, and DATABASE_PASSWORD in .env file"
+    );
+}
+```
+
+**Correct Pattern 2: Properties with NO Defaults**
+```properties
+# ✅ CORRECT - Force environment variables, no defaults
+spring.datasource.url=${DATABASE_URL}
+spring.datasource.username=${DATABASE_USER}
+spring.datasource.password=${DATABASE_PASSWORD}
+fin.jwt.secret=${JWT_SECRET}
+```
+
+**Correct Pattern 3: Dynamic Path Detection**
+```java
+// ✅ CORRECT - Detect paths dynamically
+String basePath = System.getenv("FIN_BASE_PATH");
+if (basePath == null) {
+    basePath = System.getProperty("user.dir");
+}
+```
+
+**Correct Pattern 4: Strong Secrets Required**
+```properties
+# ✅ CORRECT - Require strong secrets from environment
+fin.jwt.secret=${JWT_SECRET}  # Must be set in .env, minimum 32 characters
+```
+
+**Correct Pattern 5: Generic Documentation Examples**
+```bash
+# ✅ CORRECT - Use placeholders in documentation
+source .env  # Load credentials from .env
+psql -U $DATABASE_USER -d $(basename $DATABASE_URL)
+```
+
+#### 🔍 SECURITY CODE REVIEW CHECKLIST
+
+Before committing ANY code, verify:
+- [ ] No hardcoded database names (use environment variables)
+- [ ] No hardcoded usernames (use environment variables)
+- [ ] No hardcoded passwords (any string that looks like a password)
+- [ ] No hardcoded file paths with usernames (`/Users/username/`)
+- [ ] No weak default secrets in properties files
+- [ ] All credentials fetched from `System.getenv()` or `${ENV_VAR}`
+- [ ] `.gitignore` includes `.env` and all credential files
+- [ ] No credentials in log statements or error messages
+- [ ] No credentials in documentation (use `$DATABASE_USER` instead)
+- [ ] Application fails fast if environment variables missing
+
+#### 📊 FILES THAT MUST NEVER CONTAIN CREDENTIALS
+
+**Configuration Files (Committed to Git)**:
+- ❌ `application.properties` - Use `${ENV_VAR}` only
+- ❌ `application.properties.example` - Use placeholder values only
+- ❌ `docker-compose.yml` - Use `${ENV_VAR}` only
+- ❌ `Dockerfile` - Never hardcode secrets
+- ❌ `.md` documentation files - Use generic examples
+
+**Code Files (Committed to Git)**:
+- ❌ `*.java` - Fetch from `System.getenv()`
+- ❌ `*.ts` - Fetch from `import.meta.env.VITE_*`
+- ❌ `*.sh` - Source from `.env` file
+- ❌ `*.sql` - Use parameterized queries
+
+**Files That CAN Contain Credentials (MUST be in .gitignore)**:
+- ✅ `.env` - Real credentials here (gitignored)
+- ✅ `secrets/*` - Encrypted secrets (gitignored)
+- ✅ `*.key`, `*.pem` - Private keys (gitignored)
+
+#### 🚨 IMMEDIATE ACTION REQUIRED IF CREDENTIALS EXPOSED
+
+If credentials are accidentally committed:
+1. **Immediately rotate ALL exposed credentials** (change passwords, regenerate keys)
+2. **Remove from Git history**: `git filter-branch` or `BFG Repo-Cleaner`
+3. **Force push cleaned history**: `git push --force`
+4. **Update `.env` with new credentials**
+5. **Audit all services using exposed credentials**
+6. **Document incident in `docs/security/INCIDENT_*.md`**
+
+#### 📋 SECURITY SCANNING COMMANDS
+
+**Scan for exposed credentials before commit:**
+```bash
+# Scan for potential credential exposure
+grep -rn --exclude-dir={.git,node_modules,build,dist} \
+  -E "(password|PASSWORD|secret|SECRET|api.?key|API.?KEY).*=.*['\"].*['\"]" .
+
+# Scan for database names
+grep -rn --exclude-dir={.git,node_modules,build,dist} \
+  -E "jdbc:postgresql://.*5432/[a-zA-Z_]+" .
+
+# Scan for usernames in connection strings
+grep -rn --exclude-dir={.git,node_modules,build,dist} \
+  -E "user.*=.*['\"][a-zA-Z0-9_]+['\"]" .
+
+# Scan for hardcoded paths
+grep -rn --exclude-dir={.git,node_modules,build,dist} \
+  -E "/Users/[a-zA-Z0-9]+/" .
+```
+
+---
+
 ## Collaboration Protocol
 
 ### ⚠️ CRITICAL COLLABORATION REQUIREMENTS

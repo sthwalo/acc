@@ -8,6 +8,14 @@
 echo "🚀 Starting FIN Development Environment..."
 echo "=========================================="
 
+# Load environment variables from .env file
+if [ -f .env ]; then
+    echo "📋 Loading environment variables from .env..."
+    export $(cat .env | grep -v '^#' | grep -v '^\s*$' | xargs)
+else
+    echo "⚠️  Warning: .env file not found!"
+fi
+
 # Function to handle cleanup on script exit
 cleanup() {
     echo ""
