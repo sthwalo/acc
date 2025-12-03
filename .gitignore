@@ -11,6 +11,10 @@
 .env.staging
 .env.*
 
+# Test environment files with credentials
+**/test.env
+app/src/test/resources/test.env
+
 # Secrets directory with real passwords and credentials
 secrets/
 secrets/db_password.txt
@@ -247,6 +251,10 @@ dev-tools/*.java
 dev-tools/*.class
 dev-tools/
 scripts/rules
+
+# Git history cleanup utilities (local use only)
+paths-to-remove.txt
+run-purge-and-verify.sh
 
 # Allow documentation in dev-tools
 !dev-tools/*.md
