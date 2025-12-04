@@ -49,6 +49,7 @@ public class BankStatementProcessingService {
             SpringCompanyService companyService,
             StandardBankTabularParser standardBankParser,
             AbsaBankParser absaBankParser,
+            FnbBankParser fnbBankParser,
             CreditTransactionParser creditParser,
             ServiceFeeParser serviceFeeParser) {
         this.textExtractor = textExtractor;
@@ -56,7 +57,7 @@ public class BankStatementProcessingService {
         this.fiscalPeriodRepository = fiscalPeriodRepository;
         this.validator = validator;
         this.companyService = companyService;
-        this.parsers = Arrays.asList(standardBankParser, absaBankParser, creditParser, serviceFeeParser);
+        this.parsers = Arrays.asList(standardBankParser, absaBankParser, fnbBankParser, creditParser, serviceFeeParser);
     }
 
     /**
@@ -281,10 +282,12 @@ public class BankStatementProcessingService {
             // Set service fee flag
             transaction.setServiceFee(parsed.hasServiceFee());
 
-            // Determine fiscal period based on transaction date
-            FiscalPeriod fiscalPeriod = findFiscalPeriodForDate(company.getId(), parsed.getDate());
-            if (fiscalPeriod != null) {
-                transaction.setFiscalPeriodId(fiscalPeriod.getId());
+            // Determine fiscal period based on transaction date (only if not already set)
+            if (transaction.getFiscalPeriodId() == null) {
+                FiscalPeriod fiscalPeriod = findFiscalPeriodForDate(company.getId(), parsed.getDate());
+                if (fiscalPeriod != null) {
+                    transaction.setFiscalPeriodId(fiscalPeriod.getId());
+                }
             }
 
             // Set amounts based on transaction type
@@ -377,12 +380,13 @@ public class BankStatementProcessingService {
                 List<BankTransaction> validTransactions = new ArrayList<>();
                 List<String> errors = new ArrayList<>();
                 for (BankTransaction transaction : transactions) {
+                    // Set fiscal period if provided BEFORE validation
+                    if (fiscalPeriodId != null) {
+                        transaction.setFiscalPeriodId(fiscalPeriodId);
+                    }
+
                     ValidationResult validationResult = validator.validate(transaction);
                     if (validationResult.isValid()) {
-                        // Set fiscal period if provided
-                        if (fiscalPeriodId != null) {
-                            transaction.setFiscalPeriodId(fiscalPeriodId);
-                        }
                         validTransactions.add(transactionRepository.save(transaction));
                     } else {
                         // Collect validation errors

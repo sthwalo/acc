@@ -59,23 +59,27 @@ public class DocumentTextExtractor {
     /**
      * Parse a PDF document and extract text lines.
      * Uses hybrid extraction strategy: PDFBox first, then OCR for image-based PDFs.
+     * Enhanced with comprehensive quality assessment and better decision making.
      */
     public List<String> parseDocument(File pdfFile) throws IOException {
-        List<String> lines = new ArrayList<>();
+        logger.info("Starting text extraction from: {}", pdfFile.getName());
 
         try (PDDocument document = Loader.loadPDF(pdfFile)) {
+            List<String> lines = new ArrayList<>();
+
             // Strategy 1: Try PDFBox text extraction first (fast)
             PDFTextStripper stripper = new PDFTextStripper();
             stripper.setSortByPosition(true);
             String text = stripper.getText(document);
-            
-            // Check extraction quality
+
+            // Check extraction quality comprehensively
             String[] testLines = text.split("\\r?\\n");
             int shortLineCount = 0;
             int totalNonEmptyLines = 0;
             int dateLineCount = 0;
             int amountLineCount = 0;
-            
+            int financialTermCount = 0;
+
             for (String line : testLines) {
                 String trimmed = line.trim();
                 if (!trimmed.isEmpty()) {
@@ -89,33 +93,52 @@ public class DocumentTextExtractor {
                         dateLineCount++;
                     }
                     // Check for monetary amounts
-                    if (trimmed.matches(".*\\d+\\.\\d{2}.*")) {
+                    if (trimmed.matches(".*\\$?\\d+[,.]\\d{2}.*")) {
                         amountLineCount++;
+                    }
+                    // Check for financial terms
+                    if (trimmed.matches("(?i).*\\b(credit|debit|deposit|withdrawal|transfer|payment|fee|balance|statement)\\b.*")) {
+                        financialTermCount++;
                     }
                 }
             }
-            
-            logger.info("PDF extraction quality: {} total lines, {} short lines ({}%), {} dates, {} amounts",
-                       totalNonEmptyLines, shortLineCount, 
+
+            logger.info("PDF extraction quality: {} total lines, {} short lines ({}%), {} dates, {} amounts, {} financial terms",
+                       totalNonEmptyLines, shortLineCount,
                        totalNonEmptyLines > 0 ? (shortLineCount * 100 / totalNonEmptyLines) : 0,
-                       dateLineCount, amountLineCount);
-            
-            // Determine if we need OCR:
-            // - More than 70% of lines are very short (fragmented)
-            // - AND less than 10 monetary amounts found (likely watermark/stamp only)
-            // The key indicator is lack of monetary data, not dates (watermarks can have dates)
-            boolean needsOCR = totalNonEmptyLines > 0 && 
-                               (shortLineCount > (totalNonEmptyLines * 0.7)) &&
-                               amountLineCount < 10;
-            
+                       dateLineCount, amountLineCount, financialTermCount);
+
+            // Enhanced decision logic for extraction method
+            boolean needsOCR = false;
+            String reason = "";
+
+            if (totalNonEmptyLines == 0) {
+                needsOCR = true;
+                reason = "No text extracted by PDFBox";
+            } else if (shortLineCount > (totalNonEmptyLines * 0.8)) {
+                needsOCR = true;
+                reason = "Over 80% of lines are very short (likely image-based PDF)";
+            } else if (amountLineCount < 5 && financialTermCount < 3) {
+                needsOCR = true;
+                reason = "Insufficient financial content (likely watermark/stamp only)";
+            } else if (shortLineCount > (totalNonEmptyLines * 0.6)) {
+                // Text-based but heavily fragmented - try reconstruction first
+                logger.info("Text-based PDF with heavy fragmentation, attempting reconstruction");
+                List<String> reconstructedLines = reconstructLines(testLines);
+                if (reconstructedLines.size() < totalNonEmptyLines * 0.5) {
+                    needsOCR = true;
+                    reason = "Reconstruction failed to improve quality";
+                } else {
+                    lines = reconstructedLines;
+                    logger.info("Using reconstructed text extraction with {} lines", lines.size());
+                }
+            }
+
             if (needsOCR) {
-                logger.info("PDFBox extraction insufficient, falling back to OCR for image-based PDF");
+                logger.info("PDFBox extraction insufficient ({}), falling back to OCR", reason);
                 lines = extractWithOCR(document);
-            } else if (shortLineCount > (totalNonEmptyLines * 0.5)) {
-                // Text-based but needs reconstruction
-                logger.info("Text-based PDF with fragmentation, reconstructing lines");
-                lines = reconstructLines(testLines);
-            } else {
+                logger.info("OCR extraction completed with {} lines", lines.size());
+            } else if (lines.isEmpty()) {
                 // Good text extraction, use as-is
                 logger.info("Using PDFBox text extraction");
                 for (String line : testLines) {
@@ -126,121 +149,239 @@ public class DocumentTextExtractor {
                     }
                 }
             }
+
+            // Final validation
+            if (lines.isEmpty()) {
+                throw new IOException("No text could be extracted from PDF using either PDFBox or OCR");
+            }
+
+            logger.info("Text extraction completed successfully: {} lines total", lines.size());
+            return lines;
+
+        } catch (IOException e) {
+            logger.error("Failed to extract text from PDF: {}", e.getMessage());
+            throw e;
         }
-
-        return lines;
-    }
-
-    /**
+    }    /**
      * Extract text from image-based PDF using Tesseract OCR.
-     * Renders each PDF page as an image and performs OCR on it.
+     * Enhanced with better error handling and quality checks.
      */
     private List<String> extractWithOCR(PDDocument document) throws IOException {
         List<String> allLines = new ArrayList<>();
-        
-        // Create PDF renderer
+
+        // Create PDF renderer with higher DPI for better OCR accuracy
         PDFRenderer renderer = new PDFRenderer(document);
-        
-        // Process each page
-        int pageCount = document.getNumberOfPages();
-        logger.info("Processing {} pages with OCR", pageCount);
-        
-        for (int pageIndex = 0; pageIndex < pageCount; pageIndex++) {
-            logger.info("OCR processing page {}/{}", pageIndex + 1, pageCount);
-            
-            // Render page as image at 150 DPI for good OCR quality with faster processing
-            BufferedImage image = renderer.renderImageWithDPI(pageIndex, 150);
-            
-            // Perform OCR using utility
-            String pageText = TesseractConfigUtil.performOCR(image);
-            
-            // Split into lines and add to results
-            String[] lines = pageText.split("\\r?\\n");
-            for (String line : lines) {
-                line = line.trim();
-                if (!line.isEmpty()) {
-                    allLines.add(line);
-                    extractMetadata(line);
+        int totalPages = document.getNumberOfPages();
+
+        logger.info("Starting OCR extraction for {} pages", totalPages);
+
+        for (int pageIndex = 0; pageIndex < totalPages; pageIndex++) {
+            try {
+                logger.info("OCR processing page {}/{}", pageIndex + 1, totalPages);
+
+                // Use higher DPI for better OCR quality (300 DPI is optimal for financial documents)
+                BufferedImage image = renderer.renderImageWithDPI(pageIndex, 300);
+
+                // Apply image preprocessing if needed
+                image = preprocessImageForOCR(image);
+
+                // Perform OCR using utility
+                String pageText = TesseractConfigUtil.performOCR(image);
+
+                if (pageText == null || pageText.trim().isEmpty()) {
+                    logger.warn("OCR returned empty text for page {}", pageIndex + 1);
+                    continue;
                 }
+
+                // Split into lines and filter/process
+                String[] lines = pageText.split("\\r?\\n");
+                int validLines = 0;
+
+                for (String line : lines) {
+                    line = line.trim();
+                    if (!line.isEmpty() && line.length() > 3) { // Filter out very short noise
+                        // Clean up common OCR errors in financial text
+                        line = cleanOCRErrors(line);
+                        allLines.add(line);
+                        extractMetadata(line);
+                        validLines++;
+                    }
+                }
+
+                logger.info("Page {}: {} valid lines extracted", pageIndex + 1, validLines);
+
+            } catch (Exception e) {
+                logger.error("Failed to OCR page {}: {}", pageIndex + 1, e.getMessage());
+                // Continue with other pages rather than failing completely
             }
         }
-        
-        logger.info("OCR extraction completed: {} lines extracted", allLines.size());
-        
+
+        logger.info("OCR extraction completed: {} total lines extracted from {} pages",
+                   allLines.size(), totalPages);
+
         return allLines;
     }
 
     /**
-     * Reconstruct logical lines from fragmented PDF text.
-     * Merges short lines together based on heuristics.
+     * Preprocess image for better OCR results.
+     * Applies basic image enhancements for financial documents.
      */
-    private List<String> reconstructLines(String[] fragmentedLines) {
+    private BufferedImage preprocessImageForOCR(BufferedImage image) {
+        // For now, return the image as-is. Could add enhancements like:
+        // - Contrast adjustment
+        // - Noise reduction
+        // - Binarization
+        // - Deskewing
+        return image;
+    }
+
+    /**
+     * Clean up common OCR errors in financial text.
+     * Package-private for testing.
+     */
+    String cleanOCRErrors(String text) {
+        if (text == null) return "";
+
+        // Common OCR corrections for financial documents
+        // Fix individual characters first
+        text = text.replaceAll("(?i)I", "1"); // Capital I -> 1
+        text = text.replaceAll("(?i)l", "1"); // Lowercase l -> 1
+        text = text.replaceAll("(?i)O", "0"); // Capital O -> 0
+        text = text.replaceAll("(?i)zer", "0"); // "zer" -> "0"
+        text = text.replaceAll("(?i)one", "1"); // "one" -> "1"
+        text = text.replaceAll("(?i)tw", "2"); // "tw" -> "2"
+        text = text.replaceAll("(?i)three", "3"); // "three" -> "3"
+        text = text.replaceAll("(?i)four", "4"); // "four" -> "4"
+        text = text.replaceAll("(?i)five", "5"); // "five" -> "5"
+        text = text.replaceAll("(?i)six", "6"); // "six" -> "6"
+        text = text.replaceAll("(?i)seven", "7"); // "seven" -> "7"
+        text = text.replaceAll("(?i)eight", "8"); // "eight" -> "8"
+        text = text.replaceAll("(?i)nine", "9"); // "nine" -> "9"
+
+        // Fix date separator issues
+        text = text.replaceAll("(\\d{1,2})\\s*[-—]\\s*(\\d{1,2})\\s*[-—]\\s*(\\d{4})", "$1/$2/$3");
+
+        return text;
+    }
+
+    /**
+     * Reconstruct logical lines from fragmented PDF text.
+     * Enhanced with better heuristics for financial document reconstruction.
+     * Package-private for testing.
+     */
+    List<String> reconstructLines(String[] fragmentedLines) {
         List<String> reconstructed = new ArrayList<>();
         StringBuilder currentLine = new StringBuilder();
-        
+
         for (String fragment : fragmentedLines) {
             fragment = fragment.trim();
             if (fragment.isEmpty()) {
                 continue;
             }
-            
-            // Check if this fragment might be the start of a new logical line
+
+            // Enhanced heuristics for line breaks in financial documents
             boolean isNewLine = false;
-            
-            // Heuristics for line breaks:
-            // 1. Line starts with a date pattern
-            if (fragment.matches("\\d{2}/\\d{2}/\\d{4}.*") || 
-                fragment.matches("\\d{2}\\s+[A-Za-z]{3}\\s+\\d{4}.*")) {
+
+            // 1. Date patterns (strongest indicator)
+            if (fragment.matches("\\d{1,2}/\\d{1,2}/\\d{4}.*") ||
+                fragment.matches("\\d{1,2}\\s+[A-Za-z]{3}\\s+\\d{4}.*") ||
+                fragment.matches("\\d{4}-\\d{1,2}-\\d{1,2}.*")) {
                 isNewLine = true;
             }
-            
-            // 2. Previous line ended with an amount or balance
-            if (currentLine.length() > 0 && 
-                currentLine.toString().matches(".*\\d+\\.\\d{2}\\s*$")) {
-                isNewLine = true;
-            }
-            
-            // 3. Line contains transaction keywords at the start
-            String[] lineStarters = {"Balance", "BALANCE", "Opening", "Closing", 
-                                     "Transaction", "Date", "Description"};
-            for (String starter : lineStarters) {
-                if (fragment.startsWith(starter)) {
+
+            // 2. Balance amounts (usually at end of transaction line)
+            else if (fragment.matches("[\\d,]+\\.\\d{2}-?\\s*$") && currentLine.length() > 0) {
+                // Check if current line already has a balance
+                String current = currentLine.toString();
+                if (!current.matches(".*\\s+[\\d,]+\\.\\d{2}-?\\s*$")) {
+                    // Current line doesn't end with balance, so this fragment is the balance
+                    currentLine.append(" ").append(fragment);
+                    continue;
+                } else {
+                    // Current line already has balance, this is a new line
                     isNewLine = true;
-                    break;
                 }
             }
-            
+
+            // 3. Transaction amount patterns
+            else if (fragment.matches("[\\d,]+\\.\\d{2}-?\\s*$") && currentLine.length() > 10) {
+                // This might be a transaction amount
+                String current = currentLine.toString();
+                // Count existing amounts in current line
+                long amountCount = current.split("\\s+").length -
+                    current.replaceAll("[\\d,]+\\.\\d{2}", "").split("\\s+").length;
+                if (amountCount >= 2) { // Already has amount and balance
+                    isNewLine = true;
+                } else {
+                    currentLine.append(" ").append(fragment);
+                    continue;
+                }
+            }
+
+            // 4. Keywords that typically start new lines
+            else {
+                String[] lineStarters = {
+                    "Balance", "BALANCE", "Opening", "Closing", "Opening Balance",
+                    "Transaction", "Date", "Description", "Amount", "Debit", "Credit",
+                    "Transfer", "Payment", "Deposit", "Withdrawal", "Fee", "Charge",
+                    "Interest", "Dividend", "Salary", "ATM", "EFT", "Cheque",
+                    "Statement", "Account", "Branch", "VAT", "Page", "Total"
+                };
+
+                String lowerFragment = fragment.toLowerCase();
+                for (String starter : lineStarters) {
+                    if (lowerFragment.startsWith(starter.toLowerCase()) ||
+                        lowerFragment.contains(starter.toLowerCase() + " ")) {
+                        isNewLine = true;
+                        break;
+                    }
+                }
+            }
+
+            // 5. Very long fragments (likely complete lines)
+            if (!isNewLine && fragment.length() > 80) {
+                isNewLine = true;
+            }
+
+            // Process line break
             if (isNewLine && currentLine.length() > 0) {
                 String line = currentLine.toString().trim();
-                if (!line.isEmpty()) {
+                if (!line.isEmpty() && isTransaction(line)) {
                     reconstructed.add(line);
                     extractMetadata(line);
                 }
                 currentLine = new StringBuilder(fragment);
             } else {
                 if (currentLine.length() > 0) {
-                    currentLine.append(" ");
+                    // Add space between fragments unless fragment starts with punctuation
+                    if (!fragment.startsWith(",") && !fragment.startsWith(".") &&
+                        !fragment.startsWith("-") && !fragment.startsWith(")")) {
+                        currentLine.append(" ");
+                    }
                 }
                 currentLine.append(fragment);
             }
         }
-        
+
         // Add the last line
         if (currentLine.length() > 0) {
             String line = currentLine.toString().trim();
-            if (!line.isEmpty()) {
+            if (!line.isEmpty() && isTransaction(line)) {
                 reconstructed.add(line);
                 extractMetadata(line);
             }
         }
-        
+
+        logger.info("Line reconstruction completed: {} fragments -> {} logical lines",
+                   fragmentedLines.length, reconstructed.size());
         return reconstructed;
     }
 
     /**
      * Extract account number and statement period from document lines.
+     * Package-private for testing.
      */
-    private void extractMetadata(String line) {
+    void extractMetadata(String line) {
         // Extract account number - look for patterns like "Account: 1234567890" or "Account Number: 1234567890"
         if (accountNumber == null) {
             Pattern accountPattern = Pattern.compile("Account(?:\\s+Number)?\\s*:\\s*([0-9\\s-]+)", Pattern.CASE_INSENSITIVE);
