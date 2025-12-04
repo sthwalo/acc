@@ -389,7 +389,7 @@ class TransactionApiService extends BaseApiService {
 
   async exportTransactionsToCsv(companyId: number, fiscalPeriodId: number): Promise<Blob> {
     try {
-      const response = await this.client.get(`/v1/import/companies/${companyId}/fiscal-periods/${fiscalPeriodId}/transactions/export/csv`, {
+      const response = await this.client.get(`/v1/export/companies/${companyId}/fiscal-periods/${fiscalPeriodId}/transactions/csv`, {
         responseType: 'blob',
       });
       return response.data;
@@ -400,7 +400,7 @@ class TransactionApiService extends BaseApiService {
 
   async exportTransactionsToPdf(companyId: number, fiscalPeriodId: number): Promise<Blob> {
     try {
-      const response = await this.client.get(`/v1/import/companies/${companyId}/fiscal-periods/${fiscalPeriodId}/transactions/export/pdf`, {
+      const response = await this.client.get(`/v1/export/companies/${companyId}/fiscal-periods/${fiscalPeriodId}/transactions/pdf`, {
         responseType: 'blob',
       });
       return response.data;
@@ -511,6 +511,7 @@ class UploadApiService extends BaseApiService {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
+        timeout: 120000, // 2 minutes for file processing
       });
 
       return response.data;

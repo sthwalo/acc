@@ -48,6 +48,7 @@ public class BankStatementProcessingService {
             BankTransactionValidator validator,
             SpringCompanyService companyService,
             StandardBankTabularParser standardBankParser,
+            AbsaBankParser absaBankParser,
             CreditTransactionParser creditParser,
             ServiceFeeParser serviceFeeParser) {
         this.textExtractor = textExtractor;
@@ -55,7 +56,7 @@ public class BankStatementProcessingService {
         this.fiscalPeriodRepository = fiscalPeriodRepository;
         this.validator = validator;
         this.companyService = companyService;
-        this.parsers = Arrays.asList(standardBankParser, creditParser, serviceFeeParser);
+        this.parsers = Arrays.asList(standardBankParser, absaBankParser, creditParser, serviceFeeParser);
     }
 
     /**

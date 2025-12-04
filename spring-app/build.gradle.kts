@@ -77,6 +77,9 @@ dependencies {
     implementation("org.bouncycastle:bcprov-jdk15on:1.70")
     implementation("org.bouncycastle:bcmail-jdk15on:1.70")
     
+    // OCR library for image-based PDFs (Tesseract via Tess4J)
+    implementation("net.sourceforge.tess4j:tess4j:5.9.0")  // Tesseract OCR wrapper for Java
+    
     // JNA for Libharu PDF library - for PDF generation (payslips, reports, invoices)
     implementation("net.java.dev.jna:jna:5.13.0")
     
@@ -100,10 +103,6 @@ dependencies {
 
     // Jakarta EE dependencies for servlet API (needed for Spring Security filters)
     implementation("jakarta.servlet:jakarta.servlet-api:6.0.0")
-
-    // Removed dependency on legacy app module - spring-app is now standalone
-    
-    // Removed SparkJava dependencies - migrated to Spring Boot REST controllers
     
 }
 

@@ -32,6 +32,8 @@ import fin.service.spring.SpringDataManagementService;
 import fin.service.spring.SpringInteractiveClassificationService;
 import fin.service.spring.SpringInvoicePdfService;
 import fin.util.SpringDebugger;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -312,13 +314,20 @@ public class SpringDataManagementController {
      * Export transactions to CSV
      */
     @PostMapping("/{companyId}/data-management/export-csv")
-    public ResponseEntity<String> exportTransactionsToCsv(@PathVariable Long companyId, @RequestParam Long fiscalPeriodId) {
+    public ResponseEntity<byte[]> exportTransactionsToCsv(@PathVariable Long companyId, @RequestParam Long fiscalPeriodId) {
         debugger.logMethodEntry("SpringDataManagementController", "exportTransactionsToCsv", companyId, fiscalPeriodId);
 
         try {
-            csvExportService.exportTransactionsToCsvBytes(companyId, fiscalPeriodId);
+            byte[] csvBytes = csvExportService.exportTransactionsToCsvBytes(companyId, fiscalPeriodId);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.TEXT_PLAIN);
+            headers.setContentDispositionFormData("attachment", "transactions_" + companyId + "_" + fiscalPeriodId + ".csv");
+
             debugger.logMethodExit("SpringDataManagementController", "exportTransactionsToCsv", "CSV exported successfully");
-            return ResponseEntity.ok("CSV exported successfully");
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(csvBytes);
         } catch (IllegalArgumentException e) {
             debugger.logValidationError("SpringDataManagementController", "exportTransactionsToCsv", "fiscalPeriodId", fiscalPeriodId.toString(), e.getMessage());
             return ResponseEntity.badRequest().build();

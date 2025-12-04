@@ -1,22 +1,25 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Receipt, ArrowUpCircle, ArrowDownCircle, Search, Filter, Download, FileText } from 'lucide-react';
+import { Receipt, ArrowUpCircle, ArrowDownCircle, Search, Filter, Download, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
 import { serviceRegistry } from '../services/ServiceRegistry';
 import { ApiService } from '../services/ApiService';
 import ApiMessageBanner from './shared/ApiMessageBanner';
-import type { Transaction, ApiTransaction, Company, FiscalPeriod } from '../types/api';
+import type { ApiTransaction, Company, FiscalPeriod } from '../types/api';
 
 interface TransactionsViewProps {
   selectedCompany: Company;
   selectedFiscalPeriod?: FiscalPeriod;
 }
 
+const ITEMS_PER_PAGE = 50;
+
 export default function TransactionsView({ selectedCompany, selectedFiscalPeriod }: TransactionsViewProps) {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [transactions, setTransactions] = useState<ApiTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'debit' | 'credit'>('all');
   const [apiMessage, setApiMessage] = useState<string>('');
+  const [currentPage, setCurrentPage] = useState(1);
 
   const loadTransactions = useCallback(async () => {
     if (!selectedFiscalPeriod) return;
@@ -25,27 +28,12 @@ export default function TransactionsView({ selectedCompany, selectedFiscalPeriod
       setLoading(true);
       const apiService = serviceRegistry.get<ApiService>('apiService');
       const response: { data: ApiTransaction[], count: number, company_id: number, timestamp: number, note: string } = await apiService.getTransactions(Number(selectedCompany.id), Number(selectedFiscalPeriod.id));
-      
-      // Map API response to expected Transaction format
-      const apiTransactions = response.data as ApiTransaction[];
-      const mappedTransactions: Transaction[] = apiTransactions.map((apiTransaction) => ({
-        id: apiTransaction.id,
-        company_id: apiTransaction.companyId,
-        fiscal_period_id: apiTransaction.fiscalPeriodId,
-        date: apiTransaction.transactionDate,
-        description: apiTransaction.details || '',
-        amount: apiTransaction.debitAmount > 0 ? apiTransaction.debitAmount : apiTransaction.creditAmount,
-        type: apiTransaction.debitAmount > 0 ? 'debit' : 'credit',
-        category: apiTransaction.category || '',
-        reference: apiTransaction.reference || '',
-        created_at: apiTransaction.createdAt
-      }));
-      
-      setTransactions(mappedTransactions);
+
+      setTransactions(response.data);
       setApiMessage(response.note || '');
       setError(null);
+      setCurrentPage(1); // Reset to first page when loading new data
     } catch (err) {
-      // Prefer structured API/axios error message where possible
       let message = 'Failed to load transactions';
       try {
         const anyErr: unknown = err;
@@ -86,23 +74,36 @@ export default function TransactionsView({ selectedCompany, selectedFiscalPeriod
     }).format(Math.abs(amount));
   };
 
-  const filteredTransactions = transactions.filter(transaction => {
-    const matchesSearch = transaction.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         transaction.reference.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         transaction.category.toLowerCase().includes(searchTerm.toLowerCase());
+  const formatDateTime = (dateTimeString: string) => {
+    return new Date(dateTimeString).toLocaleString('en-ZA');
+  };
 
-    const matchesType = filterType === 'all' || transaction.type === filterType;
+  const filteredTransactions = transactions.filter(transaction => {
+    const matchesSearch = (transaction.description || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (transaction.reference || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         transaction.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (transaction.accountNumber || '').toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesType = filterType === 'all' ||
+                       (filterType === 'debit' && transaction.debitAmount > 0) ||
+                       (filterType === 'credit' && transaction.creditAmount > 0);
 
     return matchesSearch && matchesType;
   });
 
+  // Pagination logic
+  const totalPages = Math.ceil(filteredTransactions.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const paginatedTransactions = filteredTransactions.slice(startIndex, endIndex);
+
   const totalDebits = filteredTransactions
-    .filter(t => t.type === 'debit')
-    .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+    .filter(t => t.debitAmount > 0)
+    .reduce((sum, t) => sum + t.debitAmount, 0);
 
   const totalCredits = filteredTransactions
-    .filter(t => t.type === 'credit')
-    .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+    .filter(t => t.creditAmount > 0)
+    .reduce((sum, t) => sum + t.creditAmount, 0);
 
   const handleExportCsv = async () => {
     if (!selectedFiscalPeriod) return;
@@ -293,33 +294,62 @@ export default function TransactionsView({ selectedCompany, selectedFiscalPeriod
         </div>
       </div>
 
-      <div className="transactions-list">
-        {filteredTransactions.map((transaction) => (
-          <div key={transaction.id} className={`transaction-item ${transaction.type}`}>
-            <div className="transaction-icon">
-              {transaction.type === 'debit' ? (
-                <ArrowUpCircle size={20} className="debit-icon" />
-              ) : (
-                <ArrowDownCircle size={20} className="credit-icon" />
-              )}
-            </div>
+      <div className="transactions-table-container">
+        <table className="transactions-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Date</th>
+              <th>Details</th>
+              <th>Debit</th>
+              <th>Credit</th>
+              <th>Balance</th>
+              <th>Classification</th>
+              <th>Created At</th>
+            </tr>
+          </thead>
+          <tbody>
+            {paginatedTransactions.map((transaction) => (
+              <tr key={transaction.id}>
+                <td>{transaction.id}</td>
+                <td>{formatDate(transaction.transactionDate)}</td>
+                <td>{transaction.description || ''}</td>
+                <td className="debit-cell">{transaction.debitAmount > 0 ? formatCurrency(transaction.debitAmount) : ''}</td>
+                <td className="credit-cell">{transaction.creditAmount > 0 ? formatCurrency(transaction.creditAmount) : ''}</td>
+                <td>{transaction.balance ? formatCurrency(transaction.balance) : ''}</td>
+                <td>{transaction.category || ''}</td>
+                <td>{formatDateTime(transaction.createdAt)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
 
-            <div className="transaction-details">
-              <div className="transaction-header">
-                <h4>{transaction.description}</h4>
-                <span className="transaction-amount">
-                  {transaction.type === 'debit' ? '-' : '+'}{formatCurrency(transaction.amount)}
-                </span>
-              </div>
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="pagination-controls">
+            <button
+              className="pagination-btn"
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft size={16} />
+              Previous
+            </button>
 
-              <div className="transaction-meta">
-                <span className="date">{formatDate(transaction.date)}</span>
-                <span className="category">{transaction.category}</span>
-                <span className="reference">{transaction.reference}</span>
-              </div>
-            </div>
+            <span className="pagination-info">
+              Page {currentPage} of {totalPages} ({filteredTransactions.length} transactions)
+            </span>
+
+            <button
+              className="pagination-btn"
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+            >
+              Next
+              <ChevronRight size={16} />
+            </button>
           </div>
-        ))}
+        )}
       </div>
 
       {filteredTransactions.length === 0 && (

@@ -27,9 +27,7 @@
 package fin.service.spring;
 
 import fin.model.BankTransaction;
-import fin.model.FiscalPeriod;
 import fin.repository.BankTransactionRepository;
-import fin.repository.FiscalPeriodRepository;
 import fin.util.SpringDebugger;
 import org.springframework.stereotype.Service;
 
@@ -47,14 +45,11 @@ import java.util.Locale;
 public class SpringCsvExportService {
 
     private final BankTransactionRepository bankTransactionRepository;
-    private final FiscalPeriodRepository fiscalPeriodRepository;
     private final SpringDebugger debugger;
 
     public SpringCsvExportService(BankTransactionRepository bankTransactionRepository,
-                                FiscalPeriodRepository fiscalPeriodRepository,
                                 SpringDebugger debugger) {
         this.bankTransactionRepository = bankTransactionRepository;
-        this.fiscalPeriodRepository = fiscalPeriodRepository;
         this.debugger = debugger;
     }
 
@@ -68,9 +63,6 @@ public class SpringCsvExportService {
     public byte[] exportTransactionsToCsvBytes(Long companyId, Long fiscalPeriodId) throws IOException {
         debugger.logMethodEntry("SpringCsvExportService", "exportTransactionsToCsvBytes", companyId, fiscalPeriodId);
 
-        FiscalPeriod fiscalPeriod = fiscalPeriodRepository.findById(fiscalPeriodId)
-            .orElseThrow(() -> new IllegalArgumentException("Fiscal period not found: " + fiscalPeriodId));
-
         List<BankTransaction> transactions = bankTransactionRepository.findByCompanyIdAndFiscalPeriodId(companyId, fiscalPeriodId);
 
         if (transactions.isEmpty()) {
@@ -81,7 +73,7 @@ public class SpringCsvExportService {
         StringBuilder csvContent = new StringBuilder();
 
         // Write header
-        csvContent.append("Date,Details,Debits,Credits,Balance,ServiceFee,AccountNumber,StatementPeriod,source_file,FiscalPeriod\n");
+        csvContent.append("ID,Date,Details,Debit,Credit,Balance,Classification,Created At\n");
 
         // Format for currency values (no thousands separator, 2 decimal places)
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM");
@@ -90,35 +82,29 @@ public class SpringCsvExportService {
         for (BankTransaction transaction : transactions) {
             StringBuilder line = new StringBuilder();
 
+            // ID
+            line.append(transaction.getId()).append(",");
+
             // Date (DD/MM format)
             line.append(transaction.getTransactionDate().format(dateFormatter)).append(",");
 
             // Details (escape quotes and commas)
             line.append(escapeField(transaction.getDetails())).append(",");
 
-            // Debits
+            // Debit
             line.append(formatAmount(transaction.getDebitAmount())).append(",");
 
-            // Credits
+            // Credit
             line.append(formatAmount(transaction.getCreditAmount())).append(",");
 
             // Balance
             line.append(formatAmount(transaction.getBalance())).append(",");
 
-            // Service Fee
-            line.append(transaction.isServiceFee() ? "Y" : "").append(",");
+            // Classification (Category)
+            line.append(escapeField(transaction.getCategory())).append(",");
 
-            // Account Number
-            line.append(escapeField(transaction.getAccountNumber())).append(",");
-
-            // Statement Period
-            line.append(escapeField(transaction.getStatementPeriod())).append(",");
-
-            // Source File
-            line.append(escapeField(transaction.getSourceFile())).append(",");
-
-            // Fiscal Period
-            line.append(fiscalPeriod.getPeriodName());
+            // Created At
+            line.append(transaction.getCreatedAt() != null ? transaction.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) : "");
 
             csvContent.append(line).append("\n");
         }

@@ -22,7 +22,7 @@ plugins {
     // Apply the java-library plugin to create a library that can be depended on by other modules
     `java-library`
     // Spring Boot plugin
-    id("org.springframework.boot") version "3.2.0"
+    id("org.springframework.boot") version "3.5.8"
     id("io.spring.dependency-management") version "1.1.4"
     // Code quality plugins
     checkstyle

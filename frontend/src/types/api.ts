@@ -80,6 +80,7 @@ export interface Transaction {
   type: 'debit' | 'credit';
   category: string;
   reference: string;
+  balance: number;
   created_at: string;
 }
 
@@ -105,7 +106,7 @@ export interface ApiTransaction {
   updatedAt: string;
   updatedBy: string | null;
   accountName: string | null;
-  details: string;
+  description: string;
   statementPeriod: string | null;
 }
 
