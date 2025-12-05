@@ -75,4 +75,9 @@ public interface JournalEntryLineRepository extends JpaRepository<JournalEntryLi
      * Delete journal entry lines by journal entry ID
      */
     void deleteByJournalEntryId(Long journalEntryId);
+
+    /**
+     * Find journal entry lines by source transaction ID
+     */
+    List<JournalEntryLine> findBySourceTransactionId(Long sourceTransactionId);
 }

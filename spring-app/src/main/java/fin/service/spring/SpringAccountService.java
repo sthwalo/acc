@@ -55,7 +55,7 @@ public class SpringAccountService {
      */
     @Transactional
     public Account createAccount(String accountCode, String accountName, Long companyId,
-                               Integer categoryId, String description, Long parentAccountId) {
+                               Long categoryId, String description, Long parentAccountId) {
         // Validate inputs
         if (accountCode == null || accountCode.trim().isEmpty()) {
             throw new IllegalArgumentException("Account code is required");

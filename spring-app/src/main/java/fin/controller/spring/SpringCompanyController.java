@@ -29,11 +29,15 @@ package fin.controller.spring;
 import fin.controller.spring.ApiResponse;
 import fin.controller.spring.BusinessException;
 import fin.controller.spring.ErrorCode;
+import fin.model.Account;
 import fin.model.BankTransaction;
 import fin.model.Company;
 import fin.model.FiscalPeriod;
 import fin.model.FiscalPeriodSummary;
+import fin.model.JournalEntryLine;
 import fin.model.User;
+import fin.repository.AccountRepository;
+import fin.repository.JournalEntryLineRepository;
 import fin.service.spring.BankStatementProcessingService;
 import fin.service.spring.SpringCompanyService;
 import org.springframework.http.ResponseEntity;
@@ -43,6 +47,7 @@ import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Spring REST Controller for company management operations.
@@ -53,11 +58,17 @@ public class SpringCompanyController {
 
     private final SpringCompanyService companyService;
     private final BankStatementProcessingService bankStatementService;
+    private final JournalEntryLineRepository journalEntryLineRepository;
+    private final AccountRepository accountRepository;
 
     public SpringCompanyController(SpringCompanyService companyService,
-                                 BankStatementProcessingService bankStatementService) {
+                                 BankStatementProcessingService bankStatementService,
+                                 JournalEntryLineRepository journalEntryLineRepository,
+                                 AccountRepository accountRepository) {
         this.companyService = companyService;
         this.bankStatementService = bankStatementService;
+        this.journalEntryLineRepository = journalEntryLineRepository;
+        this.accountRepository = accountRepository;
     }
 
     /**
@@ -455,6 +466,9 @@ public class SpringCompanyController {
                     .filter(t -> t.getFiscalPeriodId() != null && t.getFiscalPeriodId().equals(fiscalPeriodId))
                     .toList();
 
+            // Enrich transactions with classification data from journal entries
+            enrichTransactionsWithClassification(transactions, companyId);
+
             if (transactions.isEmpty()) {
                 Map<String, Object> metadata = new HashMap<>();
                 metadata.put("companyId", companyId);
@@ -476,6 +490,40 @@ public class SpringCompanyController {
             return ResponseEntity.badRequest().body(
                 ApiResponse.error("Failed to retrieve transactions: " + e.getMessage(), ErrorCode.INTERNAL_ERROR.getCode())
             );
+        }
+    }
+
+    /**
+     * Enrich transactions with classification data from journal entries.
+     * Populates the transient debit/credit account fields by querying journal_entry_lines.
+     */
+    private void enrichTransactionsWithClassification(List<BankTransaction> transactions, Long companyId) {
+        for (BankTransaction transaction : transactions) {
+            List<JournalEntryLine> journalLines = journalEntryLineRepository.findBySourceTransactionId(transaction.getId());
+            
+            if (!journalLines.isEmpty()) {
+                // For each transaction, we have 2 journal lines (debit and credit)
+                // Find the debit line (debit_amount > 0) and credit line (credit_amount > 0)
+                for (JournalEntryLine line : journalLines) {
+                    Optional<Account> accountOpt = accountRepository.findById(line.getAccountId());
+                    
+                    if (accountOpt.isPresent()) {
+                        Account account = accountOpt.get();
+                        
+                        if (line.getDebitAmount() != null && line.getDebitAmount().compareTo(java.math.BigDecimal.ZERO) > 0) {
+                            // This is a debit line
+                            transaction.setDebitAccountId(account.getId());
+                            transaction.setDebitAccountCode(account.getAccountCode());
+                            transaction.setDebitAccountName(account.getAccountName());
+                        } else if (line.getCreditAmount() != null && line.getCreditAmount().compareTo(java.math.BigDecimal.ZERO) > 0) {
+                            // This is a credit line
+                            transaction.setCreditAccountId(account.getId());
+                            transaction.setCreditAccountCode(account.getAccountCode());
+                            transaction.setCreditAccountName(account.getAccountName());
+                        }
+                    }
+                }
+            }
         }
     }
 

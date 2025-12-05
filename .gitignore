@@ -341,3 +341,4 @@ scripts/monitor_logs.sh
 # Incident reports and deployment docs
 docs/INCIDENT_REPORT_*.md
 docs/MIGRATION_DEPLOYMENT_PROCESS.md
+spring-app/docs/development/troubleshooting/To address .md

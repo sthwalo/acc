@@ -150,12 +150,14 @@ tasks.register<JavaExec>("analyzeColumns") {
     mainClass = "fin.util.PdfColumnAnalyzer"
     
     // Get PDF path and bank name from command line properties
-    val pdfPath = project.findProperty("pdfPath") as String? 
-        ?: throw GradleException("Please specify -PpdfPath=<path-to-pdf>")
-    val bankName = project.findProperty("bankName") as String? 
-        ?: throw GradleException("Please specify -PbankName=<bank-name>")
-    
-    args = listOf(pdfPath, bankName)
+    doFirst {
+        val pdfPath = project.findProperty("pdfPath") as String? 
+            ?: throw GradleException("Please specify -PpdfPath=<path-to-pdf>")
+        val bankName = project.findProperty("bankName") as String? 
+            ?: throw GradleException("Please specify -PbankName=<bank-name>")
+        
+        args = listOf(pdfPath, bankName)
+    }
 }
 
 // Task to extract OCR text with coordinates
@@ -168,11 +170,13 @@ tasks.register<JavaExec>("extractOcrCoordinates") {
     // Set JNA library path for Tesseract on macOS
     systemProperty("jna.library.path", "/opt/homebrew/lib")
     
-    val pdfPath = project.findProperty("pdfPath") as String? 
-        ?: throw GradleException("Please specify -PpdfPath=<path-to-pdf>")
-    val pageNum = project.findProperty("pageNum") as String? ?: "0"
-    
-    args = listOf(pdfPath, pageNum)
+    doFirst {
+        val pdfPath = project.findProperty("pdfPath") as String? 
+            ?: throw GradleException("Please specify -PpdfPath=<path-to-pdf>")
+        val pageNum = project.findProperty("pageNum") as String? ?: "0"
+        
+        args = listOf(pdfPath, pageNum)
+    }
 }
 
 tasks.register<JavaExec>("testAbsaParser") {
@@ -181,10 +185,12 @@ tasks.register<JavaExec>("testAbsaParser") {
     classpath = sourceSets["main"].runtimeClasspath
     mainClass = "fin.util.TestAbsaParser"
     
-    val textFile = project.findProperty("textFile") as String? 
-        ?: throw GradleException("Please specify -PtextFile=<path-to-text-file>")
-    
-    args = listOf(textFile)
+    doFirst {
+        val textFile = project.findProperty("textFile") as String? 
+            ?: throw GradleException("Please specify -PtextFile=<path-to-text-file>")
+        
+        args = listOf(textFile)
+    }
 }
 
 tasks.register<JavaExec>("testFnbParser") {
@@ -193,10 +199,12 @@ tasks.register<JavaExec>("testFnbParser") {
     classpath = sourceSets["main"].runtimeClasspath
     mainClass = "fin.util.TestFnbParser"
     
-    val textFile = project.findProperty("textFile") as String? 
-        ?: throw GradleException("Please specify -PtextFile=<path-to-text-file>")
-    
-    args = listOf(textFile)
+    doFirst {
+        val textFile = project.findProperty("textFile") as String? 
+            ?: throw GradleException("Please specify -PtextFile=<path-to-text-file>")
+        
+        args = listOf(textFile)
+    }
 }
 
 

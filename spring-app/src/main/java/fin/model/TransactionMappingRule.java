@@ -67,7 +67,7 @@ public class TransactionMappingRule {
     private String matchValue;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "account_id", nullable = false)
+    @JoinColumn(name = "account_id")
     private Account account;
 
     @Column(name = "is_active", nullable = false)

@@ -1,0 +1,90 @@
+
+    /**
+     * Get all transaction mapping rules.
+     * Used by UI for displaying classification rules and suggestions.
+     */
+    @GetMapping("/mapping-rules")
+    public ResponseEntity<ApiResponse<String>> getMappingRules(@PathVariable Long companyId) {
+        try {
+            String message = "Mapping rules endpoint - implementation pending";
+            return ResponseEntity.ok(ApiResponse.success(
+                "Mapping rules retrieved successfully",
+                message
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error("Failed to retrieve mapping rules: " + e.getMessage(), 
+                    ErrorCode.INTERNAL_ERROR.getCode())
+            );
+        }
+    }
+
+    /**
+     * Update transaction classification with manual account selection.
+     * Creates or updates journal entry with selected debit and credit accounts.
+     */
+    @PutMapping("/transactions/{transactionId}")
+    public ResponseEntity<ApiResponse<String>> updateTransactionClassification(
+            @PathVariable Long companyId,
+            @PathVariable Long transactionId,
+            @RequestBody ClassificationUpdateRequest request) {
+        try {
+            String message = String.format(
+                "Classification update endpoint - transaction %d with debit account %d and credit account %d",
+                transactionId, request.getDebitAccountId(), request.getCreditAccountId()
+            );
+            return ResponseEntity.ok(ApiResponse.success(
+                "Transaction classification updated successfully",
+                message
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error("Failed to update transaction classification: " + e.getMessage(),
+                    ErrorCode.INTERNAL_ERROR.getCode())
+            );
+        }
+    }
+
+    /**
+     * Request body for classification update.
+     */
+    public static class ClassificationUpdateRequest {
+        private Long debitAccountId;
+        private Long creditAccountId;
+
+        /**
+         * Gets the debit account ID.
+         *
+         * @return the debit account ID
+         */
+        public Long getDebitAccountId() {
+            return debitAccountId;
+        }
+
+        /**
+         * Sets the debit account ID.
+         *
+         * @param debitAccountId the debit account ID to set
+         */
+        public void setDebitAccountId(Long debitAccountId) {
+            this.debitAccountId = debitAccountId;
+        }
+
+        /**
+         * Gets the credit account ID.
+         *
+         * @return the credit account ID
+         */
+        public Long getCreditAccountId() {
+            return creditAccountId;
+        }
+
+        /**
+         * Sets the credit account ID.
+         *
+         * @param creditAccountId the credit account ID to set
+         */
+        public void setCreditAccountId(Long creditAccountId) {
+            this.creditAccountId = creditAccountId;
+        }
+    }

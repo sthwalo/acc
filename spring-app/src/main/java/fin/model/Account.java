@@ -43,17 +43,17 @@ public class Account {
     @Column(name = "id")
     private Long id;
 
-    @Column(name = "account_code", nullable = false, length = 50)
+    @Column(name = "code", nullable = false, length = 50)
     private String accountCode;
 
-    @Column(name = "account_name", nullable = false, length = 255)
+    @Column(name = "name", nullable = false, length = 255)
     private String accountName;
 
     @Column(name = "description")
     private String description;
 
-    @Column(name = "category_id", nullable = false)
-    private Integer categoryId;
+    @Column(name = "type_id")
+    private Long categoryId;
 
     @Column(name = "parent_account_id")
     private Long parentAccountId;
@@ -116,11 +116,11 @@ public class Account {
         this.description = description;
     }
 
-    public Integer getCategoryId() {
+    public Long getCategoryId() {
         return categoryId;
     }
 
-    public void setCategoryId(Integer categoryId) {
+    public void setCategoryId(Long categoryId) {
         this.categoryId = categoryId;
     }
 

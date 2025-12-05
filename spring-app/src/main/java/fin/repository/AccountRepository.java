@@ -49,17 +49,19 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
     /**
      * Find accounts by company ID ordered by account code
      */
-    List<Account> findByCompanyIdOrderByAccountCodeAsc(Long companyId);
+    @Query("SELECT a FROM Account a WHERE a.companyId = :companyId ORDER BY a.accountCode ASC")
+    List<Account> findByCompanyIdOrderByAccountCodeAsc(@Param("companyId") Long companyId);
 
     /**
      * Find account by company ID and account code
      */
-    Optional<Account> findByCompanyIdAndAccountCode(Long companyId, String accountCode);
+    @Query("SELECT a FROM Account a WHERE a.companyId = :companyId AND a.accountCode = :accountCode")
+    Optional<Account> findByCompanyIdAndAccountCode(@Param("companyId") Long companyId, @Param("accountCode") String accountCode);
 
     /**
      * Find accounts by company ID and category ID
      */
-    List<Account> findByCompanyIdAndCategoryId(Long companyId, Integer categoryId);
+    List<Account> findByCompanyIdAndCategoryId(Long companyId, Long categoryId);
 
     /**
      * Find active accounts by company ID
@@ -119,7 +121,8 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
     /**
      * Check if account code exists for company
      */
-    boolean existsByCompanyIdAndAccountCode(Long companyId, String accountCode);
+    @Query("SELECT CASE WHEN COUNT(a) > 0 THEN true ELSE false END FROM Account a WHERE a.companyId = :companyId AND a.accountCode = :accountCode")
+    boolean existsByCompanyIdAndAccountCode(@Param("companyId") Long companyId, @Param("accountCode") String accountCode);
 
     /**
      * Find accounts by parent account ID
@@ -134,7 +137,8 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
     /**
      * Find accounts by company ID and account code starting with prefix
      */
-    List<Account> findByCompanyIdAndAccountCodeStartingWith(Long companyId, String accountCodePrefix);
+    @Query("SELECT a FROM Account a WHERE a.companyId = :companyId AND a.accountCode LIKE CONCAT(:accountCodePrefix, '%')")
+    List<Account> findByCompanyIdAndAccountCodeStartingWith(@Param("companyId") Long companyId, @Param("accountCodePrefix") String accountCodePrefix);
 
     /**
      * Delete accounts by company ID

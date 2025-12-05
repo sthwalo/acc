@@ -82,6 +82,13 @@ export interface Transaction {
   reference: string;
   balance: number;
   created_at: string;
+  // Double-entry classification fields
+  debit_account_id?: number | null;
+  credit_account_id?: number | null;
+  debit_account_name?: string | null;
+  credit_account_name?: string | null;
+  debit_account_code?: string | null;
+  credit_account_code?: string | null;
 }
 
 export interface ApiTransaction {
@@ -108,6 +115,13 @@ export interface ApiTransaction {
   accountName: string | null;
   description: string;
   statementPeriod: string | null;
+  // Double-entry classification fields (from journal_entry_lines)
+  debitAccountId: number | null;
+  creditAccountId: number | null;
+  debitAccountCode: string | null;
+  creditAccountCode: string | null;
+  debitAccountName: string | null;
+  creditAccountName: string | null;
 }
 
 export interface ApiResponse<T> {
@@ -172,6 +186,21 @@ export interface Plan {
 export interface LoginRequest {
   email: string;
   password: string;
+}
+
+export interface Account {
+  id: number;
+  code: string;
+  name: string;
+  category: string;
+  type: string;
+  isActive: boolean;
+  companyId?: number;
+  categoryId?: number;
+  description?: string;
+  parentAccountId?: number | null;
+  accountCode?: string;
+  accountName?: string;
 }
 
 export interface RegisterRequest {

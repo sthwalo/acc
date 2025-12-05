@@ -33,6 +33,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -89,6 +90,20 @@ public class BankTransaction {
     private LocalDateTime classificationDate;
     @Column(name = "classified_by")
     private String classifiedBy;
+    
+    // Transient fields for double-entry accounting classification (from journal_entry_lines)
+    @Transient
+    private Long debitAccountId;
+    @Transient
+    private Long creditAccountId;
+    @Transient
+    private String debitAccountCode;
+    @Transient
+    private String creditAccountCode;
+    @Transient
+    private String debitAccountName;
+    @Transient
+    private String creditAccountName;
     
     // Constructors, getters, and setters
     public BankTransaction() {
@@ -634,5 +649,119 @@ public class BankTransaction {
 
     public void setClassifiedBy(String classifiedBy) {
         this.classifiedBy = classifiedBy;
+    }
+
+    /**
+     * Gets the debit account ID from the associated journal entry line.
+     * This field is populated from journal_entry_lines table for double-entry accounting.
+     *
+     * @return the debit account ID, or null if no journal entry exists
+     */
+    public Long getDebitAccountId() {
+        return debitAccountId;
+    }
+
+    /**
+     * Sets the debit account ID for double-entry classification.
+     *
+     * @param debitAccountId the debit account ID to set
+     */
+    public void setDebitAccountId(Long debitAccountId) {
+        this.debitAccountId = debitAccountId;
+    }
+
+    /**
+     * Gets the credit account ID from the associated journal entry line.
+     * This field is populated from journal_entry_lines table for double-entry accounting.
+     *
+     * @return the credit account ID, or null if no journal entry exists
+     */
+    public Long getCreditAccountId() {
+        return creditAccountId;
+    }
+
+    /**
+     * Sets the credit account ID for double-entry classification.
+     *
+     * @param creditAccountId the credit account ID to set
+     */
+    public void setCreditAccountId(Long creditAccountId) {
+        this.creditAccountId = creditAccountId;
+    }
+
+    /**
+     * Gets the debit account code (e.g., "1000") from the associated journal entry.
+     * This field is populated by joining with the accounts table.
+     *
+     * @return the debit account code, or null if no journal entry exists
+     */
+    public String getDebitAccountCode() {
+        return debitAccountCode;
+    }
+
+    /**
+     * Sets the debit account code for display purposes.
+     *
+     * @param debitAccountCode the debit account code to set
+     */
+    public void setDebitAccountCode(String debitAccountCode) {
+        this.debitAccountCode = debitAccountCode;
+    }
+
+    /**
+     * Gets the credit account code (e.g., "4100") from the associated journal entry.
+     * This field is populated by joining with the accounts table.
+     *
+     * @return the credit account code, or null if no journal entry exists
+     */
+    public String getCreditAccountCode() {
+        return creditAccountCode;
+    }
+
+    /**
+     * Sets the credit account code for display purposes.
+     *
+     * @param creditAccountCode the credit account code to set
+     */
+    public void setCreditAccountCode(String creditAccountCode) {
+        this.creditAccountCode = creditAccountCode;
+    }
+
+    /**
+     * Gets the debit account name (e.g., "Cash at Bank") from the associated journal entry.
+     * This field is populated by joining with the accounts table.
+     *
+     * @return the debit account name, or null if no journal entry exists
+     */
+    public String getDebitAccountName() {
+        return debitAccountName;
+    }
+
+    /**
+     * Sets the debit account name for display purposes.
+     *
+     * @param debitAccountName the debit account name to set
+     */
+    public void setDebitAccountName(String debitAccountName) {
+        this.debitAccountName = debitAccountName;
+    }
+
+    /**
+     * Gets the credit account name (e.g., "Sales Revenue") from the associated journal entry.
+     * This field is populated by joining with the accounts table.
+     *
+     * @return the credit account name, or null if no journal entry exists
+     */
+    public String getCreditAccountName() {
+        return creditAccountName;
+    }
+
+    /**
+     * Sets the credit account name for display purposes.
+     *
+     * @param creditAccountName the credit account name to set
+     */
+    public void setCreditAccountName(String creditAccountName) {
+        this.creditAccountName = creditAccountName;
     }
 }

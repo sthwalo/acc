@@ -293,6 +293,13 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
         reference: apiTransaction.reference || '',
         balance: apiTransaction.balance,
         created_at: apiTransaction.createdAt,
+        // Map double-entry classification fields from API response
+        debit_account_id: apiTransaction.debitAccountId,
+        credit_account_id: apiTransaction.creditAccountId,
+        debit_account_name: apiTransaction.debitAccountName,
+        credit_account_name: apiTransaction.creditAccountName,
+        debit_account_code: apiTransaction.debitAccountCode,
+        credit_account_code: apiTransaction.creditAccountCode,
       }));
       setTransactions(mappedTransactions.map(t => ({ ...t, isEditing: false })));
       setCurrentPage(1); // Reset to first page when loading new data
@@ -627,15 +634,14 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
                   <th>Description</th>
                   <th>Amount</th>
                   <th>Type</th>
-                  <th>Category</th>
-                  <th>Reference</th>
+                  <th>Debit Account</th>
+                  <th>Credit Account</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {(() => {
                   // Pagination logic
-                  const totalPages = Math.ceil(transactions.length / ITEMS_PER_PAGE);
                   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
                   const endIndex = startIndex + ITEMS_PER_PAGE;
                   const paginatedTransactions = transactions.slice(startIndex, endIndex);
@@ -706,28 +712,50 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
                       {transaction.isEditing ? (
                         <input
                           type="text"
-                          id={`transaction-category-${transaction.id}`}
-                          name={`transaction-category-${transaction.id}`}
-                          value={editingTransaction?.category || transaction.category}
-                          onChange={(e) => updateEditingTransaction('category', e.target.value)}
+                          id={`transaction-debit-account-${transaction.id}`}
+                          name={`transaction-debit-account-${transaction.id}`}
+                          value={editingTransaction?.debit_account_name || transaction.debit_account_name || ''}
+                          onChange={(e) => updateEditingTransaction('debit_account_name', e.target.value)}
                           autoComplete="off"
+                          placeholder="Select debit account..."
                         />
                       ) : (
-                        transaction.category
+                        <div className="account-cell">
+                          {transaction.debit_account_code && (
+                            <span className="account-code">{transaction.debit_account_code}</span>
+                          )}
+                          {transaction.debit_account_name && (
+                            <span className="account-name">{transaction.debit_account_name}</span>
+                          )}
+                          {!transaction.debit_account_code && !transaction.debit_account_name && (
+                            <span className="text-muted">Not classified</span>
+                          )}
+                        </div>
                       )}
                     </td>
                     <td>
                       {transaction.isEditing ? (
                         <input
                           type="text"
-                          id={`transaction-reference-${transaction.id}`}
-                          name={`transaction-reference-${transaction.id}`}
-                          value={editingTransaction?.reference || transaction.reference}
-                          onChange={(e) => updateEditingTransaction('reference', e.target.value)}
+                          id={`transaction-credit-account-${transaction.id}`}
+                          name={`transaction-credit-account-${transaction.id}`}
+                          value={editingTransaction?.credit_account_name || transaction.credit_account_name || ''}
+                          onChange={(e) => updateEditingTransaction('credit_account_name', e.target.value)}
                           autoComplete="off"
+                          placeholder="Select credit account..."
                         />
                       ) : (
-                        transaction.reference
+                        <div className="account-cell">
+                          {transaction.credit_account_code && (
+                            <span className="account-code">{transaction.credit_account_code}</span>
+                          )}
+                          {transaction.credit_account_name && (
+                            <span className="account-name">{transaction.credit_account_name}</span>
+                          )}
+                          {!transaction.credit_account_code && !transaction.credit_account_name && (
+                            <span className="text-muted">Not classified</span>
+                          )}
+                        </div>
                       )}
                     </td>
                     <td>

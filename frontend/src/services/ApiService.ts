@@ -1,5 +1,6 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import type {
+  Account,
   Company,
   FiscalPeriod,
   ApiTransaction,
@@ -685,6 +686,26 @@ class ClassificationApiService extends BaseApiService {
 }
 
 /**
+ * Account Management Service - Handles chart of accounts operations.
+ */
+class AccountApiService extends BaseApiService {
+  /**
+   * Get chart of accounts for a company.
+   * Returns all active accounts for dropdown selection in UI.
+   */
+  async getChartOfAccounts(companyId: number): Promise<ApiResponse<Account[]>> {
+    try {
+      const response = await this.client.get<ApiResponse<Account[]>>(
+        `/v1/companies/${companyId}/accounts`
+      );
+      return response.data;
+    } catch (error) {
+      this.handleError('Get chart of accounts', error);
+    }
+  }
+}
+
+/**
  * Data Management Service - Handles data management operations
  */
 class DataManagementApiService extends BaseApiService {
@@ -725,6 +746,7 @@ export class ApiService extends BaseApiService {
   public readonly plans: PlanApiService;
   public readonly system: SystemApiService;
   public readonly classification: ClassificationApiService;
+  public readonly accounts: AccountApiService;
   public readonly dataManagement: DataManagementApiService;
 
   constructor() {
@@ -739,6 +761,7 @@ export class ApiService extends BaseApiService {
     this.plans = new PlanApiService();
     this.system = new SystemApiService();
     this.classification = new ClassificationApiService();
+    this.accounts = new AccountApiService();
     this.dataManagement = new DataManagementApiService();
   }
 
