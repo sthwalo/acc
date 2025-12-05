@@ -47,6 +47,7 @@ public class FnbBankParser extends AbstractMultilineTransactionParser {
     // State tracking
     private boolean isFnbStatement = false;
     private int statementYear = 2024; // Default fallback
+    private LocalDate lastTransactionDate = null;
 
     @Override
     public boolean canParse(String line, TransactionParsingContext context) {
@@ -63,6 +64,11 @@ public class FnbBankParser extends AbstractMultilineTransactionParser {
         // Skip header/footer lines
         if (SKIP_PATTERN.matcher(line).matches()) {
             return false;
+        }
+
+        // Check if it's a bank charge line (starts with #)
+        if (line.trim().startsWith("#")) {
+            return true;
         }
 
         // Check if it looks like an FNB transaction line (starts with date)
@@ -86,13 +92,21 @@ public class FnbBankParser extends AbstractMultilineTransactionParser {
 
     @Override
     protected boolean isContinuationLine(String line) {
-        // FNB continuation lines don't start with dates
-        return !line.matches("^\\d{1,2}/\\d{1,2}/\\d{4}\\s+.+") && line.trim().length() > 0;
+        // FNB continuation lines don't start with dates or #
+        String trimmed = line.trim();
+        return !trimmed.startsWith("#") && 
+               !line.matches("^\\d{1,2}/\\d{1,2}/\\d{4}\\s+.+") && 
+               trimmed.length() > 0;
     }
 
     @Override
     protected StandardizedTransaction parseTransactionLine(String line) {
         try {
+            // Check if this is a bank charge line (starts with #)
+            if (line.trim().startsWith("#")) {
+                return parseBankChargeLine(line);
+            }
+
             // Extract date (first part until space, then month)
             // FNB dates are either "DD/MM/YYYY" or "DD MMM"
             String[] lineParts = line.trim().split("\\s+");
@@ -204,6 +218,9 @@ public class FnbBankParser extends AbstractMultilineTransactionParser {
                 finalDescription = beforeRef + " (" + refPart + ")";
             }
 
+            // Track this transaction date for potential bank charges
+            lastTransactionDate = transactionDate;
+
             return new StandardizedTransaction.Builder()
                     .date(transactionDate)
                     .description(finalDescription)
@@ -215,6 +232,54 @@ public class FnbBankParser extends AbstractMultilineTransactionParser {
 
         } catch (Exception e) {
             LOGGER.warning("Failed to parse FNB transaction line: " + line + " - " + e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Parse bank charge line starting with # prefix.
+     * Format: # Description Amount Balance
+     * Example: # Service Fee 5.50 10294.50
+     */
+    private StandardizedTransaction parseBankChargeLine(String line) {
+        try {
+            // Remove # prefix and trim
+            String content = line.substring(1).trim();
+            
+            // Split by spaces
+            String[] parts = content.split("\\s+");
+            
+            // Find amounts from right to left
+            // Last part is balance, second to last is fee amount
+            if (parts.length < 3) {
+                LOGGER.warning("Invalid bank charge line format: " + line);
+                return null;
+            }
+            
+            BigDecimal balance = parseAmount(parts[parts.length - 1]);
+            BigDecimal serviceFee = parseAmount(parts[parts.length - 2]);
+            
+            // Description is everything before the amounts
+            StringBuilder description = new StringBuilder();
+            for (int i = 0; i < parts.length - 2; i++) {
+                if (description.length() > 0) description.append(" ");
+                description.append(parts[i]);
+            }
+            
+            // Bank charges don't have their own date - they use the previous transaction's date
+            LocalDate chargeDate = lastTransactionDate != null ? lastTransactionDate : LocalDate.of(statementYear, 1, 1);
+            
+            return new StandardizedTransaction.Builder()
+                    .date(chargeDate)
+                    .description(description.toString())
+                    .serviceFee(serviceFee)
+                    .debitAmount(BigDecimal.ZERO)
+                    .creditAmount(BigDecimal.ZERO)
+                    .balance(balance)
+                    .build();
+                    
+        } catch (Exception e) {
+            LOGGER.warning("Failed to parse FNB bank charge line: " + line + " - " + e.getMessage());
             return null;
         }
     }
@@ -355,5 +420,6 @@ public class FnbBankParser extends AbstractMultilineTransactionParser {
     public void reset() {
         super.reset();
         isFnbStatement = false;
+        lastTransactionDate = null;
     }
 }

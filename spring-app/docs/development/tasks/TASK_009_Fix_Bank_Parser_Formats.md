@@ -82,11 +82,40 @@
 
 ### Next Steps
 
+**Critical Discovery - Extraction Method Analysis** (2025-12-05):
+
+Analyzed PDF structure using PdfColumnAnalyzer tool to understand why Standard Bank outperforms:
+
+**Standard Bank** (`xxxxx3753 (03).pdf`):
+- ✅ **Has embedded text** with TextPosition coordinates
+- ✅ **Column structure detected**: date[481.5-595.2], balance[472.1-481.5], amount[294.6-299.6], service_fee[299.6-328.1]
+- ✅ **PDFBox extraction** works perfectly with exact X,Y coordinates
+- ✅ **Result**: Clean, structured text with predictable spacing
+
+**FNB** (`110.pdf`):
+- ✅ **Has embedded text** with TextPosition coordinates
+- ✅ **Column structure detected**: description[729.1-595.2], amount[520.1-548.4], balance[511.0-520.1], service_fee[564.5-729.1]
+- ⚠️ **Currently uses OCR** but shouldn't need to!
+- 📋 **Action**: Switch FNB parser to PDFBox extraction for better accuracy
+
+**Absa** (`4068820115.pdf`):
+- ❌ **Scanned image PDF** - no embedded text
+- ❌ **Only OCR extraction** available (Tesseract)
+- ❌ **Poor column detection**: only [634.8-792.0] visible
+- ⚠️ **OCR artifacts**: "K11larney", "D1g1ta1", space-delimited numbers
+- 📋 **Action**: Must use OCR with robust pattern-based parsing
+
+**Recommendation**:
+1. **Standard Bank**: Continue using current coordinate-based StandardBankTabularParser ✅
+2. **FNB**: Refactor to use PDFBox extraction instead of OCR (will improve accuracy significantly)
+3. **Absa**: Keep OCR extraction but implement robust pattern matching for noisy text
+
 **Optional Improvements** (Low Priority):
 1. Address checkstyle warnings for code style consistency
 2. Add comprehensive unit tests to document expected behavior
 3. Refine AbsaBankParser edge cases if any are discovered
 4. Consider applying StandardBankTabularParser patterns to other parsers
+5. Create coordinate-based parser framework using PdfColumnAnalyzer learned dimensions
 
 **Recommended Action**: No immediate action required. All parsers are production-ready and functioning correctly.
 

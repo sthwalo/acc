@@ -142,4 +142,61 @@ tasks.named<Test>("test") {
     useJUnitPlatform()
 }
 
+// Task to analyze PDF column structure
+tasks.register<JavaExec>("analyzeColumns") {
+    group = "analysis"
+    description = "Analyze PDF column structure for parser configuration"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass = "fin.util.PdfColumnAnalyzer"
+    
+    // Get PDF path and bank name from command line properties
+    val pdfPath = project.findProperty("pdfPath") as String? 
+        ?: throw GradleException("Please specify -PpdfPath=<path-to-pdf>")
+    val bankName = project.findProperty("bankName") as String? 
+        ?: throw GradleException("Please specify -PbankName=<bank-name>")
+    
+    args = listOf(pdfPath, bankName)
+}
+
+// Task to extract OCR text with coordinates
+tasks.register<JavaExec>("extractOcrCoordinates") {
+    group = "analysis"
+    description = "Extract text from OCR-based PDF with X,Y coordinates"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass = "fin.util.OcrCoordinateExtractor"
+    
+    // Set JNA library path for Tesseract on macOS
+    systemProperty("jna.library.path", "/opt/homebrew/lib")
+    
+    val pdfPath = project.findProperty("pdfPath") as String? 
+        ?: throw GradleException("Please specify -PpdfPath=<path-to-pdf>")
+    val pageNum = project.findProperty("pageNum") as String? ?: "0"
+    
+    args = listOf(pdfPath, pageNum)
+}
+
+tasks.register<JavaExec>("testAbsaParser") {
+    group = "analysis"
+    description = "Test Absa parser on OCR-extracted text file"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass = "fin.util.TestAbsaParser"
+    
+    val textFile = project.findProperty("textFile") as String? 
+        ?: throw GradleException("Please specify -PtextFile=<path-to-text-file>")
+    
+    args = listOf(textFile)
+}
+
+tasks.register<JavaExec>("testFnbParser") {
+    group = "analysis"
+    description = "Test FNB parser on text file"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass = "fin.util.TestFnbParser"
+    
+    val textFile = project.findProperty("textFile") as String? 
+        ?: throw GradleException("Please specify -PtextFile=<path-to-text-file>")
+    
+    args = listOf(textFile)
+}
+
 

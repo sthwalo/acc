@@ -235,6 +235,7 @@ docs/technical/DATABASE_REFERENCE.md
 docs/DATABASE_REFERENCE.md
 dev-tools/commands.md
 Ah! The parsers are working (backend res.md
+spring-app/docs/development/tasks/TASK_009_Fix_Bank_Parser_Formats.md
 
 
 # Exclude any docs with real credentials or sensitive data

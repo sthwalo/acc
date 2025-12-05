@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -17,13 +18,26 @@ import java.util.regex.Pattern;
  * Supports multiline descriptions and various transaction types.
  *
  * CRITICAL FIXES:
- * - Column-based parsing instead of greedy regex
+ * - Regex-based amount extraction from right to left
  * - Handles space-delimited balances ("54 882.66")
  * - Prevents amounts from appearing in description field
  * - Accumulates multiline descriptions
  */
 @Component
 public class AbsaBankParser extends AbstractMultilineTransactionParser {
+    
+    /**
+     * Helper class to track amount positions in the line for proper column assignment
+     */
+    private static class AmountMatch {
+        final String amountStr;
+        final int position;
+        
+        AmountMatch(String amountStr, int position) {
+            this.amountStr = amountStr;
+            this.position = position;
+        }
+    }
     private static final Logger LOGGER = Logger.getLogger(AbsaBankParser.class.getName());
 
     // Pattern to detect Absa bank statements
@@ -42,6 +56,7 @@ public class AbsaBankParser extends AbstractMultilineTransactionParser {
 
     // State tracking
     private boolean isAbsaStatement = false;
+    private BigDecimal previousBalance = null;
 
     @Override
     public boolean canParse(String line, TransactionParsingContext context) {
@@ -91,93 +106,99 @@ public class AbsaBankParser extends AbstractMultilineTransactionParser {
             // Parse date
             LocalDate transactionDate = parseDateFromString(dateStr);
 
-            // Split by single spaces to get all parts
-            String[] parts = rest.split("\\s+");
+            // IMPROVED: Use regex to extract amounts from right to left
+            // Pattern matches decimal numbers with optional spaces/commas as thousand separators
+            // Example: "600.00", "54 882.66", "1,300.00", "10.00 T"
+            Pattern amountPattern = Pattern.compile("([\\d\\s,]+\\.\\d{2})(?:\\s*[A-Z])?");
+            Matcher matcher = amountPattern.matcher(rest);
 
-            // Find the transition from description to amounts
-            // Work from right to left, first non-numeric marks the boundary
-            int firstAmountIndex = parts.length; // Default to end if all numeric
-            for (int i = parts.length - 1; i >= 0; i--) {
-                if (!isNumeric(parts[i])) {
-                    firstAmountIndex = i + 1; // Amounts start after this non-numeric part
-                    break;
-                }
+            // Collect all amounts with their positions
+            java.util.List<AmountMatch> matches = new java.util.ArrayList<>();
+            while (matcher.find()) {
+                String amountStr = matcher.group(1);
+                int position = matcher.start();
+                matches.add(new AmountMatch(amountStr, position));
             }
 
-            // Build description from parts before amounts
-            StringBuilder description = new StringBuilder();
-            for (int i = 0; i < firstAmountIndex; i++) {
-                if (description.length() > 0) description.append(" ");
-                description.append(parts[i]);
-            }
+            // Sort matches by position (left to right)
+            matches.sort(java.util.Comparator.comparingInt(m -> m.position));
 
-            // Parse amounts - group consecutive numeric parts intelligently
+            // Description is everything before the first amount
+            int descriptionEndPos = matches.isEmpty() ? rest.length() : matches.get(0).position;
+            String description = rest.substring(0, descriptionEndPos).trim();
+
+            // Parse amounts from matches
             java.util.List<BigDecimal> amounts = new java.util.ArrayList<>();
-            StringBuilder currentAmount = new StringBuilder();
-
-            for (int i = firstAmountIndex; i < parts.length; i++) {
-                String part = parts[i];
-                if (isNumeric(part)) {
-                    if (currentAmount.length() > 0) currentAmount.append(" ");
-                    currentAmount.append(part);
-
-                    // If this part has a decimal point, it's likely a complete amount
-                    if (part.contains(".")) {
-                        amounts.add(parseAmount(currentAmount.toString()));
-                        currentAmount = new StringBuilder();
-                    }
-                } else {
-                    // If we have a current amount, add it
-                    if (currentAmount.length() > 0) {
-                        amounts.add(parseAmount(currentAmount.toString()));
-                        currentAmount = new StringBuilder();
-                    }
-                }
+            for (AmountMatch match : matches) {
+                amounts.add(parseAmount(match.amountStr));
             }
 
-            // Add the last amount if any
-            if (currentAmount.length() > 0) {
-                amounts.add(parseAmount(currentAmount.toString()));
-            }
-
-            // Assign amounts based on count
-            BigDecimal balance = BigDecimal.ZERO;
-            BigDecimal amount = BigDecimal.ZERO;
+            // Assign amounts based on Absa column structure (right to left):
+            // 4 columns: [description] [charge] [debit] [credit] [balance]
+            // Pattern 1: [desc] [charge] [debit] [credit] [balance] (4 amounts)
+            // Pattern 2: [desc] [charge] [debit/credit] [balance] (3 amounts)
+            // Pattern 3: [desc] [debit/credit] [balance] (2 amounts)
+            // Pattern 4: [desc] [balance] (1 amount - opening balance)
+            
+            BigDecimal currentBalance = BigDecimal.ZERO;
+            BigDecimal creditAmount = BigDecimal.ZERO;
+            BigDecimal debitAmount = BigDecimal.ZERO;
             BigDecimal serviceFee = BigDecimal.ZERO;
 
             if (amounts.size() >= 1) {
-                // Last amount is always balance
-                balance = amounts.get(amounts.size() - 1);
+                // Rightmost: Current balance
+                currentBalance = amounts.get(amounts.size() - 1);
             }
             if (amounts.size() >= 2) {
-                // Second to last is transaction amount
-                amount = amounts.get(amounts.size() - 2);
+                // Second from right: Could be credit amount OR debit amount
+                BigDecimal secondAmount = amounts.get(amounts.size() - 2);
+                
+                // Determine if credit or debit by balance comparison
+                if (previousBalance != null) {
+                    BigDecimal balanceChange = currentBalance.subtract(previousBalance);
+                    if (balanceChange.compareTo(BigDecimal.ZERO) > 0) {
+                        // Balance increased → credit transaction
+                        creditAmount = secondAmount;
+                    } else if (balanceChange.compareTo(BigDecimal.ZERO) < 0) {
+                        // Balance decreased → debit transaction
+                        debitAmount = secondAmount;
+                    }
+                } else {
+                    // No previous balance - use description keywords as hint
+                    if (isLikelyDebit(description)) {
+                        debitAmount = secondAmount;
+                    } else {
+                        creditAmount = secondAmount;
+                    }
+                }
             }
             if (amounts.size() >= 3) {
-                // Third to last is service fee
-                serviceFee = amounts.get(amounts.size() - 3);
+                // Third from right: Could be debit (if 2nd was credit) OR charge
+                BigDecimal thirdAmount = amounts.get(amounts.size() - 3);
+                
+                // If we already have a credit, this might be a debit in same transaction
+                // OR it's a service fee
+                if (thirdAmount.compareTo(new BigDecimal("100")) < 0) {
+                    // Small amount (< 100) is likely a service fee
+                    serviceFee = thirdAmount;
+                } else if (creditAmount.compareTo(BigDecimal.ZERO) > 0 && debitAmount.equals(BigDecimal.ZERO)) {
+                    // We have credit but no debit - this could be the debit
+                    debitAmount = thirdAmount;
+                } else if (debitAmount.compareTo(BigDecimal.ZERO) > 0 && creditAmount.equals(BigDecimal.ZERO)) {
+                    // We have debit but no credit - this could be the credit
+                    creditAmount = thirdAmount;
+                } else {
+                    // Default to service fee
+                    serviceFee = thirdAmount;
+                }
             }
-
-            // Determine transaction type
-            boolean isDebit = isLikelyDebit(description.toString());
-            boolean isPureServiceFee = description.toString().toLowerCase().contains("fee") ||
-                                      description.toString().toLowerCase().contains("charge");
-
-            BigDecimal debitAmount = BigDecimal.ZERO;
-            BigDecimal creditAmount = BigDecimal.ZERO;
-
-            if (isPureServiceFee && amounts.size() == 2) {
-                // Pure service fee transaction (fee amount + balance)
-                serviceFee = amount;
-                amount = BigDecimal.ZERO;
-            } else if (amount.compareTo(BigDecimal.ZERO) < 0) {
-                // Negative amount indicates credit (refund)
-                creditAmount = amount.negate();
-            } else if (isDebit) {
-                debitAmount = amount;
-            } else {
-                creditAmount = amount;
+            if (amounts.size() >= 4) {
+                // Fourth from right: Service fee/charge (leftmost amount column)
+                serviceFee = amounts.get(amounts.size() - 4);
             }
+            
+            // Update previous balance for next transaction
+            previousBalance = currentBalance;
 
             return new StandardizedTransaction.Builder()
                     .date(transactionDate)
@@ -185,7 +206,7 @@ public class AbsaBankParser extends AbstractMultilineTransactionParser {
                     .serviceFee(serviceFee)
                     .debitAmount(debitAmount)
                     .creditAmount(creditAmount)
-                    .balance(balance)
+                    .balance(currentBalance)
                     .build();
 
         } catch (Exception e) {
@@ -280,23 +301,30 @@ public class AbsaBankParser extends AbstractMultilineTransactionParser {
     }
 
     /**
-     * Check if string represents a numeric amount (including partial amounts)
-     */
-    private boolean isNumeric(String str) {
-        return str != null && str.matches("[\\d,\\s]+(?:\\.\\d{2})?-?");
-    }
-
-    /**
      * Determine if transaction is likely a debit based on description keywords
+     * CRITICAL: ATM deposits are CREDITS, not debits!
      */
     private boolean isLikelyDebit(String description) {
         String lower = description.toLowerCase();
+        
+        // Explicit CREDIT indicators (take precedence)
+        if (lower.contains("deposit") || 
+            lower.contains("credit") ||
+            lower.contains("payment fr") ||  // "Payment Fr" = payment FROM (incoming)
+            lower.contains("acb credit") ||
+            lower.contains("immediate trf cr") ||
+            lower.contains("refund")) {
+            return false; // This is a CREDIT
+        }
+        
+        // Explicit DEBIT indicators
         return lower.contains("withdrawal") ||
-               lower.contains("atm") ||
-               lower.contains("debit") ||
-               lower.contains("purchase") ||
+               lower.contains("atm withdrawal") ||
                lower.contains("debit order") ||
-               lower.contains("payment") && (lower.contains("to") || lower.contains("out"));
+               lower.contains("purchase") ||
+               lower.contains("payment to") ||    // "Payment To" = payment TO someone (outgoing)
+               lower.contains("payment dt") ||    // "Digital Payment Dt" = debit payment
+               (lower.contains("payment") && !lower.contains("fr")); // Generic payment (not "from")
     }
 
     /**
@@ -306,5 +334,6 @@ public class AbsaBankParser extends AbstractMultilineTransactionParser {
     public void reset() {
         super.reset();
         isAbsaStatement = false;
+        previousBalance = null;
     }
 }
