@@ -42,14 +42,88 @@ public final class TesseractConfigUtil {
 
     private static final Logger logger = LoggerFactory.getLogger(TesseractConfigUtil.class);
     
+    // macOS Homebrew paths (for local development)
     private static final String HOMEBREW_LIB_PATH = "/opt/homebrew/lib";
     private static final String HOMEBREW_TESSDATA_PATH = "/opt/homebrew/share/tessdata";
+    
+    // Linux container paths (for Docker/production)
+    private static final String LINUX_LIB_PATH = "/usr/lib/x86_64-linux-gnu";
+    private static final String LINUX_TESSDATA_PATH = "/usr/share/tesseract-ocr/5/tessdata";
+    private static final String LINUX_TESSDATA_PATH_ALT = "/usr/share/tesseract-ocr/tessdata";
     
     private static boolean jnaConfigured = false;
     private static Tesseract tesseractInstance = null;
 
-    private TesseractConfigUtil() {
-        // Utility class - prevent instantiation
+    /**
+     * Detect if running in a Linux container environment.
+     * 
+     * @return true if running in Linux container, false if macOS
+     */
+    private static boolean isLinuxContainer() {
+        String osName = System.getProperty("os.name", "").toLowerCase();
+        return osName.contains("linux");
+    }
+    
+    /**
+     * Get the appropriate library path based on the environment.
+     * 
+     * @return Library path for the current environment
+     */
+    private static String getLibraryPathForEnvironment() {
+        return isLinuxContainer() ? LINUX_LIB_PATH : HOMEBREW_LIB_PATH;
+    }
+    
+    /**
+     * Get the appropriate tessdata path based on the environment.
+     * 
+     * @return Tessdata path for the current environment
+     */
+    private static String getTessdataPathForEnvironment() {
+        if (isLinuxContainer()) {
+            // Try the primary Linux path first
+            if (new java.io.File(LINUX_TESSDATA_PATH).exists()) {
+                return LINUX_TESSDATA_PATH;
+            }
+            // Fallback to alternative path
+            if (new java.io.File(LINUX_TESSDATA_PATH_ALT).exists()) {
+                return LINUX_TESSDATA_PATH_ALT;
+            }
+            // Last resort - try to find tessdata anywhere in /usr/share
+            java.io.File tessdataDir = findTessdataDirectory();
+            if (tessdataDir != null) {
+                return tessdataDir.getAbsolutePath();
+            }
+            // Default fallback
+            return LINUX_TESSDATA_PATH;
+        } else {
+            return HOMEBREW_TESSDATA_PATH;
+        }
+    }
+    
+    /**
+     * Find tessdata directory in common Linux locations.
+     * 
+     * @return File object for tessdata directory, or null if not found
+     */
+    private static java.io.File findTessdataDirectory() {
+        String[] possiblePaths = {
+            "/usr/share/tesseract-ocr/5/tessdata",
+            "/usr/share/tesseract-ocr/tessdata", 
+            "/usr/share/tessdata",
+            "/usr/local/share/tessdata"
+        };
+        
+        for (String path : possiblePaths) {
+            java.io.File dir = new java.io.File(path);
+            if (dir.exists() && dir.isDirectory()) {
+                java.io.File engFile = new java.io.File(dir, "eng.traineddata");
+                if (engFile.exists()) {
+                    logger.info("Found tessdata directory: {}", path);
+                    return dir;
+                }
+            }
+        }
+        return null;
     }
 
     /**
@@ -61,10 +135,11 @@ public final class TesseractConfigUtil {
             return;
         }
 
+        String libraryPath = getLibraryPathForEnvironment();
         String currentLibPath = System.getProperty("jna.library.path");
         
-        if (currentLibPath == null || !currentLibPath.contains(HOMEBREW_LIB_PATH)) {
-            String newLibPath = HOMEBREW_LIB_PATH + 
+        if (currentLibPath == null || !currentLibPath.contains(libraryPath)) {
+            String newLibPath = libraryPath + 
                                (currentLibPath != null ? ":" + currentLibPath : "");
             System.setProperty("jna.library.path", newLibPath);
             logger.info("Configured JNA library path for Tesseract: {}", newLibPath);
@@ -85,8 +160,9 @@ public final class TesseractConfigUtil {
             
             tesseractInstance = new Tesseract();
             
-            // Set Tesseract data path (Homebrew installation on macOS)
-            tesseractInstance.setDatapath(HOMEBREW_TESSDATA_PATH);
+            // Set Tesseract data path based on environment
+            String tessdataPath = getTessdataPathForEnvironment();
+            tesseractInstance.setDatapath(tessdataPath);
             
             // Configure for English language
             tesseractInstance.setLanguage("eng");
@@ -97,7 +173,7 @@ public final class TesseractConfigUtil {
             // Neural nets LSTM engine for better accuracy
             tesseractInstance.setOcrEngineMode(1);
             
-            logger.info("Initialized Tesseract OCR engine with tessdata path: {}", HOMEBREW_TESSDATA_PATH);
+            logger.info("Initialized Tesseract OCR engine with tessdata path: {}", tessdataPath);
         }
         
         return tesseractInstance;
@@ -106,10 +182,10 @@ public final class TesseractConfigUtil {
     /**
      * Get the configured tessdata path.
      * 
-     * @return Path to Tesseract training data
+     * @return Path to Tesseract training data for the current environment
      */
     public static String getTessdataPath() {
-        return HOMEBREW_TESSDATA_PATH;
+        return getTessdataPathForEnvironment();
     }
 
     /**

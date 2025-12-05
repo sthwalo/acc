@@ -12,6 +12,8 @@ interface UploadViewProps {
 export default function UploadView({ selectedCompany, selectedFiscalPeriod }: UploadViewProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [processingStatus, setProcessingStatus] = useState<string>('');
   const [uploadResult, setUploadResult] = useState<UploadResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -49,9 +51,28 @@ export default function UploadView({ selectedCompany, selectedFiscalPeriod }: Up
     try {
       setUploading(true);
       setError(null);
+      setUploadProgress(0);
+      setProcessingStatus('Preparing file...');
 
       const apiService = serviceRegistry.get<ApiService>('apiService');
+
+      // Simulate progress updates during upload
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev < 90) {
+            setProcessingStatus(prev < 30 ? 'Uploading file...' : prev < 60 ? 'Processing document...' : 'Extracting transactions...');
+            return prev + 10;
+          }
+          return prev;
+        });
+      }, 1000);
+
       const result = await apiService.uploadFile(Number(selectedCompany.id), Number(selectedFiscalPeriod.id), selectedFile);
+
+      clearInterval(progressInterval);
+      setUploadProgress(100);
+      setProcessingStatus('Processing complete!');
+
       setUploadResult(result);
 
       // Clear the file selection after successful upload
@@ -59,8 +80,26 @@ export default function UploadView({ selectedCompany, selectedFiscalPeriod }: Up
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
+
+      // Reset progress after a delay
+      setTimeout(() => {
+        setUploadProgress(0);
+        setProcessingStatus('');
+      }, 2000);
+
     } catch (err) {
-      setError('Failed to upload file. Please try again.');
+      setUploadProgress(0);
+      setProcessingStatus('');
+
+      if (err instanceof Error) {
+        if (err.message.includes('timeout')) {
+          setError('Upload timed out. The file is being processed in the background. Please check back in a few minutes.');
+        } else {
+          setError(err.message);
+        }
+      } else {
+        setError('Failed to upload file. Please try again.');
+      }
       console.error('Upload error:', err);
     } finally {
       setUploading(false);
@@ -164,7 +203,7 @@ export default function UploadView({ selectedCompany, selectedFiscalPeriod }: Up
             {uploading ? (
               <>
                 <div className="spinner small"></div>
-                Uploading...
+                {processingStatus || 'Uploading...'}
               </>
             ) : (
               <>
@@ -174,12 +213,26 @@ export default function UploadView({ selectedCompany, selectedFiscalPeriod }: Up
             )}
           </button>
 
+          {uploading && (
+            <div className="upload-progress">
+              <div className="progress-bar">
+                <div
+                  className="progress-fill"
+                  style={{ width: `${uploadProgress}%` }}
+                ></div>
+              </div>
+              <span className="progress-text">{uploadProgress}%</span>
+            </div>
+          )}
+
           {selectedFile && !uploading && (
             <button
               className="clear-button"
               onClick={() => {
                 setSelectedFile(null);
                 setError(null);
+                setUploadProgress(0);
+                setProcessingStatus('');
                 if (fileInputRef.current) {
                   fileInputRef.current.value = '';
                 }

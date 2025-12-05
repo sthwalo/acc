@@ -103,6 +103,9 @@ dependencies {
 
     // Jakarta EE dependencies for servlet API (needed for Spring Security filters)
     implementation("jakarta.servlet:jakarta.servlet-api:6.0.0")
+
+    //Actuator for monitoring
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
     
 }
 

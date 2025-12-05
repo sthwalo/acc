@@ -5,6 +5,7 @@ services:
       context: .
       dockerfile: spring-app/Dockerfile
     container_name: fin-app
+    env_file: .env
     environment:
       # Database Configuration (connects to host database)
       DATABASE_URL: jdbc:postgresql://host.docker.internal:5432/drimacc_db
@@ -15,7 +16,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${DATABASE_PASSWORD:-postgres}
 
       # Application Configuration
-      JAVA_OPTS: "-Xmx1g -Xms512m -Dfin.license.autoconfirm=true"
+      JAVA_OPTS: "-Xmx2g -Xms1g -Dfin.license.autoconfirm=true"
       SPRING_PROFILES_ACTIVE: docker
 
       # CORS Configuration for API communication (HTTP & HTTPS)

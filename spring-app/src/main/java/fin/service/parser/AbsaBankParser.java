@@ -2,54 +2,33 @@ package fin.service.parser;
 
 import fin.context.TransactionParsingContext;
 import fin.model.parser.ParsedTransaction;
+import fin.model.parser.StandardizedTransaction;
 import fin.model.parser.TransactionType;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
  * Parser for Absa Bank statement format.
- * Handles OCR-extracted space-separated format: Date Description Charge DebitAmount CreditAmount Balance
- * Example: "23/02/2023 Atm Payment Fr Killarney 600.00 54 882.66"
- * Supports multi-line descriptions and various transaction types.
+ * Handles OCR-extracted space-separated format with column-based parsing.
+ * Supports multiline descriptions and various transaction types.
+ *
+ * CRITICAL FIXES:
+ * - Column-based parsing instead of greedy regex
+ * - Handles space-delimited balances ("54 882.66")
+ * - Prevents amounts from appearing in description field
+ * - Accumulates multiline descriptions
  */
 @Component
-public class AbsaBankParser implements TransactionParser {
+public class AbsaBankParser extends AbstractMultilineTransactionParser {
     private static final Logger LOGGER = Logger.getLogger(AbsaBankParser.class.getName());
 
     // Pattern to detect Absa bank statements
     private static final Pattern ABSA_HEADER_PATTERN = Pattern.compile(
         "(?i)^\\s*(?:ABSA|Absa Bank|Account Number|Cheque Account).*$"
-    );
-
-    // Pattern for Absa transaction lines with balance at end
-    // Format: DD/MM/YYYY Description Amount Balance (where Amount can be debit or credit)
-    // Example: "23/02/2023 Atm Payment Fr Killarney 600.00 54 882.66"
-    private static final Pattern TRANSACTION_WITH_BALANCE_PATTERN = Pattern.compile(
-        "^(\\d{1,2}/\\d{1,2}/\\d{4})\\s+(.+?)\\s+([\\d,]+\\.\\d{2})\\s+([\\d,]+\\.\\d{2})\\s*$"
-    );
-
-    // Pattern for transactions with charge column
-    // Format: DD/MM/YYYY Description Charge Amount Balance
-    // Example: "23/02/2023 Digital Payment Dt Settlement 10.00 T 1 300.00 53 582.66"
-    private static final Pattern TRANSACTION_WITH_CHARGE_PATTERN = Pattern.compile(
-        "^(\\d{1,2}/\\d{1,2}/\\d{4})\\s+(.+?)\\s+([\\d,]+\\.\\d{2})\\s+[TA]\\s+([\\d,]+\\.\\d{2})\\s+([\\d,]+\\.\\d{2})\\s*$"
-    );
-
-    // Pattern for simple transactions (Bal Brought Forward, etc.)
-    // Format: DD/MM/YYYY Description Balance
-    // Example: "20/02/2023 Bal Brought Forward 54 282.66"
-    private static final Pattern SIMPLE_TRANSACTION_PATTERN = Pattern.compile(
-        "^(\\d{1,2}/\\d{1,2}/\\d{4})\\s+(.+?)\\s+([\\d,]+\\.\\d{2})\\s*$"
-    );
-
-    // Pattern for Balance Brought Forward line (without date)
-    private static final Pattern BALANCE_BROUGHT_FORWARD_PATTERN = Pattern.compile(
-        "(?i)^\\s*Balance\\s+(?:Brought|B/F|Brought Forward).*?([\\d,]+\\.\\d{2})\\s*$"
     );
 
     // Pattern to skip header/footer lines
@@ -81,134 +60,191 @@ public class AbsaBankParser implements TransactionParser {
             return false;
         }
 
-        // Check if it matches any Absa transaction pattern
-        return TRANSACTION_WITH_BALANCE_PATTERN.matcher(line).matches() ||
-               TRANSACTION_WITH_CHARGE_PATTERN.matcher(line).matches() ||
-               SIMPLE_TRANSACTION_PATTERN.matcher(line).matches();
+        // Check if it looks like an Absa transaction line (starts with date)
+        if (line.matches("^\\d{1,2}/\\d{1,2}/\\d{4}\\s+.+")) {
+            // Validate the date format
+            try {
+                String dateStr = line.substring(0, 10).trim();
+                parseDateFromString(dateStr);
+                return true;
+            } catch (Exception e) {
+                return false; // Invalid date format
+            }
+        }
+
+        return false;
+    }
+
+    @Override
+    protected boolean isContinuationLine(String line) {
+        // Absa continuation lines start with spaces (no date)
+        return line.matches("^\\s{5,}.+") && !line.matches("^\\d{1,2}/\\d{1,2}/\\d{4}\\s+.+");
+    }
+
+    @Override
+    protected StandardizedTransaction parseTransactionLine(String line) {
+        try {
+            // Extract date (first 10 characters: "23/02/2023")
+            String dateStr = line.substring(0, 10).trim();
+            String rest = line.substring(10).trim();
+
+            // Parse date
+            LocalDate transactionDate = parseDateFromString(dateStr);
+
+            // Split by single spaces to get all parts
+            String[] parts = rest.split("\\s+");
+
+            // Find the transition from description to amounts
+            // Work from right to left, first non-numeric marks the boundary
+            int firstAmountIndex = parts.length; // Default to end if all numeric
+            for (int i = parts.length - 1; i >= 0; i--) {
+                if (!isNumeric(parts[i])) {
+                    firstAmountIndex = i + 1; // Amounts start after this non-numeric part
+                    break;
+                }
+            }
+
+            // Build description from parts before amounts
+            StringBuilder description = new StringBuilder();
+            for (int i = 0; i < firstAmountIndex; i++) {
+                if (description.length() > 0) description.append(" ");
+                description.append(parts[i]);
+            }
+
+            // Parse amounts - group consecutive numeric parts intelligently
+            java.util.List<BigDecimal> amounts = new java.util.ArrayList<>();
+            StringBuilder currentAmount = new StringBuilder();
+
+            for (int i = firstAmountIndex; i < parts.length; i++) {
+                String part = parts[i];
+                if (isNumeric(part)) {
+                    if (currentAmount.length() > 0) currentAmount.append(" ");
+                    currentAmount.append(part);
+
+                    // If this part has a decimal point, it's likely a complete amount
+                    if (part.contains(".")) {
+                        amounts.add(parseAmount(currentAmount.toString()));
+                        currentAmount = new StringBuilder();
+                    }
+                } else {
+                    // If we have a current amount, add it
+                    if (currentAmount.length() > 0) {
+                        amounts.add(parseAmount(currentAmount.toString()));
+                        currentAmount = new StringBuilder();
+                    }
+                }
+            }
+
+            // Add the last amount if any
+            if (currentAmount.length() > 0) {
+                amounts.add(parseAmount(currentAmount.toString()));
+            }
+
+            // Assign amounts based on count
+            BigDecimal balance = BigDecimal.ZERO;
+            BigDecimal amount = BigDecimal.ZERO;
+            BigDecimal serviceFee = BigDecimal.ZERO;
+
+            if (amounts.size() >= 1) {
+                // Last amount is always balance
+                balance = amounts.get(amounts.size() - 1);
+            }
+            if (amounts.size() >= 2) {
+                // Second to last is transaction amount
+                amount = amounts.get(amounts.size() - 2);
+            }
+            if (amounts.size() >= 3) {
+                // Third to last is service fee
+                serviceFee = amounts.get(amounts.size() - 3);
+            }
+
+            // Determine transaction type
+            boolean isDebit = isLikelyDebit(description.toString());
+            boolean isPureServiceFee = description.toString().toLowerCase().contains("fee") ||
+                                      description.toString().toLowerCase().contains("charge");
+
+            BigDecimal debitAmount = BigDecimal.ZERO;
+            BigDecimal creditAmount = BigDecimal.ZERO;
+
+            if (isPureServiceFee && amounts.size() == 2) {
+                // Pure service fee transaction (fee amount + balance)
+                serviceFee = amount;
+                amount = BigDecimal.ZERO;
+            } else if (amount.compareTo(BigDecimal.ZERO) < 0) {
+                // Negative amount indicates credit (refund)
+                creditAmount = amount.negate();
+            } else if (isDebit) {
+                debitAmount = amount;
+            } else {
+                creditAmount = amount;
+            }
+
+            return new StandardizedTransaction.Builder()
+                    .date(transactionDate)
+                    .description(description.toString().trim())
+                    .serviceFee(serviceFee)
+                    .debitAmount(debitAmount)
+                    .creditAmount(creditAmount)
+                    .balance(balance)
+                    .build();
+
+        } catch (Exception e) {
+            LOGGER.warning("Failed to parse Absa transaction line: " + line + " - " + e.getMessage());
+            return null;
+        }
     }
 
     @Override
     public ParsedTransaction parse(String line, TransactionParsingContext context) {
-        if (!canParse(line, context)) {
-            // Check for Balance Brought Forward
-            Matcher bbfMatcher = BALANCE_BROUGHT_FORWARD_PATTERN.matcher(line);
-            if (bbfMatcher.matches()) {
-                LOGGER.info("Balance Brought Forward detected: " + bbfMatcher.group(1));
-            }
+        // Use multiline parsing logic
+        StandardizedTransaction stdTx = handleMultilineParsing(line, canParse(line, context));
+
+        // For single-line transactions, get the completed transaction
+        if (stdTx == null) {
+            stdTx = getCompletedTransaction();
+        }
+
+        if (stdTx == null) {
             return null;
         }
 
-        try {
-            // Try transaction with charge pattern (most complete format)
-            Matcher matcher = TRANSACTION_WITH_CHARGE_PATTERN.matcher(line);
-            if (matcher.matches()) {
-                return parseTransactionWithCharge(matcher, context);
-            }
+        // Convert StandardizedTransaction to ParsedTransaction
+        return convertToParsedTransaction(stdTx);
+    }
 
-            // Try transaction with balance pattern (standard format)
-            matcher = TRANSACTION_WITH_BALANCE_PATTERN.matcher(line);
-            if (matcher.matches()) {
-                return parseTransactionWithBalance(matcher, context);
-            }
+    /**
+     * Convert StandardizedTransaction to ParsedTransaction for interface compatibility
+     */
+    private ParsedTransaction convertToParsedTransaction(StandardizedTransaction stdTx) {
+        TransactionType type;
+        BigDecimal amount;
 
-            // Try simple transaction pattern (like Balance Brought Forward)
-            matcher = SIMPLE_TRANSACTION_PATTERN.matcher(line);
-            if (matcher.matches()) {
-                return parseSimpleTransaction(matcher, context);
-            }
-        } catch (Exception e) {
-            LOGGER.warning("Failed to parse Absa transaction line: " + line + " - " + e.getMessage());
+        // Determine type and amount based on StandardizedTransaction
+        if (stdTx.getServiceFee().compareTo(BigDecimal.ZERO) > 0 && 
+            stdTx.getDebitAmount().equals(BigDecimal.ZERO) && 
+            stdTx.getCreditAmount().equals(BigDecimal.ZERO)) {
+            // Pure service fee transaction
+            type = TransactionType.SERVICE_FEE;
+            amount = stdTx.getServiceFee();
+        } else if (stdTx.getDebitAmount().compareTo(BigDecimal.ZERO) > 0) {
+            type = TransactionType.DEBIT;
+            amount = stdTx.getDebitAmount();
+        } else if (stdTx.getCreditAmount().compareTo(BigDecimal.ZERO) > 0) {
+            type = TransactionType.CREDIT;
+            amount = stdTx.getCreditAmount();
+        } else {
+            // Balance-only transaction (like opening balance)
+            type = TransactionType.CREDIT;
+            amount = BigDecimal.ZERO;
         }
 
-        return null;
-    }
-
-    /**
-     * Parse transaction with charge: DD/MM/YYYY Description Charge Amount Balance
-     * Example: "23/02/2023 Digital Payment Dt Settlement 10.00 T 1 300.00 53 582.66"
-     */
-    private ParsedTransaction parseTransactionWithCharge(Matcher matcher, TransactionParsingContext context) {
-        String dateStr = matcher.group(1);
-        String description = matcher.group(2).trim();
-        String chargeStr = matcher.group(3);
-        String amountStr = matcher.group(4);
-        String balanceStr = matcher.group(5);
-
-        LocalDate transactionDate = parseDateFromString(dateStr);
-        BigDecimal charge = parseAmount(chargeStr);
-        BigDecimal amount = parseAmount(amountStr);
-        BigDecimal balance = parseAmount(balanceStr);
-
-        // Determine if debit or credit based on balance change
-        TransactionType type = determineTransactionType(description, true); // Assume debit if charge present
-        
         return new ParsedTransaction.Builder()
                 .type(type)
-                .description(description)
+                .description(stdTx.getDescription())
                 .amount(amount)
-                .date(transactionDate)
-                .balance(balance)
-                .hasServiceFee(charge.compareTo(BigDecimal.ZERO) > 0)
-                .build();
-    }
-
-    /**
-     * Parse transaction with balance: DD/MM/YYYY Description Amount Balance
-     * Example: "23/02/2023 Atm Payment Fr Killarney 600.00 54 882.66"
-     */
-    private ParsedTransaction parseTransactionWithBalance(Matcher matcher, TransactionParsingContext context) {
-        String dateStr = matcher.group(1);
-        String description = matcher.group(2).trim();
-        String amountStr = matcher.group(3);
-        String balanceStr = matcher.group(4);
-
-        LocalDate transactionDate = parseDateFromString(dateStr);
-        BigDecimal amount = parseAmount(amountStr);
-        BigDecimal balance = parseAmount(balanceStr);
-
-        // Determine transaction type from description
-        boolean isDebit = description.toLowerCase().contains("payment") ||
-                         description.toLowerCase().contains("debit") ||
-                         description.toLowerCase().contains("atm") ||
-                         description.toLowerCase().contains("fee");
-        
-        TransactionType type = determineTransactionType(description, isDebit);
-        
-        return new ParsedTransaction.Builder()
-                .type(type)
-                .description(description)
-                .amount(amount)
-                .date(transactionDate)
-                .balance(balance)
-                .hasServiceFee(false)
-                .build();
-    }
-
-    /**
-     * Parse simple transaction: DD/MM/YYYY Description Balance
-     * Example: "20/02/2023 Bal Brought Forward 54 282.66"
-     */
-    private ParsedTransaction parseSimpleTransaction(Matcher matcher, TransactionParsingContext context) {
-        String dateStr = matcher.group(1);
-        String description = matcher.group(2).trim();
-        String balanceStr = matcher.group(3);
-
-        LocalDate transactionDate = parseDateFromString(dateStr);
-        BigDecimal balance = parseAmount(balanceStr);
-
-        // For Balance Brought Forward, amount is 0 (it's just setting the opening balance)
-        TransactionType type = description.toLowerCase().contains("bal brought forward") ||
-                               description.toLowerCase().contains("balance brought forward")
-                               ? TransactionType.CREDIT  // Opening balance counts as initial credit
-                               : determineTransactionType(description, false);
-        
-        return new ParsedTransaction.Builder()
-                .type(type)
-                .description(description)
-                .amount(BigDecimal.ZERO)
-                .date(transactionDate)
-                .balance(balance)
-                .hasServiceFee(false)
+                .date(stdTx.getDate())
+                .balance(stdTx.getBalance())
+                .hasServiceFee(stdTx.hasServiceFee())
                 .build();
     }
 
@@ -223,53 +259,52 @@ public class AbsaBankParser implements TransactionParser {
         return LocalDate.of(year, month, day);
     }
 
+    /**
+     * Parse amount, handling both space and comma delimiters
+     */
     private BigDecimal parseAmount(String amountStr) {
-        // Remove currency symbols, commas, and trailing minus signs
-        String cleaned = amountStr.replace(",", "")
-                                  .replace("R", "")
-                                  .replace(" ", "")
-                                  .trim();
-
-        boolean isNegative = cleaned.endsWith("-");
-        if (isNegative) {
-            cleaned = cleaned.substring(0, cleaned.length() - 1);
+        if (amountStr == null || amountStr.trim().isEmpty()) {
+            return BigDecimal.ZERO;
         }
 
-        BigDecimal amount = new BigDecimal(cleaned);
+        // Handle both "54,882.66" and "54 882.66"
+        String clean = amountStr.replace(",", "").replace(" ", "").trim();
+
+        boolean isNegative = clean.endsWith("-");
+        if (isNegative) {
+            clean = clean.substring(0, clean.length() - 1);
+        }
+
+        BigDecimal amount = new BigDecimal(clean);
         return isNegative ? amount.negate() : amount;
     }
 
-    private TransactionType determineTransactionType(String description, boolean isDebit) {
-        String lowerDesc = description.toLowerCase();
+    /**
+     * Check if string represents a numeric amount (including partial amounts)
+     */
+    private boolean isNumeric(String str) {
+        return str != null && str.matches("[\\d,\\s]+(?:\\.\\d{2})?-?");
+    }
 
-        // Service fees
-        if (lowerDesc.contains("fee") || lowerDesc.contains("charge") || lowerDesc.contains("commission")) {
-            return TransactionType.SERVICE_FEE;
-        }
-
-        // ATM transactions
-        if (lowerDesc.contains("atm") || lowerDesc.contains("cash withdrawal")) {
-            return TransactionType.DEBIT;
-        }
-
-        // Payments
-        if (lowerDesc.contains("payment") || lowerDesc.contains("debit order") || lowerDesc.contains("debit")) {
-            return TransactionType.DEBIT;
-        }
-
-        // Deposits/Credits
-        if (lowerDesc.contains("deposit") || lowerDesc.contains("credit") || lowerDesc.contains("transfer in")) {
-            return TransactionType.CREDIT;
-        }
-
-        // Default based on amount sign
-        return isDebit ? TransactionType.DEBIT : TransactionType.CREDIT;
+    /**
+     * Determine if transaction is likely a debit based on description keywords
+     */
+    private boolean isLikelyDebit(String description) {
+        String lower = description.toLowerCase();
+        return lower.contains("withdrawal") ||
+               lower.contains("atm") ||
+               lower.contains("debit") ||
+               lower.contains("purchase") ||
+               lower.contains("debit order") ||
+               lower.contains("payment") && (lower.contains("to") || lower.contains("out"));
     }
 
     /**
      * Reset parser state
      */
+    @Override
     public void reset() {
+        super.reset();
         isAbsaStatement = false;
     }
 }

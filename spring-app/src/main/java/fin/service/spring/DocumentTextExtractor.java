@@ -60,9 +60,13 @@ public class DocumentTextExtractor {
      * Parse a PDF document and extract text lines.
      * Uses hybrid extraction strategy: PDFBox first, then OCR for image-based PDFs.
      * Enhanced with comprehensive quality assessment and better decision making.
+     * OPTIMIZED: Added timeout protection and better performance monitoring.
      */
     public List<String> parseDocument(File pdfFile) throws IOException {
-        logger.info("Starting text extraction from: {}", pdfFile.getName());
+        logger.info("Starting text extraction from: {} (size: {} bytes)", pdfFile.getName(), pdfFile.length());
+
+        long startTime = System.currentTimeMillis();
+        final int MAX_PROCESSING_TIME_MS = 240000; // 4 minutes max processing time
 
         try (PDDocument document = Loader.loadPDF(pdfFile)) {
             List<String> lines = new ArrayList<>();
@@ -135,8 +139,14 @@ public class DocumentTextExtractor {
             }
 
             if (needsOCR) {
+                // Check timeout before starting expensive OCR
+                long elapsedTime = System.currentTimeMillis() - startTime;
+                if (elapsedTime > MAX_PROCESSING_TIME_MS) {
+                    throw new IOException("PDF processing timeout: exceeded " + MAX_PROCESSING_TIME_MS + "ms during quality assessment");
+                }
+
                 logger.info("PDFBox extraction insufficient ({}), falling back to OCR", reason);
-                lines = extractWithOCR(document);
+                lines = extractWithOCR(document, startTime, MAX_PROCESSING_TIME_MS);
                 logger.info("OCR extraction completed with {} lines", lines.size());
             } else if (lines.isEmpty()) {
                 // Good text extraction, use as-is
@@ -155,7 +165,13 @@ public class DocumentTextExtractor {
                 throw new IOException("No text could be extracted from PDF using either PDFBox or OCR");
             }
 
-            logger.info("Text extraction completed successfully: {} lines total", lines.size());
+            long totalTime = System.currentTimeMillis() - startTime;
+            logger.info("Text extraction completed successfully: {} lines total in {}ms", lines.size(), totalTime);
+
+            // Log first 20 lines for debugging
+            int logCount = Math.min(20, lines.size());
+            logger.info("First {} extracted lines: {}", logCount, lines.subList(0, logCount));
+
             return lines;
 
         } catch (IOException e) {
@@ -165,22 +181,31 @@ public class DocumentTextExtractor {
     }    /**
      * Extract text from image-based PDF using Tesseract OCR.
      * Enhanced with better error handling and quality checks.
+     * OPTIMIZED: Reduced DPI from 300 to 200 for faster processing while maintaining accuracy.
+     * Added timeout protection to prevent infinite processing.
      */
-    private List<String> extractWithOCR(PDDocument document) throws IOException {
+    private List<String> extractWithOCR(PDDocument document, long startTime, int maxProcessingTimeMs) throws IOException {
         List<String> allLines = new ArrayList<>();
 
-        // Create PDF renderer with higher DPI for better OCR accuracy
+        // Create PDF renderer with optimized DPI for better performance/accuracy balance
         PDFRenderer renderer = new PDFRenderer(document);
         int totalPages = document.getNumberOfPages();
 
-        logger.info("Starting OCR extraction for {} pages", totalPages);
+        logger.info("Starting OCR extraction for {} pages (optimized 200 DPI)", totalPages);
 
         for (int pageIndex = 0; pageIndex < totalPages; pageIndex++) {
-            try {
-                logger.info("OCR processing page {}/{}", pageIndex + 1, totalPages);
+            // Check timeout before processing each page
+            long elapsedTime = System.currentTimeMillis() - startTime;
+            if (elapsedTime > maxProcessingTimeMs) {
+                throw new IOException("OCR processing timeout: exceeded " + maxProcessingTimeMs + "ms while processing page " + (pageIndex + 1) + " of " + totalPages);
+            }
 
-                // Use higher DPI for better OCR quality (300 DPI is optimal for financial documents)
-                BufferedImage image = renderer.renderImageWithDPI(pageIndex, 300);
+            try {
+                logger.info("OCR processing page {}/{} (elapsed: {}ms)", pageIndex + 1, totalPages, elapsedTime);
+
+                // OPTIMIZED: Use 200 DPI instead of 300 for faster processing
+                // 200 DPI provides good accuracy for financial documents while being ~2x faster
+                BufferedImage image = renderer.renderImageWithDPI(pageIndex, 200);
 
                 // Apply image preprocessing if needed
                 image = preprocessImageForOCR(image);

@@ -511,16 +511,26 @@ class UploadApiService extends BaseApiService {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
-        timeout: 120000, // 2 minutes for file processing
+        timeout: 300000, // 5 minutes for file processing (increased from 2 minutes)
+        onUploadProgress: (progressEvent) => {
+          // Optional: Add upload progress tracking if needed
+          if (progressEvent.total) {
+            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            console.log(`Upload progress: ${percentCompleted}%`);
+          }
+        },
       });
 
       return response.data;
     } catch (error) {
       if (error instanceof AxiosError && error.response?.status === 413) {
-        throw new Error('File too large. Please upload a smaller file.');
+        throw new Error('File too large. Please upload a smaller file (max 10MB).');
       }
       if (error instanceof AxiosError && error.response?.status === 415) {
         throw new Error('Unsupported file type. Please upload a PDF, CSV, or Excel file.');
+      }
+      if (error instanceof AxiosError && error.code === 'ECONNABORTED') {
+        throw new Error('Upload timed out. The file is being processed in the background. Please check back in a few minutes.');
       }
       this.handleError('File upload', error);
     }

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Database, Edit, Trash2, Plus, Save, X, AlertCircle, CheckCircle, Calendar, Settings, FileText, Receipt, FileCheck, BookOpen, AlertTriangle, History, RotateCcw, Download, Loader } from 'lucide-react';
+import { Database, Edit, Trash2, Plus, Save, X, AlertCircle, CheckCircle, Calendar, Settings, FileText, Receipt, FileCheck, BookOpen, AlertTriangle, History, RotateCcw, Download, Loader, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useApi } from '../hooks/useApi';
 import ApiMessageBanner from './shared/ApiMessageBanner';
 import type { Company, Transaction, FiscalPeriod, ApiTransaction, ApiError } from '../types/api';
@@ -24,6 +24,8 @@ interface MenuItem {
 
 type TabType = 'manual-entry' | 'classification' | 'operations';
 
+const ITEMS_PER_PAGE = 50;
+
 export default function DataManagementView({ selectedCompany }: DataManagementViewProps) {
   const api = useApi();
   const [activeTab, setActiveTab] = useState<TabType>('manual-entry');
@@ -38,6 +40,7 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentOperation, setCurrentOperation] = useState<string | null>(null);
   const [operationResult, setOperationResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const handleOperation = useCallback(async (operation: string, action: () => Promise<unknown>) => {
     setIsProcessing(true);
@@ -283,14 +286,16 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
         company_id: apiTransaction.companyId,
         fiscal_period_id: apiTransaction.fiscalPeriodId,
         date: apiTransaction.transactionDate,
-        description: apiTransaction.details || '',
+        description: apiTransaction.description || '',
         amount: apiTransaction.debitAmount > 0 ? apiTransaction.debitAmount : (apiTransaction.creditAmount || 0),
         type: apiTransaction.debitAmount > 0 ? 'debit' : 'credit',
         category: apiTransaction.category || '',
         reference: apiTransaction.reference || '',
-        created_at: apiTransaction.createdAt
+        balance: apiTransaction.balance,
+        created_at: apiTransaction.createdAt,
       }));
       setTransactions(mappedTransactions.map(t => ({ ...t, isEditing: false })));
+      setCurrentPage(1); // Reset to first page when loading new data
       // Show any API note/message returned by backend
       if (result && typeof result === 'object' && 'note' in result && typeof result.note === 'string') {
         setApiMessage(result.note);
@@ -628,7 +633,14 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
                 </tr>
               </thead>
               <tbody>
-                {transactions.map((transaction) => (
+                {(() => {
+                  // Pagination logic
+                  const totalPages = Math.ceil(transactions.length / ITEMS_PER_PAGE);
+                  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+                  const endIndex = startIndex + ITEMS_PER_PAGE;
+                  const paginatedTransactions = transactions.slice(startIndex, endIndex);
+                  return paginatedTransactions;
+                })().map((transaction) => (
                   <tr key={transaction.id}>
                     <td>
                       {transaction.isEditing ? (
@@ -761,6 +773,36 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
                 ))}
               </tbody>
             </table>
+
+            {/* Pagination Controls */}
+            {(() => {
+              const totalPages = Math.ceil(transactions.length / ITEMS_PER_PAGE);
+              return totalPages > 1 && (
+                <div className="pagination-controls">
+                  <button
+                    className="pagination-btn"
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    <ChevronLeft size={16} />
+                    Previous
+                  </button>
+
+                  <span className="pagination-info">
+                    Page {currentPage} of {totalPages} ({transactions.length} transactions)
+                  </span>
+
+                  <button
+                    className="pagination-btn"
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
+                  >
+                    Next
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              );
+            })()}
 
             {transactions.length === 0 && (
               <div className="empty-state">

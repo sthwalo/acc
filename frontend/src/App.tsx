@@ -42,6 +42,12 @@ function App() {
     }
   }, [api]);
 
+  const handleViewChange = useCallback((view: string) => {
+    if (['companies', 'fiscal-periods', 'upload', 'transactions', 'generate-reports', 'data-management', 'payroll-management', 'budget-management', 'employee-management', 'depreciation-calculator', 'current-time', 'system-logs', 'payslips'].includes(view)) {
+      setCurrentView(view as View);
+    }
+  }, []);
+
   useEffect(() => {
     if (isAuthenticated) {
       checkHealth();
@@ -172,7 +178,7 @@ function App() {
           selectedFiscalPeriod ? (
             <PayslipsView 
               selectedFiscalPeriod={selectedFiscalPeriod}
-              onViewChange={setCurrentView}
+              onViewChange={handleViewChange}
             />
           ) : (
             <div className="empty-state">
@@ -192,7 +198,7 @@ function App() {
         return selectedCompany ? (
           <EmployeeManagementView 
             selectedCompany={selectedCompany} 
-            onViewChange={setCurrentView}
+            onViewChange={handleViewChange}
           />
         ) : (
           <div className="empty-state">

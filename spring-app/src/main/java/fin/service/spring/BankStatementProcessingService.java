@@ -10,6 +10,8 @@ import fin.repository.FiscalPeriodRepository;
 import fin.service.parser.*;
 import fin.validation.BankTransactionValidator;
 import fin.validation.ValidationResult;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -28,6 +30,8 @@ import java.util.regex.Pattern;
  */
 @Service
 public class BankStatementProcessingService {
+    private static final Logger logger = LoggerFactory.getLogger(BankStatementProcessingService.class);
+
     private final List<TransactionParser> parsers;
     private final DocumentTextExtractor textExtractor;
     private final BankTransactionRepository transactionRepository;
@@ -361,6 +365,15 @@ public class BankStatementProcessingService {
      * Process bank statement with MultipartFile (for REST API)
      */
     public StatementProcessingResult processStatement(org.springframework.web.multipart.MultipartFile file, Long companyId, Long fiscalPeriodId) {
+        // File size validation to prevent OCR processing issues with very large files
+        final long MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB limit - increased with memory protection
+        if (file.getSize() > MAX_FILE_SIZE_BYTES) {
+            throw new IllegalArgumentException(
+                String.format("File size %d bytes exceeds maximum allowed size of %d bytes (%.1f MB). " +
+                            "Please use a smaller PDF file or contact support for large file processing.",
+                            file.getSize(), MAX_FILE_SIZE_BYTES, MAX_FILE_SIZE_BYTES / (1024.0 * 1024.0)));
+        }
+
         // Validate company exists
         Company company = companyService.getCompanyById(companyId);
         if (company == null) {
@@ -370,11 +383,18 @@ public class BankStatementProcessingService {
         try {
             // Create temporary file
             File tempFile = File.createTempFile("bank_statement_", ".pdf");
+            logger.info("Created temp file: {} for processing file: {} (size: {} bytes)",
+                       tempFile.getAbsolutePath(), file.getOriginalFilename(), file.getSize());
             file.transferTo(tempFile);
+            logger.info("Transferred file to temp location successfully");
 
             try {
+                logger.info("Starting text extraction for file: {}", file.getOriginalFilename());
                 List<String> lines = textExtractor.parseDocument(tempFile);
+                logger.info("Text extraction completed successfully: {} lines extracted", lines.size());
+
                 List<BankTransaction> transactions = processLines(lines, file.getOriginalFilename(), company);
+                logger.info("Line processing completed: {} transactions parsed", transactions.size());
 
                 // Validate and save each transaction
                 List<BankTransaction> validTransactions = new ArrayList<>();
@@ -397,12 +417,18 @@ public class BankStatementProcessingService {
                     }
                 }
 
+                logger.info("Processing completed: {} valid transactions saved, {} errors", validTransactions.size(), errors.size());
                 return new StatementProcessingResult(validTransactions, lines.size(), validTransactions.size(), errors.size(), errors);
             } finally {
                 // Clean up temporary file
                 tempFile.delete();
+                logger.info("Cleaned up temp file: {}", tempFile.getAbsolutePath());
             }
-        } catch (IOException e) {
+        } catch (IllegalArgumentException e) {
+            logger.error("Validation error processing file {}: {}", file.getOriginalFilename(), e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            logger.error("Unexpected error processing file {}: {}", file.getOriginalFilename(), e.getMessage(), e);
             throw new RuntimeException("Failed to process uploaded file: " + file.getOriginalFilename(), e);
         }
     }

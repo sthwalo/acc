@@ -11,8 +11,7 @@ services:
     environment:
       - NODE_ENV=production
       - CONTAINER_MODE=true
-      # API communication through host (browser can't resolve container service names)
-      - VITE_API_URL=http://localhost:8080/api
+      # API communication through Docker network (containers can resolve service names)
       - VITE_API_URL=http://fin-app:8080/api
     ports:
       - "3000:3000"
