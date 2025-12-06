@@ -148,5 +148,62 @@ public interface BankTransactionRepository extends JpaRepository<BankTransaction
     @Query("SELECT t FROM BankTransaction t WHERE t.companyId = :companyId AND t.accountCode IS NOT NULL AND t.id NOT IN (SELECT DISTINCT jel.sourceTransactionId FROM JournalEntryLine jel WHERE jel.sourceTransactionId IS NOT NULL)")
     List<BankTransaction> findClassifiedTransactionsWithoutJournalEntries(@Param("companyId") Long companyId);
 
+    /**
+     * Check if transaction exists (duplicate detection).
+     * Uses 5-field matching: company_id, transaction_date, debit_amount, 
+     * credit_amount, description (case-insensitive), balance.
+     * 
+     * @param companyId Company ID
+     * @param transactionDate Transaction date
+     * @param debitAmount Debit amount
+     * @param creditAmount Credit amount
+     * @param description Transaction description (case-insensitive match)
+     * @param balance Running balance after transaction
+     * @return true if transaction exists, false otherwise
+     */
+    @Query("SELECT CASE WHEN COUNT(t) > 0 THEN true ELSE false END FROM BankTransaction t " +
+           "WHERE t.companyId = :companyId " +
+           "AND t.transactionDate = :transactionDate " +
+           "AND t.debitAmount = :debitAmount " +
+           "AND t.creditAmount = :creditAmount " +
+           "AND LOWER(t.description) = LOWER(:description) " +
+           "AND t.balance = :balance")
+    boolean existsByCompanyIdAndTransactionDateAndAmountsAndDescriptionAndBalance(
+        @Param("companyId") Long companyId,
+        @Param("transactionDate") LocalDate transactionDate,
+        @Param("debitAmount") java.math.BigDecimal debitAmount,
+        @Param("creditAmount") java.math.BigDecimal creditAmount,
+        @Param("description") String description,
+        @Param("balance") java.math.BigDecimal balance
+    );
+
+    /**
+     * Find duplicate transaction (for reporting).
+     * Uses same 5-field matching as existsByCompanyIdAnd... method.
+     * 
+     * @param companyId Company ID
+     * @param transactionDate Transaction date
+     * @param debitAmount Debit amount
+     * @param creditAmount Credit amount
+     * @param description Transaction description (case-insensitive match)
+     * @param balance Running balance after transaction
+     * @return Existing transaction if found, empty Optional otherwise
+     */
+    @Query("SELECT t FROM BankTransaction t " +
+           "WHERE t.companyId = :companyId " +
+           "AND t.transactionDate = :transactionDate " +
+           "AND t.debitAmount = :debitAmount " +
+           "AND t.creditAmount = :creditAmount " +
+           "AND LOWER(t.description) = LOWER(:description) " +
+           "AND t.balance = :balance")
+    java.util.Optional<BankTransaction> findByCompanyIdAndTransactionDateAndAmountsAndDescriptionAndBalance(
+        @Param("companyId") Long companyId,
+        @Param("transactionDate") LocalDate transactionDate,
+        @Param("debitAmount") java.math.BigDecimal debitAmount,
+        @Param("creditAmount") java.math.BigDecimal creditAmount,
+        @Param("description") String description,
+        @Param("balance") java.math.BigDecimal balance
+    );
+
     void deleteByCompanyId(Long companyId);
 }

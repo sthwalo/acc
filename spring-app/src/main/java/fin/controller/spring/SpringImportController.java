@@ -27,6 +27,7 @@
 package fin.controller.spring;
 
 import fin.model.BankTransaction;
+import fin.model.dto.BankStatementUploadResponse;
 import fin.service.spring.BankStatementProcessingService;
 import fin.service.spring.SpringTransactionClassificationService;
 import fin.service.spring.SpringCompanyService;
@@ -59,18 +60,36 @@ public class SpringImportController {
      * Upload and process a bank statement PDF
      */
     @PostMapping("/companies/{companyId}/fiscal-periods/{fiscalPeriodId}/imports/bank-statement")
-    public ResponseEntity<BankStatementProcessingService.StatementProcessingResult> processBankStatement(
+    public ResponseEntity<BankStatementUploadResponse> processBankStatement(
             @PathVariable Long companyId,
             @PathVariable Long fiscalPeriodId,
             @RequestParam("file") MultipartFile file) {
         try {
             BankStatementProcessingService.StatementProcessingResult result =
                 bankStatementService.processStatement(file, companyId, fiscalPeriodId);
-            return ResponseEntity.ok(result);
+            
+            // Wrap result in enhanced response with detailed feedback
+            BankStatementUploadResponse response = new BankStatementUploadResponse(result);
+            
+            // Return appropriate HTTP status based on success
+            if (response.isSuccess()) {
+                return ResponseEntity.ok(response);
+            } else {
+                // Partial success or complete failure
+                return ResponseEntity.status(207).body(response); // 207 Multi-Status
+            }
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
+            // Return structured error response for bad requests
+            BankStatementUploadResponse errorResponse = new BankStatementUploadResponse(
+                "Invalid request: " + e.getMessage()
+            );
+            return ResponseEntity.badRequest().body(errorResponse);
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
+            // Return structured error response for server errors
+            BankStatementUploadResponse errorResponse = new BankStatementUploadResponse(
+                "Failed to process bank statement: " + e.getMessage()
+            );
+            return ResponseEntity.internalServerError().body(errorResponse);
         }
     }
 

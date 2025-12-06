@@ -4,6 +4,7 @@ import fin.context.TransactionParsingContext;
 import fin.model.BankTransaction;
 import fin.model.Company;
 import fin.model.FiscalPeriod;
+import fin.model.dto.RejectedTransaction;
 import fin.model.parser.ParsedTransaction;
 import fin.repository.BankTransactionRepository;
 import fin.repository.FiscalPeriodRepository;
@@ -12,7 +13,6 @@ import fin.validation.BankTransactionValidator;
 import fin.validation.ValidationResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -38,19 +38,22 @@ public class BankStatementProcessingService {
     private final FiscalPeriodRepository fiscalPeriodRepository;
     private final BankTransactionValidator validator;
     private final SpringCompanyService companyService;
+    private final TransactionDuplicateChecker duplicateChecker;
+    private final FiscalPeriodBoundaryValidator fiscalPeriodValidator;
 
     // Date constants for fiscal year handling
     private static final int DEFAULT_FISCAL_YEAR = 2025;
     private static final int MID_YEAR_MONTH = 6; // June
     private static final int MID_YEAR_DAY = 30; // 30th
 
-    @Autowired
     public BankStatementProcessingService(
             DocumentTextExtractor textExtractor,
             BankTransactionRepository transactionRepository,
             FiscalPeriodRepository fiscalPeriodRepository,
             BankTransactionValidator validator,
             SpringCompanyService companyService,
+            TransactionDuplicateChecker duplicateChecker,
+            FiscalPeriodBoundaryValidator fiscalPeriodValidator,
             StandardBankTabularParser standardBankParser,
             AbsaBankParser absaBankParser,
             FnbBankParser fnbBankParser,
@@ -61,6 +64,8 @@ public class BankStatementProcessingService {
         this.fiscalPeriodRepository = fiscalPeriodRepository;
         this.validator = validator;
         this.companyService = companyService;
+        this.duplicateChecker = duplicateChecker;
+        this.fiscalPeriodValidator = fiscalPeriodValidator;
         this.parsers = Arrays.asList(standardBankParser, absaBankParser, fnbBankParser, creditParser, serviceFeeParser);
     }
 
@@ -396,29 +401,100 @@ public class BankStatementProcessingService {
                 List<BankTransaction> transactions = processLines(lines, file.getOriginalFilename(), company);
                 logger.info("Line processing completed: {} transactions parsed", transactions.size());
 
-                // Validate and save each transaction
+                // Validate and save each transaction with duplicate and fiscal period checks
                 List<BankTransaction> validTransactions = new ArrayList<>();
+                List<RejectedTransaction> rejectedTransactions = new ArrayList<>();
                 List<String> errors = new ArrayList<>();
+                
+                int duplicateCount = 0;
+                int outOfPeriodCount = 0;
+                int validationErrorCount = 0;
+                
                 for (BankTransaction transaction : transactions) {
                     // Set fiscal period if provided BEFORE validation
                     if (fiscalPeriodId != null) {
                         transaction.setFiscalPeriodId(fiscalPeriodId);
                     }
 
+                    // Check for duplicate
+                    if (duplicateChecker.isDuplicate(transaction)) {
+                        duplicateCount++;
+                        BankTransaction existing = duplicateChecker.findDuplicate(transaction);
+                        String detail = existing != null 
+                            ? String.format("Duplicate of transaction ID %d (uploaded %s)", existing.getId(), existing.getCreatedAt())
+                            : "Duplicate transaction already exists in database";
+                        
+                        rejectedTransactions.add(new RejectedTransaction(
+                            transaction.getTransactionDate(),
+                            transaction.getDetails(),
+                            transaction.getDebitAmount(),
+                            transaction.getCreditAmount(),
+                            transaction.getBalance(),
+                            RejectedTransaction.RejectionReason.DUPLICATE,
+                            detail
+                        ));
+                        
+                        logger.debug("Skipping duplicate transaction: {}", transaction.getDetails());
+                        continue; // Skip to next transaction
+                    }
+                    
+                    // Check fiscal period boundary
+                    if (fiscalPeriodId != null && !fiscalPeriodValidator.isWithinFiscalPeriod(transaction)) {
+                        outOfPeriodCount++;
+                        String detail = fiscalPeriodValidator.getValidationErrorMessage(transaction);
+                        
+                        rejectedTransactions.add(new RejectedTransaction(
+                            transaction.getTransactionDate(),
+                            transaction.getDetails(),
+                            transaction.getDebitAmount(),
+                            transaction.getCreditAmount(),
+                            transaction.getBalance(),
+                            RejectedTransaction.RejectionReason.OUT_OF_PERIOD,
+                            detail
+                        ));
+                        
+                        logger.debug("Skipping out-of-period transaction: {} (date: {})", 
+                            transaction.getDetails(), transaction.getTransactionDate());
+                        continue; // Skip to next transaction
+                    }
+
+                    // Standard validation
                     ValidationResult validationResult = validator.validate(transaction);
                     if (validationResult.isValid()) {
                         validTransactions.add(transactionRepository.save(transaction));
                     } else {
                         // Collect validation errors
+                        validationErrorCount++;
                         StringBuilder errorMsg = new StringBuilder("Invalid transaction: " + transaction.getDetails());
                         validationResult.getErrors().forEach(error ->
                             errorMsg.append(" - ").append(error.getField()).append(": ").append(error.getMessage()));
                         errors.add(errorMsg.toString());
+                        
+                        rejectedTransactions.add(new RejectedTransaction(
+                            transaction.getTransactionDate(),
+                            transaction.getDetails(),
+                            transaction.getDebitAmount(),
+                            transaction.getCreditAmount(),
+                            transaction.getBalance(),
+                            RejectedTransaction.RejectionReason.VALIDATION_ERROR,
+                            errorMsg.toString()
+                        ));
                     }
                 }
 
-                logger.info("Processing completed: {} valid transactions saved, {} errors", validTransactions.size(), errors.size());
-                return new StatementProcessingResult(validTransactions, lines.size(), validTransactions.size(), errors.size(), errors);
+                logger.info("Processing completed: {} valid transactions saved, {} duplicates, {} out-of-period, {} validation errors", 
+                    validTransactions.size(), duplicateCount, outOfPeriodCount, validationErrorCount);
+                
+                return new StatementProcessingResult(
+                    validTransactions, 
+                    lines.size(), 
+                    validTransactions.size(), 
+                    duplicateCount,
+                    outOfPeriodCount,
+                    validationErrorCount,
+                    rejectedTransactions,
+                    errors
+                );
             } finally {
                 // Clean up temporary file
                 tempFile.delete();
@@ -471,22 +547,33 @@ public class BankStatementProcessingService {
         private final List<BankTransaction> transactions;
         private final int processedLines;
         private final int validTransactions;
+        private final int duplicateTransactions;
+        private final int outOfPeriodTransactions;
         private final int invalidTransactions;
+        private final List<RejectedTransaction> rejectedTransactions;
         private final List<String> errors;
 
         public StatementProcessingResult(List<BankTransaction> transactions, int processedLines,
-                                       int validTransactions, int invalidTransactions, List<String> errors) {
+                                       int validTransactions, int duplicateTransactions,
+                                       int outOfPeriodTransactions, int invalidTransactions,
+                                       List<RejectedTransaction> rejectedTransactions, List<String> errors) {
             this.transactions = transactions;
             this.processedLines = processedLines;
             this.validTransactions = validTransactions;
+            this.duplicateTransactions = duplicateTransactions;
+            this.outOfPeriodTransactions = outOfPeriodTransactions;
             this.invalidTransactions = invalidTransactions;
+            this.rejectedTransactions = rejectedTransactions;
             this.errors = errors;
         }
 
         public List<BankTransaction> getTransactions() { return transactions; }
         public int getProcessedLines() { return processedLines; }
         public int getValidTransactions() { return validTransactions; }
+        public int getDuplicateTransactions() { return duplicateTransactions; }
+        public int getOutOfPeriodTransactions() { return outOfPeriodTransactions; }
         public int getInvalidTransactions() { return invalidTransactions; }
+        public List<RejectedTransaction> getRejectedTransactions() { return rejectedTransactions; }
         public List<String> getErrors() { return errors; }
     }
 
