@@ -26,9 +26,13 @@
 
 package fin.service.spring;
 
+import fin.model.Account;
 import fin.model.BankTransaction;
 import fin.model.Company;
 import fin.model.FiscalPeriod;
+import fin.model.JournalEntryLine;
+import fin.repository.AccountRepository;
+import fin.repository.JournalEntryLineRepository;
 import fin.util.SpringDebugger;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -44,6 +48,7 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Spring service for exporting transactions to PDF format with full multiline support
@@ -51,9 +56,16 @@ import java.util.List;
 @Service
 public class SpringPdfExportService {
 
+    private final JournalEntryLineRepository journalEntryLineRepository;
+    private final AccountRepository accountRepository;
     private final SpringDebugger debugger;
 
-    public SpringPdfExportService(SpringDebugger debugger) {
+    public SpringPdfExportService(
+            JournalEntryLineRepository journalEntryLineRepository,
+            AccountRepository accountRepository,
+            SpringDebugger debugger) {
+        this.journalEntryLineRepository = journalEntryLineRepository;
+        this.accountRepository = accountRepository;
         this.debugger = debugger;
     }
 
@@ -68,6 +80,11 @@ public class SpringPdfExportService {
     public byte[] exportTransactionsToPdfBytes(List<BankTransaction> transactions, Company company, FiscalPeriod fiscalPeriod) throws IOException {
         debugger.logMethodEntry("SpringPdfExportService", "exportTransactionsToPdfBytes",
             transactions.size(), company != null ? company.getName() : "null", fiscalPeriod != null ? fiscalPeriod.getPeriodName() : "null");
+
+        // Enrich transactions with classification data from journal entries
+        if (company != null) {
+            enrichTransactionsWithClassification(transactions, company.getId());
+        }
 
         PDDocument document = new PDDocument();
 
@@ -348,11 +365,11 @@ public class SpringPdfExportService {
         contentStream.endText();
         xPosition += columnWidths[5];
 
-        // Classification (Category)
-        String category = transaction.getCategory() != null ? transaction.getCategory() : "";
+        // Classification - Main Account in [code] name format
+        String classification = getMainAccountClassification(transaction);
         contentStream.beginText();
         contentStream.newLineAtOffset(xPosition, yPosition);
-        contentStream.showText(truncateText(category, 10));
+        contentStream.showText(truncateText(classification, 18));
         contentStream.endText();
         xPosition += columnWidths[6];
 
@@ -471,5 +488,62 @@ public class SpringPdfExportService {
     private String truncateText(String text, int maxLength) {
         if (text == null) return "";
         return text.length() > maxLength ? text.substring(0, maxLength - 1) + "." : text;
+    }
+
+    /**
+     * Enrich transactions with classification data from journal entries.
+     * Populates the transient debit/credit account fields by querying journal_entry_lines.
+     * This matches the pattern used in SpringCompanyController.getTransactions().
+     */
+    private void enrichTransactionsWithClassification(List<BankTransaction> transactions, Long companyId) {
+        for (BankTransaction transaction : transactions) {
+            List<JournalEntryLine> journalLines = journalEntryLineRepository.findBySourceTransactionId(transaction.getId());
+            
+            if (!journalLines.isEmpty()) {
+                // For each transaction, we have 2 journal lines (debit and credit)
+                // Find the debit line (debit_amount > 0) and credit line (credit_amount > 0)
+                for (JournalEntryLine line : journalLines) {
+                    Optional<Account> accountOpt = accountRepository.findById(line.getAccountId());
+                    
+                    if (accountOpt.isPresent()) {
+                        Account account = accountOpt.get();
+                        
+                        if (line.getDebitAmount() != null && line.getDebitAmount().compareTo(java.math.BigDecimal.ZERO) > 0) {
+                            // This is a debit line
+                            transaction.setDebitAccountId(account.getId());
+                            transaction.setDebitAccountCode(account.getAccountCode());
+                            transaction.setDebitAccountName(account.getAccountName());
+                        } else if (line.getCreditAmount() != null && line.getCreditAmount().compareTo(java.math.BigDecimal.ZERO) > 0) {
+                            // This is a credit line
+                            transaction.setCreditAccountId(account.getId());
+                            transaction.setCreditAccountCode(account.getAccountCode());
+                            transaction.setCreditAccountName(account.getAccountName());
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Get the main account for classification display.
+     * Logic: Show the non-cash/non-bank account
+     * - Credit transaction (money IN) → show credit account (revenue/income)
+     * - Debit transaction (money OUT) → show debit account (expense)
+     */
+    private String getMainAccountClassification(BankTransaction transaction) {
+        if (transaction.getCreditAmount() != null && transaction.getCreditAmount().compareTo(java.math.BigDecimal.ZERO) > 0) {
+            // Credit transaction → main account is the credit account (revenue/income)
+            if (transaction.getCreditAccountCode() != null && transaction.getCreditAccountName() != null) {
+                return "[" + transaction.getCreditAccountCode() + "] " + transaction.getCreditAccountName();
+            }
+        } else if (transaction.getDebitAmount() != null && transaction.getDebitAmount().compareTo(java.math.BigDecimal.ZERO) > 0) {
+            // Debit transaction → main account is the debit account (expense)
+            if (transaction.getDebitAccountCode() != null && transaction.getDebitAccountName() != null) {
+                return "[" + transaction.getDebitAccountCode() + "] " + transaction.getDebitAccountName();
+            }
+        }
+        // Fallback to original category if not classified
+        return transaction.getCategory() != null ? transaction.getCategory() : "Not classified";
     }
 }

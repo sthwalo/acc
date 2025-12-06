@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Database, Edit, Trash2, Plus, Save, X, AlertCircle, CheckCircle, Calendar, Settings, FileText, Receipt, FileCheck, BookOpen, AlertTriangle, History, RotateCcw, Download, Loader, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useApi } from '../hooks/useApi';
 import ApiMessageBanner from './shared/ApiMessageBanner';
-import type { Company, Transaction, FiscalPeriod, ApiTransaction, ApiError } from '../types/api';
+import AccountSelector from './shared/AccountSelector';
+import type { Company, Transaction, FiscalPeriod, ApiTransaction, ApiError, Account } from '../types/api';
 
 interface DataManagementViewProps {
   selectedCompany: Company;
@@ -384,10 +385,27 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
 
     try {
       setError(null);
-      // TODO: Implement actual update API call
-      // For now, simulate the update
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // If both debit and credit accounts are selected, update classification
+      if (editingTransaction.debit_account_id && editingTransaction.credit_account_id) {
+        const response = await api.classification.updateTransactionClassification(
+          selectedCompany.id,
+          editingTransaction.id,
+          editingTransaction.debit_account_id,
+          editingTransaction.credit_account_id
+        );
 
+        if (!response.success) {
+          throw new Error(response.message || 'Failed to update transaction classification');
+        }
+
+        setSuccess('Transaction classification updated successfully');
+      } else {
+        // TODO: Implement general transaction update API call for non-classification fields
+        setSuccess('Transaction updated successfully (classification pending)');
+      }
+
+      // Update local state
       setTransactions(prev =>
         prev.map(t =>
           t.id === editingTransaction.id
@@ -397,7 +415,6 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
       );
 
       setEditingTransaction(null);
-      setSuccess('Transaction updated successfully');
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update transaction');
@@ -710,14 +727,21 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
                     </td>
                     <td>
                       {transaction.isEditing ? (
-                        <input
-                          type="text"
+                        <AccountSelector
+                          companyId={selectedCompany.id}
+                          value={editingTransaction?.debit_account_id || transaction.debit_account_id || null}
+                          onChange={(accountId, account) => {
+                            if (!editingTransaction) return;
+                            setEditingTransaction(prev => prev ? {
+                              ...prev,
+                              debit_account_id: accountId,
+                              debit_account_code: account?.code || account?.accountCode || null,
+                              debit_account_name: account?.name || account?.accountName || null
+                            } : null);
+                          }}
+                          placeholder="Select debit account..."
                           id={`transaction-debit-account-${transaction.id}`}
                           name={`transaction-debit-account-${transaction.id}`}
-                          value={editingTransaction?.debit_account_name || transaction.debit_account_name || ''}
-                          onChange={(e) => updateEditingTransaction('debit_account_name', e.target.value)}
-                          autoComplete="off"
-                          placeholder="Select debit account..."
                         />
                       ) : (
                         <div className="account-cell">
@@ -735,14 +759,21 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
                     </td>
                     <td>
                       {transaction.isEditing ? (
-                        <input
-                          type="text"
+                        <AccountSelector
+                          companyId={selectedCompany.id}
+                          value={editingTransaction?.credit_account_id || transaction.credit_account_id || null}
+                          onChange={(accountId, account) => {
+                            if (!editingTransaction) return;
+                            setEditingTransaction(prev => prev ? {
+                              ...prev,
+                              credit_account_id: accountId,
+                              credit_account_code: account?.code || account?.accountCode || null,
+                              credit_account_name: account?.name || account?.accountName || null
+                            } : null);
+                          }}
+                          placeholder="Select credit account..."
                           id={`transaction-credit-account-${transaction.id}`}
                           name={`transaction-credit-account-${transaction.id}`}
-                          value={editingTransaction?.credit_account_name || transaction.credit_account_name || ''}
-                          onChange={(e) => updateEditingTransaction('credit_account_name', e.target.value)}
-                          autoComplete="off"
-                          placeholder="Select credit account..."
                         />
                       ) : (
                         <div className="account-cell">

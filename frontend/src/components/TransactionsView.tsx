@@ -78,6 +78,28 @@ export default function TransactionsView({ selectedCompany, selectedFiscalPeriod
     return new Date(dateTimeString).toLocaleString('en-ZA');
   };
 
+  /**
+   * Get the main account for classification display.
+   * Logic: Show the non-cash/non-bank account
+   * - Credit transaction (money IN) → show credit account (revenue/income)
+   * - Debit transaction (money OUT) → show debit account (expense)
+   */
+  const getMainAccountClassification = (transaction: ApiTransaction): string => {
+    if (transaction.creditAmount > 0) {
+      // Credit transaction → main account is the credit account (revenue/income)
+      if (transaction.creditAccountCode && transaction.creditAccountName) {
+        return `[${transaction.creditAccountCode}] ${transaction.creditAccountName}`;
+      }
+    } else if (transaction.debitAmount > 0) {
+      // Debit transaction → main account is the debit account (expense)
+      if (transaction.debitAccountCode && transaction.debitAccountName) {
+        return `[${transaction.debitAccountCode}] ${transaction.debitAccountName}`;
+      }
+    }
+    // Fallback to original category if not classified
+    return transaction.category || 'Not classified';
+  };
+
   const filteredTransactions = transactions.filter(transaction => {
     const matchesSearch = (transaction.description || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (transaction.reference || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -317,7 +339,7 @@ export default function TransactionsView({ selectedCompany, selectedFiscalPeriod
                 <td className="debit-cell">{transaction.debitAmount > 0 ? formatCurrency(transaction.debitAmount) : ''}</td>
                 <td className="credit-cell">{transaction.creditAmount > 0 ? formatCurrency(transaction.creditAmount) : ''}</td>
                 <td>{transaction.balance ? formatCurrency(transaction.balance) : ''}</td>
-                <td>{transaction.category || ''}</td>
+                <td className="classification-cell">{getMainAccountClassification(transaction)}</td>
                 <td>{formatDateTime(transaction.createdAt)}</td>
               </tr>
             ))}

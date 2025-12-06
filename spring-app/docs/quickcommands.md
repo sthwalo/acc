@@ -179,3 +179,21 @@ cd /Users/sthwalonyoni/FIN && docker compose -f docker-compose.yml -f docker-com
 cd /Users/sthwalonyoni/FIN && docker compose -f docker-compose.yml -f docker-compose.frontend.yml down && docker compose -f docker-compose.yml -f docker-compose.frontend.yml build --no-cache && docker compose -f docker-compose.yml -f docker-compose.frontend.yml up -d
 
 cd /Users/sthwalonyoni/FIN/spring-app && rm build/libs/fin-spring.jar && ./gradlew clean build --no-daemon -x test && cd .. && docker compose -f docker-compose.yml -f docker-compose.frontend.yml down && docker compose -f docker-compose.yml -f docker-compose.frontend.yml up -d
+
+Journal Commands testing:
+
+curl -X PUT "http://localhost:8080/api/v1/companies/11/classification/transactions/17570" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "debitAccountId": 1300,
+    "creditAccountId": 1329
+  }' 2>&1
+
+source /Users/sthwalonyoni/FIN/.env && psql -h localhost -p 5432 -U "$DATABASE_USER" -d drimacc_db -c "SELECT jel.id, jel.account_id, jel.description, jel.debit_amount, jel.credit_amount FROM journal_entry_lines jel WHERE jel.source_transaction_id = 17570 ORDER BY jel.line_number;" 2>&1
+
+curl -X PUT "http://localhost:8080/api/v1/companies/11/classification/transactions/17570" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "debitAccountId": 1340,
+    "creditAccountId": 1330
+  }' 2>&1

@@ -77,8 +77,7 @@ public class JournalEntry {
     private LocalDateTime updatedAt;
 
     // Associated journal entry lines
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JoinColumn(name = "journal_entry_id")
+    @OneToMany(mappedBy = "journalEntry", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private List<JournalEntryLine> lines;
 
     public JournalEntry() {

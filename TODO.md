@@ -1,71 +1,69 @@
 # Pending Tasks - Transaction Classification & Account Selection
 
-**Date:** 5 December 2025  
-**Status:** Paused - User needs rest, resuming tomorrow
+**Date:** 6 December 2025  
+**Status:** Backend Complete - Frontend Implementation Next
 
 ---
 
 ## Current State
 
-### ✅ Completed Today
+### ✅ Completed (Backend)
 - Fixed journal entry descriptions from NULL to "[code] name" format
-- Updated PUT `/transactions/{id}/classification` endpoint from stub to implementation
-- Established delegation chain through service layers (Controller → SpringTransactionClassificationService → SpringAccountClassificationService)
+- Implemented full `updateTransactionClassification()` in `AccountClassificationService` (157 lines)
+  - Validates transaction and accounts belong to company
+  - Updates existing journal entries or creates new ones
+  - Maintains double-entry accounting with debit/credit lines
+- Established delegation chain through all service layers
+- Updated PUT `/api/v1/companies/{companyId}/classification/transactions/{transactionId}` endpoint
 - Code compiles successfully (`./gradlew compileJava`)
+- API testing completed via curl - verified create and update scenarios
+- Database verification confirmed descriptions show "[code] name" format
+- All changes committed (commit hash: 6c5945a)
+- Enhanced collaboration protocol documented in copilot-instructions.md
 
-### ⚠️ Where We Stopped
-- User questioned why methods were added to `SpringAccountClassificationService` (the @Deprecated wrapper)
-- Core implementation in `AccountClassificationService` still needs to be written
-- Frontend account selector component not yet built
-- Changes not committed (user halted before commit)
+### ⚠️ Current Focus
+- Frontend account selector component (not started)
+- Frontend integration in DataManagementView (not started)
 
 ---
 
-## Pending Tasks for Tomorrow
+## Pending Tasks
 
-### 1. **Explain Architecture Before Commit** (PRIORITY)
-**Status:** Not Started  
-**Description:** User asked: "What are you adding you just deprecated some methods...i would like to know why before you add and commit anything"
+### 1. ~~Explain Architecture Before Commit~~ ✅
+**Status:** Completed  
+**Description:** Clarified SpringAccountClassificationService wrapper pattern to user. User confirmed understanding after explanation.
 
-Need to clarify:
-- `SpringAccountClassificationService` is @Deprecated as a **class** (migration recommendation to use `AccountClassificationService` directly)
-- Adding wrapper methods to it is **correct** - all 13 existing methods follow same delegation pattern
-- The wrapper delegates to `AccountClassificationService` (2345-line core service where all business logic lives)
-- This is standard architecture pattern for backward compatibility during migration
+### 2. ~~Get User Approval for Core Implementation~~ ✅
+**Status:** Completed  
+**Description:** User approved phased implementation approach (Core Logic → Compilation → Testing).
 
-### 2. **Get User Approval for Core Implementation**
-**Status:** Not Started  
-**Description:** After architecture explanation, get explicit approval to implement `updateTransactionClassification()` in `AccountClassificationService`.
-
-Reference similar method: `generateJournalEntriesForClassifiedTransactions()` at lines 2274-2324
-
-### 3. **Implement Core updateTransactionClassification() Logic**
-**Status:** Not Started  
+### 3. ~~Implement Core updateTransactionClassification() Logic~~ ✅
+**Status:** Completed  
 **File:** `/spring-app/src/main/java/fin/service/spring/AccountClassificationService.java`
 
-**Business Logic Required:**
-1. Query: `journalEntryLineRepository.findBySourceTransactionId(transactionId)`
-2. If lines exist:
-   - Find debit line (`debitAmount > 0`) and credit line (`creditAmount > 0`)
-   - Update `account_id` fields on both lines
-3. If no lines exist:
-   - Create new `JournalEntry` header
-   - Create 2 `JournalEntryLine` records (debit and credit)
-   - Match pattern in `generateJournalEntriesForClassifiedTransactions()`
-4. Validate accounts belong to `companyId` before update
+**Implementation Details:**
+- Lines 2336-2485: Main method `updateTransactionClassification()` (150 lines)
+- Lines 2409-2438: Helper method `updateExistingJournalLines()`
+- Lines 2443-2485: Helper method `createNewJournalEntry()`
+- Validates transaction and accounts belong to company
+- Updates existing journal entries or creates new ones
+- Maintains double-entry accounting (debit + credit lines)
+- Updates transaction.account_code on successful classification
 
-### 4. **Test Journal Entry Description Fix**
-**Status:** Not Started  
-**Description:** Verify that `journal_entry_lines.description` now shows '[code] name' format instead of NULL.
+### 4. ~~Test Journal Entry Description Fix~~ ✅
+**Status:** Completed  
+**Test Results:**
+- Transaction 17570 tested (create and update scenarios)
+- Descriptions show correct format: "[1100] Bank - Current Account", "[8400] Communication", "[6100-001] Corobrik Service Revenue"
+- Database queries confirmed account_id updates work correctly
+- Same journal_entry_line IDs (136852, 136853) prove update vs create
 
-**Test Query:**
-```sql
-SELECT description FROM journal_entry_lines 
-WHERE source_transaction_id IS NOT NULL 
-LIMIT 10;
+**API Endpoint Tested:**
+```bash
+curl -X PUT "http://localhost:8080/api/v1/companies/1/classification/transactions/17570" \
+  -H "Content-Type: application/json" \
+  -d '{"debitAccountId": 1340, "creditAccountId": 1330}'
 ```
-
-**Expected Format:** `[8400] Communication`, `[1000] Petty Cash`, etc.
 
 ### 5. **Build Frontend AccountSelector Component**
 **Status:** Not Started  
@@ -105,15 +103,17 @@ LIMIT 10;
 5. Query `journal_entry_lines` to confirm `account_id` fields updated correctly
 6. Verify descriptions show '[code] name' format
 
-### 8. **Commit Backend Changes**
-**Status:** Not Started  
-**Files to Commit:**
+### 8. ~~Commit Backend Changes~~ ✅
+**Status:** Completed (commit hash: 6c5945a)  
+**Files Committed:**
 1. `AccountClassificationService.java` (journal entry description fix + core implementation)
 2. `SpringTransactionClassificationController.java` (endpoint implementation)
 3. `SpringTransactionClassificationService.java` (delegation method)
 4. `SpringAccountClassificationService.java` (wrapper delegation method)
+5. `.github/copilot-instructions.md` (collaboration protocol enhancement)
+6. `TODO.md` (this file - task tracking)
 
-**Commit Message:** `Fix journal entry descriptions and implement transaction classification update`
+**Commit Stats:** 6 files changed, 396 insertions(+), 10 deletions(-)
 
 ### 9. **Resolve StandardBankTabularParserTest Failures** (Optional/Future)
 **Status:** Not Started  
@@ -171,7 +171,10 @@ void updateTransactionClassification(
 
 ---
 
-## Next Immediate Action (Tomorrow)
-**Step 1:** Explain architecture to user  
-**Step 2:** Get approval for core implementation approach  
-**Step 3:** Implement core logic in `AccountClassificationService`
+## Next Immediate Actions
+**Priority 1:** Build `AccountSelector.tsx` component with numbered list display  
+**Priority 2:** Integrate `AccountSelector` in `DataManagementView` to replace text input placeholders  
+**Priority 3:** Wire up API calls and test end-to-end flow  
+
+**Backend Status:** ✅ Complete and committed  
+**Frontend Status:** 🚧 Not started - awaiting user approval to proceed

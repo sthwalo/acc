@@ -683,6 +683,36 @@ class ClassificationApiService extends BaseApiService {
       this.handleError('Get uncategorized transactions', error);
     }
   }
+
+  /**
+   * Update transaction classification by assigning debit and credit accounts.
+   * Creates or updates journal entry for the transaction.
+   * 
+   * @param companyId - Company ID
+   * @param transactionId - Transaction ID to classify
+   * @param debitAccountId - Debit account ID
+   * @param creditAccountId - Credit account ID
+   * @returns API response with success status and message
+   */
+  async updateTransactionClassification(
+    companyId: number,
+    transactionId: number,
+    debitAccountId: number,
+    creditAccountId: number
+  ): Promise<{success: boolean, message: string, data: unknown}> {
+    try {
+      const response = await this.client.put(
+        `/v1/companies/${companyId}/classification/transactions/${transactionId}`,
+        {
+          debitAccountId,
+          creditAccountId
+        }
+      );
+      return response.data;
+    } catch (error) {
+      this.handleError('Update transaction classification', error);
+    }
+  }
 }
 
 /**
