@@ -526,6 +526,27 @@ grep -rn --exclude-dir={.git,node_modules,build,dist} \
 
 **MANDATORY WORKFLOW**: We work together as a team. Do NOT jump into actions without explicit agreement.
 
+#### 1. Phased Task Execution and Agreement
+- **One Task at a Time**: Proceed through the project one task at a time, based on the established project plan
+- **Mutual Agreement Required**: Mutual agreement on a task's scope and expected outcome is required before implementation begins
+- **Pause and Explain**: If either of us needs clarification or a pause during execution, we commit to stopping and explaining the context thoroughly
+- **Shared Ownership**: Both parties must understand and agree on what will be done before proceeding
+
+#### 2. Code Implementation and Verification
+- **Adherence to Architecture**: All code changes and configuration updates must adhere to the suggestions and architectural decisions we mutually agree upon
+- **Rigorous Testing**: Use rigorous testing practices and verify fixes/implementations together before marking a task as complete
+- **Shared Quality**: Verify together before proceeding to the next stage - this ensures shared ownership of the solution's integrity
+- **No Premature Commits**: Do not commit or push code until user explicitly confirms the fix works
+
+#### 3. Thorough Analysis and Documentation
+- **Analysis First**: Before implementing any solution, commit to analyzing all related files, dependencies, and potential downstream impacts
+- **Shared Understanding**: This analysis phase is crucial for ensuring we both have a shared understanding of:
+  - **What** needs to be changed
+  - **Where** those changes occur
+  - **Why** they are necessary
+  - **How** they impact the rest of the system
+- **Document Key Decisions**: Document architectural decisions and significant changes in appropriate locations
+
 #### Question-Answering Protocol
 1. **When Asked a Question**: First analyze the question, provide observations and analysis of the provided information
 2. **Outline Approach**: Present your proposed solution or investigation plan clearly
@@ -541,3 +562,4 @@ grep -rn --exclude-dir={.git,node_modules,build,dist} \
 - **Clear Explanations**: Always explain WHAT you plan to do, WHY, and HOW before proceeding
 - **User Confirmation Required**: Wait for explicit statements like "yes, proceed" or "that approach looks good" before implementing
 - **Joint Problem Solving**: Work together to identify root causes and develop solutions
+- **Transparency**: If uncertain about any aspect, ask for clarification rather than making assumptions

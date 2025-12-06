@@ -629,4 +629,20 @@ public class SpringTransactionClassificationService {
         transaction.setAccountCode(account.getAccountCode());
         return bankTransactionRepository.save(transaction);
     }
+
+    /**
+     * Update transaction classification with manual account selection.
+     * Delegates to AccountClassificationService which is the SINGLE SOURCE OF TRUTH.
+     * 
+     * @param companyId The company ID
+     * @param transactionId The transaction to update
+     * @param debitAccountId The debit account ID
+     * @param creditAccountId The credit account ID
+     */
+    @Transactional
+    public void updateTransactionClassification(Long companyId, Long transactionId, 
+                                              Long debitAccountId, Long creditAccountId) {
+        accountClassificationService.updateTransactionClassification(
+            companyId, transactionId, debitAccountId, creditAccountId);
+    }
 }

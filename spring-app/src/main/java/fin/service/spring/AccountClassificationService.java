@@ -2280,7 +2280,7 @@ public class AccountClassificationService {
                     debitLine.setAccountId(bankAccount.getId());
                     debitLine.setDebitAmount(transaction.getCreditAmount());
                     debitLine.setCreditAmount(java.math.BigDecimal.ZERO);
-                    debitLine.setDescription(transaction.getReference() + " - " + transaction.getCategory());
+                    debitLine.setDescription("[" + bankAccount.getAccountCode() + "] " + bankAccount.getAccountName());
                     debitLine.setSourceTransactionId(transaction.getId());
                     debitLine.setLineNumber(1);
                     journalEntryLineRepository.save(debitLine);
@@ -2291,7 +2291,7 @@ public class AccountClassificationService {
                     creditLine.setAccountId(account.getId());
                     creditLine.setDebitAmount(java.math.BigDecimal.ZERO);
                     creditLine.setCreditAmount(transaction.getCreditAmount());
-                    creditLine.setDescription(transaction.getReference() + " - " + transaction.getCategory());
+                    creditLine.setDescription("[" + account.getAccountCode() + "] " + account.getAccountName());
                     creditLine.setSourceTransactionId(transaction.getId());
                     creditLine.setLineNumber(2);
                     journalEntryLineRepository.save(creditLine);
@@ -2305,7 +2305,7 @@ public class AccountClassificationService {
                     debitLine.setAccountId(account.getId());
                     debitLine.setDebitAmount(transaction.getDebitAmount());
                     debitLine.setCreditAmount(java.math.BigDecimal.ZERO);
-                    debitLine.setDescription(transaction.getReference() + " - " + transaction.getCategory());
+                    debitLine.setDescription("[" + account.getAccountCode() + "] " + account.getAccountName());
                     debitLine.setSourceTransactionId(transaction.getId());
                     debitLine.setLineNumber(1);
                     journalEntryLineRepository.save(debitLine);
@@ -2316,7 +2316,7 @@ public class AccountClassificationService {
                     creditLine.setAccountId(bankAccount.getId());
                     creditLine.setDebitAmount(java.math.BigDecimal.ZERO);
                     creditLine.setCreditAmount(transaction.getDebitAmount());
-                    creditLine.setDescription(transaction.getReference() + " - " + transaction.getCategory());
+                    creditLine.setDescription("[" + bankAccount.getAccountCode() + "] " + bankAccount.getAccountName());
                     creditLine.setSourceTransactionId(transaction.getId());
                     creditLine.setLineNumber(2);
                     journalEntryLineRepository.save(creditLine);
@@ -2331,6 +2331,153 @@ public class AccountClassificationService {
 
         System.out.println("✅ Generated " + generatedCount + " journal entries");
         return generatedCount;
+    }
+
+    /**
+     * Update transaction classification with manual account selection.
+     * Creates or updates journal entry with selected debit and credit accounts.
+     * Based on the legacy console app's logic from DataManagementController.
+     * 
+     * @param companyId The company ID
+     * @param transactionId The transaction to update
+     * @param debitAccountId The debit account ID
+     * @param creditAccountId The credit account ID
+     * @throws IllegalArgumentException if validation fails
+     */
+    public void updateTransactionClassification(Long companyId, Long transactionId, 
+                                               Long debitAccountId, Long creditAccountId) {
+        // Validate inputs
+        if (companyId == null || transactionId == null || debitAccountId == null || creditAccountId == null) {
+            throw new IllegalArgumentException("All parameters (companyId, transactionId, debitAccountId, creditAccountId) are required");
+        }
+        
+        // Fetch and validate transaction
+        BankTransaction transaction = bankTransactionRepository.findById(transactionId)
+            .orElseThrow(() -> new IllegalArgumentException("Transaction not found with ID: " + transactionId));
+        
+        if (!transaction.getCompanyId().equals(companyId)) {
+            throw new IllegalArgumentException("Transaction does not belong to company " + companyId);
+        }
+        
+        // Fetch and validate accounts
+        Account debitAccount = accountRepository.findById(debitAccountId)
+            .orElseThrow(() -> new IllegalArgumentException("Debit account not found with ID: " + debitAccountId));
+        
+        Account creditAccount = accountRepository.findById(creditAccountId)
+            .orElseThrow(() -> new IllegalArgumentException("Credit account not found with ID: " + creditAccountId));
+        
+        if (!debitAccount.getCompanyId().equals(companyId)) {
+            throw new IllegalArgumentException("Debit account does not belong to company " + companyId);
+        }
+        
+        if (!creditAccount.getCompanyId().equals(companyId)) {
+            throw new IllegalArgumentException("Credit account does not belong to company " + companyId);
+        }
+        
+        // Determine transaction amount
+        java.math.BigDecimal amount;
+        boolean isCreditTransaction = transaction.getCreditAmount() != null 
+            && transaction.getCreditAmount().compareTo(java.math.BigDecimal.ZERO) > 0;
+        
+        if (isCreditTransaction) {
+            amount = transaction.getCreditAmount();
+        } else if (transaction.getDebitAmount() != null 
+            && transaction.getDebitAmount().compareTo(java.math.BigDecimal.ZERO) > 0) {
+            amount = transaction.getDebitAmount();
+        } else {
+            throw new IllegalArgumentException("Transaction has no valid amount");
+        }
+        
+        // Check for existing journal entry lines
+        List<JournalEntryLine> existingLines = journalEntryLineRepository.findBySourceTransactionId(transactionId);
+        
+        if (existingLines != null && !existingLines.isEmpty()) {
+            // Update existing journal entry lines
+            updateExistingJournalLines(existingLines, debitAccount, creditAccount, amount);
+        } else {
+            // Create new journal entry with lines
+            createNewJournalEntry(transaction, companyId, debitAccount, creditAccount, amount);
+        }
+        
+        System.out.println("✅ Updated transaction classification for transaction " + transactionId);
+    }
+    
+    /**
+     * Update existing journal entry lines with new account classifications.
+     */
+    private void updateExistingJournalLines(List<JournalEntryLine> lines, Account debitAccount, 
+                                           Account creditAccount, java.math.BigDecimal amount) {
+        JournalEntryLine debitLine = null;
+        JournalEntryLine creditLine = null;
+        
+        // Identify debit and credit lines
+        for (JournalEntryLine line : lines) {
+            if (line.getDebitAmount() != null && line.getDebitAmount().compareTo(java.math.BigDecimal.ZERO) > 0) {
+                debitLine = line;
+            } else if (line.getCreditAmount() != null && line.getCreditAmount().compareTo(java.math.BigDecimal.ZERO) > 0) {
+                creditLine = line;
+            }
+        }
+        
+        if (debitLine == null || creditLine == null) {
+            throw new IllegalStateException("Could not identify debit and credit lines for update");
+        }
+        
+        // Update debit line
+        debitLine.setAccountId(debitAccount.getId());
+        debitLine.setDescription("[" + debitAccount.getAccountCode() + "] " + debitAccount.getAccountName());
+        debitLine.setDebitAmount(amount);
+        journalEntryLineRepository.save(debitLine);
+        
+        // Update credit line
+        creditLine.setAccountId(creditAccount.getId());
+        creditLine.setDescription("[" + creditAccount.getAccountCode() + "] " + creditAccount.getAccountName());
+        creditLine.setCreditAmount(amount);
+        journalEntryLineRepository.save(creditLine);
+    }
+    
+    /**
+     * Create new journal entry with debit and credit lines.
+     */
+    private void createNewJournalEntry(BankTransaction transaction, Long companyId, 
+                                      Account debitAccount, Account creditAccount, 
+                                      java.math.BigDecimal amount) {
+        // Create journal entry header
+        JournalEntry journalEntry = new JournalEntry();
+        journalEntry.setCompanyId(companyId);
+        journalEntry.setFiscalPeriodId(transaction.getFiscalPeriodId());
+        journalEntry.setEntryDate(transaction.getTransactionDate());
+        journalEntry.setDescription("Manual classification: " + transaction.getReference());
+        journalEntry.setReference("MANUAL-" + transaction.getId());
+        journalEntry.setCreatedAt(LocalDateTime.now());
+        journalEntry.setUpdatedAt(LocalDateTime.now());
+        journalEntry = journalEntryRepository.save(journalEntry);
+        
+        // Create debit line
+        JournalEntryLine debitLine = new JournalEntryLine();
+        debitLine.setJournalEntryId(journalEntry.getId());
+        debitLine.setAccountId(debitAccount.getId());
+        debitLine.setDebitAmount(amount);
+        debitLine.setCreditAmount(java.math.BigDecimal.ZERO);
+        debitLine.setDescription("[" + debitAccount.getAccountCode() + "] " + debitAccount.getAccountName());
+        debitLine.setSourceTransactionId(transaction.getId());
+        debitLine.setLineNumber(1);
+        journalEntryLineRepository.save(debitLine);
+        
+        // Create credit line
+        JournalEntryLine creditLine = new JournalEntryLine();
+        creditLine.setJournalEntryId(journalEntry.getId());
+        creditLine.setAccountId(creditAccount.getId());
+        creditLine.setDebitAmount(java.math.BigDecimal.ZERO);
+        creditLine.setCreditAmount(amount);
+        creditLine.setDescription("[" + creditAccount.getAccountCode() + "] " + creditAccount.getAccountName());
+        creditLine.setSourceTransactionId(transaction.getId());
+        creditLine.setLineNumber(2);
+        journalEntryLineRepository.save(creditLine);
+        
+        // Update transaction's account_code to reflect classification
+        transaction.setAccountCode(debitAccount.getAccountCode());
+        bankTransactionRepository.save(transaction);
     }
 
     /**

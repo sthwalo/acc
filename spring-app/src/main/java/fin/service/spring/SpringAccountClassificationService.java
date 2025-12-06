@@ -124,4 +124,19 @@ public class SpringAccountClassificationService {
     public java.util.List<fin.model.TransactionMappingRule> getStandardMappingRules() {
         return accountClassificationService.getStandardMappingRules();
     }
+
+    /**
+     * Update transaction classification with manual account selection.
+     * DELEGATES TO SINGLE SOURCE OF TRUTH
+     * 
+     * @param companyId The company ID
+     * @param transactionId The transaction to update
+     * @param debitAccountId The debit account ID
+     * @param creditAccountId The credit account ID
+     */
+    public void updateTransactionClassification(Long companyId, Long transactionId, 
+                                              Long debitAccountId, Long creditAccountId) {
+        accountClassificationService.updateTransactionClassification(
+            companyId, transactionId, debitAccountId, creditAccountId);
+    }
 }

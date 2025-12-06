@@ -192,14 +192,23 @@ public class SpringTransactionClassificationController {
             @PathVariable Long transactionId,
             @RequestBody ClassificationUpdateRequest request) {
         try {
-            String message = String.format(
-                "Classification update endpoint - transaction %d with debit account %d and credit account %d",
-                transactionId, request.getDebitAccountId(), request.getCreditAccountId()
+            // Validate accounts belong to company
+            classificationService.updateTransactionClassification(
+                companyId,
+                transactionId,
+                request.getDebitAccountId(),
+                request.getCreditAccountId()
             );
+            
             return ResponseEntity.ok(ApiResponse.success(
                 "Transaction classification updated successfully",
-                message
+                "Journal entry created/updated for transaction " + transactionId
             ));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error("Invalid request: " + e.getMessage(),
+                    ErrorCode.VALIDATION_ERROR.getCode())
+            );
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
                 ApiResponse.error("Failed to update transaction classification: " + e.getMessage(),
