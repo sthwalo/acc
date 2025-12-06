@@ -37,6 +37,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -91,8 +92,9 @@ public class SpringDataManagementController {
      * Create a manual invoice
      */
     @PostMapping("/{companyId}/data-management/invoices")
-    public ResponseEntity<ManualInvoice> createManualInvoice(@PathVariable Long companyId, @RequestBody ManualInvoice invoice) {
+    public ResponseEntity<ManualInvoice> createManualInvoice(@PathVariable Long companyId, @RequestBody ManualInvoice invoice, Principal principal) {
         try {
+            String username = principal != null ? principal.getName() : "FIN";
             ManualInvoice createdInvoice = dataManagementService.createManualInvoice(
                 invoice.getCompanyId(),
                 invoice.getInvoiceNumber(),
@@ -101,7 +103,8 @@ public class SpringDataManagementController {
                 invoice.getAmount(),
                 invoice.getDebitAccountId(),
                 invoice.getCreditAccountId(),
-                invoice.getFiscalPeriodId()
+                invoice.getFiscalPeriodId(),
+                username
             );
             return ResponseEntity.ok(createdInvoice);
         } catch (IllegalArgumentException e) {
@@ -153,10 +156,12 @@ public class SpringDataManagementController {
                                                          @RequestParam LocalDate entryDate,
                                                          @RequestParam String description,
                                                          @RequestParam Long fiscalPeriodId,
-                                                         @RequestBody List<JournalEntryLine> lines) {
+                                                         @RequestBody List<JournalEntryLine> lines,
+                                                         Principal principal) {
         try {
+            String username = principal != null ? principal.getName() : "FIN";
             JournalEntry journalEntry = dataManagementService.createJournalEntry(
-                companyId, entryNumber, entryDate, description, fiscalPeriodId, lines);
+                companyId, entryNumber, entryDate, description, fiscalPeriodId, lines, username);
             return ResponseEntity.ok(journalEntry);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();

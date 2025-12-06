@@ -342,3 +342,4 @@ scripts/monitor_logs.sh
 docs/INCIDENT_REPORT_*.md
 docs/MIGRATION_DEPLOYMENT_PROCESS.md
 spring-app/docs/development/troubleshooting/To address .md
+docs/development/SESSION_REPORT_2025-12-06.md

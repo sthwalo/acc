@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { FileText, Download, Calendar } from 'lucide-react';
+import { FileText, Download, Calendar, BookOpen } from 'lucide-react';
 import { useApi } from '../hooks/useApi';
 import ApiMessageBanner from './shared/ApiMessageBanner';
+import AuditTrailView from './AuditTrailView';
 import type { Company, FiscalPeriod } from '../types/api';
 
 interface GenerateReportsViewProps {
@@ -22,49 +23,42 @@ const reportTypes: ReportType[] = [
     name: 'Trial Balance',
     description: 'Summary of all general ledger accounts and their balances',
     icon: FileText,
-    formats: ['PDF', 'Excel', 'CSV']
+    formats: ['View', 'PDF', 'Excel', 'CSV']
   },
   {
     id: 'income-statement',
     name: 'Income Statement',
     description: 'Revenue, expenses, and profit/loss for the period',
     icon: FileText,
-    formats: ['PDF', 'Excel', 'CSV']
+    formats: ['View', 'PDF', 'Excel', 'CSV']
   },
   {
     id: 'balance-sheet',
     name: 'Balance Sheet',
     description: 'Assets, liabilities, and equity at a specific point in time',
     icon: FileText,
-    formats: ['PDF', 'Excel', 'CSV']
+    formats: ['View', 'PDF', 'Excel', 'CSV']
   },
   {
     id: 'cash-flow',
     name: 'Cash Flow Statement',
     description: 'Cash inflows and outflows during the period',
     icon: FileText,
-    formats: ['PDF', 'Excel', 'CSV']
+    formats: ['View', 'PDF', 'Excel', 'CSV']
   },
   {
     id: 'general-ledger',
     name: 'General Ledger',
     description: 'Complete record of all financial transactions',
     icon: FileText,
-    formats: ['PDF', 'Excel', 'CSV']
+    formats: ['View', 'PDF', 'Excel', 'CSV']
   },
   {
     id: 'cashbook',
     name: 'Cashbook Report',
     description: 'Detailed cash transaction records and balances',
     icon: FileText,
-    formats: ['PDF', 'Excel', 'CSV']
-  },
-  {
-    id: 'audit-trail',
-    name: 'Audit Trail',
-    description: 'Complete audit log of all system activities',
-    icon: FileText,
-    formats: ['PDF', 'Excel', 'CSV']
+    formats: ['View', 'PDF', 'Excel', 'CSV']
   }
 ];
 
@@ -77,6 +71,8 @@ export default function GenerateReportsView({ selectedCompany }: GenerateReports
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [showAuditTrail, setShowAuditTrail] = useState(false);
+  const [activeReportView, setActiveReportView] = useState<string | null>(null);
 
   const loadFiscalPeriods = useCallback(async () => {
     try {
@@ -113,6 +109,12 @@ export default function GenerateReportsView({ selectedCompany }: GenerateReports
   const generateReport = async () => {
     if (!selectedReport || !selectedPeriod || !selectedFormat) {
       setError('Please select a report type, fiscal period, and format');
+      return;
+    }
+
+    // If View format is selected, show the view component instead
+    if (selectedFormat === 'View') {
+      setActiveReportView(selectedReport.id);
       return;
     }
 
@@ -216,6 +218,56 @@ export default function GenerateReportsView({ selectedCompany }: GenerateReports
     }
   };
 
+  // If a report view is active, render it instead of the main form
+  if (activeReportView) {
+    return (
+      <div className="report-view-container">
+        <button
+          onClick={() => setActiveReportView(null)}
+          className="back-to-reports-button"
+        >
+          ← Back to Reports
+        </button>
+        {activeReportView === 'trial-balance' && (
+          <div className="report-content">
+            <h2>Trial Balance - {selectedPeriod?.periodName}</h2>
+            <p>Trial Balance view component will be implemented here</p>
+          </div>
+        )}
+        {activeReportView === 'income-statement' && (
+          <div className="report-content">
+            <h2>Income Statement - {selectedPeriod?.periodName}</h2>
+            <p>Income Statement view component will be implemented here</p>
+          </div>
+        )}
+        {activeReportView === 'balance-sheet' && (
+          <div className="report-content">
+            <h2>Balance Sheet - {selectedPeriod?.periodName}</h2>
+            <p>Balance Sheet view component will be implemented here</p>
+          </div>
+        )}
+        {activeReportView === 'cash-flow' && (
+          <div className="report-content">
+            <h2>Cash Flow Statement - {selectedPeriod?.periodName}</h2>
+            <p>Cash Flow Statement view component will be implemented here</p>
+          </div>
+        )}
+        {activeReportView === 'general-ledger' && (
+          <div className="report-content">
+            <h2>General Ledger - {selectedPeriod?.periodName}</h2>
+            <p>General Ledger view component will be implemented here</p>
+          </div>
+        )}
+        {activeReportView === 'cashbook' && (
+          <div className="report-content">
+            <h2>Cashbook Report - {selectedPeriod?.periodName}</h2>
+            <p>Cashbook Report view component will be implemented here</p>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="generate-reports-view">
       <div className="view-header">
@@ -315,8 +367,28 @@ export default function GenerateReportsView({ selectedCompany }: GenerateReports
               </>
             )}
           </button>
+          <button
+            className="generate-button"
+            onClick={() => setShowAuditTrail(true)}
+            disabled={!selectedPeriod}
+            style={{ marginLeft: '1rem', backgroundColor: '#059669' }}
+          >
+            <BookOpen size={20} />
+            View Audit Trail
+          </button>
         </div>
       </div>
+
+      {/* Audit Trail View */}
+      {showAuditTrail && selectedPeriod && (
+        <div className="mt-6">
+          <AuditTrailView
+            selectedCompany={selectedCompany}
+            selectedPeriod={selectedPeriod}
+            onClose={() => setShowAuditTrail(false)}
+          />
+        </div>
+      )}
     </div>
   );
 }

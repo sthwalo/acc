@@ -481,3 +481,66 @@ export interface PayrollDocument {
   documentType: 'PAYSLIP' | 'TAX_CERTIFICATE' | 'EMPLOYEE_CONTRACT' | 'BANK_STATEMENT' | 'OTHER';
   uploadDate: string;
 }
+
+// Journal Entry & Audit Trail Types
+export interface JournalEntryLineDTO {
+  id: number;
+  accountId: number;
+  accountCode: string;
+  accountName: string;
+  description: string;
+  debitAmount: number;
+  creditAmount: number;
+  lineNumber: number;
+}
+
+export interface JournalEntryDTO {
+  id: number;
+  reference: string;
+  entryDate: string;
+  description: string;
+  totalDebit: number;
+  totalCredit: number;
+  lineCount: number;
+  createdBy: string;
+  createdAt: string;
+  lastModifiedBy: string;
+  lastModifiedAt: string;
+}
+
+export interface JournalEntryDetailDTO {
+  id: number;
+  reference: string;
+  entryDate: string;
+  description: string;
+  totalDebit: number;
+  totalCredit: number;
+  lineCount: number;
+  createdBy: string;
+  createdAt: string;
+  lastModifiedBy: string;
+  lastModifiedAt: string;
+  companyName: string;
+  fiscalPeriodName: string;
+  lines: JournalEntryLineDTO[];
+}
+
+export interface PaginationMetadata {
+  currentPage: number;
+  pageSize: number;
+  totalPages: number;
+  totalElements: number;
+}
+
+export interface FilterMetadata {
+  startDate: string | null;
+  endDate: string | null;
+  searchTerm: string | null;
+  hasFilters: boolean;
+}
+
+export interface AuditTrailResponse {
+  entries: JournalEntryDTO[];
+  pagination: PaginationMetadata;
+  filters: FilterMetadata;
+}

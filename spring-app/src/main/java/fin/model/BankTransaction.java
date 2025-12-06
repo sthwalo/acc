@@ -475,6 +475,22 @@ public class BankTransaction {
     public void setReference(String newReference) {
         this.reference = newReference;
     }
+
+    /**
+     * Gets the transaction description.
+     * @return the transaction description
+     */
+    public String getDescription() {
+        return description;
+    }
+
+    /**
+     * Sets the transaction description.
+     * @param description the transaction description to set
+     */
+    public void setDescription(String description) {
+        this.description = description;
+    }
     
     /**
      * Gets the user who last updated this transaction.

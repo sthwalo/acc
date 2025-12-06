@@ -2342,10 +2342,11 @@ public class AccountClassificationService {
      * @param transactionId The transaction to update
      * @param debitAccountId The debit account ID
      * @param creditAccountId The credit account ID
+     * @param username The username of the person performing the manual classification
      * @throws IllegalArgumentException if validation fails
      */
     public void updateTransactionClassification(Long companyId, Long transactionId, 
-                                               Long debitAccountId, Long creditAccountId) {
+                                               Long debitAccountId, Long creditAccountId, String username) {
         // Validate inputs
         if (companyId == null || transactionId == null || debitAccountId == null || creditAccountId == null) {
             throw new IllegalArgumentException("All parameters (companyId, transactionId, debitAccountId, creditAccountId) are required");
@@ -2396,7 +2397,7 @@ public class AccountClassificationService {
             updateExistingJournalLines(existingLines, debitAccount, creditAccount, amount);
         } else {
             // Create new journal entry with lines
-            createNewJournalEntry(transaction, companyId, debitAccount, creditAccount, amount);
+            createNewJournalEntry(transaction, companyId, debitAccount, creditAccount, amount, username);
         }
         
         System.out.println("✅ Updated transaction classification for transaction " + transactionId);
@@ -2441,14 +2442,18 @@ public class AccountClassificationService {
      */
     private void createNewJournalEntry(BankTransaction transaction, Long companyId, 
                                       Account debitAccount, Account creditAccount, 
-                                      java.math.BigDecimal amount) {
+                                      java.math.BigDecimal amount, String username) {
+        // Build description from account names: "DebitAccount - CreditAccount"
+        String description = debitAccount.getAccountName() + " - " + creditAccount.getAccountName();
+        
         // Create journal entry header
         JournalEntry journalEntry = new JournalEntry();
         journalEntry.setCompanyId(companyId);
         journalEntry.setFiscalPeriodId(transaction.getFiscalPeriodId());
         journalEntry.setEntryDate(transaction.getTransactionDate());
-        journalEntry.setDescription("Manual classification: " + transaction.getReference());
+        journalEntry.setDescription(description);
         journalEntry.setReference("MANUAL-" + transaction.getId());
+        journalEntry.setCreatedBy(username != null ? username : "FIN");
         journalEntry.setCreatedAt(LocalDateTime.now());
         journalEntry.setUpdatedAt(LocalDateTime.now());
         journalEntry = journalEntryRepository.save(journalEntry);

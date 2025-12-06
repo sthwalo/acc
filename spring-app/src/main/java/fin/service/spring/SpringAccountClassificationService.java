@@ -135,8 +135,8 @@ public class SpringAccountClassificationService {
      * @param creditAccountId The credit account ID
      */
     public void updateTransactionClassification(Long companyId, Long transactionId, 
-                                              Long debitAccountId, Long creditAccountId) {
+                                              Long debitAccountId, Long creditAccountId, String username) {
         accountClassificationService.updateTransactionClassification(
-            companyId, transactionId, debitAccountId, creditAccountId);
+            companyId, transactionId, debitAccountId, creditAccountId, username);
     }
 }

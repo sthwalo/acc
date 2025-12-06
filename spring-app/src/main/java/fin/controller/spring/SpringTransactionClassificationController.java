@@ -30,6 +30,8 @@ import fin.service.spring.SpringTransactionClassificationService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
+
 /**
  * Spring REST Controller for transaction classification operations.
  * Provides endpoints for initializing chart of accounts, classifying transactions,
@@ -190,14 +192,17 @@ public class SpringTransactionClassificationController {
     public ResponseEntity<ApiResponse<String>> updateTransactionClassification(
             @PathVariable Long companyId,
             @PathVariable Long transactionId,
-            @RequestBody ClassificationUpdateRequest request) {
+            @RequestBody ClassificationUpdateRequest request,
+            Principal principal) {
         try {
+            String username = principal != null ? principal.getName() : "FIN";
             // Validate accounts belong to company
             classificationService.updateTransactionClassification(
                 companyId,
                 transactionId,
                 request.getDebitAccountId(),
-                request.getCreditAccountId()
+                request.getCreditAccountId(),
+                username
             );
             
             return ResponseEntity.ok(ApiResponse.success(

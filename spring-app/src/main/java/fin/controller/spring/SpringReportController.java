@@ -26,9 +26,17 @@
 
 package fin.controller.spring;
 
+import fin.model.dto.AuditTrailResponse;
+import fin.model.dto.JournalEntryDetailDTO;
+import fin.service.spring.AuditTrailService;
 import fin.service.spring.SpringFinancialReportingService;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.sql.SQLException;
+import java.time.LocalDate;
 
 /**
  * Spring REST Controller for financial reporting operations.
@@ -38,9 +46,12 @@ import org.springframework.web.bind.annotation.*;
 public class SpringReportController {
 
     private final SpringFinancialReportingService reportingService;
+    private final AuditTrailService auditTrailService;
 
-    public SpringReportController(SpringFinancialReportingService reportingService) {
+    public SpringReportController(SpringFinancialReportingService reportingService,
+                                 AuditTrailService auditTrailService) {
         this.reportingService = reportingService;
+        this.auditTrailService = auditTrailService;
     }
 
     /**
@@ -119,7 +130,7 @@ public class SpringReportController {
     }
 
     /**
-     * Generate Audit Trail report
+     * Generate Audit Trail report (text-based - legacy endpoint)
      */
     @GetMapping("/audit-trail/company/{companyId}/fiscal-period/{fiscalPeriodId}")
     public ResponseEntity<String> generateAuditTrail(@PathVariable Long companyId,
@@ -130,6 +141,70 @@ public class SpringReportController {
             return ResponseEntity.ok(report);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
+        }
+    }
+
+    // ============================================================================
+    // TASK_007: Structured Audit Trail Endpoints with Pagination
+    // ============================================================================
+
+    /**
+     * Get structured audit trail with pagination and filtering.
+     * Returns JSON response with journal entries, pagination metadata, and filter info.
+     * 
+     * @param companyId Company identifier
+     * @param fiscalPeriodId Fiscal period identifier
+     * @param page Page number (0-indexed, default: 0)
+     * @param pageSize Number of entries per page (default: 50)
+     * @param startDate Optional start date filter (ISO format: yyyy-MM-dd)
+     * @param endDate Optional end date filter (ISO format: yyyy-MM-dd)
+     * @param searchTerm Optional search term for description/reference
+     * @return Structured audit trail response with pagination
+     */
+    @GetMapping("/audit-trail/company/{companyId}/fiscal-period/{fiscalPeriodId}/structured")
+    public ResponseEntity<AuditTrailResponse> getStructuredAuditTrail(
+            @PathVariable Long companyId,
+            @PathVariable Long fiscalPeriodId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int pageSize,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false) String searchTerm) {
+        
+        try {
+            AuditTrailResponse response = auditTrailService.getAuditTrail(
+                companyId, fiscalPeriodId, page, pageSize, startDate, endDate, searchTerm
+            );
+            return ResponseEntity.ok(response);
+        } catch (SQLException e) {
+            // Return 400 Bad Request for invalid company/fiscal period
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        } catch (Exception e) {
+            // Return 500 Internal Server Error for unexpected errors
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * Get detailed journal entry with all line items.
+     * Returns JSON response with full journal entry details including debits and credits.
+     * 
+     * @param journalEntryId Journal entry identifier
+     * @return Detailed journal entry with all lines
+     */
+    @GetMapping("/audit-trail/journal-entry/{journalEntryId}")
+    public ResponseEntity<JournalEntryDetailDTO> getJournalEntryDetail(
+            @PathVariable Long journalEntryId) {
+        
+        try {
+            JournalEntryDetailDTO detail = auditTrailService.getJournalEntryDetail(journalEntryId);
+            return ResponseEntity.ok(detail);
+        } catch (SQLException e) {
+            // Return 404 Not Found if journal entry doesn't exist
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        } catch (Exception e) {
+            // Return 500 Internal Server Error for unexpected errors
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 

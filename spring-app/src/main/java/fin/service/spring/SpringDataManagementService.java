@@ -147,7 +147,7 @@ public class SpringDataManagementService {
     @Transactional
     public ManualInvoice createManualInvoice(Long companyId, String invoiceNumber, LocalDate invoiceDate,
                                            String description, BigDecimal amount, Long debitAccountId,
-                                           Long creditAccountId, Long fiscalPeriodId) {
+                                           Long creditAccountId, Long fiscalPeriodId, String username) {
         // Validate inputs
         if (companyId == null || invoiceNumber == null || invoiceDate == null ||
             description == null || amount == null || debitAccountId == null ||
@@ -191,7 +191,7 @@ public class SpringDataManagementService {
         ManualInvoice savedInvoice = manualInvoiceRepository.save(invoice);
 
         // Create corresponding journal entry
-        createInvoiceJournalEntry(savedInvoice);
+        createInvoiceJournalEntry(savedInvoice, username);
 
         LOGGER.info("Manual invoice and journal entry created successfully: " + invoiceNumber);
         return savedInvoice;
@@ -200,7 +200,7 @@ public class SpringDataManagementService {
     /**
      * Creates the journal entry for a manual invoice
      */
-    private void createInvoiceJournalEntry(ManualInvoice invoice) {
+    private void createInvoiceJournalEntry(ManualInvoice invoice, String username) {
         // Create journal entry header
         JournalEntry journalEntry = new JournalEntry();
         journalEntry.setCompanyId(invoice.getCompanyId());
@@ -208,7 +208,7 @@ public class SpringDataManagementService {
         journalEntry.setEntryDate(invoice.getInvoiceDate());
         journalEntry.setDescription("Invoice: " + invoice.getDescription());
         journalEntry.setFiscalPeriodId(invoice.getFiscalPeriodId());
-        journalEntry.setCreatedBy("FIN");
+        journalEntry.setCreatedBy(username != null ? username : "FIN");
         journalEntry.setCreatedAt(LocalDateTime.now());
 
         JournalEntry savedEntry = journalEntryRepository.save(journalEntry);
@@ -252,7 +252,7 @@ public class SpringDataManagementService {
 
         for (ManualInvoice invoice : invoicesWithoutJournalEntries) {
             try {
-                createInvoiceJournalEntry(invoice);
+                createInvoiceJournalEntry(invoice, "FIN");
                 syncedCount++;
                 LOGGER.info("Synced journal entry for invoice: " + invoice.getInvoiceNumber());
             } catch (Exception e) {
@@ -269,7 +269,7 @@ public class SpringDataManagementService {
     @Transactional
     public JournalEntry createJournalEntry(Long companyId, String entryNumber, LocalDate entryDate,
                                          String description, Long fiscalPeriodId,
-                                         List<JournalEntryLine> lines) {
+                                         List<JournalEntryLine> lines, String username) {
         // Validate inputs
         if (companyId == null || entryNumber == null || entryDate == null ||
             description == null || fiscalPeriodId == null || lines == null || lines.isEmpty()) {
@@ -311,7 +311,7 @@ public class SpringDataManagementService {
         journalEntry.setEntryDate(entryDate);
         journalEntry.setDescription(description);
         journalEntry.setFiscalPeriodId(fiscalPeriodId);
-        journalEntry.setCreatedBy("FIN");
+        journalEntry.setCreatedBy(username != null ? username : "FIN");
         journalEntry.setCreatedAt(LocalDateTime.now());
 
         JournalEntry savedEntry = journalEntryRepository.save(journalEntry);

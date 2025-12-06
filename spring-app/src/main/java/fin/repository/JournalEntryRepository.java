@@ -27,11 +27,14 @@
 package fin.repository;
 
 import fin.model.JournalEntry;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -70,4 +73,96 @@ public interface JournalEntryRepository extends JpaRepository<JournalEntry, Long
      * Delete journal entries by company ID
      */
     void deleteByCompanyId(Long companyId);
+
+    // ============================================================================
+    // TASK_007: Pagination support for Audit Trail
+    // ============================================================================
+
+    /**
+     * Find journal entries by company and fiscal period with pagination.
+     * Results are sorted by entry date descending, then by ID descending.
+     * 
+     * @param companyId Company identifier
+     * @param fiscalPeriodId Fiscal period identifier
+     * @param pageable Pagination information (page number, page size, sort)
+     * @return Page of journal entries
+     */
+    @Query("SELECT je FROM JournalEntry je WHERE je.companyId = :companyId " +
+           "AND je.fiscalPeriodId = :fiscalPeriodId " +
+           "ORDER BY je.entryDate DESC, je.id DESC")
+    Page<JournalEntry> findByCompanyIdAndFiscalPeriodIdPaginated(
+        @Param("companyId") Long companyId,
+        @Param("fiscalPeriodId") Long fiscalPeriodId,
+        Pageable pageable);
+
+    /**
+     * Find journal entries by company, fiscal period, and date range with pagination.
+     * Results are sorted by entry date descending, then by ID descending.
+     * 
+     * @param companyId Company identifier
+     * @param fiscalPeriodId Fiscal period identifier
+     * @param startDate Start date (inclusive)
+     * @param endDate End date (inclusive)
+     * @param pageable Pagination information (page number, page size, sort)
+     * @return Page of journal entries within date range
+     */
+    @Query("SELECT je FROM JournalEntry je WHERE je.companyId = :companyId " +
+           "AND je.fiscalPeriodId = :fiscalPeriodId " +
+           "AND je.entryDate BETWEEN :startDate AND :endDate " +
+           "ORDER BY je.entryDate DESC, je.id DESC")
+    Page<JournalEntry> findByCompanyIdAndFiscalPeriodIdAndDateRange(
+        @Param("companyId") Long companyId,
+        @Param("fiscalPeriodId") Long fiscalPeriodId,
+        @Param("startDate") LocalDate startDate,
+        @Param("endDate") LocalDate endDate,
+        Pageable pageable);
+
+    /**
+     * Find journal entries by company, fiscal period, and search term with pagination.
+     * Searches in description and reference fields (case-insensitive).
+     * Results are sorted by entry date descending, then by ID descending.
+     * 
+     * @param companyId Company identifier
+     * @param fiscalPeriodId Fiscal period identifier
+     * @param searchTerm Search term to match in description or reference
+     * @param pageable Pagination information (page number, page size, sort)
+     * @return Page of journal entries matching search term
+     */
+    @Query("SELECT je FROM JournalEntry je WHERE je.companyId = :companyId " +
+           "AND je.fiscalPeriodId = :fiscalPeriodId " +
+           "AND (LOWER(je.description) LIKE LOWER(CONCAT('%', :searchTerm, '%')) " +
+           "     OR LOWER(je.reference) LIKE LOWER(CONCAT('%', :searchTerm, '%'))) " +
+           "ORDER BY je.entryDate DESC, je.id DESC")
+    Page<JournalEntry> findByCompanyIdAndFiscalPeriodIdAndSearchTerm(
+        @Param("companyId") Long companyId,
+        @Param("fiscalPeriodId") Long fiscalPeriodId,
+        @Param("searchTerm") String searchTerm,
+        Pageable pageable);
+
+    /**
+     * Find journal entries by company, fiscal period, date range, and search term with pagination.
+     * Combines all filters: date range and search term.
+     * Results are sorted by entry date descending, then by ID descending.
+     * 
+     * @param companyId Company identifier
+     * @param fiscalPeriodId Fiscal period identifier
+     * @param startDate Start date (inclusive)
+     * @param endDate End date (inclusive)
+     * @param searchTerm Search term to match in description or reference
+     * @param pageable Pagination information (page number, page size, sort)
+     * @return Page of journal entries matching all filters
+     */
+    @Query("SELECT je FROM JournalEntry je WHERE je.companyId = :companyId " +
+           "AND je.fiscalPeriodId = :fiscalPeriodId " +
+           "AND je.entryDate BETWEEN :startDate AND :endDate " +
+           "AND (LOWER(je.description) LIKE LOWER(CONCAT('%', :searchTerm, '%')) " +
+           "     OR LOWER(je.reference) LIKE LOWER(CONCAT('%', :searchTerm, '%'))) " +
+           "ORDER BY je.entryDate DESC, je.id DESC")
+    Page<JournalEntry> findByCompanyIdAndFiscalPeriodIdAndDateRangeAndSearchTerm(
+        @Param("companyId") Long companyId,
+        @Param("fiscalPeriodId") Long fiscalPeriodId,
+        @Param("startDate") LocalDate startDate,
+        @Param("endDate") LocalDate endDate,
+        @Param("searchTerm") String searchTerm,
+        Pageable pageable);
 }

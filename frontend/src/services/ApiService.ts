@@ -23,7 +23,9 @@ import type {
   FiscalPeriodPayrollConfigRequest,
   FiscalPeriodPayrollConfigResponse,
   FiscalPeriodPayrollStatusResponse,
-  PayrollDocument
+  PayrollDocument,
+  AuditTrailResponse,
+  JournalEntryDetailDTO
 } from '../types/api';
 
 /**
@@ -491,6 +493,78 @@ class ReportApiService extends BaseApiService {
 
   async generateAuditTrail(companyId: number, fiscalPeriodId: number, format: string = 'text'): Promise<{ reportType: string, companyId: number, fiscalPeriodId: number, format: string, content: string }> {
     return this.generateReport(companyId, fiscalPeriodId, 'audit-trail', format);
+  }
+
+  // ============================================================================
+  // TASK_007: Structured Audit Trail Methods
+  // ============================================================================
+
+  /**
+   * Get structured audit trail with pagination and filtering.
+   * Returns JSON response with journal entries, pagination metadata, and filter info.
+   * 
+   * @param companyId Company identifier
+   * @param fiscalPeriodId Fiscal period identifier
+   * @param page Page number (0-indexed, default: 0)
+   * @param pageSize Number of entries per page (default: 50)
+   * @param startDate Optional start date filter (ISO format: yyyy-MM-dd)
+   * @param endDate Optional end date filter (ISO format: yyyy-MM-dd)
+   * @param searchTerm Optional search term for description/reference
+   * @returns Structured audit trail response with pagination
+   */
+  async getAuditTrail(
+    companyId: number,
+    fiscalPeriodId: number,
+    page: number = 0,
+    pageSize: number = 50,
+    startDate?: string,
+    endDate?: string,
+    searchTerm?: string
+  ): Promise<AuditTrailResponse> {
+    try {
+      const params: Record<string, string | number> = {
+        page,
+        pageSize,
+      };
+
+      if (startDate) params.startDate = startDate;
+      if (endDate) params.endDate = endDate;
+      if (searchTerm) params.searchTerm = searchTerm;
+
+      const response = await this.client.get(
+        `/v1/reports/audit-trail/company/${companyId}/fiscal-period/${fiscalPeriodId}/structured`,
+        { params }
+      );
+
+      return response.data;
+    } catch (error) {
+      if (error instanceof AxiosError && error.response?.status === 400) {
+        throw new Error(`Invalid company or fiscal period. Please ensure both exist.`);
+      }
+      this.handleError('Get audit trail', error);
+    }
+  }
+
+  /**
+   * Get detailed journal entry with all line items.
+   * Returns JSON response with full journal entry details including debits and credits.
+   * 
+   * @param journalEntryId Journal entry identifier
+   * @returns Detailed journal entry with all lines
+   */
+  async getJournalEntryDetail(journalEntryId: number): Promise<JournalEntryDetailDTO> {
+    try {
+      const response = await this.client.get(
+        `/v1/reports/audit-trail/journal-entry/${journalEntryId}`
+      );
+
+      return response.data;
+    } catch (error) {
+      if (error instanceof AxiosError && error.response?.status === 404) {
+        throw new Error(`Journal entry with ID ${journalEntryId} not found.`);
+      }
+      this.handleError('Get journal entry detail', error);
+    }
   }
 }
 

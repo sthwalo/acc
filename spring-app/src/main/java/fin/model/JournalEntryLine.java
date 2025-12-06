@@ -77,6 +77,10 @@ public class JournalEntryLine {
     @JoinColumn(name = "journal_entry_id", insertable = false, updatable = false)
     private JournalEntry journalEntry;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "account_id", insertable = false, updatable = false)
+    private Account account;
+
     public JournalEntryLine() {
         this.debitAmount = BigDecimal.ZERO;
         this.creditAmount = BigDecimal.ZERO;
@@ -167,11 +171,11 @@ public class JournalEntryLine {
     }
 
     public Account getAccount() {
-        // TODO: Add relationship to Account
-        return null;
+        return account;
     }
 
     public void setAccount(Account account) {
+        this.account = account;
         if (account != null) {
             this.accountId = account.getId();
         }

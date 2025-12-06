@@ -3,7 +3,7 @@ import { Database, Edit, Trash2, Plus, Save, X, AlertCircle, CheckCircle, Calend
 import { useApi } from '../hooks/useApi';
 import ApiMessageBanner from './shared/ApiMessageBanner';
 import AccountSelector from './shared/AccountSelector';
-import type { Company, Transaction, FiscalPeriod, ApiTransaction, ApiError, Account } from '../types/api';
+import type { Company, Transaction, FiscalPeriod, ApiTransaction, ApiError } from '../types/api';
 
 interface DataManagementViewProps {
   selectedCompany: Company;
