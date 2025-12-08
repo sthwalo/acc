@@ -26,8 +26,11 @@
 
 package fin.service.spring;
 
+import fin.dto.*;
 import fin.model.*;
+import fin.model.report.ColumnDefinition;
 import fin.repository.*;
+import fin.service.export.ReportExportService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,9 +40,11 @@ import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.SQLException;
 import java.text.NumberFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Objects;
 import java.util.*;
 import java.util.logging.Logger;
 import java.util.logging.Level;
@@ -68,17 +73,23 @@ public class SpringFinancialReportingService {
     private final AccountRepository accountRepository;
     private final JournalEntryRepository journalEntryRepository;
     private final JournalEntryLineRepository journalEntryLineRepository;
+    private final ReportExportService reportExportService;
+    private final FinancialDataRepository financialDataRepository;
 
     public SpringFinancialReportingService(SpringCompanyService companyService,
                                          FiscalPeriodRepository fiscalPeriodRepository,
                                          AccountRepository accountRepository,
                                          JournalEntryRepository journalEntryRepository,
-                                         JournalEntryLineRepository journalEntryLineRepository) {
+                                         JournalEntryLineRepository journalEntryLineRepository,
+                                         ReportExportService reportExportService,
+                                         FinancialDataRepository financialDataRepository) {
         this.companyService = companyService;
         this.fiscalPeriodRepository = fiscalPeriodRepository;
         this.accountRepository = accountRepository;
         this.journalEntryRepository = journalEntryRepository;
         this.journalEntryLineRepository = journalEntryLineRepository;
+        this.reportExportService = reportExportService;
+        this.financialDataRepository = financialDataRepository;
         this.currencyFormat = NumberFormat.getCurrencyInstance(Locale.forLanguageTag("en-ZA"));
     }
 
@@ -190,42 +201,21 @@ public class SpringFinancialReportingService {
                     "Code", "Account Name", "Debit", "Credit"));
             report.append("=".repeat(REPORT_SEPARATOR_WIDTH)).append("\n");
 
-            List<Account> accounts = accountRepository.findByCompanyId(companyId);
+            // Use the new DTO-based repository method
+            List<TrialBalanceDTO> trialBalanceEntries = financialDataRepository.getTrialBalanceDTOs(companyId, fiscalPeriodId);
 
             BigDecimal totalDebits = BigDecimal.ZERO;
             BigDecimal totalCredits = BigDecimal.ZERO;
 
-            for (Account account : accounts) {
-                List<JournalEntryLine> entries = journalEntryLineRepository
-                    .findByAccountIdAndJournalEntry_FiscalPeriodId(account.getId(), fiscalPeriodId);
+            for (TrialBalanceDTO entry : trialBalanceEntries) {
+                report.append(String.format("%-10s %-30s %15s %15s%n",
+                        entry.getAccountCode(),
+                        truncateText(entry.getAccountName(), ACCOUNT_NAME_TRUNCATE_CHECK, ACCOUNT_NAME_TRUNCATE_LENGTH),
+                        formatCurrency(entry.getDebit()),
+                        formatCurrency(entry.getCredit())));
 
-                BigDecimal debitBalance = BigDecimal.ZERO;
-                BigDecimal creditBalance = BigDecimal.ZERO;
-
-                for (JournalEntryLine entry : entries) {
-                    if (entry.getDebitAmount() != null) {
-                        debitBalance = debitBalance.add(entry.getDebitAmount());
-                    }
-                    if (entry.getCreditAmount() != null) {
-                        creditBalance = creditBalance.add(entry.getCreditAmount());
-                    }
-                }
-
-                BigDecimal netBalance = debitBalance.subtract(creditBalance);
-
-                if (netBalance.compareTo(BigDecimal.ZERO) != 0) {
-                    report.append(String.format("%-10s %-30s %15s %15s%n",
-                            account.getAccountCode(),
-                            truncateText(account.getAccountName(), ACCOUNT_NAME_TRUNCATE_CHECK, ACCOUNT_NAME_TRUNCATE_LENGTH),
-                            netBalance.compareTo(BigDecimal.ZERO) > 0 ? formatCurrency(netBalance) : "",
-                            netBalance.compareTo(BigDecimal.ZERO) < 0 ? formatCurrency(netBalance.abs()) : ""));
-
-                    if (netBalance.compareTo(BigDecimal.ZERO) > 0) {
-                        totalDebits = totalDebits.add(netBalance);
-                    } else {
-                        totalCredits = totalCredits.add(netBalance.abs());
-                    }
-                }
+                totalDebits = totalDebits.add(entry.getDebit());
+                totalCredits = totalCredits.add(entry.getCredit());
             }
 
             report.append("=".repeat(REPORT_SEPARATOR_WIDTH)).append("\n");
@@ -245,6 +235,348 @@ public class SpringFinancialReportingService {
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error generating trial balance", e);
             return "Error generating report: " + e.getMessage();
+        }
+    }
+
+    /**
+     * Builds Trial Balance column definitions for export
+     */
+    private List<ColumnDefinition> buildTrialBalanceColumns() {
+        List<ColumnDefinition> columns = new ArrayList<>();
+        columns.add(new ColumnDefinition("Account Code", "accountCode", 90, "text", "left"));
+        columns.add(new ColumnDefinition("Account Name", "accountName", 230, "text", "left"));
+        columns.add(new ColumnDefinition("Debit", "debit", 90, "currency", "right"));
+        columns.add(new ColumnDefinition("Credit", "credit", 90, "currency", "right"));
+        return columns;
+    }
+
+    private List<ColumnDefinition> buildIncomeStatementColumns() {
+        List<ColumnDefinition> columns = new ArrayList<>();
+        columns.add(new ColumnDefinition("Category", "category", 120, "text", "left"));
+        columns.add(new ColumnDefinition("Account Code", "accountCode", 90, "text", "left"));
+        columns.add(new ColumnDefinition("Account Name", "accountName", 230, "text", "left"));
+        columns.add(new ColumnDefinition("Amount", "amount", 110, "currency", "right"));
+        columns.add(new ColumnDefinition("Type", "type", 80, "text", "left"));
+        return columns;
+    }
+
+    private List<ColumnDefinition> buildBalanceSheetColumns() {
+        List<ColumnDefinition> columns = new ArrayList<>();
+        columns.add(new ColumnDefinition("Section", "section", 120, "text", "left"));
+        columns.add(new ColumnDefinition("Category", "category", 120, "text", "left"));
+        columns.add(new ColumnDefinition("Account Code", "accountCode", 90, "text", "left"));
+        columns.add(new ColumnDefinition("Account Name", "accountName", 230, "text", "left"));
+        columns.add(new ColumnDefinition("Amount", "amount", 110, "currency", "right"));
+        return columns;
+    }
+
+    /**
+     * Builds Trial Balance data as a list of maps for export
+     */
+    private List<Map<String, Object>> buildTrialBalanceData(Long companyId, Long fiscalPeriodId) throws SQLException {
+        List<Map<String, Object>> data = new ArrayList<>();
+        List<Account> accounts = accountRepository.findByCompanyId(companyId);
+
+        BigDecimal totalDebits = BigDecimal.ZERO;
+        BigDecimal totalCredits = BigDecimal.ZERO;
+
+        for (Account account : accounts) {
+            List<JournalEntryLine> entries = journalEntryLineRepository
+                .findByAccountIdAndJournalEntry_FiscalPeriodId(account.getId(), fiscalPeriodId);
+
+            BigDecimal debitBalance = BigDecimal.ZERO;
+            BigDecimal creditBalance = BigDecimal.ZERO;
+
+            for (JournalEntryLine entry : entries) {
+                if (entry.getDebitAmount() != null) {
+                    debitBalance = debitBalance.add(entry.getDebitAmount());
+                }
+                if (entry.getCreditAmount() != null) {
+                    creditBalance = creditBalance.add(entry.getCreditAmount());
+                }
+            }
+
+            BigDecimal netBalance = debitBalance.subtract(creditBalance);
+
+            if (netBalance.compareTo(BigDecimal.ZERO) != 0) {
+                Map<String, Object> row = new HashMap<>();
+                row.put("accountCode", account.getAccountCode());
+                row.put("accountName", account.getAccountName());
+                row.put("debit", netBalance.compareTo(BigDecimal.ZERO) > 0 ? netBalance : BigDecimal.ZERO);
+                row.put("credit", netBalance.compareTo(BigDecimal.ZERO) < 0 ? netBalance.abs() : BigDecimal.ZERO);
+                data.add(row);
+
+                if (netBalance.compareTo(BigDecimal.ZERO) > 0) {
+                    totalDebits = totalDebits.add(netBalance);
+                } else {
+                    totalCredits = totalCredits.add(netBalance.abs());
+                }
+            }
+        }
+
+        // Add totals row
+        Map<String, Object> totalsRow = new HashMap<>();
+        totalsRow.put("accountCode", "");
+        totalsRow.put("accountName", "TOTALS:");
+        totalsRow.put("debit", totalDebits);
+        totalsRow.put("credit", totalCredits);
+        data.add(totalsRow);
+
+        return data;
+    }
+
+    /**
+     * Exports Trial Balance to PDF format
+     */
+    @Transactional(readOnly = true)
+    public byte[] exportTrialBalanceToPDF(Long companyId, Long fiscalPeriodId) throws SQLException {
+        try {
+            FiscalPeriod period = getFiscalPeriod(fiscalPeriodId);
+            List<TrialBalanceDTO> entries = financialDataRepository.getTrialBalanceDTOs(companyId, fiscalPeriodId);
+            List<ColumnDefinition> columns = buildTrialBalanceColumns();
+
+            List<Map<String, Object>> data = new ArrayList<>();
+            for (TrialBalanceDTO e : entries) {
+                Map<String, Object> row = new HashMap<>();
+                row.put("accountCode", e.getAccountCode());
+                row.put("accountName", e.getAccountName());
+                row.put("debit", e.getDebit());
+                row.put("credit", e.getCredit());
+                data.add(row);
+            }
+
+            return reportExportService.exportToPDF(data, columns, "TRIAL BALANCE", companyId, period);
+
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error exporting trial balance to PDF", e);
+            throw new SQLException("Failed to export trial balance to PDF: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Exports Trial Balance to Excel format
+     */
+    @Transactional(readOnly = true)
+    public byte[] exportTrialBalanceToExcel(Long companyId, Long fiscalPeriodId) throws SQLException {
+        try {
+            FiscalPeriod period = getFiscalPeriod(fiscalPeriodId);
+            List<TrialBalanceDTO> entries = financialDataRepository.getTrialBalanceDTOs(companyId, fiscalPeriodId);
+            List<ColumnDefinition> columns = buildTrialBalanceColumns();
+
+            List<Map<String, Object>> data = new ArrayList<>();
+            for (TrialBalanceDTO e : entries) {
+                Map<String, Object> row = new HashMap<>();
+                row.put("accountCode", e.getAccountCode());
+                row.put("accountName", e.getAccountName());
+                row.put("debit", e.getDebit());
+                row.put("credit", e.getCredit());
+                data.add(row);
+            }
+
+            return reportExportService.exportToExcel(data, columns, "TRIAL BALANCE", companyId, period);
+
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error exporting trial balance to Excel", e);
+            throw new SQLException("Failed to export trial balance to Excel: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Exports Trial Balance to CSV format
+     */
+    @Transactional(readOnly = true)
+    public String exportTrialBalanceToCSV(Long companyId, Long fiscalPeriodId) throws SQLException {
+        try {
+            List<TrialBalanceDTO> entries = financialDataRepository.getTrialBalanceDTOs(companyId, fiscalPeriodId);
+            List<ColumnDefinition> columns = buildTrialBalanceColumns();
+
+            List<Map<String, Object>> data = new ArrayList<>();
+            for (TrialBalanceDTO e : entries) {
+                Map<String, Object> row = new HashMap<>();
+                row.put("accountCode", e.getAccountCode());
+                row.put("accountName", e.getAccountName());
+                row.put("debit", e.getDebit());
+                row.put("credit", e.getCredit());
+                data.add(row);
+            }
+
+            return reportExportService.exportToCSV(data, columns);
+
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error exporting trial balance to CSV", e);
+            throw new SQLException("Failed to export trial balance to CSV: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Exports Income Statement to PDF format
+     */
+    @Transactional(readOnly = true)
+    public byte[] exportIncomeStatementToPDF(Long companyId, Long fiscalPeriodId) throws SQLException {
+        try {
+            FiscalPeriod period = getFiscalPeriod(fiscalPeriodId);
+            List<IncomeStatementDTO> entries = financialDataRepository.getIncomeStatementDTOs(companyId, fiscalPeriodId);
+            List<ColumnDefinition> columns = buildIncomeStatementColumns();
+
+            List<Map<String, Object>> data = new ArrayList<>();
+            for (IncomeStatementDTO e : entries) {
+                Map<String, Object> row = new HashMap<>();
+                row.put("category", e.getCategory());
+                row.put("accountCode", e.getAccountCode());
+                row.put("accountName", e.getAccountName());
+                row.put("amount", e.getAmount());
+                row.put("type", e.getType());
+                data.add(row);
+            }
+
+            return reportExportService.exportToPDF(data, columns, "INCOME STATEMENT", companyId, period);
+
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error exporting income statement to PDF", e);
+            throw new SQLException("Failed to export income statement to PDF: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Exports Income Statement to Excel format
+     */
+    @Transactional(readOnly = true)
+    public byte[] exportIncomeStatementToExcel(Long companyId, Long fiscalPeriodId) throws SQLException {
+        try {
+            FiscalPeriod period = getFiscalPeriod(fiscalPeriodId);
+            List<IncomeStatementDTO> entries = financialDataRepository.getIncomeStatementDTOs(companyId, fiscalPeriodId);
+            List<ColumnDefinition> columns = buildIncomeStatementColumns();
+
+            List<Map<String, Object>> data = new ArrayList<>();
+            for (IncomeStatementDTO e : entries) {
+                Map<String, Object> row = new HashMap<>();
+                row.put("category", e.getCategory());
+                row.put("accountCode", e.getAccountCode());
+                row.put("accountName", e.getAccountName());
+                row.put("amount", e.getAmount());
+                row.put("type", e.getType());
+                data.add(row);
+            }
+
+            return reportExportService.exportToExcel(data, columns, "INCOME STATEMENT", companyId, period);
+
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error exporting income statement to Excel", e);
+            throw new SQLException("Failed to export income statement to Excel: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Exports Income Statement to CSV format
+     */
+    @Transactional(readOnly = true)
+    public String exportIncomeStatementToCSV(Long companyId, Long fiscalPeriodId) throws SQLException {
+        try {
+            List<IncomeStatementDTO> entries = financialDataRepository.getIncomeStatementDTOs(companyId, fiscalPeriodId);
+            List<ColumnDefinition> columns = buildIncomeStatementColumns();
+
+            List<Map<String, Object>> data = new ArrayList<>();
+            for (IncomeStatementDTO e : entries) {
+                Map<String, Object> row = new HashMap<>();
+                row.put("category", e.getCategory());
+                row.put("accountCode", e.getAccountCode());
+                row.put("accountName", e.getAccountName());
+                row.put("amount", e.getAmount());
+                row.put("type", e.getType());
+                data.add(row);
+            }
+
+            return reportExportService.exportToCSV(data, columns);
+
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error exporting income statement to CSV", e);
+            throw new SQLException("Failed to export income statement to CSV: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Exports Balance Sheet to PDF format
+     */
+    @Transactional(readOnly = true)
+    public byte[] exportBalanceSheetToPDF(Long companyId, Long fiscalPeriodId) throws SQLException {
+        try {
+            FiscalPeriod period = getFiscalPeriod(fiscalPeriodId);
+            List<BalanceSheetDTO> entries = financialDataRepository.getBalanceSheetDTOs(companyId, fiscalPeriodId);
+            List<ColumnDefinition> columns = buildBalanceSheetColumns();
+
+            List<Map<String, Object>> data = new ArrayList<>();
+            for (BalanceSheetDTO e : entries) {
+                Map<String, Object> row = new HashMap<>();
+                row.put("category", e.getCategory());
+                row.put("accountCode", e.getAccountCode());
+                row.put("accountName", e.getAccountName());
+                row.put("amount", e.getAmount());
+                row.put("section", e.getSection());
+                data.add(row);
+            }
+
+            return reportExportService.exportToPDF(data, columns, "BALANCE SHEET", companyId, period);
+
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error exporting balance sheet to PDF", e);
+            throw new SQLException("Failed to export balance sheet to PDF: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Exports Balance Sheet to Excel format
+     */
+    @Transactional(readOnly = true)
+    public byte[] exportBalanceSheetToExcel(Long companyId, Long fiscalPeriodId) throws SQLException {
+        try {
+            FiscalPeriod period = getFiscalPeriod(fiscalPeriodId);
+            List<BalanceSheetDTO> entries = financialDataRepository.getBalanceSheetDTOs(companyId, fiscalPeriodId);
+            List<ColumnDefinition> columns = buildBalanceSheetColumns();
+
+            List<Map<String, Object>> data = new ArrayList<>();
+            for (BalanceSheetDTO e : entries) {
+                Map<String, Object> row = new HashMap<>();
+                row.put("category", e.getCategory());
+                row.put("accountCode", e.getAccountCode());
+                row.put("accountName", e.getAccountName());
+                row.put("amount", e.getAmount());
+                row.put("section", e.getSection());
+                data.add(row);
+            }
+
+            return reportExportService.exportToExcel(data, columns, "BALANCE SHEET", companyId, period);
+
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error exporting balance sheet to Excel", e);
+            throw new SQLException("Failed to export balance sheet to Excel: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Exports Balance Sheet to CSV format
+     */
+    @Transactional(readOnly = true)
+    public String exportBalanceSheetToCSV(Long companyId, Long fiscalPeriodId) throws SQLException {
+        try {
+            List<BalanceSheetDTO> entries = financialDataRepository.getBalanceSheetDTOs(companyId, fiscalPeriodId);
+            List<ColumnDefinition> columns = buildBalanceSheetColumns();
+
+            List<Map<String, Object>> data = new ArrayList<>();
+            for (BalanceSheetDTO e : entries) {
+                Map<String, Object> row = new HashMap<>();
+                row.put("category", e.getCategory());
+                row.put("accountCode", e.getAccountCode());
+                row.put("accountName", e.getAccountName());
+                row.put("amount", e.getAmount());
+                row.put("section", e.getSection());
+                data.add(row);
+            }
+
+            return reportExportService.exportToCSV(data, columns);
+
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error exporting balance sheet to CSV", e);
+            throw new SQLException("Failed to export balance sheet to CSV: " + e.getMessage(), e);
         }
     }
 
@@ -315,6 +647,7 @@ public class SpringFinancialReportingService {
             BigDecimal totalLiabilitiesAndEquity = totalLiabilities.add(totalEquity);
 
             report.append("\n").append("=".repeat(REPORT_SEPARATOR_WIDTH)).append("\n");
+            report.append(String.format("%-60s %15s%n", "TOTAL ASSETS:", formatCurrency(totalAssets)));
             report.append(String.format("%-60s %15s%n", "TOTAL LIABILITIES & EQUITY:", formatCurrency(totalLiabilitiesAndEquity)));
             report.append("=".repeat(REPORT_SEPARATOR_WIDTH)).append("\n");
 
@@ -423,6 +756,234 @@ public class SpringFinancialReportingService {
     }
 
     /**
+     * Exports General Ledger to PDF format (combined across all active accounts)
+     */
+    @Transactional(readOnly = true)
+    public byte[] exportGeneralLedgerToPDF(Long companyId, Long fiscalPeriodId) throws SQLException {
+        try {
+            FiscalPeriod period = getFiscalPeriod(fiscalPeriodId);
+            int cId = companyId.intValue();
+            int fId = fiscalPeriodId.intValue();
+            List<AccountInfo> accounts = financialDataRepository.getActiveAccountsFromJournals(cId, fId);
+            List<ColumnDefinition> columns = buildGeneralLedgerColumns();
+            List<Map<String, Object>> data = new ArrayList<>();
+
+            for (AccountInfo account : accounts) {
+                List<GeneralLedgerDTO> entries = financialDataRepository.getGeneralLedgerDTOs(companyId, fiscalPeriodId, account.getAccountCode());
+                for (GeneralLedgerDTO e : entries) {
+                    Map<String, Object> row = new HashMap<>();
+                    row.put("date", e.getDate());
+                    row.put("reference", e.getReference());
+                    row.put("description", e.getDescription());
+                    row.put("debit", e.getDebit());
+                    row.put("credit", e.getCredit());
+                    row.put("balance", e.getBalance());
+                    row.put("accountCode", account.getAccountCode());
+                    row.put("accountName", account.getAccountName());
+                    data.add(row);
+                }
+            }
+
+            return reportExportService.exportToPDF(data, columns, "GENERAL LEDGER", companyId, period);
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error exporting general ledger to PDF", e);
+            throw new SQLException("Failed to export general ledger to PDF: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Exports General Ledger to Excel format
+     */
+    @Transactional(readOnly = true)
+    public byte[] exportGeneralLedgerToExcel(Long companyId, Long fiscalPeriodId) throws SQLException {
+        try {
+            FiscalPeriod period = getFiscalPeriod(fiscalPeriodId);
+            int cId = companyId.intValue();
+            int fId = fiscalPeriodId.intValue();
+            List<AccountInfo> accounts = financialDataRepository.getActiveAccountsFromJournals(cId, fId);
+            List<ColumnDefinition> columns = buildGeneralLedgerColumns();
+            List<Map<String, Object>> data = new ArrayList<>();
+
+            for (AccountInfo account : accounts) {
+                List<GeneralLedgerDTO> entries = financialDataRepository.getGeneralLedgerDTOs(companyId, fiscalPeriodId, account.getAccountCode());
+                for (GeneralLedgerDTO e : entries) {
+                    Map<String, Object> row = new HashMap<>();
+                    row.put("date", e.getDate());
+                    row.put("reference", e.getReference());
+                    row.put("description", e.getDescription());
+                    row.put("debit", e.getDebit());
+                    row.put("credit", e.getCredit());
+                    row.put("balance", e.getBalance());
+                    row.put("accountCode", account.getAccountCode());
+                    row.put("accountName", account.getAccountName());
+                    data.add(row);
+                }
+            }
+
+            return reportExportService.exportToExcel(data, columns, "GENERAL LEDGER", companyId, period);
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error exporting general ledger to Excel", e);
+            throw new SQLException("Failed to export general ledger to Excel: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Exports General Ledger to CSV format
+     */
+    @Transactional(readOnly = true)
+    public String exportGeneralLedgerToCSV(Long companyId, Long fiscalPeriodId) throws SQLException {
+        try {
+            int cId = companyId.intValue();
+            int fId = fiscalPeriodId.intValue();
+            List<AccountInfo> accounts = financialDataRepository.getActiveAccountsFromJournals(cId, fId);
+            List<ColumnDefinition> columns = buildGeneralLedgerColumns();
+            List<Map<String, Object>> data = new ArrayList<>();
+
+            for (AccountInfo account : accounts) {
+                List<GeneralLedgerDTO> entries = financialDataRepository.getGeneralLedgerDTOs(companyId, fiscalPeriodId, account.getAccountCode());
+                for (GeneralLedgerDTO e : entries) {
+                    Map<String, Object> row = new HashMap<>();
+                    row.put("date", e.getDate());
+                    row.put("reference", e.getReference());
+                    row.put("description", e.getDescription());
+                    row.put("debit", e.getDebit());
+                    row.put("credit", e.getCredit());
+                    row.put("balance", e.getBalance());
+                    row.put("accountCode", account.getAccountCode());
+                    row.put("accountName", account.getAccountName());
+                    data.add(row);
+                }
+            }
+
+            return reportExportService.exportToCSV(data, columns);
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error exporting general ledger to CSV", e);
+            throw new SQLException("Failed to export general ledger to CSV: " + e.getMessage(), e);
+        }
+    }
+
+    private List<ColumnDefinition> buildGeneralLedgerColumns() {
+        List<ColumnDefinition> columns = new ArrayList<>();
+        columns.add(new ColumnDefinition("Account Code", "accountCode", 90, "text", "left"));
+        columns.add(new ColumnDefinition("Account Name", "accountName", 200, "text", "left"));
+        columns.add(new ColumnDefinition("Date", "date", 90, "date", "left"));
+        columns.add(new ColumnDefinition("Reference", "reference", 120, "text", "left"));
+        columns.add(new ColumnDefinition("Description", "description", 300, "text", "left"));
+        columns.add(new ColumnDefinition("Debit", "debit", 90, "currency", "right"));
+        columns.add(new ColumnDefinition("Credit", "credit", 90, "currency", "right"));
+        columns.add(new ColumnDefinition("Balance", "balance", 90, "currency", "right"));
+        return columns;
+    }
+
+    /**
+     * Exports Cashbook to PDF format (combined across cash accounts)
+     */
+    @Transactional(readOnly = true)
+    public byte[] exportCashbookToPDF(Long companyId, Long fiscalPeriodId) throws SQLException {
+        try {
+            FiscalPeriod period = getFiscalPeriod(fiscalPeriodId);
+            List<Account> cashAccounts = accountRepository.findByCompanyIdAndAccountCodeStartingWith(companyId, "1");
+            List<ColumnDefinition> columns = buildCashbookColumns();
+            List<Map<String, Object>> data = new ArrayList<>();
+
+            for (Account account : cashAccounts) {
+                List<CashbookDTO> entries = financialDataRepository.getCashbookDTOs(companyId, fiscalPeriodId, account.getAccountCode());
+                for (CashbookDTO e : entries) {
+                    Map<String, Object> row = new HashMap<>();
+                    row.put("date", e.getDate());
+                    row.put("reference", e.getReference());
+                    row.put("description", e.getDescription());
+                    row.put("receipts", e.getReceipts());
+                    row.put("payments", e.getPayments());
+                    row.put("balance", e.getBalance());
+                    row.put("accountCode", account.getAccountCode());
+                    row.put("accountName", account.getAccountName());
+                    data.add(row);
+                }
+            }
+
+            return reportExportService.exportToPDF(data, columns, "CASHBOOK", companyId, period);
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error exporting cashbook to PDF", e);
+            throw new SQLException("Failed to export cashbook to PDF: " + e.getMessage(), e);
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public byte[] exportCashbookToExcel(Long companyId, Long fiscalPeriodId) throws SQLException {
+        try {
+            FiscalPeriod period = getFiscalPeriod(fiscalPeriodId);
+            List<Account> cashAccounts = accountRepository.findByCompanyIdAndAccountCodeStartingWith(companyId, "1");
+            List<ColumnDefinition> columns = buildCashbookColumns();
+            List<Map<String, Object>> data = new ArrayList<>();
+
+            for (Account account : cashAccounts) {
+                List<CashbookDTO> entries = financialDataRepository.getCashbookDTOs(companyId, fiscalPeriodId, account.getAccountCode());
+                for (CashbookDTO e : entries) {
+                    Map<String, Object> row = new HashMap<>();
+                    row.put("date", e.getDate());
+                    row.put("reference", e.getReference());
+                    row.put("description", e.getDescription());
+                    row.put("receipts", e.getReceipts());
+                    row.put("payments", e.getPayments());
+                    row.put("balance", e.getBalance());
+                    row.put("accountCode", account.getAccountCode());
+                    row.put("accountName", account.getAccountName());
+                    data.add(row);
+                }
+            }
+
+            return reportExportService.exportToExcel(data, columns, "CASHBOOK", companyId, period);
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error exporting cashbook to Excel", e);
+            throw new SQLException("Failed to export cashbook to Excel: " + e.getMessage(), e);
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public String exportCashbookToCSV(Long companyId, Long fiscalPeriodId) throws SQLException {
+        try {
+            List<Account> cashAccounts = accountRepository.findByCompanyIdAndAccountCodeStartingWith(companyId, "1");
+            List<ColumnDefinition> columns = buildCashbookColumns();
+            List<Map<String, Object>> data = new ArrayList<>();
+
+            for (Account account : cashAccounts) {
+                List<CashbookDTO> entries = financialDataRepository.getCashbookDTOs(companyId, fiscalPeriodId, account.getAccountCode());
+                for (CashbookDTO e : entries) {
+                    Map<String, Object> row = new HashMap<>();
+                    row.put("date", e.getDate());
+                    row.put("reference", e.getReference());
+                    row.put("description", e.getDescription());
+                    row.put("receipts", e.getReceipts());
+                    row.put("payments", e.getPayments());
+                    row.put("balance", e.getBalance());
+                    row.put("accountCode", account.getAccountCode());
+                    row.put("accountName", account.getAccountName());
+                    data.add(row);
+                }
+            }
+
+            return reportExportService.exportToCSV(data, columns);
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error exporting cashbook to CSV", e);
+            throw new SQLException("Failed to export cashbook to CSV: " + e.getMessage(), e);
+        }
+    }
+
+    private List<ColumnDefinition> buildCashbookColumns() {
+        List<ColumnDefinition> columns = new ArrayList<>();
+        columns.add(new ColumnDefinition("Account Code", "accountCode", 90, "text", "left"));
+        columns.add(new ColumnDefinition("Account Name", "accountName", 200, "text", "left"));
+        columns.add(new ColumnDefinition("Date", "date", 90, "date", "left"));
+        columns.add(new ColumnDefinition("Reference", "reference", 120, "text", "left"));
+        columns.add(new ColumnDefinition("Description", "description", 300, "text", "left"));
+        columns.add(new ColumnDefinition("Receipts", "receipts", 90, "currency", "right"));
+        columns.add(new ColumnDefinition("Payments", "payments", 90, "currency", "right"));
+        columns.add(new ColumnDefinition("Balance", "balance", 90, "currency", "right"));
+        return columns;
+    }
+
+    /**
      * Generates an Audit Trail report
      */
     @Transactional(readOnly = true)
@@ -437,13 +998,13 @@ public class SpringFinancialReportingService {
             List<JournalEntry> journalEntries = journalEntryRepository
                 .findByCompanyIdAndFiscalPeriodIdOrderByEntryDateAscIdAsc(companyId, fiscalPeriodId);
 
-            String currentEntry = "";
+            String currentEntry = null;
             BigDecimal grandTotalDebits = BigDecimal.ZERO;
             BigDecimal grandTotalCredits = BigDecimal.ZERO;
 
             for (JournalEntry je : journalEntries) {
-                // New journal entry header
-                if (!je.getReference().equals(currentEntry)) {
+                // New journal entry header — always print header for the first entry even if reference is null
+                if (currentEntry == null || !Objects.equals(je.getReference(), currentEntry)) {
                     currentEntry = je.getReference();
 
                     report.append("\n").append("=".repeat(REPORT_SEPARATOR_WIDTH)).append("\n");
@@ -611,7 +1172,10 @@ public class SpringFinancialReportingService {
     }
 
     private FiscalPeriod getFiscalPeriod(Long fiscalPeriodId) {
-        return fiscalPeriodRepository.findById(fiscalPeriodId).orElse(null);
+        return fiscalPeriodRepository.findById(fiscalPeriodId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Fiscal period not found with ID: " + fiscalPeriodId + 
+                        ". Please ensure the fiscal period exists in the database."));
     }
 
     private String formatCurrency(BigDecimal amount) {
