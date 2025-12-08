@@ -242,9 +242,15 @@ public class AuditTrailService {
      * This follows the legacy system's pattern of showing the double-entry structure.
      */
     private String buildDescriptionFromLines(JournalEntry entry, List<JournalEntryLine> lines) {
-        // If header has description, use it
-        if (entry.getDescription() != null && !entry.getDescription().trim().isEmpty()) {
-            return entry.getDescription();
+        // If header has a valid description, use it. Treat literal 'null' or 'null - null' as invalid.
+        if (entry.getDescription() != null) {
+            String headerDesc = entry.getDescription().trim();
+            // Normalize 'null' strings produced by legacy concatenation
+            if (!headerDesc.equalsIgnoreCase("null") && !headerDesc.matches("(?i)\\s*null\\s*(-\\s*null\\s*)?")) {
+                if (!headerDesc.isEmpty()) {
+                    return headerDesc;
+                }
+            }
         }
 
         // Otherwise, build from lines (show both accounts in double-entry format)
@@ -312,11 +318,16 @@ public class AuditTrailService {
             }
         }
 
+        String description = entry.getDescription();
+        if (description == null || description.trim().isEmpty() || description.matches("(?i)\\s*null\\s*(-\\s*null\\s*)?")) {
+            description = buildDescriptionFromLines(entry, lines);
+        }
+
         return new JournalEntryDetailDTO(
             entry.getId(),
             entry.getReference(),
             entry.getEntryDate(),
-            entry.getDescription(),
+            description,
             "Bank Transaction", // Default transaction type
             entry.getFiscalPeriodId(),
             fiscalPeriodName,

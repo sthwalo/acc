@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { JournalEntryDetailDTO } from '../../types/api';
+import type { JournalEntryLineDTO } from '../../types/api';
 
 // Mock API service
 const mockGetJournalEntryDetail = vi.fn();
@@ -111,34 +112,34 @@ describe('JournalEntryDetailModal Component Tests', () => {
   describe('Balance Calculations', () => {
     it('should calculate total debits correctly', async () => {
       const response = await mockGetJournalEntryDetail(1);
-      const totalDebits = response.lines.reduce((sum, line) => sum + line.debitAmount, 0);
+      const totalDebits = response.lines.reduce((sum: number, line: JournalEntryLineDTO) => sum + line.debitAmount, 0);
 
       expect(totalDebits).toBe(10000.0);
     });
 
     it('should calculate total credits correctly', async () => {
       const response = await mockGetJournalEntryDetail(1);
-      const totalCredits = response.lines.reduce((sum, line) => sum + line.creditAmount, 0);
+      const totalCredits = response.lines.reduce((sum: number, line: JournalEntryLineDTO) => sum + line.creditAmount, 0);
 
       expect(totalCredits).toBe(10000.0);
     });
 
     it('should identify balanced entry', async () => {
       const response = await mockGetJournalEntryDetail(1);
-      const totalDebits = response.lines.reduce((sum, line) => sum + line.debitAmount, 0);
-      const totalCredits = response.lines.reduce((sum, line) => sum + line.creditAmount, 0);
+      const totalDebits = response.lines.reduce((sum: number, line: JournalEntryLineDTO) => sum + line.debitAmount, 0);
+      const totalCredits = response.lines.reduce((sum: number, line: JournalEntryLineDTO) => sum + line.creditAmount, 0);
       const isBalanced = totalDebits === totalCredits;
 
       expect(isBalanced).toBe(true);
     });
 
     it('should calculate difference for unbalanced entry', () => {
-      const lines = [
+      const lines: { debitAmount: number; creditAmount: number }[] = [
         { debitAmount: 10000.0, creditAmount: 0.0 },
         { debitAmount: 0.0, creditAmount: 5000.0 },
       ];
-      const totalDebits = lines.reduce((sum, line) => sum + line.debitAmount, 0);
-      const totalCredits = lines.reduce((sum, line) => sum + line.creditAmount, 0);
+      const totalDebits = lines.reduce((sum: number, line: { debitAmount: number; creditAmount: number }) => sum + line.debitAmount, 0);
+      const totalCredits = lines.reduce((sum: number, line: { debitAmount: number; creditAmount: number }) => sum + line.creditAmount, 0);
       const difference = Math.abs(totalDebits - totalCredits);
 
       expect(difference).toBe(5000.0);
@@ -242,14 +243,14 @@ describe('JournalEntryDetailModal Component Tests', () => {
 
     it('should maintain line order', async () => {
       const response = await mockGetJournalEntryDetail(1);
-      const lineNumbers = response.lines.map((line) => line.lineNumber);
+      const lineNumbers = response.lines.map((line: JournalEntryLineDTO) => line.lineNumber);
 
       expect(lineNumbers).toEqual([1, 2]);
     });
 
     it('should identify debit lines', async () => {
       const response = await mockGetJournalEntryDetail(1);
-      const debitLines = response.lines.filter((line) => line.debitAmount > 0);
+      const debitLines = response.lines.filter((line: JournalEntryLineDTO) => line.debitAmount > 0);
 
       expect(debitLines).toHaveLength(1);
       expect(debitLines[0].debitAmount).toBe(10000.0);
@@ -258,7 +259,7 @@ describe('JournalEntryDetailModal Component Tests', () => {
 
     it('should identify credit lines', async () => {
       const response = await mockGetJournalEntryDetail(1);
-      const creditLines = response.lines.filter((line) => line.creditAmount > 0);
+      const creditLines = response.lines.filter((line: JournalEntryLineDTO) => line.creditAmount > 0);
 
       expect(creditLines).toHaveLength(1);
       expect(creditLines[0].creditAmount).toBe(10000.0);

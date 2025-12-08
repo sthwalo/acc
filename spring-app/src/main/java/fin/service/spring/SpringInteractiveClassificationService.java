@@ -28,6 +28,7 @@ package fin.service.spring;
 
 import fin.model.*;
 import fin.repository.AccountRepository;
+import fin.service.spring.SpringAccountClassificationService;
 import fin.repository.BankTransactionRepository;
 import fin.util.SpringDebugger;
 import org.springframework.stereotype.Service;
@@ -48,13 +49,16 @@ public class SpringInteractiveClassificationService {
 
     private final BankTransactionRepository bankTransactionRepository;
     private final AccountRepository accountRepository;
+    private final SpringAccountClassificationService accountClassificationService;
     private final SpringDebugger debugger;
 
     public SpringInteractiveClassificationService(BankTransactionRepository bankTransactionRepository,
                                                 AccountRepository accountRepository,
+                                                SpringAccountClassificationService accountClassificationService,
                                                 SpringDebugger debugger) {
         this.bankTransactionRepository = bankTransactionRepository;
         this.accountRepository = accountRepository;
+        this.accountClassificationService = accountClassificationService;
         this.debugger = debugger;
     }
 
@@ -135,10 +139,20 @@ public class SpringInteractiveClassificationService {
         // Update transaction classification
         transaction.setAccountCode(accountCode.trim());
         transaction.setAccountName(accountName.trim());
+        // Persist a user-visible category value for reporting/audit trail; fallback to accountName
+        transaction.setCategory(accountName.trim());
         transaction.setClassificationDate(java.time.LocalDateTime.now());
         transaction.setClassifiedBy(classifiedBy.trim());
 
         BankTransaction saved = bankTransactionRepository.save(transaction);
+
+        // Ensure any lacking journal entries are created for this transaction
+        try {
+            accountClassificationService.generateJournalEntriesForClassifiedTransactions(saved.getCompanyId(), classifiedBy);
+        } catch (Exception e) {
+            // Don't fail classification if journal entry generation fails; log and continue
+            debugger.logException("Interactive classification - generate journal entries", "SpringInteractiveClassificationService", "classifyTransaction", e, transactionId);
+        }
 
         debugger.logMethodExit("SpringInteractiveClassificationService", "classifyTransaction", saved.getId());
         return saved;

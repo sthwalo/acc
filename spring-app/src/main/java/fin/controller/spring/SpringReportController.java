@@ -31,12 +31,16 @@ import fin.model.dto.JournalEntryDetailDTO;
 import fin.service.spring.AuditTrailService;
 import fin.service.spring.SpringFinancialReportingService;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 /**
  * Spring REST Controller for financial reporting operations.
@@ -85,6 +89,217 @@ public class SpringReportController {
     }
 
     /**
+     * Export Trial Balance report to specified format (PDF, EXCEL, CSV)
+     * 
+     * @param companyId Company identifier
+     * @param fiscalPeriodId Fiscal period identifier
+     * @param format Export format (PDF, EXCEL, CSV) - defaults to PDF
+     * @return File as byte array or string with appropriate headers
+     */
+    @GetMapping("/trial-balance/company/{companyId}/fiscal-period/{fiscalPeriodId}/export")
+    public ResponseEntity<?> exportTrialBalance(@PathVariable Long companyId,
+                                                @PathVariable Long fiscalPeriodId,
+                                                @RequestParam(defaultValue = "PDF") String format) {
+        try {
+            String upperFormat = format.toUpperCase();
+            HttpHeaders headers = new HttpHeaders();
+            
+            // Generate filename with timestamp
+            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+            
+            switch (upperFormat) {
+                case "PDF":
+                    byte[] pdfBytes = reportingService.exportTrialBalanceToPDF(companyId, fiscalPeriodId);
+                    String pdfFilename = String.format("TrialBalance_Company%d_Period%d_%s.pdf", 
+                                                     companyId, fiscalPeriodId, timestamp);
+                    headers.setContentType(MediaType.APPLICATION_PDF);
+                    headers.setContentDispositionFormData("attachment", pdfFilename);
+                    headers.setContentLength(pdfBytes.length);
+                    return ResponseEntity.ok().headers(headers).body(pdfBytes);
+                    
+                case "EXCEL":
+                    byte[] excelBytes = reportingService.exportTrialBalanceToExcel(companyId, fiscalPeriodId);
+                    String excelFilename = String.format("TrialBalance_Company%d_Period%d_%s.xlsx", 
+                                                       companyId, fiscalPeriodId, timestamp);
+                    headers.setContentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+                    headers.setContentDispositionFormData("attachment", excelFilename);
+                    headers.setContentLength(excelBytes.length);
+                    return ResponseEntity.ok().headers(headers).body(excelBytes);
+                    
+                case "CSV":
+                    String csvContent = reportingService.exportTrialBalanceToCSV(companyId, fiscalPeriodId);
+                    String csvFilename = String.format("TrialBalance_Company%d_Period%d_%s.csv", 
+                                                     companyId, fiscalPeriodId, timestamp);
+                    headers.setContentType(MediaType.TEXT_PLAIN);
+                    headers.setContentDispositionFormData("attachment", csvFilename);
+                    return ResponseEntity.ok().headers(headers).body(csvContent);
+                    
+                default:
+                    return ResponseEntity.badRequest().body("Unsupported format: " + format + ". Supported formats: PDF, EXCEL, CSV");
+            }
+                    
+        } catch (SQLException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Database error: " + e.getMessage());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body("Invalid request: " + e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Export failed: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Export General Ledger report to specified format (PDF, EXCEL, CSV)
+     */
+    @GetMapping("/general-ledger/company/{companyId}/fiscal-period/{fiscalPeriodId}/export")
+    public ResponseEntity<?> exportGeneralLedger(@PathVariable Long companyId,
+                                                  @PathVariable Long fiscalPeriodId,
+                                                  @RequestParam(defaultValue = "PDF") String format) {
+        try {
+            String upperFormat = format.toUpperCase();
+            HttpHeaders headers = new HttpHeaders();
+            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+
+            switch (upperFormat) {
+                case "PDF":
+                    byte[] pdfBytes = reportingService.exportGeneralLedgerToPDF(companyId, fiscalPeriodId);
+                    String pdfFilename = String.format("GeneralLedger_Company%d_Period%d_%s.pdf",
+                            companyId, fiscalPeriodId, timestamp);
+                    headers.setContentType(MediaType.APPLICATION_PDF);
+                    headers.setContentDispositionFormData("attachment", pdfFilename);
+                    headers.setContentLength(pdfBytes.length);
+                    return ResponseEntity.ok().headers(headers).body(pdfBytes);
+                case "EXCEL":
+                    byte[] excelBytes = reportingService.exportGeneralLedgerToExcel(companyId, fiscalPeriodId);
+                    String excelFilename = String.format("GeneralLedger_Company%d_Period%d_%s.xlsx",
+                            companyId, fiscalPeriodId, timestamp);
+                    headers.setContentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+                    headers.setContentDispositionFormData("attachment", excelFilename);
+                    headers.setContentLength(excelBytes.length);
+                    return ResponseEntity.ok().headers(headers).body(excelBytes);
+                case "CSV":
+                    String csvContent = reportingService.exportGeneralLedgerToCSV(companyId, fiscalPeriodId);
+                    String csvFilename = String.format("GeneralLedger_Company%d_Period%d_%s.csv",
+                            companyId, fiscalPeriodId, timestamp);
+                    headers.setContentType(MediaType.TEXT_PLAIN);
+                    headers.setContentDispositionFormData("attachment", csvFilename);
+                    return ResponseEntity.ok().headers(headers).body(csvContent);
+                default:
+                    return ResponseEntity.badRequest().body("Unsupported format: " + format + ". Supported formats: PDF, EXCEL, CSV");
+            }
+        } catch (SQLException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Database error: " + e.getMessage());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body("Invalid request: " + e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Export failed: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Export Income Statement report to specified format (PDF, EXCEL, CSV)
+     */
+    @GetMapping("/income-statement/company/{companyId}/fiscal-period/{fiscalPeriodId}/export")
+    public ResponseEntity<?> exportIncomeStatement(@PathVariable Long companyId,
+                                                   @PathVariable Long fiscalPeriodId,
+                                                   @RequestParam(defaultValue = "PDF") String format) {
+        try {
+            String upperFormat = format.toUpperCase();
+            HttpHeaders headers = new HttpHeaders();
+            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+
+            switch (upperFormat) {
+                case "PDF":
+                    byte[] pdfBytes = reportingService.exportIncomeStatementToPDF(companyId, fiscalPeriodId);
+                    String pdfFilename = String.format("IncomeStatement_Company%d_Period%d_%s.pdf",
+                            companyId, fiscalPeriodId, timestamp);
+                    headers.setContentType(MediaType.APPLICATION_PDF);
+                    headers.setContentDispositionFormData("attachment", pdfFilename);
+                    headers.setContentLength(pdfBytes.length);
+                    return ResponseEntity.ok().headers(headers).body(pdfBytes);
+                case "EXCEL":
+                    byte[] excelBytes = reportingService.exportIncomeStatementToExcel(companyId, fiscalPeriodId);
+                    String excelFilename = String.format("IncomeStatement_Company%d_Period%d_%s.xlsx",
+                            companyId, fiscalPeriodId, timestamp);
+                    headers.setContentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+                    headers.setContentDispositionFormData("attachment", excelFilename);
+                    headers.setContentLength(excelBytes.length);
+                    return ResponseEntity.ok().headers(headers).body(excelBytes);
+                case "CSV":
+                    String csvContent = reportingService.exportIncomeStatementToCSV(companyId, fiscalPeriodId);
+                    String csvFilename = String.format("IncomeStatement_Company%d_Period%d_%s.csv",
+                            companyId, fiscalPeriodId, timestamp);
+                    headers.setContentType(MediaType.TEXT_PLAIN);
+                    headers.setContentDispositionFormData("attachment", csvFilename);
+                    return ResponseEntity.ok().headers(headers).body(csvContent);
+                default:
+                    return ResponseEntity.badRequest().body("Unsupported format: " + format + ". Supported formats: PDF, EXCEL, CSV");
+            }
+        } catch (SQLException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Database error: " + e.getMessage());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body("Invalid request: " + e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Export failed: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Export Balance Sheet report to specified format (PDF, EXCEL, CSV)
+     */
+    @GetMapping("/balance-sheet/company/{companyId}/fiscal-period/{fiscalPeriodId}/export")
+    public ResponseEntity<?> exportBalanceSheet(@PathVariable Long companyId,
+                                                @PathVariable Long fiscalPeriodId,
+                                                @RequestParam(defaultValue = "PDF") String format) {
+        try {
+            String upperFormat = format.toUpperCase();
+            HttpHeaders headers = new HttpHeaders();
+            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+
+            switch (upperFormat) {
+                case "PDF":
+                    byte[] pdfBytes = reportingService.exportBalanceSheetToPDF(companyId, fiscalPeriodId);
+                    String pdfFilename = String.format("BalanceSheet_Company%d_Period%d_%s.pdf",
+                            companyId, fiscalPeriodId, timestamp);
+                    headers.setContentType(MediaType.APPLICATION_PDF);
+                    headers.setContentDispositionFormData("attachment", pdfFilename);
+                    headers.setContentLength(pdfBytes.length);
+                    return ResponseEntity.ok().headers(headers).body(pdfBytes);
+                case "EXCEL":
+                    byte[] excelBytes = reportingService.exportBalanceSheetToExcel(companyId, fiscalPeriodId);
+                    String excelFilename = String.format("BalanceSheet_Company%d_Period%d_%s.xlsx",
+                            companyId, fiscalPeriodId, timestamp);
+                    headers.setContentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+                    headers.setContentDispositionFormData("attachment", excelFilename);
+                    headers.setContentLength(excelBytes.length);
+                    return ResponseEntity.ok().headers(headers).body(excelBytes);
+                case "CSV":
+                    String csvContent = reportingService.exportBalanceSheetToCSV(companyId, fiscalPeriodId);
+                    String csvFilename = String.format("BalanceSheet_Company%d_Period%d_%s.csv",
+                            companyId, fiscalPeriodId, timestamp);
+                    headers.setContentType(MediaType.TEXT_PLAIN);
+                    headers.setContentDispositionFormData("attachment", csvFilename);
+                    return ResponseEntity.ok().headers(headers).body(csvContent);
+                default:
+                    return ResponseEntity.badRequest().body("Unsupported format: " + format + ". Supported formats: PDF, EXCEL, CSV");
+            }
+        } catch (SQLException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Database error: " + e.getMessage());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body("Invalid request: " + e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Export failed: " + e.getMessage());
+        }
+    }
+
+    /**
      * Generate Income Statement report
      */
     @GetMapping("/income-statement/company/{companyId}/fiscal-period/{fiscalPeriodId}")
@@ -126,6 +341,56 @@ public class SpringReportController {
             return ResponseEntity.ok(report);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
+        }
+    }
+
+    /**
+     * Export Cashbook report to specified format (PDF, EXCEL, CSV)
+     */
+    @GetMapping("/cashbook/company/{companyId}/fiscal-period/{fiscalPeriodId}/export")
+    public ResponseEntity<?> exportCashbook(@PathVariable Long companyId,
+                                            @PathVariable Long fiscalPeriodId,
+                                            @RequestParam(defaultValue = "PDF") String format) {
+        try {
+            String upperFormat = format.toUpperCase();
+            HttpHeaders headers = new HttpHeaders();
+            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+
+            switch (upperFormat) {
+                case "PDF":
+                    byte[] pdfBytes = reportingService.exportCashbookToPDF(companyId, fiscalPeriodId);
+                    String pdfFilename = String.format("Cashbook_Company%d_Period%d_%s.pdf",
+                            companyId, fiscalPeriodId, timestamp);
+                    headers.setContentType(MediaType.APPLICATION_PDF);
+                    headers.setContentDispositionFormData("attachment", pdfFilename);
+                    headers.setContentLength(pdfBytes.length);
+                    return ResponseEntity.ok().headers(headers).body(pdfBytes);
+                case "EXCEL":
+                    byte[] excelBytes = reportingService.exportCashbookToExcel(companyId, fiscalPeriodId);
+                    String excelFilename = String.format("Cashbook_Company%d_Period%d_%s.xlsx",
+                            companyId, fiscalPeriodId, timestamp);
+                    headers.setContentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+                    headers.setContentDispositionFormData("attachment", excelFilename);
+                    headers.setContentLength(excelBytes.length);
+                    return ResponseEntity.ok().headers(headers).body(excelBytes);
+                case "CSV":
+                    String csvContent = reportingService.exportCashbookToCSV(companyId, fiscalPeriodId);
+                    String csvFilename = String.format("Cashbook_Company%d_Period%d_%s.csv",
+                            companyId, fiscalPeriodId, timestamp);
+                    headers.setContentType(MediaType.TEXT_PLAIN);
+                    headers.setContentDispositionFormData("attachment", csvFilename);
+                    return ResponseEntity.ok().headers(headers).body(csvContent);
+                default:
+                    return ResponseEntity.badRequest().body("Unsupported format: " + format + ". Supported formats: PDF, EXCEL, CSV");
+            }
+        } catch (SQLException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Database error: " + e.getMessage());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body("Invalid request: " + e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Export failed: " + e.getMessage());
         }
     }
 

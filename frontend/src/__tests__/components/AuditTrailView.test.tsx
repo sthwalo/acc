@@ -27,6 +27,8 @@ describe('AuditTrailView Component Tests', () => {
     closed: false,
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z',
+    createdBy: 1,
+    updatedBy: 1,
   };
 
   const mockAuditTrailResponse: AuditTrailResponse = {
@@ -36,8 +38,10 @@ describe('AuditTrailView Component Tests', () => {
         reference: 'JE-2024-0001',
         entryDate: '2024-04-01',
         description: 'Opening balance entry',
-        transactionType: 'Manual',
+          // transactionType removed - using JournalEntryDTO type schema
         createdBy: 'admin',
+        lastModifiedBy: 'admin',
+        lastModifiedAt: '2024-04-01T11:00:00Z',
         createdAt: '2024-04-01T10:00:00Z',
         totalDebit: 10000.0,
         totalCredit: 10000.0,
@@ -48,8 +52,9 @@ describe('AuditTrailView Component Tests', () => {
         reference: 'JE-2024-0002',
         entryDate: '2024-04-02',
         description: 'Bank transaction import',
-        transactionType: 'Automated',
         createdBy: 'system',
+        lastModifiedBy: 'system',
+        lastModifiedAt: '2024-04-02T12:30:00Z',
         createdAt: '2024-04-02T12:00:00Z',
         totalDebit: 5000.0,
         totalCredit: 5000.0,
@@ -60,13 +65,13 @@ describe('AuditTrailView Component Tests', () => {
       currentPage: 0,
       pageSize: 20,
       totalPages: 1,
-      totalEntries: 2,
+      totalElements: 2,
     },
     filters: {
       startDate: null,
       endDate: null,
-      transactionType: null,
       searchTerm: null,
+      hasFilters: false,
     },
   };
 
@@ -77,18 +82,10 @@ describe('AuditTrailView Component Tests', () => {
 
   describe('API Integration', () => {
     it('should call getAuditTrail with correct parameters on mount', async () => {
-      // Test API call parameters
-      await mockGetAuditTrail(
-        mockCompany.id,
-        mockPeriod.id,
-        0,
-        20,
-        undefined,
-        undefined,
-        undefined
-      );
+      // Test API call parameters – simulate a mount call
+      await mockGetAuditTrail(mockCompany.id, mockPeriod.id, 0, 20);
 
-      expect(mockGetAuditTrail).toHaveBeenCalledWith(1, 1, 0, 20, undefined, undefined, undefined);
+      expect(mockGetAuditTrail).toHaveBeenCalledWith(1, 1, 0, 20);
       expect(mockGetAuditTrail).toHaveBeenCalledTimes(1);
     });
 
@@ -151,7 +148,7 @@ describe('AuditTrailView Component Tests', () => {
       expect(response.pagination.currentPage).toBe(0);
       expect(response.pagination.pageSize).toBe(20);
       expect(response.pagination.totalPages).toBe(1);
-      expect(response.pagination.totalEntries).toBe(2);
+      expect(response.pagination.totalElements).toBe(2);
     });
 
     it('should handle filter metadata correctly', async () => {
@@ -178,12 +175,12 @@ describe('AuditTrailView Component Tests', () => {
           currentPage: 0,
           pageSize: 20,
           totalPages: 0,
-          totalEntries: 0,
+          totalElements: 0,
         },
         filters: {
           startDate: null,
           endDate: null,
-          transactionType: null,
+          hasFilters: false,
           searchTerm: null,
         },
       };
@@ -191,7 +188,7 @@ describe('AuditTrailView Component Tests', () => {
 
       const response = await mockGetAuditTrail(1, 1, 0, 20);
       expect(response.entries).toHaveLength(0);
-      expect(response.pagination.totalEntries).toBe(0);
+      expect(response.pagination.totalElements).toBe(0);
     });
   });
 

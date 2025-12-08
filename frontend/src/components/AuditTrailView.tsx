@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { BookOpen, Search, Calendar, ChevronLeft, ChevronRight, Loader, AlertCircle, Printer, Download } from 'lucide-react';
+import { BookOpen, Search, Calendar, ChevronLeft, ChevronRight, Loader, AlertCircle, Eye, FileText, File } from 'lucide-react';
 import { useApi } from '../hooks/useApi';
 import ApiMessageBanner from './shared/ApiMessageBanner';
 import JournalEntryDetailModal from './JournalEntryDetailModal';
@@ -17,6 +17,8 @@ export default function AuditTrailView({ selectedCompany, selectedPeriod, onClos
   const [selectedEntry, setSelectedEntry] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showTextView, setShowTextView] = useState(false);
+  const [textViewContent, setTextViewContent] = useState('');
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(0);
@@ -112,52 +114,33 @@ export default function AuditTrailView({ selectedCompany, selectedPeriod, onClos
     });
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
+  // Print behaviour removed — use PDF / download flow instead
 
-  const handleDownloadCSV = () => {
-    if (!auditTrailData || auditTrailData.entries.length === 0) {
-      setError('No data to download');
-      return;
+  const handleAuditTrailView = async () => {
+    setError(null);
+    try {
+      const report = await api.reports.generateAuditTrail(Number(selectedCompany.id), selectedPeriod.id, 'text');
+      if (report && report.content) {
+        setTextViewContent(report.content);
+        setShowTextView(true);
+      } else {
+        setError('No audit trail content returned');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to generate audit trail view');
     }
-
-    // Create CSV content
-    const headers = ['Date', 'Reference', 'Description', 'Debit Amount', 'Credit Amount', 'Created By'];
-    const csvRows = [headers.join(',')];
-
-    auditTrailData.entries.forEach((entry: JournalEntryDTO) => {
-      const row = [
-        formatDate(entry.date),
-        entry.reference || '',
-        `"${entry.description?.replace(/"/g, '""') || ''}"`, // Escape quotes in description
-        formatCurrency(entry.totalDebit),
-        formatCurrency(entry.totalCredit),
-        entry.createdBy || ''
-      ];
-      csvRows.push(row.join(','));
-    });
-
-    // Add summary row
-    csvRows.push('');
-    csvRows.push(`Total Entries,${auditTrailData.totalElements}`);
-    csvRows.push(`Total Debits,${formatCurrency(auditTrailData.entries.reduce((sum: number, e: JournalEntryDTO) => sum + e.totalDebit, 0))}`);
-    csvRows.push(`Total Credits,${formatCurrency(auditTrailData.entries.reduce((sum: number, e: JournalEntryDTO) => sum + e.totalCredit, 0))}`);
-
-    // Create blob and download
-    const csvContent = csvRows.join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    
-    const fileName = `AuditTrail_${selectedCompany.name}_${selectedPeriod.periodName}_${new Date().toISOString().split('T')[0]}.csv`;
-    link.setAttribute('href', url);
-    link.setAttribute('download', fileName);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
   };
+
+  const handleAuditTrailDownload = async (format: 'PDF' | 'EXCEL' | 'CSV') => {
+    setError(null);
+    try {
+      await api.reports.downloadAuditTrail(Number(selectedCompany.id), selectedPeriod.id, format);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to download audit trail');
+    }
+  };
+
+  // Legacy CSV download handler removed; quick-download icons use API downloads
 
   return (
     <div className="audit-trail-view">
@@ -173,32 +156,91 @@ export default function AuditTrailView({ selectedCompany, selectedPeriod, onClos
           </div>
         </div>
         <div className="header-actions">
-          <button
-            onClick={handlePrint}
-            disabled={isLoading || !auditTrailData || auditTrailData.entries.length === 0}
-            className="action-button print-button"
-            title="Print audit trail"
-          >
-            <Printer size={18} />
-            Print
-          </button>
-          <button
-            onClick={handleDownloadCSV}
-            disabled={isLoading || !auditTrailData || auditTrailData.entries.length === 0}
-            className="action-button download-button"
-            title="Download as CSV"
-          >
-            <Download size={18} />
-            Download
-          </button>
+          <div className="quick-download-icons">
+            <button
+              type="button"
+              className="download-icon"
+              data-type="view"
+              aria-label="View Audit Trail"
+              title="View Report"
+              onClick={handleAuditTrailView}
+              disabled={isLoading}
+            >
+              <Eye size={14} />
+              <span className="download-label">View</span>
+            </button>
+            <button
+              type="button"
+              className="download-icon"
+              data-type="pdf"
+              aria-label="Download Audit Trail as PDF"
+              title="Download PDF"
+              disabled={isLoading}
+              onClick={() => handleAuditTrailDownload('PDF')}
+            >
+              <FileText size={14} />
+              <span className="download-label">PDF</span>
+            </button>
+            <button
+              type="button"
+              className="download-icon"
+              data-type="excel"
+              aria-label="Download Audit Trail as Excel"
+              title="Download Excel"
+              disabled={isLoading}
+              onClick={() => handleAuditTrailDownload('EXCEL')}
+            >
+              <File size={14} />
+              <span className="download-label">XLSX</span>
+            </button>
+            <button
+              type="button"
+              className="download-icon"
+              data-type="csv"
+              aria-label="Download Audit Trail as CSV"
+              title="Download CSV"
+              disabled={isLoading}
+              onClick={() => handleAuditTrailDownload('CSV')}
+            >
+              <FileText size={14} />
+              <span className="download-label">CSV</span>
+            </button>
+          </div>
+          {/* Print button removed — use PDF download / print workflow via exported PDF */}
+          {/* Legacy download button removed; use quick download icons for format downloads */}
           <button
             onClick={onClose}
             className="close-button"
+            type="button"
           >
             Close
           </button>
         </div>
       </div>
+
+      {/* Text View Modal */}
+      {showTextView && (
+        <div className="audit-trail-text-view">
+          <div className="text-view-actions">
+            <button type="button" className="close-button" onClick={() => setShowTextView(false)}>Close</button>
+            <button type="button" className="action-button" onClick={() => {
+              const blob = new Blob([textViewContent], { type: 'text/plain' });
+              const url = window.URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.href = url;
+              const filename = `audit_trail_${selectedCompany.name}_${selectedPeriod.periodName}.txt`.replace(/[^a-zA-Z0-9_.-]/g, '_');
+              link.setAttribute('download', filename);
+              document.body.appendChild(link);
+              link.click();
+              link.remove();
+              window.URL.revokeObjectURL(url);
+            }}>Download as TXT</button>
+          </div>
+          <div className="text-view-content">
+            <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'monospace', maxHeight: 600, overflow: 'auto' }}>{textViewContent}</pre>
+          </div>
+        </div>
+      )}
 
       {/* API Message Banner */}
       {error && (

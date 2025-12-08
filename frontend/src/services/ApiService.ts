@@ -418,6 +418,14 @@ class TransactionApiService extends BaseApiService {
  * Handles all financial report generation operations
  */
 class ReportApiService extends BaseApiService {
+  public readonly companies: CompanyApiService;
+  public readonly fiscalPeriods: FiscalPeriodApiService;
+
+  constructor(companies: CompanyApiService, fiscalPeriods: FiscalPeriodApiService) {
+    super();
+    this.companies = companies;
+    this.fiscalPeriods = fiscalPeriods;
+  }
   private async generateReport(
     companyId: number,
     fiscalPeriodId: number,
@@ -493,6 +501,204 @@ class ReportApiService extends BaseApiService {
 
   async generateAuditTrail(companyId: number, fiscalPeriodId: number, format: string = 'text'): Promise<{ reportType: string, companyId: number, fiscalPeriodId: number, format: string, content: string }> {
     return this.generateReport(companyId, fiscalPeriodId, 'audit-trail', format);
+  }
+
+  // ============================================================================
+  // TASK_008: Report Download Methods
+  // ============================================================================
+
+  /**
+   * Download Trial Balance in specified format
+   */
+  async downloadTrialBalance(companyId: number, fiscalPeriodId: number, format: 'PDF' | 'EXCEL' | 'CSV' = 'PDF'): Promise<void> {
+    try {
+      // Fetch company and period details for filename via direct API call
+      const [companyResp, periodResp] = await Promise.all([
+        this.client.get(`/v1/companies/${companyId}`),
+        // Fiscal period lookup uses the company-less path (controller maps to /api/v1/companies/fiscal-periods/{id})
+        this.client.get(`/v1/companies/fiscal-periods/${fiscalPeriodId}`),
+      ]);
+      const company = companyResp.data?.data;
+      const period = periodResp.data?.data;
+
+      const response = await this.client.get(`/v1/reports/trial-balance/company/${companyId}/fiscal-period/${fiscalPeriodId}/export`, {
+        params: { format },
+        responseType: 'blob'
+      });
+
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      
+      // Determine correct file extension
+      const extension = format === 'EXCEL' ? 'xlsx' : format.toLowerCase();
+      
+      // Use company name and period name in filename
+      const companyName = (company?.name || `company_${companyId}`).replace(/[^a-zA-Z0-9]/g, '_');
+      const periodName = (period?.periodName || `period_${fiscalPeriodId}`).replace(/[^a-zA-Z0-9]/g, '_');
+      link.setAttribute('download', `TrialBalance_${companyName}_${periodName}.${extension}`);
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+    } catch (error) {
+      this.handleError('Download trial balance', error);
+    }
+  }
+
+  async downloadIncomeStatement(companyId: number, fiscalPeriodId: number, format: 'PDF' | 'EXCEL' | 'CSV' = 'PDF'): Promise<void> {
+    try {
+      const [companyResp, periodResp] = await Promise.all([
+        this.client.get(`/v1/companies/${companyId}`),
+        this.client.get(`/v1/companies/fiscal-periods/${fiscalPeriodId}`),
+      ]);
+      const company = companyResp.data?.data;
+      const period = periodResp.data?.data;
+
+      const response = await this.client.get(`/v1/reports/income-statement/company/${companyId}/fiscal-period/${fiscalPeriodId}/export`, {
+        params: { format },
+        responseType: 'blob'
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      const extension = format === 'EXCEL' ? 'xlsx' : format.toLowerCase();
+      const companyName = (company?.name || `company_${companyId}`).replace(/[^a-zA-Z0-9]/g, '_');
+      const periodName = (period?.periodName || `period_${fiscalPeriodId}`).replace(/[^a-zA-Z0-9]/g, '_');
+      link.setAttribute('download', `income_statement_${companyName}_${periodName}.${extension}`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+    } catch (error) {
+      this.handleError('Download income statement', error);
+    }
+  }
+
+  async downloadBalanceSheet(companyId: number, fiscalPeriodId: number, format: 'PDF' | 'EXCEL' | 'CSV' = 'PDF'): Promise<void> {
+    try {
+      const [companyResp, periodResp] = await Promise.all([
+        this.client.get(`/v1/companies/${companyId}`),
+        this.client.get(`/v1/companies/${companyId}/fiscal-periods/${fiscalPeriodId}`),
+      ]);
+      const company = companyResp.data?.data;
+      const period = periodResp.data?.data;
+
+      const response = await this.client.get(`/v1/reports/balance-sheet/company/${companyId}/fiscal-period/${fiscalPeriodId}/export`, {
+        params: { format },
+        responseType: 'blob'
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      const extension = format === 'EXCEL' ? 'xlsx' : format.toLowerCase();
+      const companyName = (company?.name || `company_${companyId}`).replace(/[^a-zA-Z0-9]/g, '_');
+      const periodName = (period?.periodName || `period_${fiscalPeriodId}`).replace(/[^a-zA-Z0-9]/g, '_');
+      link.setAttribute('download', `balance_sheet_${companyName}_${periodName}.${extension}`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+    } catch (error) {
+      this.handleError('Download balance sheet', error);
+    }
+  }
+
+  async downloadGeneralLedger(companyId: number, fiscalPeriodId: number, format: 'PDF' | 'EXCEL' | 'CSV' = 'PDF'): Promise<void> {
+    try {
+      const [companyResp, periodResp] = await Promise.all([
+        this.client.get(`/v1/companies/${companyId}`),
+        this.client.get(`/v1/companies/${companyId}/fiscal-periods/${fiscalPeriodId}`),
+      ]);
+      const company = companyResp.data?.data;
+      const period = periodResp.data?.data;
+
+      const response = await this.client.get(`/v1/reports/general-ledger/company/${companyId}/fiscal-period/${fiscalPeriodId}/export`, {
+        params: { format },
+        responseType: 'blob'
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      const extension = format === 'EXCEL' ? 'xlsx' : format.toLowerCase();
+      const companyName = (company?.name || `company_${companyId}`).replace(/[^a-zA-Z0-9]/g, '_');
+      const periodName = (period?.periodName || `period_${fiscalPeriodId}`).replace(/[^a-zA-Z0-9]/g, '_');
+      link.setAttribute('download', `general_ledger_${companyName}_${periodName}.${extension}`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      this.handleError('Download general ledger', error);
+    }
+  }
+
+  async downloadCashbook(companyId: number, fiscalPeriodId: number, format: 'PDF' | 'EXCEL' | 'CSV' = 'PDF'): Promise<void> {
+    try {
+      const [companyResp, periodResp] = await Promise.all([
+        this.client.get(`/v1/companies/${companyId}`),
+        this.client.get(`/v1/companies/${companyId}/fiscal-periods/${fiscalPeriodId}`),
+      ]);
+      const company = companyResp.data?.data;
+      const period = periodResp.data?.data;
+
+      const response = await this.client.get(`/v1/reports/cashbook/company/${companyId}/fiscal-period/${fiscalPeriodId}/export`, {
+        params: { format },
+        responseType: 'blob'
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      const extension = format === 'EXCEL' ? 'xlsx' : format.toLowerCase();
+      const companyName = (company?.name || `company_${companyId}`).replace(/[^a-zA-Z0-9]/g, '_');
+      const periodName = (period?.periodName || `period_${fiscalPeriodId}`).replace(/[^a-zA-Z0-9]/g, '_');
+      link.setAttribute('download', `cashbook_${companyName}_${periodName}.${extension}`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      this.handleError('Download cashbook', error);
+    }
+  }
+
+  async downloadAuditTrail(companyId: number, fiscalPeriodId: number, format: 'PDF' | 'EXCEL' | 'CSV' = 'PDF'): Promise<void> {
+    try {
+      const [companyResp, periodResp] = await Promise.all([
+        this.client.get(`/v1/companies/${companyId}`),
+        this.client.get(`/v1/companies/${companyId}/fiscal-periods/${fiscalPeriodId}`),
+      ]);
+      const company = companyResp.data?.data;
+      const period = periodResp.data?.data;
+
+      const response = await this.client.get(`/v1/reports/audit-trail/company/${companyId}/fiscal-period/${fiscalPeriodId}/export`, {
+        params: { format },
+        responseType: 'blob'
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      const extension = format === 'EXCEL' ? 'xlsx' : format.toLowerCase();
+      const companyName = (company?.name || `company_${companyId}`).replace(/[^a-zA-Z0-9]/g, '_');
+      const periodName = (period?.periodName || `period_${fiscalPeriodId}`).replace(/[^a-zA-Z0-9]/g, '_');
+      link.setAttribute('download', `audit_trail_${companyName}_${periodName}.${extension}`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      this.handleError('Download audit trail', error);
+    }
   }
 
   // ============================================================================
@@ -860,7 +1066,7 @@ export class ApiService extends BaseApiService {
     this.companies = new CompanyApiService();
     this.fiscalPeriods = new FiscalPeriodApiService();
     this.transactions = new TransactionApiService();
-    this.reports = new ReportApiService();
+    this.reports = new ReportApiService(this.companies, this.fiscalPeriods);
     this.uploads = new UploadApiService();
     this.plans = new PlanApiService();
     this.system = new SystemApiService();

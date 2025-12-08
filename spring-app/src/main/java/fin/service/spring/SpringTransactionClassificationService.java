@@ -408,7 +408,7 @@ public class SpringTransactionClassificationService {
             System.out.println("=".repeat(CONSOLE_SEPARATOR_WIDTH));
 
             // DELEGATE TO SINGLE SOURCE OF TRUTH
-            int classifiedCount = accountClassificationService.classifyAllUnclassifiedTransactions(companyId, "system");
+            int classifiedCount = accountClassificationService.classifyAllUnclassifiedTransactions(companyId, "FIN");
 
             System.out.println("✅ Auto-classified " + classifiedCount + " transactions");
             return new ClassificationResult(null, null, null, "AUTO", "Batch classification: " + classifiedCount + " transactions");
@@ -432,7 +432,7 @@ public class SpringTransactionClassificationService {
             System.out.println("=".repeat(CONSOLE_SEPARATOR_WIDTH));
 
             // DELEGATE TO SINGLE SOURCE OF TRUTH
-            int syncedCount = accountClassificationService.generateJournalEntriesForClassifiedTransactions(companyId, "system");
+            int syncedCount = accountClassificationService.generateJournalEntriesForClassifiedTransactions(companyId, "FIN");
 
             System.out.println("✅ Synced " + syncedCount + " journal entries");
             return syncedCount;

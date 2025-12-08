@@ -4,23 +4,7 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-  test: {
-    globals: true,
-    environment: 'node',
-    setupFiles: './src/__tests__/setup/vitest.setup.ts',
-    include: ['src/__tests__/**/*.{test,spec}.{ts,tsx}'],
-    coverage: {
-      reporter: ['text', 'json', 'html'],
-      exclude: [
-        'node_modules/',
-        'src/__tests__/',
-        '**/*.d.ts',
-        '**/*.config.*',
-        '**/mockData',
-        '**/dist',
-      ],
-    },
-  },
+  // Vitest now configured in vitest.config.ts
   build: {
     rollupOptions: {
       // Disable native rollup binaries for ARM64 compatibility
@@ -70,4 +54,4 @@ export default defineConfig({
   define: {
     __CONTAINER_MODE__: JSON.stringify(process.env.CONTAINER_MODE === 'true'),
   },
-})
+});

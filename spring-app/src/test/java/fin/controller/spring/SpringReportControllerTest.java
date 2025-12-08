@@ -287,4 +287,401 @@ public class SpringReportControllerTest {
         // Assert
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
     }
+
+        @Test
+        @DisplayName("GET /api/v1/reports/trial-balance should return 200 with text")
+        public void testGetTrialBalance_success() {
+                // Arrange
+                Long companyId = 1L;
+                Long fiscalPeriodId = 1L;
+                boolean exportToFile = false;
+                String expectedReport = "TRIAL BALANCE REPORT TEXT";
+
+                when(reportingService.generateTrialBalance(companyId, fiscalPeriodId, exportToFile))
+                                .thenReturn(expectedReport);
+
+                // Act
+                ResponseEntity<String> response = controller.generateTrialBalance(companyId, fiscalPeriodId, exportToFile);
+
+                // Assert
+                assertEquals(HttpStatus.OK, response.getStatusCode());
+                assertEquals(expectedReport, response.getBody());
+                verify(reportingService, times(1)).generateTrialBalance(companyId, fiscalPeriodId, exportToFile);
+        }
+
+        @Test
+        @DisplayName("GET /api/v1/reports/trial-balance/export?format=PDF should return PDF bytes and headers")
+        public void testExportTrialBalance_pdf_success() throws SQLException {
+                // Arrange
+                Long companyId = 1L;
+                Long fiscalPeriodId = 1L;
+                String format = "PDF";
+                byte[] pdfBytes = new byte[] {1, 2, 3, 4};
+
+                when(reportingService.exportTrialBalanceToPDF(companyId, fiscalPeriodId)).thenReturn(pdfBytes);
+
+                // Act
+                ResponseEntity<?> response = controller.exportTrialBalance(companyId, fiscalPeriodId, format);
+
+                // Assert
+                assertEquals(HttpStatus.OK, response.getStatusCode());
+                assertTrue(response.getHeaders().getContentType().includes(org.springframework.http.MediaType.APPLICATION_PDF));
+                assertEquals(pdfBytes.length, response.getHeaders().getContentLength());
+                assertArrayEquals(pdfBytes, (byte[]) response.getBody());
+                verify(reportingService, times(1)).exportTrialBalanceToPDF(companyId, fiscalPeriodId);
+        }
+
+        @Test
+        @DisplayName("GET /api/v1/reports/trial-balance/export?format=EXCEL should return Excel bytes and headers")
+        public void testExportTrialBalance_excel_success() throws SQLException {
+                // Arrange
+                Long companyId = 1L;
+                Long fiscalPeriodId = 1L;
+                String format = "EXCEL";
+                byte[] excelBytes = new byte[] {10, 20, 30};
+
+                when(reportingService.exportTrialBalanceToExcel(companyId, fiscalPeriodId)).thenReturn(excelBytes);
+
+                // Act
+                ResponseEntity<?> response = controller.exportTrialBalance(companyId, fiscalPeriodId, format);
+
+                // Assert
+                assertEquals(HttpStatus.OK, response.getStatusCode());
+                assertTrue(response.getHeaders().getContentType().includes(org.springframework.http.MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")));
+                assertEquals(excelBytes.length, response.getHeaders().getContentLength());
+                assertArrayEquals(excelBytes, (byte[]) response.getBody());
+                verify(reportingService, times(1)).exportTrialBalanceToExcel(companyId, fiscalPeriodId);
+        }
+
+        @Test
+        @DisplayName("GET /api/v1/reports/trial-balance/export?format=CSV should return CSV string and headers")
+        public void testExportTrialBalance_csv_success() throws SQLException {
+                // Arrange
+                Long companyId = 1L;
+                Long fiscalPeriodId = 1L;
+                String format = "CSV";
+                String csv = "account,credit,debit\n1000,100.00,0.00";
+
+                when(reportingService.exportTrialBalanceToCSV(companyId, fiscalPeriodId)).thenReturn(csv);
+
+                // Act
+                ResponseEntity<?> response = controller.exportTrialBalance(companyId, fiscalPeriodId, format);
+
+                // Assert
+                assertEquals(HttpStatus.OK, response.getStatusCode());
+                assertEquals(org.springframework.http.MediaType.TEXT_PLAIN, response.getHeaders().getContentType());
+                assertTrue(response.getHeaders().getContentDisposition().getFilename().contains("TrialBalance"));
+                assertEquals(csv, response.getBody());
+                verify(reportingService, times(1)).exportTrialBalanceToCSV(companyId, fiscalPeriodId);
+        }
+
+        @Test
+        @DisplayName("GET /api/v1/reports/income-statement/export?format=PDF should return PDF bytes and headers")
+        public void testExportIncomeStatement_pdf_success() throws SQLException {
+                // Arrange
+                Long companyId = 1L;
+                Long fiscalPeriodId = 1L;
+                String format = "PDF";
+                byte[] pdfBytes = new byte[] {9, 8, 7};
+
+                when(reportingService.exportIncomeStatementToPDF(companyId, fiscalPeriodId)).thenReturn(pdfBytes);
+
+                // Act
+                ResponseEntity<?> response = controller.exportIncomeStatement(companyId, fiscalPeriodId, format);
+
+                // Assert
+                assertEquals(HttpStatus.OK, response.getStatusCode());
+                assertTrue(response.getHeaders().getContentType().includes(org.springframework.http.MediaType.APPLICATION_PDF));
+                assertEquals(pdfBytes.length, response.getHeaders().getContentLength());
+                assertArrayEquals(pdfBytes, (byte[]) response.getBody());
+                verify(reportingService, times(1)).exportIncomeStatementToPDF(companyId, fiscalPeriodId);
+        }
+
+        @Test
+        @DisplayName("GET /api/v1/reports/balance-sheet/export?format=EXCEL should return Excel bytes and headers")
+        public void testExportBalanceSheet_excel_success() throws SQLException {
+                // Arrange
+                Long companyId = 1L;
+                Long fiscalPeriodId = 1L;
+                String format = "EXCEL";
+                byte[] excelBytes = new byte[] {2, 4, 6};
+
+                when(reportingService.exportBalanceSheetToExcel(companyId, fiscalPeriodId)).thenReturn(excelBytes);
+
+                // Act
+                ResponseEntity<?> response = controller.exportBalanceSheet(companyId, fiscalPeriodId, format);
+
+                // Assert
+                assertEquals(HttpStatus.OK, response.getStatusCode());
+                assertTrue(response.getHeaders().getContentType().includes(org.springframework.http.MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")));
+                assertEquals(excelBytes.length, response.getHeaders().getContentLength());
+                assertArrayEquals(excelBytes, (byte[]) response.getBody());
+                verify(reportingService, times(1)).exportBalanceSheetToExcel(companyId, fiscalPeriodId);
+        }
+
+        @Test
+        @DisplayName("GET /api/v1/reports/general-ledger/export?format=PDF should return PDF bytes and headers")
+        public void testExportGeneralLedger_pdf_success() throws SQLException {
+                // Arrange
+                Long companyId = 1L;
+                Long fiscalPeriodId = 1L;
+                String format = "PDF";
+                byte[] pdfBytes = new byte[] {11, 12, 13};
+
+                when(reportingService.exportGeneralLedgerToPDF(companyId, fiscalPeriodId)).thenReturn(pdfBytes);
+
+                // Act
+                ResponseEntity<?> response = controller.exportGeneralLedger(companyId, fiscalPeriodId, format);
+
+                // Assert
+                assertEquals(HttpStatus.OK, response.getStatusCode());
+                assertTrue(response.getHeaders().getContentType().includes(org.springframework.http.MediaType.APPLICATION_PDF));
+                assertEquals(pdfBytes.length, response.getHeaders().getContentLength());
+                assertArrayEquals(pdfBytes, (byte[]) response.getBody());
+                verify(reportingService, times(1)).exportGeneralLedgerToPDF(companyId, fiscalPeriodId);
+        }
+
+        @Test
+        @DisplayName("GET /api/v1/reports/general-ledger/export?format=EXCEL should return Excel bytes and headers")
+        public void testExportGeneralLedger_excel_success() throws SQLException {
+                // Arrange
+                Long companyId = 1L;
+                Long fiscalPeriodId = 1L;
+                String format = "EXCEL";
+                byte[] excelBytes = new byte[] {21, 22, 23};
+
+                when(reportingService.exportGeneralLedgerToExcel(companyId, fiscalPeriodId)).thenReturn(excelBytes);
+
+                // Act
+                ResponseEntity<?> response = controller.exportGeneralLedger(companyId, fiscalPeriodId, format);
+
+                // Assert
+                assertEquals(HttpStatus.OK, response.getStatusCode());
+                assertTrue(response.getHeaders().getContentType().includes(org.springframework.http.MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")));
+                assertEquals(excelBytes.length, response.getHeaders().getContentLength());
+                assertArrayEquals(excelBytes, (byte[]) response.getBody());
+                verify(reportingService, times(1)).exportGeneralLedgerToExcel(companyId, fiscalPeriodId);
+        }
+
+        @Test
+        @DisplayName("GET /api/v1/reports/general-ledger/export?format=CSV should return CSV string and headers")
+        public void testExportGeneralLedger_csv_success() throws SQLException {
+                // Arrange
+                Long companyId = 1L;
+                Long fiscalPeriodId = 1L;
+                String format = "CSV";
+                String csv = "date,desc,debit,credit\n2025-01-01,Sample,100.00,0.00";
+
+                when(reportingService.exportGeneralLedgerToCSV(companyId, fiscalPeriodId)).thenReturn(csv);
+
+                // Act
+                ResponseEntity<?> response = controller.exportGeneralLedger(companyId, fiscalPeriodId, format);
+
+                // Assert
+                assertEquals(HttpStatus.OK, response.getStatusCode());
+                assertEquals(org.springframework.http.MediaType.TEXT_PLAIN, response.getHeaders().getContentType());
+                assertTrue(response.getHeaders().getContentDisposition().getFilename().contains("GeneralLedger"));
+                assertEquals(csv, response.getBody());
+                verify(reportingService, times(1)).exportGeneralLedgerToCSV(companyId, fiscalPeriodId);
+        }
+
+        @Test
+        @DisplayName("GET /api/v1/reports/cashbook/export?format=PDF should return PDF bytes and headers")
+        public void testExportCashbook_pdf_success() throws SQLException {
+                // Arrange
+                Long companyId = 1L;
+                Long fiscalPeriodId = 1L;
+                String format = "PDF";
+                byte[] pdfBytes = new byte[] {31, 32, 33};
+
+                when(reportingService.exportCashbookToPDF(companyId, fiscalPeriodId)).thenReturn(pdfBytes);
+
+                // Act
+                ResponseEntity<?> response = controller.exportCashbook(companyId, fiscalPeriodId, format);
+
+                // Assert
+                assertEquals(HttpStatus.OK, response.getStatusCode());
+                assertTrue(response.getHeaders().getContentType().includes(org.springframework.http.MediaType.APPLICATION_PDF));
+                assertEquals(pdfBytes.length, response.getHeaders().getContentLength());
+                assertArrayEquals(pdfBytes, (byte[]) response.getBody());
+                verify(reportingService, times(1)).exportCashbookToPDF(companyId, fiscalPeriodId);
+        }
+
+        @Test
+        @DisplayName("GET /api/v1/reports/cashbook/export?format=EXCEL should return Excel bytes and headers")
+        public void testExportCashbook_excel_success() throws SQLException {
+                // Arrange
+                Long companyId = 1L;
+                Long fiscalPeriodId = 1L;
+                String format = "EXCEL";
+                byte[] excelBytes = new byte[] {41, 42, 43};
+
+                when(reportingService.exportCashbookToExcel(companyId, fiscalPeriodId)).thenReturn(excelBytes);
+
+                // Act
+                ResponseEntity<?> response = controller.exportCashbook(companyId, fiscalPeriodId, format);
+
+                // Assert
+                assertEquals(HttpStatus.OK, response.getStatusCode());
+                assertTrue(response.getHeaders().getContentType().includes(org.springframework.http.MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")));
+                assertEquals(excelBytes.length, response.getHeaders().getContentLength());
+                assertArrayEquals(excelBytes, (byte[]) response.getBody());
+                verify(reportingService, times(1)).exportCashbookToExcel(companyId, fiscalPeriodId);
+        }
+
+        @Test
+        @DisplayName("GET /api/v1/reports/cashbook/export?format=CSV should return CSV string and headers")
+        public void testExportCashbook_csv_success() throws SQLException {
+                // Arrange
+                Long companyId = 1L;
+                Long fiscalPeriodId = 1L;
+                String format = "CSV";
+                String csv = "date,ref,desc,receipts,payments,balance\n2025-01-01,REF001,Sample,100.00,0.00,100.00";
+
+                when(reportingService.exportCashbookToCSV(companyId, fiscalPeriodId)).thenReturn(csv);
+
+                // Act
+                ResponseEntity<?> response = controller.exportCashbook(companyId, fiscalPeriodId, format);
+
+                // Assert
+                assertEquals(HttpStatus.OK, response.getStatusCode());
+                assertEquals(org.springframework.http.MediaType.TEXT_PLAIN, response.getHeaders().getContentType());
+                assertTrue(response.getHeaders().getContentDisposition().getFilename().contains("Cashbook"));
+                assertEquals(csv, response.getBody());
+                verify(reportingService, times(1)).exportCashbookToCSV(companyId, fiscalPeriodId);
+        }
+
+        @Test
+        @DisplayName("GET /api/v1/reports/cashbook should return 200 with text")
+        public void testGetCashbook_success() {
+                // Arrange
+                Long companyId = 1L;
+                Long fiscalPeriodId = 1L;
+                boolean exportToFile = false;
+                String expectedReport = "CASHBOOK REPORT TEXT";
+
+                when(reportingService.generateCashbook(companyId, fiscalPeriodId, exportToFile))
+                                .thenReturn(expectedReport);
+
+                // Act
+                ResponseEntity<String> response = controller.generateCashbook(companyId, fiscalPeriodId, exportToFile);
+
+                // Assert
+                assertEquals(HttpStatus.OK, response.getStatusCode());
+                assertEquals(expectedReport, response.getBody());
+                verify(reportingService, times(1)).generateCashbook(companyId, fiscalPeriodId, exportToFile);
+        }
+
+        @Test
+        @DisplayName("GET /api/v1/reports/general-ledger should return 200 with text")
+        public void testGetGeneralLedger_success() {
+                // Arrange
+                Long companyId = 1L;
+                Long fiscalPeriodId = 1L;
+                boolean exportToFile = false;
+                String expectedReport = "GENERAL LEDGER REPORT TEXT";
+
+                when(reportingService.generateGeneralLedger(companyId, fiscalPeriodId, exportToFile))
+                                .thenReturn(expectedReport);
+
+                // Act
+                ResponseEntity<String> response = controller.generateGeneralLedger(companyId, fiscalPeriodId, exportToFile);
+
+                // Assert
+                assertEquals(HttpStatus.OK, response.getStatusCode());
+                assertEquals(expectedReport, response.getBody());
+                verify(reportingService, times(1)).generateGeneralLedger(companyId, fiscalPeriodId, exportToFile);
+        }
+
+        @Test
+        @DisplayName("GET /api/v1/reports/financial should return combined package text and export invoked when requested")
+        public void testGenerateFinancialReportPackage_success_exportFiles() {
+                // Arrange
+                Long companyId = 1L;
+                Long fiscalPeriodId = 1L;
+                boolean exportToFile = true;
+
+                when(reportingService.generateTrialBalance(companyId, fiscalPeriodId, false)).thenReturn("TB");
+                when(reportingService.generateIncomeStatement(companyId, fiscalPeriodId, false)).thenReturn("IS");
+                when(reportingService.generateBalanceSheet(companyId, fiscalPeriodId, false)).thenReturn("BS");
+                when(reportingService.generateCashbook(companyId, fiscalPeriodId, false)).thenReturn("CB");
+                when(reportingService.generateAuditTrail(companyId, fiscalPeriodId, false)).thenReturn("AT");
+
+                // Act
+                ResponseEntity<String> response = controller.generateFinancialReportPackage(companyId, fiscalPeriodId, exportToFile);
+
+                // Assert
+                assertEquals(HttpStatus.OK, response.getStatusCode());
+                assertNotNull(response.getBody());
+                String content = response.getBody();
+                assertTrue(content.contains("TB"));
+                assertTrue(content.contains("IS"));
+                assertTrue(content.contains("BS"));
+                assertTrue(content.contains("CB"));
+                assertTrue(content.contains("AT"));
+
+                // Verify that export variant was invoked for each report
+                verify(reportingService, times(1)).generateTrialBalance(companyId, fiscalPeriodId, true);
+                verify(reportingService, times(1)).generateIncomeStatement(companyId, fiscalPeriodId, true);
+                verify(reportingService, times(1)).generateBalanceSheet(companyId, fiscalPeriodId, true);
+                verify(reportingService, times(1)).generateCashbook(companyId, fiscalPeriodId, true);
+                verify(reportingService, times(1)).generateAuditTrail(companyId, fiscalPeriodId, true);
+        }
+
+        @Test
+        @DisplayName("GET /api/v1/reports/income-statement should return 200 with text")
+        public void testGetIncomeStatement_success() {
+                // Arrange
+                Long companyId = 1L;
+                Long fiscalPeriodId = 1L;
+                boolean exportToFile = false;
+                String expectedReport = "INCOME STATEMENT TEXT";
+
+                when(reportingService.generateIncomeStatement(companyId, fiscalPeriodId, exportToFile))
+                                .thenReturn(expectedReport);
+
+                // Act
+                ResponseEntity<String> response = controller.generateIncomeStatement(companyId, fiscalPeriodId, exportToFile);
+
+                // Assert
+                assertEquals(HttpStatus.OK, response.getStatusCode());
+                assertEquals(expectedReport, response.getBody());
+                verify(reportingService, times(1)).generateIncomeStatement(companyId, fiscalPeriodId, exportToFile);
+        }
+
+        @Test
+        @DisplayName("GET /api/v1/reports/balance-sheet should return 200 with text")
+        public void testGetBalanceSheet_success() {
+                // Arrange
+                Long companyId = 1L;
+                Long fiscalPeriodId = 1L;
+                boolean exportToFile = false;
+                String expectedReport = "BALANCE SHEET TEXT";
+
+                when(reportingService.generateBalanceSheet(companyId, fiscalPeriodId, exportToFile))
+                                .thenReturn(expectedReport);
+
+                // Act
+                ResponseEntity<String> response = controller.generateBalanceSheet(companyId, fiscalPeriodId, exportToFile);
+
+                // Assert
+                assertEquals(HttpStatus.OK, response.getStatusCode());
+                assertEquals(expectedReport, response.getBody());
+                verify(reportingService, times(1)).generateBalanceSheet(companyId, fiscalPeriodId, exportToFile);
+        }
+
+        @Test
+        @DisplayName("GET /api/v1/reports/trial-balance/export?format=unknown should return 400")
+        public void testExportTrialBalance_invalidFormat_returnsBadRequest() {
+                // Arrange
+                Long companyId = 1L;
+                Long fiscalPeriodId = 1L;
+                String format = "TXT"; // unsupported
+
+                // Act
+                ResponseEntity<?> response = controller.exportTrialBalance(companyId, fiscalPeriodId, format);
+
+                // Assert
+                assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        }
 }

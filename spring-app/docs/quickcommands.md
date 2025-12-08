@@ -143,6 +143,12 @@ curl -s -X POST http://localhost:8080/api/v1/auth/login -H "Content-Type: applic
 # Test API with JWT token (fiscal periods) - Replace YOUR_JWT_TOKEN with actual token
 curl -s -H "Authorization: Bearer YOUR_JWT_TOKEN" http://localhost:8080/api/v1/companies/2/fiscal-periods | jq .
 
+curl "http://localhost:8080/api/v1/reports/trial-balance/company/11/fiscal-period/19/export" --output /Users/sthwalonyoni/FIN/trial_balance_test.pdf
+
+cd /Users/sthwalonyoni/FIN/
+cd spring-app && ./gradlew clean build -x test --no-daemon
+./gradlew compileJava --no-daemon
+
 # Upload bank statement file
 curl -s "http://localhost:8080/api/v1/companies/2/fiscal-periods/8/imports/bank-statement" -F 'file=@"/Users/sthwalonyoni/FIN/input/GHC:FNB/GOLD BUSINESS ACCOUNT 111.pdf"' | jq .
 

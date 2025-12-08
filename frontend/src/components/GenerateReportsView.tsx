@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { FileText, Download, Calendar, BookOpen } from 'lucide-react';
+import { FileText, Calendar, BookOpen, Eye, File } from 'lucide-react';
 import { useApi } from '../hooks/useApi';
 import ApiMessageBanner from './shared/ApiMessageBanner';
 import AuditTrailView from './AuditTrailView';
@@ -68,11 +68,12 @@ export default function GenerateReportsView({ selectedCompany }: GenerateReports
   const [selectedPeriod, setSelectedPeriod] = useState<FiscalPeriod | null>(null);
   const [selectedReport, setSelectedReport] = useState<ReportType | null>(null);
   const [selectedFormat, setSelectedFormat] = useState<string>('');
-  const [isGenerating, setIsGenerating] = useState(false);
+  // no global generating state; each download/view action handles own state if necessary
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [showAuditTrail, setShowAuditTrail] = useState(false);
   const [activeReportView, setActiveReportView] = useState<string | null>(null);
+  const [reportContent, setReportContent] = useState<string>('');
 
   const loadFiscalPeriods = useCallback(async () => {
     try {
@@ -106,120 +107,104 @@ export default function GenerateReportsView({ selectedCompany }: GenerateReports
     loadFiscalPeriods();
   }, [loadFiscalPeriods]);
 
-  const generateReport = async () => {
-    if (!selectedReport || !selectedPeriod || !selectedFormat) {
-      setError('Please select a report type, fiscal period, and format');
+  // generateReport removed - main Generate button removed per request
+
+  // Quick download handler used by the report cards (PDF/Excel/CSV)
+  const handleQuickDownload = async (reportId: string, format: 'PDF' | 'EXCEL' | 'CSV') => {
+    if (!selectedCompany || !selectedPeriod) {
+      setError('Please select a company and fiscal period first');
       return;
     }
 
-    // If View format is selected, show the view component instead
-    if (selectedFormat === 'View') {
-      setActiveReportView(selectedReport.id);
-      return;
-    }
-
-    setIsGenerating(true);
     setError(null);
     setSuccess(null);
-
     try {
-      let reportData;
-
-      // Call the appropriate API method based on report type
-      switch (selectedReport.id) {
+      switch (reportId) {
         case 'trial-balance':
-          reportData = await api.generateTrialBalance(Number(selectedCompany.id), selectedPeriod.id, selectedFormat.toLowerCase());
+          await api.reports.downloadTrialBalance(Number(selectedCompany.id), selectedPeriod.id, format);
           break;
         case 'income-statement':
-          reportData = await api.generateIncomeStatement(Number(selectedCompany.id), selectedPeriod.id, selectedFormat.toLowerCase());
+          await api.reports.downloadIncomeStatement(Number(selectedCompany.id), selectedPeriod.id, format);
           break;
         case 'balance-sheet':
-          reportData = await api.generateBalanceSheet(Number(selectedCompany.id), selectedPeriod.id, selectedFormat.toLowerCase());
-          break;
-        case 'cash-flow':
-          reportData = await api.generateCashFlow(Number(selectedCompany.id), selectedPeriod.id, selectedFormat.toLowerCase());
+          await api.reports.downloadBalanceSheet(Number(selectedCompany.id), selectedPeriod.id, format);
           break;
         case 'general-ledger':
-          reportData = await api.generateGeneralLedger(Number(selectedCompany.id), selectedPeriod.id, selectedFormat.toLowerCase());
+          await api.reports.downloadGeneralLedger(Number(selectedCompany.id), selectedPeriod.id, format);
           break;
         case 'cashbook':
-          reportData = await api.generateCashbook(Number(selectedCompany.id), selectedPeriod.id, selectedFormat.toLowerCase());
-          break;
-        case 'audit-trail':
-          reportData = await api.generateAuditTrail(Number(selectedCompany.id), selectedPeriod.id, selectedFormat.toLowerCase());
+          await api.reports.downloadCashbook(Number(selectedCompany.id), selectedPeriod.id, format);
           break;
         default:
-          throw new Error(`Unknown report type: ${selectedReport.id}`);
+          throw new Error(`Download not implemented for: ${reportId}`);
       }
-
-      // Handle the report data (for now, just show success)
-      // TODO: Implement file download for PDF/Excel/CSV formats
-      console.log('Report generated:', reportData);
-
-      setSuccess(`${selectedReport.name} report generated successfully in ${selectedFormat} format`);
-
-      // Handle file download for all formats
-      if (reportData) {
-        let mimeType = 'text/plain';
-        let extension = 'txt';
-
-        switch (selectedFormat.toLowerCase()) {
-          case 'pdf':
-            mimeType = 'application/pdf';
-            extension = 'pdf';
-            break;
-          case 'excel':
-          case 'xlsx':
-            mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-            extension = 'xlsx';
-            break;
-          case 'csv':
-            mimeType = 'text/csv';
-            extension = 'csv';
-            break;
-          case 'text':
-          default:
-            mimeType = 'text/plain';
-            extension = 'txt';
-            break;
-        }
-
-        // Create a blob and download it
-        const blob = new Blob([reportData.content], { type: mimeType });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${selectedReport.name.replace(/\s+/g, '_')}_${selectedPeriod.periodName}.${extension}`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }
-
+      setSuccess(`${reportId.replace('-', ' ')} downloaded (${format})`);
     } catch (err) {
-      // Prefer structured API/axios error message where possible
-      let message = 'Failed to generate report';
-      try {
-        const anyErr: unknown = err;
-        if (anyErr && typeof anyErr === 'object' && 'response' in anyErr) {
-          const axiosErr = anyErr as { response?: { data?: { message?: string } } };
-          if (axiosErr.response?.data?.message) {
-            message = axiosErr.response.data.message;
-          }
-        } else if (err instanceof Error) {
-          message = err.message;
-        }
-      } catch {
-        // ignore parsing error
-      }
-      setError(message);
+      setError(`Failed to download ${reportId.replace('-', ' ')}: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
-      setIsGenerating(false);
+      // done
     }
   };
 
+  // If the user selects 'View' format, auto-generate the text report and display it
+  useEffect(() => {
+    const autoGenerateView = async () => {
+      if (!selectedReport || !selectedPeriod || selectedFormat !== 'View') return;
+      setError(null);
+      setSuccess(null);
+      try {
+        let reportData;
+        switch (selectedReport.id) {
+          case 'trial-balance':
+            reportData = await api.generateTrialBalance(Number(selectedCompany.id), selectedPeriod.id, 'text');
+            break;
+          case 'income-statement':
+            reportData = await api.generateIncomeStatement(Number(selectedCompany.id), selectedPeriod.id, 'text');
+            break;
+          case 'balance-sheet':
+            reportData = await api.generateBalanceSheet(Number(selectedCompany.id), selectedPeriod.id, 'text');
+            break;
+          case 'cash-flow':
+            reportData = await api.generateCashFlow(Number(selectedCompany.id), selectedPeriod.id, 'text');
+            break;
+          case 'general-ledger':
+            reportData = await api.generateGeneralLedger(Number(selectedCompany.id), selectedPeriod.id, 'text');
+            break;
+          case 'cashbook':
+            reportData = await api.generateCashbook(Number(selectedCompany.id), selectedPeriod.id, 'text');
+            break;
+          case 'audit-trail':
+            reportData = await api.generateAuditTrail(Number(selectedCompany.id), selectedPeriod.id, 'text');
+            break;
+          default:
+            return;
+        }
+        setReportContent(reportData.content);
+        setActiveReportView(selectedReport.id);
+        setSuccess(`${selectedReport.name} report generated successfully`);
+      } catch (err) {
+        if (err instanceof Error) setError(err.message);
+        else setError('Failed to generate view report');
+      }
+    };
+    autoGenerateView();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedFormat, selectedReport, selectedPeriod]);
+
   // If a report view is active, render it instead of the main form
   if (activeReportView) {
+    function downloadTextFile(text: string, filename: string) {
+      const blob = new Blob([text], { type: 'text/plain' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    }
+
     return (
       <div className="report-view-container">
         <button
@@ -228,42 +213,23 @@ export default function GenerateReportsView({ selectedCompany }: GenerateReports
         >
           ← Back to Reports
         </button>
-        {activeReportView === 'trial-balance' && (
-          <div className="report-content">
-            <h2>Trial Balance - {selectedPeriod?.periodName}</h2>
-            <p>Trial Balance view component will be implemented here</p>
-          </div>
-        )}
-        {activeReportView === 'income-statement' && (
-          <div className="report-content">
-            <h2>Income Statement - {selectedPeriod?.periodName}</h2>
-            <p>Income Statement view component will be implemented here</p>
-          </div>
-        )}
-        {activeReportView === 'balance-sheet' && (
-          <div className="report-content">
-            <h2>Balance Sheet - {selectedPeriod?.periodName}</h2>
-            <p>Balance Sheet view component will be implemented here</p>
-          </div>
-        )}
-        {activeReportView === 'cash-flow' && (
-          <div className="report-content">
-            <h2>Cash Flow Statement - {selectedPeriod?.periodName}</h2>
-            <p>Cash Flow Statement view component will be implemented here</p>
-          </div>
-        )}
-        {activeReportView === 'general-ledger' && (
-          <div className="report-content">
-            <h2>General Ledger - {selectedPeriod?.periodName}</h2>
-            <p>General Ledger view component will be implemented here</p>
-          </div>
-        )}
-        {activeReportView === 'cashbook' && (
-          <div className="report-content">
-            <h2>Cashbook Report - {selectedPeriod?.periodName}</h2>
-            <p>Cashbook Report view component will be implemented here</p>
-          </div>
-        )}
+        <div className="report-content">
+          <h2>
+            {selectedReport?.name} - {selectedPeriod?.periodName}
+          </h2>
+          <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'monospace', maxHeight: 600, overflow: 'auto' }}>
+            {reportContent}
+          </pre>
+          <button
+            onClick={() => downloadTextFile(
+              reportContent,
+              `${selectedReport?.id}_${selectedCompany.id}_${selectedPeriod?.id}.txt`
+            )}
+            style={{ marginTop: '1rem' }}
+          >
+            Download as TXT
+          </button>
+        </div>
       </div>
     );
   }
@@ -311,62 +277,81 @@ export default function GenerateReportsView({ selectedCompany }: GenerateReports
             {reportTypes.map((report) => {
               const Icon = report.icon;
               return (
-                <button
-                  key={report.id}
-                  className={`report-type-card ${selectedReport?.id === report.id ? 'active' : ''}`}
-                  onClick={() => setSelectedReport(report)}
-                >
-                  <Icon size={24} />
-                  <div className="report-info">
-                    <h4>{report.name}</h4>
-                    <p>{report.description}</p>
+                <div key={report.id} className={`report-type-card ${selectedReport?.id === report.id ? 'active' : ''}`}>
+                  <div className="report-main">
+                    <button
+                      type="button"
+                      className="report-select-button"
+                      aria-label={`Select ${report.name}`}
+                      onClick={() => setSelectedReport(report)}
+                    >
+                      <Icon size={24} />
+                      <div className="report-info">
+                        <h4>{report.name}</h4>
+                        <p>{report.description}</p>
+                      </div>
+                    </button>
                   </div>
-                </button>
+                  <div className="report-card-footer">
+                          <div className="quick-download-icons">
+                            <button
+                              className="download-icon"
+                              title="View Report"
+                              data-type="view"
+                              aria-label={`View ${report.name}`}
+                              disabled={!selectedPeriod}
+                              type="button"
+                              onClick={() => { setSelectedReport(report); setSelectedFormat('View'); }}
+                            >
+                              <Eye size={10} />
+                              <span className="download-label">View</span>
+                            </button>
+                            <button
+                              className="download-icon"
+                              title="Download PDF"
+                              data-type="pdf"
+                              aria-label={`Download ${report.name} as PDF`}
+                              disabled={!selectedPeriod}
+                              type="button"
+                              onClick={() => handleQuickDownload(report.id, 'PDF')}
+                            >
+                              <FileText size={10} />
+                              <span className="download-label">PDF</span>
+                            </button>
+                            <button
+                              className="download-icon"
+                              title="Download Excel"
+                              data-type="excel"
+                              aria-label={`Download ${report.name} as Excel`}
+                              disabled={!selectedPeriod}
+                              type="button"
+                              onClick={() => handleQuickDownload(report.id, 'EXCEL')}
+                            >
+                              <File size={10} />
+                              <span className="download-label">XLSX</span>
+                            </button>
+                            <button
+                              className="download-icon"
+                              title="Download CSV"
+                              data-type="csv"
+                              aria-label={`Download ${report.name} as CSV`}
+                              disabled={!selectedPeriod}
+                              type="button"
+                              onClick={() => handleQuickDownload(report.id, 'CSV')}
+                            >
+                              <FileText size={10} />
+                              <span className="download-label">CSV</span>
+                            </button>
+                          </div>
+                  </div>
+                </div>
               );
             })}
           </div>
         </div>
 
-        {/* Format Selection */}
-        {selectedReport && (
-          <div className="form-section">
-            <h3>
-              <Download size={20} />
-              Select Format
-            </h3>
-            <div className="format-selector">
-              {selectedReport.formats.map((format) => (
-                <button
-                  key={format}
-                  className={`format-button ${selectedFormat === format ? 'active' : ''}`}
-                  onClick={() => setSelectedFormat(format)}
-                >
-                  {format}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Generate Button */}
+        {/* Action Buttons */}
         <div className="form-actions">
-          <button
-            className="generate-button"
-            onClick={generateReport}
-            disabled={!selectedReport || !selectedPeriod || !selectedFormat || isGenerating}
-          >
-            {isGenerating ? (
-              <>
-                <div className="spinner small"></div>
-                Generating Report...
-              </>
-            ) : (
-              <>
-                <Download size={20} />
-                Generate Report
-              </>
-            )}
-          </button>
           <button
             className="generate-button"
             onClick={() => setShowAuditTrail(true)}

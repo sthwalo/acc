@@ -2253,11 +2253,28 @@ public class AccountClassificationService {
                     continue;
                 }
                 
-                // Create journal entry header
+                // Create journal entry header with null-safe reference and description
                 JournalEntry journalEntry = new JournalEntry();
-                journalEntry.setReference(transaction.getReference());
+                String ref = transaction.getReference() == null ? "" : transaction.getReference();
+                // For auto-classified entries, generate AUTO- reference if transaction reference is empty
+                if (ref.isEmpty()) {
+                    ref = "AUTO-" + transaction.getId();
+                }
+                // Transaction.accountName is not persisted in schema; prefer account.getAccountName() fallback
+                String cat = transaction.getCategory() == null ? (account != null && account.getAccountName() != null ? account.getAccountName() : "") : transaction.getCategory();
+                journalEntry.setReference(ref);
                 journalEntry.setEntryDate(transaction.getTransactionDate());
-                journalEntry.setDescription(transaction.getReference() + " - " + transaction.getCategory());
+                // For auto-generated references, don't include the reference in the description
+                String desc;
+                if (ref.startsWith("AUTO-")) {
+                    desc = cat.isEmpty() ? "" : cat;
+                } else {
+                    desc = (ref.isEmpty() ? "" : ref) + (cat.isEmpty() ? "" : (ref.isEmpty() ? cat : " - " + cat));
+                }
+                if (desc == null || desc.trim().isEmpty()) {
+                    desc = cat.isEmpty() ? "" : cat;
+                }
+                journalEntry.setDescription(desc);
                 journalEntry.setFiscalPeriodId(transaction.getFiscalPeriodId());
                 journalEntry.setCompanyId(companyId);
                 journalEntry.setCreatedBy(createdBy);
@@ -2423,6 +2440,16 @@ public class AccountClassificationService {
         if (debitLine == null || creditLine == null) {
             throw new IllegalStateException("Could not identify debit and credit lines for update");
         }
+        
+        // Update journal entry header description to reflect new account classification
+        Long journalEntryId = debitLine.getJournalEntryId();
+        JournalEntry journalEntry = journalEntryRepository.findById(journalEntryId)
+            .orElseThrow(() -> new IllegalStateException("Journal entry not found for ID: " + journalEntryId));
+        
+        String newDescription = debitAccount.getAccountName() + " - " + creditAccount.getAccountName();
+        journalEntry.setDescription(newDescription);
+        journalEntry.setUpdatedAt(LocalDateTime.now());
+        journalEntryRepository.save(journalEntry);
         
         // Update debit line
         debitLine.setAccountId(debitAccount.getId());
