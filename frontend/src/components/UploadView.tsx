@@ -246,13 +246,13 @@ export default function UploadView({ selectedCompany, selectedFiscalPeriod }: Up
 
       {uploadResult && (
         <div className="upload-result">
-          <div className={`result-header ${uploadResult.validTransactions > 0 ? 'success' : 'error'}`}>
-            {uploadResult.validTransactions > 0 ? (
+          <div className={`result-header ${uploadResult.summary.validTransactions > 0 ? 'success' : 'error'}`}>
+            {uploadResult.summary.validTransactions > 0 ? (
               <CheckCircle size={24} />
             ) : (
               <XCircle size={24} />
             )}
-            <h3>{uploadResult.validTransactions > 0 ? 'Upload Successful' : 'Upload Failed'}</h3>
+            <h3>{uploadResult.summary.validTransactions > 0 ? 'Upload Successful' : 'Upload Failed'}</h3>
           </div>
 
           <div className="result-details">
@@ -263,12 +263,12 @@ export default function UploadView({ selectedCompany, selectedFiscalPeriod }: Up
 
             <div className="result-item">
               <span className="label">Transactions Found:</span>
-              <span className="value">{uploadResult.validTransactions}</span>
+              <span className="value">{uploadResult.summary.validTransactions}</span>
             </div>
 
             <div className="result-item">
               <span className="label">Lines Processed:</span>
-              <span className="value">{uploadResult.processedLines}</span>
+              <span className="value">{uploadResult.summary.totalLinesProcessed}</span>
             </div>
 
             <div className="result-item">

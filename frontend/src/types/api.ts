@@ -141,8 +141,17 @@ export interface HealthResponse {
 }
 
 export interface UploadResponse {
-  validTransactions: number;
-  processedLines: number;
+  success: boolean;
+  message: string;
+  summary: {
+    totalLinesProcessed: number;
+    validTransactions: number;
+    duplicateTransactions: number;
+    outOfPeriodTransactions: number;
+    validationErrors: number;
+  };
+  savedTransactions: any[];
+  rejectedTransactions: any[];
   errors: string[];
 }
 
