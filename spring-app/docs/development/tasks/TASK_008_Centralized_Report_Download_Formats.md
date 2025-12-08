@@ -1,16 +1,27 @@
 # TASK_008: Centralized Report Download Formats Configuration
 
-**Status**: 📋 PLANNED  
+**Status**: 🔄 IN PROGRESS - DTO Methods Dynamic, Export Endpoints Functional  
 **Priority**: HIGH  
 **Assigned**: Development Team  
 **Created**: 2025-12-06  
 **Start Date**: 2025-12-07  
+**Last Updated**: 2025-12-08  
 
 ---
 
 ## 📋 Executive Summary
 
 Create a centralized configuration and implementation for all report download formats (PDF, Excel, CSV) across the FIN system. Audit the legacy app's download format implementation and match those patterns in the Spring Boot application to ensure consistency and maintainability. This will eliminate code duplication, standardize export logic, and provide a single source of truth for report formatting.
+
+### Current Progress ✅
+
+**Completed Prerequisites**:
+- ✅ **DTO Methods Made Dynamic**: Updated `JdbcFinancialDataRepository.java` methods to use JOIN with `account_categories` table and filter by `account_type` enum instead of hardcoded account code ranges ('4%' for revenue, '5%' for expenses)
+- ✅ **Export Endpoints Functional**: All export endpoints now return proper PDF/Excel files with actual financial data instead of "No data provided" errors
+- ✅ **Data Flow Verified**: Confirmed data flows correctly from journal entries → account categorization → financial statement DTOs → export service → file generation
+- ✅ **Build Verification**: `./gradlew clean build --no-daemon` succeeds after DTO changes
+
+**Next Steps**: Continue with Phase 1 (Legacy App Audit) to understand existing patterns before implementing centralized service.
 
 ### Problem Statement
 
@@ -489,6 +500,13 @@ const handleDownload = async (format: 'PDF' | 'EXCEL' | 'CSV') => {
 ---
 
 ## 📝 Implementation Checklist
+
+### Prerequisites ✅ COMPLETED
+
+- [x] **DTO Methods Made Dynamic**: Updated `JdbcFinancialDataRepository.java` methods `getIncomeStatementDTOs()` and `getBalanceSheetDTOs()` to use JOIN with `account_categories` table and filter by `account_type` enum instead of hardcoded account code ranges
+- [x] **Export Endpoints Functional**: All export endpoints now return proper PDF/Excel files with actual financial data instead of "No data provided" errors
+- [x] **Data Flow Verified**: Confirmed data flows correctly from journal entries → account categorization → financial statement DTOs → export service → file generation
+- [x] **Build Verification**: `./gradlew clean build --no-daemon` succeeds after DTO changes
 
 ### Phase 1: Legacy App Audit ⏸️ PENDING
 

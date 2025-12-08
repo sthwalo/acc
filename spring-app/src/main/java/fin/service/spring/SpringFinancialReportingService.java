@@ -252,18 +252,14 @@ public class SpringFinancialReportingService {
 
     private List<ColumnDefinition> buildIncomeStatementColumns() {
         List<ColumnDefinition> columns = new ArrayList<>();
-        columns.add(new ColumnDefinition("Category", "category", 120, "text", "left"));
         columns.add(new ColumnDefinition("Account Code", "accountCode", 90, "text", "left"));
         columns.add(new ColumnDefinition("Account Name", "accountName", 230, "text", "left"));
         columns.add(new ColumnDefinition("Amount", "amount", 110, "currency", "right"));
-        columns.add(new ColumnDefinition("Type", "type", 80, "text", "left"));
         return columns;
     }
 
     private List<ColumnDefinition> buildBalanceSheetColumns() {
         List<ColumnDefinition> columns = new ArrayList<>();
-        columns.add(new ColumnDefinition("Section", "section", 120, "text", "left"));
-        columns.add(new ColumnDefinition("Category", "category", 120, "text", "left"));
         columns.add(new ColumnDefinition("Account Code", "accountCode", 90, "text", "left"));
         columns.add(new ColumnDefinition("Account Name", "accountName", 230, "text", "left"));
         columns.add(new ColumnDefinition("Amount", "amount", 110, "currency", "right"));
@@ -415,17 +411,15 @@ public class SpringFinancialReportingService {
     public byte[] exportIncomeStatementToPDF(Long companyId, Long fiscalPeriodId) throws SQLException {
         try {
             FiscalPeriod period = getFiscalPeriod(fiscalPeriodId);
-            List<IncomeStatementDTO> entries = financialDataRepository.getIncomeStatementDTOs(companyId, fiscalPeriodId);
+            List<FinancialReportDTO> entries = financialDataRepository.getIncomeStatementDTOs(companyId, fiscalPeriodId);
             List<ColumnDefinition> columns = buildIncomeStatementColumns();
 
             List<Map<String, Object>> data = new ArrayList<>();
-            for (IncomeStatementDTO e : entries) {
+            for (FinancialReportDTO e : entries) {
                 Map<String, Object> row = new HashMap<>();
-                row.put("category", e.getCategory());
                 row.put("accountCode", e.getAccountCode());
                 row.put("accountName", e.getAccountName());
                 row.put("amount", e.getAmount());
-                row.put("type", e.getType());
                 data.add(row);
             }
 
@@ -444,17 +438,15 @@ public class SpringFinancialReportingService {
     public byte[] exportIncomeStatementToExcel(Long companyId, Long fiscalPeriodId) throws SQLException {
         try {
             FiscalPeriod period = getFiscalPeriod(fiscalPeriodId);
-            List<IncomeStatementDTO> entries = financialDataRepository.getIncomeStatementDTOs(companyId, fiscalPeriodId);
+            List<FinancialReportDTO> entries = financialDataRepository.getIncomeStatementDTOs(companyId, fiscalPeriodId);
             List<ColumnDefinition> columns = buildIncomeStatementColumns();
 
             List<Map<String, Object>> data = new ArrayList<>();
-            for (IncomeStatementDTO e : entries) {
+            for (FinancialReportDTO e : entries) {
                 Map<String, Object> row = new HashMap<>();
-                row.put("category", e.getCategory());
                 row.put("accountCode", e.getAccountCode());
                 row.put("accountName", e.getAccountName());
                 row.put("amount", e.getAmount());
-                row.put("type", e.getType());
                 data.add(row);
             }
 
@@ -472,17 +464,15 @@ public class SpringFinancialReportingService {
     @Transactional(readOnly = true)
     public String exportIncomeStatementToCSV(Long companyId, Long fiscalPeriodId) throws SQLException {
         try {
-            List<IncomeStatementDTO> entries = financialDataRepository.getIncomeStatementDTOs(companyId, fiscalPeriodId);
+            List<FinancialReportDTO> entries = financialDataRepository.getIncomeStatementDTOs(companyId, fiscalPeriodId);
             List<ColumnDefinition> columns = buildIncomeStatementColumns();
 
             List<Map<String, Object>> data = new ArrayList<>();
-            for (IncomeStatementDTO e : entries) {
+            for (FinancialReportDTO e : entries) {
                 Map<String, Object> row = new HashMap<>();
-                row.put("category", e.getCategory());
                 row.put("accountCode", e.getAccountCode());
                 row.put("accountName", e.getAccountName());
                 row.put("amount", e.getAmount());
-                row.put("type", e.getType());
                 data.add(row);
             }
 
@@ -501,17 +491,15 @@ public class SpringFinancialReportingService {
     public byte[] exportBalanceSheetToPDF(Long companyId, Long fiscalPeriodId) throws SQLException {
         try {
             FiscalPeriod period = getFiscalPeriod(fiscalPeriodId);
-            List<BalanceSheetDTO> entries = financialDataRepository.getBalanceSheetDTOs(companyId, fiscalPeriodId);
+            List<FinancialReportDTO> entries = financialDataRepository.getBalanceSheetDTOs(companyId, fiscalPeriodId);
             List<ColumnDefinition> columns = buildBalanceSheetColumns();
 
             List<Map<String, Object>> data = new ArrayList<>();
-            for (BalanceSheetDTO e : entries) {
+            for (FinancialReportDTO e : entries) {
                 Map<String, Object> row = new HashMap<>();
-                row.put("category", e.getCategory());
                 row.put("accountCode", e.getAccountCode());
                 row.put("accountName", e.getAccountName());
                 row.put("amount", e.getAmount());
-                row.put("section", e.getSection());
                 data.add(row);
             }
 
@@ -530,17 +518,15 @@ public class SpringFinancialReportingService {
     public byte[] exportBalanceSheetToExcel(Long companyId, Long fiscalPeriodId) throws SQLException {
         try {
             FiscalPeriod period = getFiscalPeriod(fiscalPeriodId);
-            List<BalanceSheetDTO> entries = financialDataRepository.getBalanceSheetDTOs(companyId, fiscalPeriodId);
+            List<FinancialReportDTO> entries = financialDataRepository.getBalanceSheetDTOs(companyId, fiscalPeriodId);
             List<ColumnDefinition> columns = buildBalanceSheetColumns();
 
             List<Map<String, Object>> data = new ArrayList<>();
-            for (BalanceSheetDTO e : entries) {
+            for (FinancialReportDTO e : entries) {
                 Map<String, Object> row = new HashMap<>();
-                row.put("category", e.getCategory());
                 row.put("accountCode", e.getAccountCode());
                 row.put("accountName", e.getAccountName());
                 row.put("amount", e.getAmount());
-                row.put("section", e.getSection());
                 data.add(row);
             }
 
@@ -558,17 +544,15 @@ public class SpringFinancialReportingService {
     @Transactional(readOnly = true)
     public String exportBalanceSheetToCSV(Long companyId, Long fiscalPeriodId) throws SQLException {
         try {
-            List<BalanceSheetDTO> entries = financialDataRepository.getBalanceSheetDTOs(companyId, fiscalPeriodId);
+            List<FinancialReportDTO> entries = financialDataRepository.getBalanceSheetDTOs(companyId, fiscalPeriodId);
             List<ColumnDefinition> columns = buildBalanceSheetColumns();
 
             List<Map<String, Object>> data = new ArrayList<>();
-            for (BalanceSheetDTO e : entries) {
+            for (FinancialReportDTO e : entries) {
                 Map<String, Object> row = new HashMap<>();
-                row.put("category", e.getCategory());
                 row.put("accountCode", e.getAccountCode());
                 row.put("accountName", e.getAccountName());
                 row.put("amount", e.getAmount());
-                row.put("section", e.getSection());
                 data.add(row);
             }
 

@@ -761,40 +761,40 @@ public class JdbcFinancialDataRepository implements FinancialDataRepository {
     }
 
     @Override
-    public List<IncomeStatementDTO> getIncomeStatementDTOs(Long companyId, Long fiscalPeriodId) throws SQLException {
-        List<IncomeStatementDTO> results = new ArrayList<>();
+    public List<FinancialReportDTO> getIncomeStatementDTOs(Long companyId, Long fiscalPeriodId) throws SQLException {
+        List<FinancialReportDTO> results = new ArrayList<>();
 
-        // Revenue accounts (4xxx)
+        // Revenue accounts (REVENUE type)
         String revenueSql = """
             SELECT
-                'Revenue' as category,
                 a.code as account_code,
                 a.name as account_name,
                 COALESCE(SUM(jel.credit_amount - jel.debit_amount), 0) as amount
             FROM accounts a
+            JOIN account_categories ac ON a.type_id = ac.id
             LEFT JOIN journal_entry_lines jel ON jel.account_id = a.id
             LEFT JOIN journal_entries je ON je.id = jel.journal_entry_id
             WHERE a.company_id = ?
                 AND (je.fiscal_period_id = ? OR je.fiscal_period_id IS NULL)
-                AND a.code LIKE '4%'
+                AND ac.account_type = 'REVENUE'
             GROUP BY a.id, a.code, a.name
             HAVING SUM(jel.credit_amount - jel.debit_amount) != 0
             ORDER BY a.code
             """;
 
-        // Expense accounts (5xxx)
+        // Expense accounts (EXPENSE type)
         String expenseSql = """
             SELECT
-                'Expense' as category,
                 a.code as account_code,
                 a.name as account_name,
                 COALESCE(SUM(jel.debit_amount - jel.credit_amount), 0) as amount
             FROM accounts a
+            JOIN account_categories ac ON a.type_id = ac.id
             LEFT JOIN journal_entry_lines jel ON jel.account_id = a.id
             LEFT JOIN journal_entries je ON je.id = jel.journal_entry_id
             WHERE a.company_id = ?
                 AND (je.fiscal_period_id = ? OR je.fiscal_period_id IS NULL)
-                AND a.code LIKE '5%'
+                AND ac.account_type = 'EXPENSE'
             GROUP BY a.id, a.code, a.name
             HAVING SUM(jel.debit_amount - jel.credit_amount) != 0
             ORDER BY a.code
@@ -808,12 +808,10 @@ public class JdbcFinancialDataRepository implements FinancialDataRepository {
                 stmt.setLong(2, fiscalPeriodId);
                 try (ResultSet rs = stmt.executeQuery()) {
                     while (rs.next()) {
-                        results.add(new IncomeStatementDTO(
-                            rs.getString("category"),
+                        results.add(new FinancialReportDTO(
                             rs.getString("account_code"),
                             rs.getString("account_name"),
-                            rs.getBigDecimal("amount"),
-                            "REVENUE"
+                            rs.getBigDecimal("amount")
                         ));
                     }
                 }
@@ -825,12 +823,10 @@ public class JdbcFinancialDataRepository implements FinancialDataRepository {
                 stmt.setLong(2, fiscalPeriodId);
                 try (ResultSet rs = stmt.executeQuery()) {
                     while (rs.next()) {
-                        results.add(new IncomeStatementDTO(
-                            rs.getString("category"),
+                        results.add(new FinancialReportDTO(
                             rs.getString("account_code"),
                             rs.getString("account_name"),
-                            rs.getBigDecimal("amount"),
-                            "EXPENSE"
+                            rs.getBigDecimal("amount")
                         ));
                     }
                 }
@@ -841,58 +837,58 @@ public class JdbcFinancialDataRepository implements FinancialDataRepository {
     }
 
     @Override
-    public List<BalanceSheetDTO> getBalanceSheetDTOs(Long companyId, Long fiscalPeriodId) throws SQLException {
-        List<BalanceSheetDTO> results = new ArrayList<>();
+    public List<FinancialReportDTO> getBalanceSheetDTOs(Long companyId, Long fiscalPeriodId) throws SQLException {
+        List<FinancialReportDTO> results = new ArrayList<>();
 
-        // Assets (1xxx)
+        // Assets (ASSET type)
         String assetsSql = """
             SELECT
-                'Asset' as category,
             a.code as account_code,
             a.name as account_name,
                 COALESCE(SUM(jel.debit_amount - jel.credit_amount), 0) as amount
             FROM accounts a
+            JOIN account_categories ac ON a.type_id = ac.id
             LEFT JOIN journal_entry_lines jel ON jel.account_id = a.id
             LEFT JOIN journal_entries je ON je.id = jel.journal_entry_id
             WHERE a.company_id = ?
                 AND (je.fiscal_period_id = ? OR je.fiscal_period_id IS NULL)
-                AND a.code LIKE '1%'
+                AND ac.account_type = 'ASSET'
             GROUP BY a.id, a.code, a.name
             HAVING SUM(jel.debit_amount - jel.credit_amount) != 0
             ORDER BY a.code
             """;
 
-        // Liabilities (2xxx)
+        // Liabilities (LIABILITY type)
         String liabilitiesSql = """
             SELECT
-                'Liability' as category,
             a.code as account_code,
             a.name as account_name,
                 COALESCE(SUM(jel.credit_amount - jel.debit_amount), 0) as amount
             FROM accounts a
+            JOIN account_categories ac ON a.type_id = ac.id
             LEFT JOIN journal_entry_lines jel ON jel.account_id = a.id
             LEFT JOIN journal_entries je ON je.id = jel.journal_entry_id
             WHERE a.company_id = ?
                 AND (je.fiscal_period_id = ? OR je.fiscal_period_id IS NULL)
-                AND a.code LIKE '2%'
+                AND ac.account_type = 'LIABILITY'
             GROUP BY a.id, a.code, a.name
             HAVING SUM(jel.credit_amount - jel.debit_amount) != 0
             ORDER BY a.code
             """;
 
-        // Equity (3xxx)
+        // Equity (EQUITY type)
         String equitySql = """
             SELECT
-                'Equity' as category,
             a.code as account_code,
             a.name as account_name,
                 COALESCE(SUM(jel.credit_amount - jel.debit_amount), 0) as amount
             FROM accounts a
+            JOIN account_categories ac ON a.type_id = ac.id
             LEFT JOIN journal_entry_lines jel ON jel.account_id = a.id
             LEFT JOIN journal_entries je ON je.id = jel.journal_entry_id
             WHERE a.company_id = ?
                 AND (je.fiscal_period_id = ? OR je.fiscal_period_id IS NULL)
-                AND a.code LIKE '3%'
+                AND ac.account_type = 'EQUITY'
             GROUP BY a.id, a.code, a.name
             HAVING SUM(jel.credit_amount - jel.debit_amount) != 0
             ORDER BY a.code
@@ -906,12 +902,10 @@ public class JdbcFinancialDataRepository implements FinancialDataRepository {
                 stmt.setLong(2, fiscalPeriodId);
                 try (ResultSet rs = stmt.executeQuery()) {
                     while (rs.next()) {
-                        results.add(new BalanceSheetDTO(
-                            rs.getString("category"),
+                        results.add(new FinancialReportDTO(
                             rs.getString("account_code"),
                             rs.getString("account_name"),
-                            rs.getBigDecimal("amount"),
-                            "ASSETS"
+                            rs.getBigDecimal("amount")
                         ));
                     }
                 }
@@ -923,12 +917,10 @@ public class JdbcFinancialDataRepository implements FinancialDataRepository {
                 stmt.setLong(2, fiscalPeriodId);
                 try (ResultSet rs = stmt.executeQuery()) {
                     while (rs.next()) {
-                        results.add(new BalanceSheetDTO(
-                            rs.getString("category"),
+                        results.add(new FinancialReportDTO(
                             rs.getString("account_code"),
                             rs.getString("account_name"),
-                            rs.getBigDecimal("amount"),
-                            "LIABILITIES"
+                            rs.getBigDecimal("amount")
                         ));
                     }
                 }
@@ -940,12 +932,10 @@ public class JdbcFinancialDataRepository implements FinancialDataRepository {
                 stmt.setLong(2, fiscalPeriodId);
                 try (ResultSet rs = stmt.executeQuery()) {
                     while (rs.next()) {
-                        results.add(new BalanceSheetDTO(
-                            rs.getString("category"),
+                        results.add(new FinancialReportDTO(
                             rs.getString("account_code"),
                             rs.getString("account_name"),
-                            rs.getBigDecimal("amount"),
-                            "EQUITY"
+                            rs.getBigDecimal("amount")
                         ));
                     }
                 }

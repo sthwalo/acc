@@ -112,12 +112,12 @@ public interface FinancialDataRepository {
     /**
      * Get income statement data as structured DTOs
      */
-    List<IncomeStatementDTO> getIncomeStatementDTOs(Long companyId, Long fiscalPeriodId) throws SQLException;
+    List<FinancialReportDTO> getIncomeStatementDTOs(Long companyId, Long fiscalPeriodId) throws SQLException;
 
     /**
      * Get balance sheet data as structured DTOs
      */
-    List<BalanceSheetDTO> getBalanceSheetDTOs(Long companyId, Long fiscalPeriodId) throws SQLException;
+    List<FinancialReportDTO> getBalanceSheetDTOs(Long companyId, Long fiscalPeriodId) throws SQLException;
 
     /**
      * Get cashbook data as structured DTOs for a specific account
