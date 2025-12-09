@@ -26,6 +26,12 @@
 
 package fin.controller.spring;
 
+import fin.dto.TrialBalanceDTO;
+import fin.dto.IncomeStatementDTO;
+import fin.dto.BalanceSheetDTO;
+import fin.dto.CashbookDTO;
+import fin.dto.GeneralLedgerDTO;
+import fin.dto.AuditTrailDTO;
 import fin.model.dto.AuditTrailResponse;
 import fin.model.dto.JournalEntryDetailDTO;
 import fin.service.spring.AuditTrailService;
@@ -38,6 +44,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.sql.SQLException;
+import java.util.List;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -62,11 +69,10 @@ public class SpringReportController {
      * Generate General Ledger report
      */
     @GetMapping("/general-ledger/company/{companyId}/fiscal-period/{fiscalPeriodId}")
-    public ResponseEntity<String> generateGeneralLedger(@PathVariable Long companyId,
-                                                      @PathVariable Long fiscalPeriodId,
-                                                      @RequestParam(defaultValue = "false") boolean exportToFile) {
+    public ResponseEntity<List<GeneralLedgerDTO>> generateGeneralLedger(@PathVariable Long companyId,
+                                                                       @PathVariable Long fiscalPeriodId) {
         try {
-            String report = reportingService.generateGeneralLedger(companyId, fiscalPeriodId, exportToFile);
+            List<GeneralLedgerDTO> report = reportingService.generateGeneralLedgerDTOs(companyId, fiscalPeriodId);
             return ResponseEntity.ok(report);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
@@ -77,11 +83,10 @@ public class SpringReportController {
      * Generate Trial Balance report
      */
     @GetMapping("/trial-balance/company/{companyId}/fiscal-period/{fiscalPeriodId}")
-    public ResponseEntity<String> generateTrialBalance(@PathVariable Long companyId,
-                                                     @PathVariable Long fiscalPeriodId,
-                                                     @RequestParam(defaultValue = "false") boolean exportToFile) {
+    public ResponseEntity<List<TrialBalanceDTO>> generateTrialBalance(@PathVariable Long companyId,
+                                                     @PathVariable Long fiscalPeriodId) {
         try {
-            String report = reportingService.generateTrialBalance(companyId, fiscalPeriodId, exportToFile);
+            List<TrialBalanceDTO> report = reportingService.generateTrialBalance(companyId, fiscalPeriodId);
             return ResponseEntity.ok(report);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
@@ -303,11 +308,10 @@ public class SpringReportController {
      * Generate Income Statement report
      */
     @GetMapping("/income-statement/company/{companyId}/fiscal-period/{fiscalPeriodId}")
-    public ResponseEntity<String> generateIncomeStatement(@PathVariable Long companyId,
-                                                        @PathVariable Long fiscalPeriodId,
-                                                        @RequestParam(defaultValue = "false") boolean exportToFile) {
+    public ResponseEntity<List<IncomeStatementDTO>> generateIncomeStatement(@PathVariable Long companyId,
+                                                                           @PathVariable Long fiscalPeriodId) {
         try {
-            String report = reportingService.generateIncomeStatement(companyId, fiscalPeriodId, exportToFile);
+            List<IncomeStatementDTO> report = reportingService.generateIncomeStatementDTOs(companyId, fiscalPeriodId);
             return ResponseEntity.ok(report);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
@@ -318,11 +322,10 @@ public class SpringReportController {
      * Generate Balance Sheet report
      */
     @GetMapping("/balance-sheet/company/{companyId}/fiscal-period/{fiscalPeriodId}")
-    public ResponseEntity<String> generateBalanceSheet(@PathVariable Long companyId,
-                                                     @PathVariable Long fiscalPeriodId,
-                                                     @RequestParam(defaultValue = "false") boolean exportToFile) {
+    public ResponseEntity<List<BalanceSheetDTO>> generateBalanceSheet(@PathVariable Long companyId,
+                                                                    @PathVariable Long fiscalPeriodId) {
         try {
-            String report = reportingService.generateBalanceSheet(companyId, fiscalPeriodId, exportToFile);
+            List<BalanceSheetDTO> report = reportingService.generateBalanceSheetDTOs(companyId, fiscalPeriodId);
             return ResponseEntity.ok(report);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
@@ -333,11 +336,10 @@ public class SpringReportController {
      * Generate Cashbook report
      */
     @GetMapping("/cashbook/company/{companyId}/fiscal-period/{fiscalPeriodId}")
-    public ResponseEntity<String> generateCashbook(@PathVariable Long companyId,
-                                                 @PathVariable Long fiscalPeriodId,
-                                                 @RequestParam(defaultValue = "false") boolean exportToFile) {
+    public ResponseEntity<List<CashbookDTO>> generateCashbook(@PathVariable Long companyId,
+                                                            @PathVariable Long fiscalPeriodId) {
         try {
-            String report = reportingService.generateCashbook(companyId, fiscalPeriodId, exportToFile);
+            List<CashbookDTO> report = reportingService.generateCashbookDTOs(companyId, fiscalPeriodId);
             return ResponseEntity.ok(report);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
@@ -395,14 +397,73 @@ public class SpringReportController {
     }
 
     /**
+     * Export Audit Trail report in specified format
+     * 
+     * @param companyId Company identifier
+     * @param fiscalPeriodId Fiscal period identifier
+     * @param format Export format (PDF, EXCEL, CSV) - defaults to PDF
+     * @return File as byte array or string with appropriate headers
+     */
+    @GetMapping("/audit-trail/company/{companyId}/fiscal-period/{fiscalPeriodId}/export")
+    public ResponseEntity<?> exportAuditTrail(@PathVariable Long companyId,
+                                              @PathVariable Long fiscalPeriodId,
+                                              @RequestParam(defaultValue = "PDF") String format) {
+        try {
+            String upperFormat = format.toUpperCase();
+            HttpHeaders headers = new HttpHeaders();
+            
+            // Generate filename with timestamp
+            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+            
+            switch (upperFormat) {
+                case "PDF":
+                    byte[] pdfBytes = reportingService.exportAuditTrailToPDF(companyId, fiscalPeriodId);
+                    String pdfFilename = String.format("AuditTrail_Company%d_Period%d_%s.pdf", 
+                                                     companyId, fiscalPeriodId, timestamp);
+                    headers.setContentType(MediaType.APPLICATION_PDF);
+                    headers.setContentDispositionFormData("attachment", pdfFilename);
+                    headers.setContentLength(pdfBytes.length);
+                    return ResponseEntity.ok().headers(headers).body(pdfBytes);
+                    
+                case "EXCEL":
+                    byte[] excelBytes = reportingService.exportAuditTrailToExcel(companyId, fiscalPeriodId);
+                    String excelFilename = String.format("AuditTrail_Company%d_Period%d_%s.xlsx", 
+                                                       companyId, fiscalPeriodId, timestamp);
+                    headers.setContentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+                    headers.setContentDispositionFormData("attachment", excelFilename);
+                    headers.setContentLength(excelBytes.length);
+                    return ResponseEntity.ok().headers(headers).body(excelBytes);
+                    
+                case "CSV":
+                    String csvContent = reportingService.exportAuditTrailToCSV(companyId, fiscalPeriodId);
+                    String csvFilename = String.format("AuditTrail_Company%d_Period%d_%s.csv", 
+                                                     companyId, fiscalPeriodId, timestamp);
+                    headers.setContentType(MediaType.TEXT_PLAIN);
+                    headers.setContentDispositionFormData("attachment", csvFilename);
+                    return ResponseEntity.ok().headers(headers).body(csvContent);
+                    
+                default:
+                    return ResponseEntity.badRequest().body("Unsupported format: " + format + ". Supported formats: PDF, EXCEL, CSV");
+            }
+        } catch (SQLException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Database error: " + e.getMessage());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body("Invalid request: " + e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Export failed: " + e.getMessage());
+        }
+    }
+
+    /**
      * Generate Audit Trail report (text-based - legacy endpoint)
      */
     @GetMapping("/audit-trail/company/{companyId}/fiscal-period/{fiscalPeriodId}")
-    public ResponseEntity<String> generateAuditTrail(@PathVariable Long companyId,
-                                                   @PathVariable Long fiscalPeriodId,
-                                                   @RequestParam(defaultValue = "false") boolean exportToFile) {
+    public ResponseEntity<List<AuditTrailDTO>> generateAuditTrail(@PathVariable Long companyId,
+                                                                @PathVariable Long fiscalPeriodId) {
         try {
-            String report = reportingService.generateAuditTrail(companyId, fiscalPeriodId, exportToFile);
+            List<AuditTrailDTO> report = reportingService.generateAuditTrailDTOs(companyId, fiscalPeriodId);
             return ResponseEntity.ok(report);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
@@ -478,38 +539,28 @@ public class SpringReportController {
      */
     @GetMapping("/financial/company/{companyId}/fiscal-period/{fiscalPeriodId}")
     public ResponseEntity<String> generateFinancialReportPackage(@PathVariable Long companyId,
-                                                               @PathVariable Long fiscalPeriodId,
-                                                               @RequestParam(defaultValue = "false") boolean exportToFile) {
+                                                               @PathVariable Long fiscalPeriodId) {
         try {
             StringBuilder packageReport = new StringBuilder();
             packageReport.append("FINANCIAL REPORT PACKAGE\n");
             packageReport.append("========================\n\n");
 
             // Generate all reports
-            packageReport.append(reportingService.generateTrialBalance(companyId, fiscalPeriodId, false));
+            packageReport.append(reportingService.generateTrialBalance(companyId, fiscalPeriodId));
             packageReport.append("\n\n");
 
-            packageReport.append(reportingService.generateIncomeStatement(companyId, fiscalPeriodId, false));
+            packageReport.append(reportingService.generateIncomeStatement(companyId, fiscalPeriodId));
             packageReport.append("\n\n");
 
-            packageReport.append(reportingService.generateBalanceSheet(companyId, fiscalPeriodId, false));
+            packageReport.append(reportingService.generateBalanceSheet(companyId, fiscalPeriodId));
             packageReport.append("\n\n");
 
-            packageReport.append(reportingService.generateCashbook(companyId, fiscalPeriodId, false));
+            packageReport.append(reportingService.generateCashbook(companyId, fiscalPeriodId));
             packageReport.append("\n\n");
 
-            packageReport.append(reportingService.generateAuditTrail(companyId, fiscalPeriodId, false));
+            packageReport.append(reportingService.generateAuditTrail(companyId, fiscalPeriodId));
 
             String reportContent = packageReport.toString();
-
-            if (exportToFile) {
-                // Export each report individually
-                reportingService.generateTrialBalance(companyId, fiscalPeriodId, true);
-                reportingService.generateIncomeStatement(companyId, fiscalPeriodId, true);
-                reportingService.generateBalanceSheet(companyId, fiscalPeriodId, true);
-                reportingService.generateCashbook(companyId, fiscalPeriodId, true);
-                reportingService.generateAuditTrail(companyId, fiscalPeriodId, true);
-            }
 
             return ResponseEntity.ok(reportContent);
         } catch (IllegalArgumentException e) {

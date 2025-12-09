@@ -24,7 +24,7 @@ import type {
   FiscalPeriodPayrollConfigResponse,
   FiscalPeriodPayrollStatusResponse,
   PayrollDocument,
-  AuditTrailResponse,
+  AuditTrailDTO,
   JournalEntryDetailDTO
 } from '../types/api';
 
@@ -584,7 +584,8 @@ class ReportApiService extends BaseApiService {
     try {
       const [companyResp, periodResp] = await Promise.all([
         this.client.get(`/v1/companies/${companyId}`),
-        this.client.get(`/v1/companies/${companyId}/fiscal-periods/${fiscalPeriodId}`),
+        // Fiscal period lookup uses the company-less path (controller maps to /api/v1/companies/fiscal-periods/{id})
+        this.client.get(`/v1/companies/fiscal-periods/${fiscalPeriodId}`),
       ]);
       const company = companyResp.data?.data;
       const period = periodResp.data?.data;
@@ -615,7 +616,8 @@ class ReportApiService extends BaseApiService {
     try {
       const [companyResp, periodResp] = await Promise.all([
         this.client.get(`/v1/companies/${companyId}`),
-        this.client.get(`/v1/companies/${companyId}/fiscal-periods/${fiscalPeriodId}`),
+        // Fiscal period lookup uses the company-less path (controller maps to /api/v1/companies/fiscal-periods/{id})
+        this.client.get(`/v1/companies/fiscal-periods/${fiscalPeriodId}`),
       ]);
       const company = companyResp.data?.data;
       const period = periodResp.data?.data;
@@ -645,7 +647,8 @@ class ReportApiService extends BaseApiService {
     try {
       const [companyResp, periodResp] = await Promise.all([
         this.client.get(`/v1/companies/${companyId}`),
-        this.client.get(`/v1/companies/${companyId}/fiscal-periods/${fiscalPeriodId}`),
+        // Fiscal period lookup uses the company-less path (controller maps to /api/v1/companies/fiscal-periods/{id})
+        this.client.get(`/v1/companies/fiscal-periods/${fiscalPeriodId}`),
       ]);
       const company = companyResp.data?.data;
       const period = periodResp.data?.data;
@@ -675,7 +678,8 @@ class ReportApiService extends BaseApiService {
     try {
       const [companyResp, periodResp] = await Promise.all([
         this.client.get(`/v1/companies/${companyId}`),
-        this.client.get(`/v1/companies/${companyId}/fiscal-periods/${fiscalPeriodId}`),
+        // Fiscal period lookup uses the company-less path (controller maps to /api/v1/companies/fiscal-periods/{id})
+        this.client.get(`/v1/companies/fiscal-periods/${fiscalPeriodId}`),
       ]);
       const company = companyResp.data?.data;
       const period = periodResp.data?.data;
@@ -726,7 +730,7 @@ class ReportApiService extends BaseApiService {
     startDate?: string,
     endDate?: string,
     searchTerm?: string
-  ): Promise<AuditTrailResponse> {
+  ): Promise<AuditTrailDTO[]> {
     try {
       const params: Record<string, string | number> = {
         page,
@@ -738,7 +742,7 @@ class ReportApiService extends BaseApiService {
       if (searchTerm) params.searchTerm = searchTerm;
 
       const response = await this.client.get(
-        `/v1/reports/audit-trail/company/${companyId}/fiscal-period/${fiscalPeriodId}/structured`,
+        `/v1/reports/audit-trail/company/${companyId}/fiscal-period/${fiscalPeriodId}`,
         { params }
       );
 

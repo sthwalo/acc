@@ -294,19 +294,18 @@ public class SpringReportControllerTest {
                 // Arrange
                 Long companyId = 1L;
                 Long fiscalPeriodId = 1L;
-                boolean exportToFile = false;
                 String expectedReport = "TRIAL BALANCE REPORT TEXT";
 
-                when(reportingService.generateTrialBalance(companyId, fiscalPeriodId, exportToFile))
+                when(reportingService.generateTrialBalance(companyId, fiscalPeriodId))
                                 .thenReturn(expectedReport);
 
                 // Act
-                ResponseEntity<String> response = controller.generateTrialBalance(companyId, fiscalPeriodId, exportToFile);
+                ResponseEntity<String> response = controller.generateTrialBalance(companyId, fiscalPeriodId);
 
                 // Assert
                 assertEquals(HttpStatus.OK, response.getStatusCode());
                 assertEquals(expectedReport, response.getBody());
-                verify(reportingService, times(1)).generateTrialBalance(companyId, fiscalPeriodId, exportToFile);
+                verify(reportingService, times(1)).generateTrialBalance(companyId, fiscalPeriodId);
         }
 
         @Test
@@ -557,19 +556,18 @@ public class SpringReportControllerTest {
                 // Arrange
                 Long companyId = 1L;
                 Long fiscalPeriodId = 1L;
-                boolean exportToFile = false;
                 String expectedReport = "CASHBOOK REPORT TEXT";
 
-                when(reportingService.generateCashbook(companyId, fiscalPeriodId, exportToFile))
+                when(reportingService.generateCashbook(companyId, fiscalPeriodId))
                                 .thenReturn(expectedReport);
 
                 // Act
-                ResponseEntity<String> response = controller.generateCashbook(companyId, fiscalPeriodId, exportToFile);
+                ResponseEntity<String> response = controller.generateCashbook(companyId, fiscalPeriodId);
 
                 // Assert
                 assertEquals(HttpStatus.OK, response.getStatusCode());
                 assertEquals(expectedReport, response.getBody());
-                verify(reportingService, times(1)).generateCashbook(companyId, fiscalPeriodId, exportToFile);
+                verify(reportingService, times(1)).generateCashbook(companyId, fiscalPeriodId);
         }
 
         @Test
@@ -578,37 +576,35 @@ public class SpringReportControllerTest {
                 // Arrange
                 Long companyId = 1L;
                 Long fiscalPeriodId = 1L;
-                boolean exportToFile = false;
                 String expectedReport = "GENERAL LEDGER REPORT TEXT";
 
-                when(reportingService.generateGeneralLedger(companyId, fiscalPeriodId, exportToFile))
+                when(reportingService.generateGeneralLedger(companyId, fiscalPeriodId))
                                 .thenReturn(expectedReport);
 
                 // Act
-                ResponseEntity<String> response = controller.generateGeneralLedger(companyId, fiscalPeriodId, exportToFile);
+                ResponseEntity<String> response = controller.generateGeneralLedger(companyId, fiscalPeriodId);
 
                 // Assert
                 assertEquals(HttpStatus.OK, response.getStatusCode());
                 assertEquals(expectedReport, response.getBody());
-                verify(reportingService, times(1)).generateGeneralLedger(companyId, fiscalPeriodId, exportToFile);
+                verify(reportingService, times(1)).generateGeneralLedger(companyId, fiscalPeriodId);
         }
 
         @Test
-        @DisplayName("GET /api/v1/reports/financial should return combined package text and export invoked when requested")
-        public void testGenerateFinancialReportPackage_success_exportFiles() {
+        @DisplayName("GET /api/v1/reports/financial should return combined package text")
+        public void testGenerateFinancialReportPackage_success() {
                 // Arrange
                 Long companyId = 1L;
                 Long fiscalPeriodId = 1L;
-                boolean exportToFile = true;
 
-                when(reportingService.generateTrialBalance(companyId, fiscalPeriodId, false)).thenReturn("TB");
-                when(reportingService.generateIncomeStatement(companyId, fiscalPeriodId, false)).thenReturn("IS");
-                when(reportingService.generateBalanceSheet(companyId, fiscalPeriodId, false)).thenReturn("BS");
-                when(reportingService.generateCashbook(companyId, fiscalPeriodId, false)).thenReturn("CB");
-                when(reportingService.generateAuditTrail(companyId, fiscalPeriodId, false)).thenReturn("AT");
+                when(reportingService.generateTrialBalance(companyId, fiscalPeriodId)).thenReturn("TB");
+                when(reportingService.generateIncomeStatement(companyId, fiscalPeriodId)).thenReturn("IS");
+                when(reportingService.generateBalanceSheet(companyId, fiscalPeriodId)).thenReturn("BS");
+                when(reportingService.generateCashbook(companyId, fiscalPeriodId)).thenReturn("CB");
+                when(reportingService.generateAuditTrail(companyId, fiscalPeriodId)).thenReturn("AT");
 
                 // Act
-                ResponseEntity<String> response = controller.generateFinancialReportPackage(companyId, fiscalPeriodId, exportToFile);
+                ResponseEntity<String> response = controller.generateFinancialReportPackage(companyId, fiscalPeriodId);
 
                 // Assert
                 assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -619,13 +615,6 @@ public class SpringReportControllerTest {
                 assertTrue(content.contains("BS"));
                 assertTrue(content.contains("CB"));
                 assertTrue(content.contains("AT"));
-
-                // Verify that export variant was invoked for each report
-                verify(reportingService, times(1)).generateTrialBalance(companyId, fiscalPeriodId, true);
-                verify(reportingService, times(1)).generateIncomeStatement(companyId, fiscalPeriodId, true);
-                verify(reportingService, times(1)).generateBalanceSheet(companyId, fiscalPeriodId, true);
-                verify(reportingService, times(1)).generateCashbook(companyId, fiscalPeriodId, true);
-                verify(reportingService, times(1)).generateAuditTrail(companyId, fiscalPeriodId, true);
         }
 
         @Test
@@ -634,19 +623,18 @@ public class SpringReportControllerTest {
                 // Arrange
                 Long companyId = 1L;
                 Long fiscalPeriodId = 1L;
-                boolean exportToFile = false;
                 String expectedReport = "INCOME STATEMENT TEXT";
 
-                when(reportingService.generateIncomeStatement(companyId, fiscalPeriodId, exportToFile))
+                when(reportingService.generateIncomeStatement(companyId, fiscalPeriodId))
                                 .thenReturn(expectedReport);
 
                 // Act
-                ResponseEntity<String> response = controller.generateIncomeStatement(companyId, fiscalPeriodId, exportToFile);
+                ResponseEntity<String> response = controller.generateIncomeStatement(companyId, fiscalPeriodId);
 
                 // Assert
                 assertEquals(HttpStatus.OK, response.getStatusCode());
                 assertEquals(expectedReport, response.getBody());
-                verify(reportingService, times(1)).generateIncomeStatement(companyId, fiscalPeriodId, exportToFile);
+                verify(reportingService, times(1)).generateIncomeStatement(companyId, fiscalPeriodId);
         }
 
         @Test
@@ -655,19 +643,18 @@ public class SpringReportControllerTest {
                 // Arrange
                 Long companyId = 1L;
                 Long fiscalPeriodId = 1L;
-                boolean exportToFile = false;
                 String expectedReport = "BALANCE SHEET TEXT";
 
-                when(reportingService.generateBalanceSheet(companyId, fiscalPeriodId, exportToFile))
+                when(reportingService.generateBalanceSheet(companyId, fiscalPeriodId))
                                 .thenReturn(expectedReport);
 
                 // Act
-                ResponseEntity<String> response = controller.generateBalanceSheet(companyId, fiscalPeriodId, exportToFile);
+                ResponseEntity<String> response = controller.generateBalanceSheet(companyId, fiscalPeriodId);
 
                 // Assert
                 assertEquals(HttpStatus.OK, response.getStatusCode());
                 assertEquals(expectedReport, response.getBody());
-                verify(reportingService, times(1)).generateBalanceSheet(companyId, fiscalPeriodId, exportToFile);
+                verify(reportingService, times(1)).generateBalanceSheet(companyId, fiscalPeriodId);
         }
 
         @Test

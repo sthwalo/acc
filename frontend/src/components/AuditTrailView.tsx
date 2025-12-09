@@ -1,9 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { BookOpen, Search, Calendar, ChevronLeft, ChevronRight, Loader, AlertCircle, Eye, FileText, File } from 'lucide-react';
+import { BookOpen, Loader, AlertCircle, Eye, FileText, File } from 'lucide-react';
 import { useApi } from '../hooks/useApi';
 import ApiMessageBanner from './shared/ApiMessageBanner';
-import JournalEntryDetailModal from './JournalEntryDetailModal';
-import type { Company, FiscalPeriod, JournalEntryDTO, AuditTrailResponse } from '../types/api';
+import type { Company, FiscalPeriod, AuditTrailDTO } from '../types/api';
 
 interface AuditTrailViewProps {
   selectedCompany: Company;
@@ -13,26 +12,12 @@ interface AuditTrailViewProps {
 
 export default function AuditTrailView({ selectedCompany, selectedPeriod, onClose }: AuditTrailViewProps) {
   const api = useApi();
-  const [auditTrailData, setAuditTrailData] = useState<AuditTrailResponse | null>(null);
+  const [auditTrailData, setAuditTrailData] = useState<AuditTrailDTO[] | null>(null);
   const [selectedEntry, setSelectedEntry] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showTextView, setShowTextView] = useState(false);
   const [textViewContent, setTextViewContent] = useState('');
-  
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(0);
-  const [pageSize] = useState(20);
-  
-  // Filter state
-  const [startDate, setStartDate] = useState<string>('');
-  const [endDate, setEndDate] = useState<string>('');
-  const [searchTerm, setSearchTerm] = useState<string>('');
-  const [appliedFilters, setAppliedFilters] = useState({
-    startDate: '',
-    endDate: '',
-    searchTerm: ''
-  });
 
   const fetchAuditTrail = useCallback(async () => {
     if (!selectedCompany || !selectedPeriod) return;
@@ -43,59 +28,21 @@ export default function AuditTrailView({ selectedCompany, selectedPeriod, onClos
     try {
       const response = await api.reports.getAuditTrail(
         selectedCompany.id,
-        selectedPeriod.id,
-        currentPage,
-        pageSize,
-        appliedFilters.startDate || undefined,
-        appliedFilters.endDate || undefined,
-        appliedFilters.searchTerm || undefined
+        selectedPeriod.id
       );
 
-      // API returns AuditTrailResponse directly, not wrapped
+      // API returns AuditTrailDTO[] directly
       setAuditTrailData(response);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unexpected error occurred');
     } finally {
       setIsLoading(false);
     }
-  }, [api, selectedCompany, selectedPeriod, currentPage, pageSize, appliedFilters]);
+  }, [api, selectedCompany, selectedPeriod]);
 
   useEffect(() => {
     fetchAuditTrail();
   }, [fetchAuditTrail]);
-
-  const handleApplyFilters = () => {
-    setAppliedFilters({
-      startDate,
-      endDate,
-      searchTerm
-    });
-    setCurrentPage(0); // Reset to first page when filters change
-  };
-
-  const handleClearFilters = () => {
-    setStartDate('');
-    setEndDate('');
-    setSearchTerm('');
-    setAppliedFilters({
-      startDate: '',
-      endDate: '',
-      searchTerm: ''
-    });
-    setCurrentPage(0);
-  };
-
-  const handlePageChange = (newPage: number) => {
-    setCurrentPage(newPage);
-  };
-
-  const handleRowClick = (entryId: number) => {
-    setSelectedEntry(entryId);
-  };
-
-  const handleCloseModal = () => {
-    setSelectedEntry(null);
-  };
 
   const formatCurrency = (amount: number): string => {
     return new Intl.NumberFormat('en-ZA', {
@@ -250,95 +197,6 @@ export default function AuditTrailView({ selectedCompany, selectedPeriod, onClos
         />
       )}
 
-      {/* Filters */}
-      <div className="audit-trail-filters">
-        <div className="filters-grid">
-          {/* Start Date Filter */}
-          <div className="filter-group">
-            <label>Start Date</label>
-            <div className="input-with-icon">
-              <Calendar className="input-icon" size={18} />
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                placeholder="Start date"
-              />
-            </div>
-          </div>
-
-          {/* End Date Filter */}
-          <div className="filter-group">
-            <label>End Date</label>
-            <div className="input-with-icon">
-              <Calendar className="input-icon" size={18} />
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                placeholder="End date"
-              />
-            </div>
-          </div>
-
-          {/* Search Filter */}
-          <div className="filter-group">
-            <label>Search</label>
-            <div className="input-with-icon">
-              <Search className="input-icon" size={18} />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search reference or description..."
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Filter Buttons */}
-        <div className="filter-actions">
-          <button
-            onClick={handleApplyFilters}
-            disabled={isLoading}
-            className="apply-button"
-          >
-            Apply Filters
-          </button>
-          <button
-            onClick={handleClearFilters}
-            disabled={isLoading}
-            className="clear-button"
-          >
-            Clear Filters
-          </button>
-        </div>
-
-        {/* Active Filters Display */}
-        {(appliedFilters.startDate || appliedFilters.endDate || appliedFilters.searchTerm) && (
-          <div className="active-filters">
-            <p className="active-filters-label">Active Filters:</p>
-            <div className="filter-tags">
-              {appliedFilters.startDate && (
-                <span className="filter-tag">
-                  From: {formatDate(appliedFilters.startDate)}
-                </span>
-              )}
-              {appliedFilters.endDate && (
-                <span className="filter-tag">
-                  To: {formatDate(appliedFilters.endDate)}
-                </span>
-              )}
-              {appliedFilters.searchTerm && (
-                <span className="filter-tag">
-                  Search: "{appliedFilters.searchTerm}"
-                </span>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-
       {/* Loading State */}
       {isLoading && (
         <div className="loading-state">
@@ -348,7 +206,7 @@ export default function AuditTrailView({ selectedCompany, selectedPeriod, onClos
       )}
 
       {/* Empty State */}
-      {!isLoading && auditTrailData && auditTrailData.entries.length === 0 && (
+      {!isLoading && auditTrailData && auditTrailData.length === 0 && (
         <div className="empty-state">
           <AlertCircle size={48} />
           <p className="empty-title">No journal entries found</p>
@@ -357,7 +215,7 @@ export default function AuditTrailView({ selectedCompany, selectedPeriod, onClos
       )}
 
       {/* Data Table */}
-      {!isLoading && auditTrailData && auditTrailData.entries.length > 0 && (
+      {!isLoading && auditTrailData && auditTrailData.length > 0 && (
         <>
           <div className="audit-trail-table-container">
             <table className="audit-trail-table">
@@ -366,69 +224,93 @@ export default function AuditTrailView({ selectedCompany, selectedPeriod, onClos
                   <th>Reference</th>
                   <th>Date</th>
                   <th>Description</th>
-                  <th className="text-right">Debit</th>
-                  <th className="text-right">Credit</th>
+                  <th className="text-right">Total Debit</th>
+                  <th className="text-right">Total Credit</th>
                   <th className="text-center">Lines</th>
                   <th>Created By</th>
                 </tr>
               </thead>
               <tbody>
-                {auditTrailData.entries.map((entry: JournalEntryDTO) => (
-                  <tr
-                    key={entry.id}
-                    onClick={() => handleRowClick(entry.id)}
-                    className="table-row-clickable"
-                  >
-                    <td className="reference-cell">{entry.reference}</td>
-                    <td>{formatDate(entry.entryDate)}</td>
-                    <td>{entry.description}</td>
-                    <td className="text-right amount-cell">{formatCurrency(entry.totalDebit)}</td>
-                    <td className="text-right amount-cell">{formatCurrency(entry.totalCredit)}</td>
-                    <td className="text-center">{entry.lineCount}</td>
-                    <td>{entry.createdBy}</td>
-                  </tr>
-                ))}
+                {auditTrailData.map((entry: AuditTrailDTO, index: number) => {
+                  // Calculate totals from lines
+                  const totalDebit = entry.lines.reduce((sum, line) => sum + (line.debit || 0), 0);
+                  const totalCredit = entry.lines.reduce((sum, line) => sum + (line.credit || 0), 0);
+                  
+                  return (
+                    <tr
+                      key={`${entry.reference}-${index}`}
+                      onClick={() => setSelectedEntry(index)}
+                      className="table-row-clickable"
+                    >
+                      <td className="reference-cell">{entry.reference}</td>
+                      <td>{formatDate(entry.entryDate)}</td>
+                      <td>{entry.description}</td>
+                      <td className="text-right amount-cell">{formatCurrency(totalDebit)}</td>
+                      <td className="text-right amount-cell">{formatCurrency(totalCredit)}</td>
+                      <td className="text-center">{entry.lines.length}</td>
+                      <td>{entry.createdBy}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
-
-          {/* Pagination */}
-          {auditTrailData.pagination && (
-            <div className="pagination-container">
-              <div className="pagination-info">
-                Showing page {auditTrailData.pagination.currentPage + 1} of{' '}
-                {auditTrailData.pagination.totalPages} ({auditTrailData.pagination.totalElements} total entries)
-              </div>
-              <div className="pagination-controls">
-                <button
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 0 || isLoading}
-                  className="pagination-button"
-                >
-                  <ChevronLeft size={20} />
-                </button>
-                <div className="pagination-page">
-                  <span>Page {currentPage + 1}</span>
-                </div>
-                <button
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage >= auditTrailData.pagination.totalPages - 1 || isLoading}
-                  className="pagination-button"
-                >
-                  <ChevronRight size={20} />
-                </button>
-              </div>
-            </div>
-          )}
         </>
       )}
 
       {/* Detail Modal */}
-      {selectedEntry && (
-        <JournalEntryDetailModal
-          entryId={selectedEntry}
-          onClose={handleCloseModal}
-        />
+      {selectedEntry !== null && auditTrailData && (
+        <div className="journal-entry-detail-modal">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3>Journal Entry Details</h3>
+              <button onClick={() => setSelectedEntry(null)} className="close-button">×</button>
+            </div>
+            <div className="modal-body">
+              {(() => {
+                const entry = auditTrailData[selectedEntry];
+                return (
+                  <div className="entry-details">
+                    <div className="entry-header">
+                      <div className="entry-info">
+                        <strong>Reference:</strong> {entry.reference}<br/>
+                        <strong>Date:</strong> {formatDate(entry.entryDate)}<br/>
+                        <strong>Description:</strong> {entry.description}<br/>
+                        <strong>Created By:</strong> {entry.createdBy}<br/>
+                        <strong>Created At:</strong> {formatDate(entry.createdAt)}
+                      </div>
+                    </div>
+                    <div className="entry-lines">
+                      <h4>Journal Entry Lines</h4>
+                      <table className="lines-table">
+                        <thead>
+                          <tr>
+                            <th>Account Code</th>
+                            <th>Account Name</th>
+                            <th>Description</th>
+                            <th className="text-right">Debit</th>
+                            <th className="text-right">Credit</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {entry.lines.map((line, lineIndex) => (
+                            <tr key={lineIndex}>
+                              <td>{line.accountCode}</td>
+                              <td>{line.accountName}</td>
+                              <td>{line.description}</td>
+                              <td className="text-right">{line.debit ? formatCurrency(line.debit) : ''}</td>
+                              <td className="text-right">{line.credit ? formatCurrency(line.credit) : ''}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -49,6 +49,21 @@ import java.util.*;
 import java.util.logging.Logger;
 import java.util.logging.Level;
 
+// PDFBox imports
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.font.PDType1Font;
+import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
+
+// Apache POI imports
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
+// Java IO imports
+import java.io.ByteArrayOutputStream;
+
 /**
  * Spring Service for financial reporting using JPA repositories.
  * Generates comprehensive double-entry accounting reports with export functionality.
@@ -97,7 +112,55 @@ public class SpringFinancialReportingService {
      * Generates a comprehensive General Ledger report
      */
     @Transactional(readOnly = true)
-    public String generateGeneralLedger(Long companyId, Long fiscalPeriodId, boolean exportToFile) {
+    public List<GeneralLedgerDTO> generateGeneralLedgerDTOs(Long companyId, Long fiscalPeriodId) {
+        try {
+            List<GeneralLedgerDTO> entries = new ArrayList<>();
+
+            // Get all accounts for the company
+            List<Account> accounts = accountRepository.findByCompanyId(companyId);
+
+            for (Account account : accounts) {
+                List<JournalEntryLine> journalEntries = journalEntryLineRepository
+                    .findByAccountIdAndJournalEntry_FiscalPeriodId(account.getId(), fiscalPeriodId);
+
+                if (journalEntries.isEmpty()) {
+                    continue;
+                }
+
+                BigDecimal runningBalance = BigDecimal.ZERO;
+
+                for (JournalEntryLine entry : journalEntries) {
+                    JournalEntry journalEntry = entry.getJournalEntry();
+                    BigDecimal debit = entry.getDebitAmount() != null ? entry.getDebitAmount() : BigDecimal.ZERO;
+                    BigDecimal credit = entry.getCreditAmount() != null ? entry.getCreditAmount() : BigDecimal.ZERO;
+
+                    // Update running balance
+                    runningBalance = runningBalance.add(debit).subtract(credit);
+
+                    entries.add(new GeneralLedgerDTO(
+                        journalEntry.getEntryDate(),
+                        journalEntry.getReference(),
+                        entry.getDescription(),
+                        debit.compareTo(BigDecimal.ZERO) > 0 ? debit : BigDecimal.ZERO,
+                        credit.compareTo(BigDecimal.ZERO) > 0 ? credit : BigDecimal.ZERO,
+                        runningBalance
+                    ));
+                }
+            }
+
+            return entries;
+
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error generating general ledger", e);
+            throw new RuntimeException("Error generating report: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Generates a comprehensive General Ledger report
+     */
+    @Transactional(readOnly = true)
+    public String generateGeneralLedger(Long companyId, Long fiscalPeriodId) {
         try {
             Company company = companyService.getCompanyById(companyId);
             FiscalPeriod period = getFiscalPeriod(fiscalPeriodId);
@@ -172,12 +235,7 @@ public class SpringFinancialReportingService {
                     formatCurrency(grandTotalCredits)));
             report.append("=".repeat(REPORT_SEPARATOR_WIDTH)).append("\n");
 
-            String reportContent = report.toString();
-            if (exportToFile) {
-                exportReport("general_ledger", company, period, reportContent);
-            }
-
-            return reportContent;
+            return report.toString();
 
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error generating general ledger", e);
@@ -186,55 +244,16 @@ public class SpringFinancialReportingService {
     }
 
     /**
-     * Generates a Trial Balance report
+     * Generates a Trial Balance report data
      */
     @Transactional(readOnly = true)
-    public String generateTrialBalance(Long companyId, Long fiscalPeriodId, boolean exportToFile) {
+    public List<TrialBalanceDTO> generateTrialBalance(Long companyId, Long fiscalPeriodId) {
         try {
-            Company company = companyService.getCompanyById(companyId);
-            FiscalPeriod period = getFiscalPeriod(fiscalPeriodId);
-
-            StringBuilder report = new StringBuilder();
-            report.append(generateReportHeader("TRIAL BALANCE", company, period));
-
-            report.append(String.format("%-10s %-30s %15s %15s%n",
-                    "Code", "Account Name", "Debit", "Credit"));
-            report.append("=".repeat(REPORT_SEPARATOR_WIDTH)).append("\n");
-
             // Use the new DTO-based repository method
-            List<TrialBalanceDTO> trialBalanceEntries = financialDataRepository.getTrialBalanceDTOs(companyId, fiscalPeriodId);
-
-            BigDecimal totalDebits = BigDecimal.ZERO;
-            BigDecimal totalCredits = BigDecimal.ZERO;
-
-            for (TrialBalanceDTO entry : trialBalanceEntries) {
-                report.append(String.format("%-10s %-30s %15s %15s%n",
-                        entry.getAccountCode(),
-                        truncateText(entry.getAccountName(), ACCOUNT_NAME_TRUNCATE_CHECK, ACCOUNT_NAME_TRUNCATE_LENGTH),
-                        formatCurrency(entry.getDebit()),
-                        formatCurrency(entry.getCredit())));
-
-                totalDebits = totalDebits.add(entry.getDebit());
-                totalCredits = totalCredits.add(entry.getCredit());
-            }
-
-            report.append("=".repeat(REPORT_SEPARATOR_WIDTH)).append("\n");
-            report.append(String.format("%-40s %15s %15s%n",
-                    "TOTALS:",
-                    formatCurrency(totalDebits),
-                    formatCurrency(totalCredits)));
-            report.append("=".repeat(REPORT_SEPARATOR_WIDTH)).append("\n");
-
-            String reportContent = report.toString();
-            if (exportToFile) {
-                exportReport("trial_balance", company, period, reportContent);
-            }
-
-            return reportContent;
-
+            return financialDataRepository.getTrialBalanceDTOs(companyId, fiscalPeriodId);
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error generating trial balance", e);
-            return "Error generating report: " + e.getMessage();
+            throw new RuntimeException("Error generating report: " + e.getMessage());
         }
     }
 
@@ -568,7 +587,34 @@ public class SpringFinancialReportingService {
      * Generates an Income Statement (Profit & Loss)
      */
     @Transactional(readOnly = true)
-    public String generateIncomeStatement(Long companyId, Long fiscalPeriodId, boolean exportToFile) {
+    /**
+     * Generates an Income Statement report data
+     */
+    public List<IncomeStatementDTO> generateIncomeStatementDTOs(Long companyId, Long fiscalPeriodId) {
+        try {
+            List<IncomeStatementDTO> entries = new ArrayList<>();
+
+            // Revenue accounts (typically 4000-4999)
+            List<IncomeStatementDTO> revenueEntries = getAccountEntries(companyId, fiscalPeriodId, "4%", "Revenue");
+            entries.addAll(revenueEntries);
+
+            // Expense accounts (typically 5000-5999)
+            List<IncomeStatementDTO> expenseEntries = getAccountEntries(companyId, fiscalPeriodId, "5%", "Expenses");
+            entries.addAll(expenseEntries);
+
+            return entries;
+
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error generating income statement", e);
+            throw new RuntimeException("Error generating report: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Generates an Income Statement report as formatted text
+     */
+    @Transactional(readOnly = true)
+    public String generateIncomeStatement(Long companyId, Long fiscalPeriodId) {
         try {
             Company company = companyService.getCompanyById(companyId);
             FiscalPeriod period = getFiscalPeriod(fiscalPeriodId);
@@ -591,12 +637,7 @@ public class SpringFinancialReportingService {
             report.append(String.format("%-60s %15s%n", "NET PROFIT/(LOSS):", formatCurrency(profitLoss)));
             report.append("=".repeat(REPORT_SEPARATOR_WIDTH)).append("\n");
 
-            String reportContent = report.toString();
-            if (exportToFile) {
-                exportReport("income_statement", company, period, reportContent);
-            }
-
-            return reportContent;
+            return report.toString();
 
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error generating income statement", e);
@@ -608,7 +649,38 @@ public class SpringFinancialReportingService {
      * Generates a Balance Sheet
      */
     @Transactional(readOnly = true)
-    public String generateBalanceSheet(Long companyId, Long fiscalPeriodId, boolean exportToFile) {
+    /**
+     * Generates a Balance Sheet report data
+     */
+    public List<BalanceSheetDTO> generateBalanceSheetDTOs(Long companyId, Long fiscalPeriodId) {
+        try {
+            List<BalanceSheetDTO> entries = new ArrayList<>();
+
+            // Assets (typically 1000-1999)
+            List<BalanceSheetDTO> assetEntries = getBalanceSheetEntries(companyId, fiscalPeriodId, "1%", "Assets");
+            entries.addAll(assetEntries);
+
+            // Liabilities (typically 2000-2999)
+            List<BalanceSheetDTO> liabilityEntries = getBalanceSheetEntries(companyId, fiscalPeriodId, "2%", "Liabilities");
+            entries.addAll(liabilityEntries);
+
+            // Equity (typically 3000-3999)
+            List<BalanceSheetDTO> equityEntries = getBalanceSheetEntries(companyId, fiscalPeriodId, "3%", "Equity");
+            entries.addAll(equityEntries);
+
+            return entries;
+
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error generating balance sheet", e);
+            throw new RuntimeException("Error generating report: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Generates a Balance Sheet report as formatted text
+     */
+    @Transactional(readOnly = true)
+    public String generateBalanceSheet(Long companyId, Long fiscalPeriodId) {
         try {
             Company company = companyService.getCompanyById(companyId);
             FiscalPeriod period = getFiscalPeriod(fiscalPeriodId);
@@ -635,12 +707,7 @@ public class SpringFinancialReportingService {
             report.append(String.format("%-60s %15s%n", "TOTAL LIABILITIES & EQUITY:", formatCurrency(totalLiabilitiesAndEquity)));
             report.append("=".repeat(REPORT_SEPARATOR_WIDTH)).append("\n");
 
-            String reportContent = report.toString();
-            if (exportToFile) {
-                exportReport("balance_sheet", company, period, reportContent);
-            }
-
-            return reportContent;
+            return report.toString();
 
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error generating balance sheet", e);
@@ -649,10 +716,57 @@ public class SpringFinancialReportingService {
     }
 
     /**
+     * Generates a Cashbook report data
+     */
+    public List<CashbookDTO> generateCashbookDTOs(Long companyId, Long fiscalPeriodId) {
+        try {
+            List<CashbookDTO> entries = new ArrayList<>();
+
+            // Get cash/bank accounts (typically starting with 1)
+            List<Account> cashAccounts = accountRepository.findByCompanyIdAndAccountCodeStartingWith(companyId, "1");
+
+            for (Account account : cashAccounts) {
+                List<JournalEntryLine> journalEntries = journalEntryLineRepository
+                    .findByAccountIdAndJournalEntry_FiscalPeriodIdOrderByJournalEntry_EntryDate(account.getId(), fiscalPeriodId);
+
+                if (journalEntries.isEmpty()) {
+                    continue;
+                }
+
+                BigDecimal runningBalance = BigDecimal.ZERO;
+
+                for (JournalEntryLine entry : journalEntries) {
+                    JournalEntry journalEntry = entry.getJournalEntry();
+                    BigDecimal debit = entry.getDebitAmount() != null ? entry.getDebitAmount() : BigDecimal.ZERO;
+                    BigDecimal credit = entry.getCreditAmount() != null ? entry.getCreditAmount() : BigDecimal.ZERO;
+
+                    // For cashbook, debits are receipts, credits are payments
+                    runningBalance = runningBalance.add(debit).subtract(credit);
+
+                    entries.add(new CashbookDTO(
+                        journalEntry.getEntryDate(),
+                        journalEntry.getReference(),
+                        entry.getDescription(),
+                        debit.compareTo(BigDecimal.ZERO) > 0 ? debit : BigDecimal.ZERO,
+                        credit.compareTo(BigDecimal.ZERO) > 0 ? credit : BigDecimal.ZERO,
+                        runningBalance
+                    ));
+                }
+            }
+
+            return entries;
+
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error generating cashbook", e);
+            throw new RuntimeException("Error generating report: " + e.getMessage());
+        }
+    }
+
+    /**
      * Generates a Cashbook report
      */
     @Transactional(readOnly = true)
-    public String generateCashbook(Long companyId, Long fiscalPeriodId, boolean exportToFile) {
+    public String generateCashbook(Long companyId, Long fiscalPeriodId) {
         try {
             Company company = companyService.getCompanyById(companyId);
             FiscalPeriod period = getFiscalPeriod(fiscalPeriodId);
@@ -726,12 +840,7 @@ public class SpringFinancialReportingService {
                     formatCurrency(totalCredits)));
             report.append("=".repeat(REPORT_SEPARATOR_WIDTH)).append("\n");
 
-            String reportContent = report.toString();
-            if (exportToFile) {
-                exportReport("cashbook", company, period, reportContent);
-            }
-
-            return reportContent;
+            return report.toString();
 
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error generating cashbook", e);
@@ -968,10 +1077,60 @@ public class SpringFinancialReportingService {
     }
 
     /**
+     * Generates Audit Trail DTOs for UI display
+     */
+    @Transactional(readOnly = true)
+    public List<AuditTrailDTO> generateAuditTrailDTOs(Long companyId, Long fiscalPeriodId) {
+        try {
+            List<AuditTrailDTO> entries = new ArrayList<>();
+
+            List<JournalEntry> journalEntries = journalEntryRepository
+                .findByCompanyIdAndFiscalPeriodIdOrderByEntryDateAscIdAsc(companyId, fiscalPeriodId);
+
+            String currentEntry = null;
+
+            for (JournalEntry je : journalEntries) {
+                // New journal entry header — always print header for the first entry even if reference is null
+                if (currentEntry == null || !Objects.equals(je.getReference(), currentEntry)) {
+                    currentEntry = je.getReference();
+
+                    // Create line DTOs for this entry
+                    List<AuditTrailLineDTO> lines = new ArrayList<>();
+                    for (JournalEntryLine jel : je.getJournalEntryLines()) {
+                        Account account = jel.getAccount();
+                        lines.add(new AuditTrailLineDTO(
+                            account.getAccountCode(),
+                            account.getAccountName(),
+                            jel.getDescription(),
+                            jel.getDebitAmount(),
+                            jel.getCreditAmount()
+                        ));
+                    }
+
+                    entries.add(new AuditTrailDTO(
+                        je.getReference(),
+                        je.getEntryDate().atStartOfDay(), // Convert LocalDate to LocalDateTime
+                        je.getDescription(),
+                        je.getCreatedBy() != null ? je.getCreatedBy() : "FIN",
+                        je.getCreatedAt(),
+                        lines
+                    ));
+                }
+            }
+
+            return entries;
+
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error generating audit trail DTOs", e);
+            throw new RuntimeException("Error generating report: " + e.getMessage());
+        }
+    }
+
+    /**
      * Generates an Audit Trail report
      */
     @Transactional(readOnly = true)
-    public String generateAuditTrail(Long companyId, Long fiscalPeriodId, boolean exportToFile) {
+    public String generateAuditTrail(Long companyId, Long fiscalPeriodId) {
         try {
             Company company = companyService.getCompanyById(companyId);
             FiscalPeriod period = getFiscalPeriod(fiscalPeriodId);
@@ -1033,17 +1192,172 @@ public class SpringFinancialReportingService {
                     formatCurrency(grandTotalCredits)));
             report.append("=".repeat(REPORT_SEPARATOR_WIDTH)).append("\n");
 
-            String reportContent = report.toString();
-            if (exportToFile) {
-                exportReport("audit_trail", company, period, reportContent);
-            }
-
-            return reportContent;
+            return report.toString();
 
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error generating audit trail", e);
             return "Error generating report: " + e.getMessage();
         }
+    }
+
+    /**
+     * Export Audit Trail to PDF format
+     */
+    @Transactional(readOnly = true)
+    public byte[] exportAuditTrailToPDF(Long companyId, Long fiscalPeriodId) throws SQLException {
+        String reportContent = generateAuditTrail(companyId, fiscalPeriodId);
+        return exportTextReportToPDF("AUDIT TRAIL", reportContent, companyId, fiscalPeriodId);
+    }
+
+    /**
+     * Export Audit Trail to Excel format
+     */
+    @Transactional(readOnly = true)
+    public byte[] exportAuditTrailToExcel(Long companyId, Long fiscalPeriodId) throws SQLException {
+        String reportContent = generateAuditTrail(companyId, fiscalPeriodId);
+        return exportTextReportToExcel("AUDIT TRAIL", reportContent, companyId, fiscalPeriodId);
+    }
+
+    /**
+     * Export Audit Trail to CSV format
+     */
+    @Transactional(readOnly = true)
+    public String exportAuditTrailToCSV(Long companyId, Long fiscalPeriodId) throws SQLException {
+        String reportContent = generateAuditTrail(companyId, fiscalPeriodId);
+        return exportTextReportToCSV("AUDIT TRAIL", reportContent, companyId, fiscalPeriodId);
+    }
+
+    /**
+     * Export text-based report to PDF format
+     */
+    private byte[] exportTextReportToPDF(String reportTitle, String reportContent, Long companyId, Long fiscalPeriodId) throws SQLException {
+        try {
+            Company company = companyService.getCompanyById(companyId);
+            FiscalPeriod period = getFiscalPeriod(fiscalPeriodId);
+
+            PDDocument document = new PDDocument();
+            PDPage page = new PDPage(PDRectangle.A4);
+            document.addPage(page);
+
+            PDPageContentStream contentStream = new PDPageContentStream(document, page);
+            contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.COURIER), 10);
+
+            float margin = 50;
+            float yStart = page.getMediaBox().getHeight() - margin;
+            float yPosition = yStart;
+
+            // Add header
+            String header = generateReportHeader(reportTitle, company, period);
+            String[] headerLines = header.split("\n");
+            for (String line : headerLines) {
+                if (yPosition < margin) {
+                    contentStream.close();
+                    page = new PDPage(PDRectangle.A4);
+                    document.addPage(page);
+                    contentStream = new PDPageContentStream(document, page);
+                    contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.COURIER), 10);
+                    yPosition = yStart;
+                }
+                contentStream.beginText();
+                contentStream.newLineAtOffset(margin, yPosition);
+                contentStream.showText(line);
+                contentStream.endText();
+                yPosition -= 12;
+            }
+
+            // Add report content
+            String[] contentLines = reportContent.split("\n");
+            for (String line : contentLines) {
+                if (yPosition < margin) {
+                    contentStream.close();
+                    page = new PDPage(PDRectangle.A4);
+                    document.addPage(page);
+                    contentStream = new PDPageContentStream(document, page);
+                    contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.COURIER), 10);
+                    yPosition = yStart;
+                }
+                contentStream.beginText();
+                contentStream.newLineAtOffset(margin, yPosition);
+                contentStream.showText(line);
+                contentStream.endText();
+                yPosition -= 12;
+            }
+
+            contentStream.close();
+
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            document.save(outputStream);
+            document.close();
+
+            return outputStream.toByteArray();
+        } catch (IOException e) {
+            throw new SQLException("Failed to generate PDF: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Export text-based report to Excel format
+     */
+    private byte[] exportTextReportToExcel(String reportTitle, String reportContent, Long companyId, Long fiscalPeriodId) throws SQLException {
+        try {
+            Company company = companyService.getCompanyById(companyId);
+            FiscalPeriod period = getFiscalPeriod(fiscalPeriodId);
+
+            Workbook workbook = new XSSFWorkbook();
+            Sheet sheet = workbook.createSheet("Report");
+
+            int rowNum = 0;
+
+            // Add header
+            String header = generateReportHeader(reportTitle, company, period);
+            String[] headerLines = header.split("\n");
+            for (String line : headerLines) {
+                Row row = sheet.createRow(rowNum++);
+                Cell cell = row.createCell(0);
+                cell.setCellValue(line);
+            }
+
+            // Add empty row
+            rowNum++;
+
+            // Add report content
+            String[] contentLines = reportContent.split("\n");
+            for (String line : contentLines) {
+                Row row = sheet.createRow(rowNum++);
+                Cell cell = row.createCell(0);
+                cell.setCellValue(line);
+            }
+
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            workbook.write(outputStream);
+            workbook.close();
+
+            return outputStream.toByteArray();
+        } catch (IOException e) {
+            throw new SQLException("Failed to generate Excel: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Export text-based report to CSV format
+     */
+    private String exportTextReportToCSV(String reportTitle, String reportContent, Long companyId, Long fiscalPeriodId) throws SQLException {
+        Company company = companyService.getCompanyById(companyId);
+        FiscalPeriod period = getFiscalPeriod(fiscalPeriodId);
+
+        StringBuilder csv = new StringBuilder();
+
+        // Add header
+        String header = generateReportHeader(reportTitle, company, period);
+        String[] headerLines = header.split("\n");
+        for (String line : headerLines) {
+            csv.append(line).append("\n");
+        }
+
+        // Add report content
+        csv.append(reportContent);
+
+        return csv.toString();
     }
 
     // Helper methods
@@ -1088,6 +1402,72 @@ public class SpringFinancialReportingService {
         report.append("=".repeat(50)).append("\n");
 
         return sectionTotal;
+    }
+
+    private List<IncomeStatementDTO> getAccountEntries(Long companyId, Long fiscalPeriodId,
+                                                     String accountCodePrefix, String category) {
+        List<IncomeStatementDTO> entries = new ArrayList<>();
+
+        List<Account> accounts = accountRepository.findByCompanyIdAndAccountCodeStartingWith(companyId, accountCodePrefix.substring(0, 1));
+
+        for (Account account : accounts) {
+            List<JournalEntryLine> journalEntries = journalEntryLineRepository
+                .findByAccountIdAndJournalEntry_FiscalPeriodId(account.getId(), fiscalPeriodId);
+
+            BigDecimal debitBalance = BigDecimal.ZERO;
+            BigDecimal creditBalance = BigDecimal.ZERO;
+
+            for (JournalEntryLine entry : journalEntries) {
+                if (entry.getDebitAmount() != null) {
+                    debitBalance = debitBalance.add(entry.getDebitAmount());
+                }
+                if (entry.getCreditAmount() != null) {
+                    creditBalance = creditBalance.add(entry.getCreditAmount());
+                }
+            }
+
+            BigDecimal netBalance = debitBalance.subtract(creditBalance);
+
+            if (netBalance.compareTo(BigDecimal.ZERO) != 0) {
+                entries.add(new IncomeStatementDTO(category, account.getAccountCode(),
+                        account.getAccountName(), netBalance, category.toUpperCase()));
+            }
+        }
+
+        return entries;
+    }
+
+    private List<BalanceSheetDTO> getBalanceSheetEntries(Long companyId, Long fiscalPeriodId,
+                                                             String accountCodePrefix, String category) {
+        List<BalanceSheetDTO> entries = new ArrayList<>();
+
+        List<Account> accounts = accountRepository.findByCompanyIdAndAccountCodeStartingWith(companyId, accountCodePrefix.substring(0, 1));
+
+        for (Account account : accounts) {
+            List<JournalEntryLine> journalEntries = journalEntryLineRepository
+                .findByAccountIdAndJournalEntry_FiscalPeriodId(account.getId(), fiscalPeriodId);
+
+            BigDecimal debitBalance = BigDecimal.ZERO;
+            BigDecimal creditBalance = BigDecimal.ZERO;
+
+            for (JournalEntryLine entry : journalEntries) {
+                if (entry.getDebitAmount() != null) {
+                    debitBalance = debitBalance.add(entry.getDebitAmount());
+                }
+                if (entry.getCreditAmount() != null) {
+                    creditBalance = creditBalance.add(entry.getCreditAmount());
+                }
+            }
+
+            BigDecimal netBalance = debitBalance.subtract(creditBalance);
+
+            if (netBalance.compareTo(BigDecimal.ZERO) != 0) {
+                entries.add(new BalanceSheetDTO(category, account.getAccountCode(),
+                        account.getAccountName(), netBalance, category.toLowerCase()));
+            }
+        }
+
+        return entries;
     }
 
     private String generateReportHeader(String reportTitle, Company company, FiscalPeriod period) {

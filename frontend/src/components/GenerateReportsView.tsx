@@ -3,7 +3,7 @@ import { FileText, Calendar, BookOpen, Eye, File } from 'lucide-react';
 import { useApi } from '../hooks/useApi';
 import ApiMessageBanner from './shared/ApiMessageBanner';
 import AuditTrailView from './AuditTrailView';
-import type { Company, FiscalPeriod } from '../types/api';
+import type { Company, FiscalPeriod, AuditTrailDTO } from '../types/api';
 
 interface GenerateReportsViewProps {
   selectedCompany: Company;
@@ -74,6 +74,7 @@ export default function GenerateReportsView({ selectedCompany }: GenerateReports
   const [showAuditTrail, setShowAuditTrail] = useState(false);
   const [activeReportView, setActiveReportView] = useState<string | null>(null);
   const [reportContent, setReportContent] = useState<string>('');
+  const [auditTrailJsonData, setAuditTrailJsonData] = useState<AuditTrailDTO[] | null>(null);
 
   const loadFiscalPeriods = useCallback(async () => {
     try {
@@ -174,12 +175,18 @@ export default function GenerateReportsView({ selectedCompany }: GenerateReports
             reportData = await api.generateCashbook(Number(selectedCompany.id), selectedPeriod.id, 'text');
             break;
           case 'audit-trail':
-            reportData = await api.generateAuditTrail(Number(selectedCompany.id), selectedPeriod.id, 'text');
+            // For audit trail, get structured JSON data instead of text
+            const auditTrailData = await api.reports.getAuditTrail(Number(selectedCompany.id), selectedPeriod.id);
+            setAuditTrailJsonData(auditTrailData);
+            setReportContent(''); // Clear text content for JSON view
             break;
           default:
             return;
         }
-        setReportContent(reportData.content);
+        // Only set report content for non-audit-trail reports
+        if (selectedReport.id !== 'audit-trail' && reportData) {
+          setReportContent(reportData.content);
+        }
         setActiveReportView(selectedReport.id);
         setSuccess(`${selectedReport.name} report generated successfully`);
       } catch (err) {
@@ -217,18 +224,70 @@ export default function GenerateReportsView({ selectedCompany }: GenerateReports
           <h2>
             {selectedReport?.name} - {selectedPeriod?.periodName}
           </h2>
-          <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'monospace', maxHeight: 600, overflow: 'auto' }}>
-            {reportContent}
-          </pre>
-          <button
-            onClick={() => downloadTextFile(
-              reportContent,
-              `${selectedReport?.id}_${selectedCompany.id}_${selectedPeriod?.id}.txt`
-            )}
-            style={{ marginTop: '1rem' }}
-          >
-            Download as TXT
-          </button>
+
+          {activeReportView === 'audit-trail' && auditTrailJsonData ? (
+            <div className="audit-trail-json-view">
+              <div className="audit-trail-table-container">
+                <table className="audit-trail-table">
+                  <thead>
+                    <tr>
+                      <th>Reference</th>
+                      <th>Date</th>
+                      <th>Description</th>
+                      <th className="text-right">Total Debit</th>
+                      <th className="text-right">Total Credit</th>
+                      <th className="text-center">Lines</th>
+                      <th>Created By</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {auditTrailJsonData.map((entry: AuditTrailDTO, index: number) => {
+                      const totalDebit = entry.lines.reduce((sum, line) => sum + (line.debit || 0), 0);
+                      const totalCredit = entry.lines.reduce((sum, line) => sum + (line.credit || 0), 0);
+
+                      return (
+                        <tr key={`${entry.reference}-${index}`}>
+                          <td className="reference-cell">{entry.reference}</td>
+                          <td>{new Date(entry.entryDate).toLocaleDateString('en-ZA')}</td>
+                          <td>{entry.description}</td>
+                          <td className="text-right amount-cell">
+                            {new Intl.NumberFormat('en-ZA', {
+                              style: 'currency',
+                              currency: 'ZAR'
+                            }).format(totalDebit)}
+                          </td>
+                          <td className="text-right amount-cell">
+                            {new Intl.NumberFormat('en-ZA', {
+                              style: 'currency',
+                              currency: 'ZAR'
+                            }).format(totalCredit)}
+                          </td>
+                          <td className="text-center">{entry.lines.length}</td>
+                          <td>{entry.createdBy}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : (
+            <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'monospace', maxHeight: 600, overflow: 'auto' }}>
+              {reportContent}
+            </pre>
+          )}
+
+          {reportContent && (
+            <button
+              onClick={() => downloadTextFile(
+                reportContent,
+                `${selectedReport?.id}_${selectedCompany.id}_${selectedPeriod?.id}.txt`
+              )}
+              style={{ marginTop: '1rem' }}
+            >
+              Download as TXT
+            </button>
+          )}
         </div>
       </div>
     );

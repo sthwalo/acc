@@ -553,3 +553,20 @@ export interface AuditTrailResponse {
   pagination: PaginationMetadata;
   filters: FilterMetadata;
 }
+
+export interface AuditTrailLineDTO {
+  accountCode: string;
+  accountName: string;
+  description: string;
+  debit: number;
+  credit: number;
+}
+
+export interface AuditTrailDTO {
+  reference: string;
+  entryDate: string;
+  description: string;
+  createdBy: string;
+  createdAt: string;
+  lines: AuditTrailLineDTO[];
+}

@@ -108,7 +108,7 @@ public class SpringFinancialReportingServiceTest {
                 .thenReturn(List.of(je));
 
         // Act
-        String report = reportingService.generateAuditTrail(companyId, fiscalPeriodId, false);
+        String report = reportingService.generateAuditTrail(companyId, fiscalPeriodId);
 
         // Assert - report should be generated and should safely handle null reference/description
         assertNotNull(report, "Report text should not be null");
