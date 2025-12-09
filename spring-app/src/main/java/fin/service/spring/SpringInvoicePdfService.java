@@ -26,9 +26,9 @@
 
 package fin.service.spring;
 
-import fin.model.Company;
-import fin.model.FiscalPeriod;
-import fin.model.ManualInvoice;
+import fin.entity.Company;
+import fin.entity.FiscalPeriod;
+import fin.entity.ManualInvoice;
 import fin.repository.ManualInvoiceRepository;
 import fin.util.SpringDebugger;
 import org.springframework.beans.factory.annotation.Value;

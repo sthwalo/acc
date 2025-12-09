@@ -1,11 +1,10 @@
 package fin.test;
 
-import fin.model.BankTransaction;
-import fin.model.Company;
-import fin.model.FiscalPeriod;
+import fin.entity.BankTransaction;
+import fin.entity.Company;
+import fin.entity.FiscalPeriod;
 import fin.model.parser.TransactionType;
-import fin.service.spring.BankStatementProcessingService;
-import fin.service.spring.DocumentTextExtractor;
+import fin.service.upload.DocumentTextExtractor;
 import fin.service.parser.StandardBankTabularParser;
 import fin.service.parser.CreditTransactionParser;
 import fin.service.parser.ServiceFeeParser;

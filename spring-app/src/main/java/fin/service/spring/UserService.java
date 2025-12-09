@@ -1,6 +1,6 @@
 package fin.service.spring;
 
-import fin.model.User;
+import fin.entity.User;
 import org.springframework.stereotype.Service;
 
 /**

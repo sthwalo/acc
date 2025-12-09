@@ -26,9 +26,10 @@
 
 package fin.service.spring;
 
-import fin.model.Company;
-import fin.model.FiscalPeriod;
-import fin.model.FiscalPeriodSummary;
+import fin.entity.Company;
+import fin.entity.FiscalPeriod;
+import fin.entity.FiscalPeriodSummary;
+import fin.entity.UserCompany;
 import fin.repository.CompanyRepository;
 import fin.repository.FiscalPeriodRepository;
 import fin.repository.UserCompanyRepository;
@@ -96,11 +97,11 @@ public class SpringCompanyService {
     @Transactional(readOnly = true)
     public List<Company> getCompaniesForUser(Long userId) throws SQLException {
         // Get user-company relationships for this user
-        List<fin.model.UserCompany> userCompanies = userCompanyRepository.findCompaniesByUser(userId);
+        List<UserCompany> userCompanies = userCompanyRepository.findCompaniesByUser(userId);
 
         // Extract company IDs that the user has access to
         List<Long> companyIds = userCompanies.stream()
-                .map(fin.model.UserCompany::getCompanyId)
+                .map(UserCompany::getCompanyId)
                 .toList();
 
         if (companyIds.isEmpty()) {

@@ -26,8 +26,8 @@
 
 package fin.service.export;
 
-import fin.model.Company;
-import fin.model.FiscalPeriod;
+import fin.entity.Company;
+import fin.entity.FiscalPeriod;
 import fin.model.report.ColumnDefinition;
 import fin.service.spring.SpringCompanyService;
 import org.apache.pdfbox.pdmodel.PDDocument;

@@ -26,7 +26,8 @@
 
 package fin.controller.spring;
 
-import fin.service.spring.SpringTransactionClassificationService;
+import fin.service.classification.SpringTransactionClassificationService;
+import fin.exception.ErrorCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 

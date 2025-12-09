@@ -26,7 +26,7 @@
 
 package fin.service.spring;
 
-import fin.model.*;
+import fin.entity.*;
 import fin.repository.BudgetRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

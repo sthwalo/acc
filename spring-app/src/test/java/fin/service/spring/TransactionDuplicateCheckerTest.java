@@ -26,8 +26,9 @@
 
 package fin.service.spring;
 
-import fin.model.BankTransaction;
+import fin.entity.BankTransaction;
 import fin.repository.BankTransactionRepository;
+import fin.service.transaction.TransactionDuplicateChecker;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;

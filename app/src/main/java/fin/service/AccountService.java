@@ -26,7 +26,7 @@
 
 package fin.service;
 
-import fin.model.*;
+import fin.entity.*;
 import fin.config.DatabaseConfig;
 import java.util.*;
 

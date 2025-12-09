@@ -26,19 +26,19 @@
 
 package fin.controller.spring;
 
-import fin.controller.spring.ApiResponse;
-import fin.controller.spring.BusinessException;
-import fin.controller.spring.ErrorCode;
-import fin.model.Account;
-import fin.model.BankTransaction;
-import fin.model.Company;
-import fin.model.FiscalPeriod;
-import fin.model.FiscalPeriodSummary;
-import fin.model.JournalEntryLine;
-import fin.model.User;
+import fin.dto.ApiResponse;
+import fin.exception.BusinessException;
+import fin.exception.ErrorCode;
+import fin.entity.Account;
+import fin.entity.BankTransaction;
+import fin.entity.Company;
+import fin.entity.FiscalPeriod;
+import fin.entity.FiscalPeriodSummary;
+import fin.entity.JournalEntryLine;
+import fin.entity.User;
 import fin.repository.AccountRepository;
 import fin.repository.JournalEntryLineRepository;
-import fin.service.spring.BankStatementProcessingService;
+import fin.service.upload.BankStatementProcessingService;
 import fin.service.spring.SpringCompanyService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

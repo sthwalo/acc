@@ -26,7 +26,7 @@
 
 package fin.repository;
 
-import fin.model.JournalEntryLine;
+import fin.entity.JournalEntryLine;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

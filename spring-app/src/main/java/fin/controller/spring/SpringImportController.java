@@ -26,10 +26,10 @@
 
 package fin.controller.spring;
 
-import fin.model.BankTransaction;
-import fin.model.dto.BankStatementUploadResponse;
-import fin.service.spring.BankStatementProcessingService;
-import fin.service.spring.SpringTransactionClassificationService;
+import fin.entity.BankTransaction;
+import fin.dto.BankStatementUploadResponse;
+import fin.service.upload.BankStatementProcessingService;
+import fin.service.classification.SpringTransactionClassificationService;
 import fin.service.spring.SpringCompanyService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

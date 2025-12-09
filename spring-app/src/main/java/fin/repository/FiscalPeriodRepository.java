@@ -1,7 +1,7 @@
 package fin.repository;
 
-import fin.model.FiscalPeriod;
-import fin.model.FiscalPeriodSummary;
+import fin.entity.FiscalPeriod;
+import fin.entity.FiscalPeriodSummary;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -60,7 +60,7 @@ public interface FiscalPeriodRepository extends JpaRepository<FiscalPeriod, Long
     /**
      * Get all fiscal periods with company information for frontend display
      */
-    @Query("SELECT new fin.model.FiscalPeriodSummary(c.name, fp.id, fp.periodName, fp.startDate, fp.endDate, fp.isClosed) " +
+    @Query("SELECT new fin.entity.FiscalPeriodSummary(c.name, fp.id, fp.periodName, fp.startDate, fp.endDate, fp.isClosed) " +
            "FROM Company c LEFT JOIN FiscalPeriod fp ON c.id = fp.companyId " +
            "ORDER BY c.name, fp.startDate")
     List<FiscalPeriodSummary> findAllFiscalPeriodsWithCompanyInfo();

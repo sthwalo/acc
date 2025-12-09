@@ -1,6 +1,6 @@
 package fin.service.parser;
 
-import fin.context.TransactionParsingContext;
+import fin.service.transaction.TransactionParsingContext;
 import fin.model.parser.ParsedTransaction;
 import fin.model.parser.TransactionType;
 import org.springframework.stereotype.Component;

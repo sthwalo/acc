@@ -1,13 +1,13 @@
 package fin.controller.spring;
 
-import fin.model.Company;
-import fin.model.Employee;
-import fin.model.FiscalPeriod;
-import fin.model.Payslip;
+import fin.entity.Company;
+import fin.entity.Employee;
+import fin.entity.FiscalPeriod;
+import fin.entity.Payslip;
 //import fin.service.spring.EmailService;
 import fin.service.spring.SpringPayslipPdfService;
 import fin.service.spring.SpringPayrollService;
-import fin.service.spring.SpringPayrollReportService;
+import fin.service.reporting.SpringPayrollReportService;
 import fin.dto.BulkPdfRequest;
 import fin.dto.DocumentUploadRequest;
 import fin.dto.EmailPayslipsRequest;

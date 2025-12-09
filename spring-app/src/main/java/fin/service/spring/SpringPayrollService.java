@@ -26,7 +26,7 @@
 
 package fin.service.spring;
 
-import fin.model.*;
+import fin.entity.*;
 import fin.repository.EmployeeRepository;
 import fin.repository.FiscalPeriodRepository;
 import fin.repository.PayslipRepository;

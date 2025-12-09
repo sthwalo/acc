@@ -3,9 +3,10 @@
  */
 package fin.service.spring;
 
-import fin.model.*;
-import fin.model.dto.JournalEntryDetailDTO;
+import fin.entity.*;
+import fin.dto.JournalEntryDetailDTO;
 import fin.repository.*;
+import fin.service.reporting.AuditTrailService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

@@ -1,6 +1,6 @@
 package fin.validation;
 
-import fin.model.BankTransaction;
+import fin.entity.BankTransaction;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;

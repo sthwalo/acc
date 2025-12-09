@@ -5,9 +5,10 @@
  */
 package fin.service.spring;
 
-import fin.model.*;
+import fin.entity.*;
 import fin.repository.*;
 import fin.service.export.ReportExportService;
+import fin.service.reporting.SpringFinancialReportingService;
 import fin.repository.FinancialDataRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

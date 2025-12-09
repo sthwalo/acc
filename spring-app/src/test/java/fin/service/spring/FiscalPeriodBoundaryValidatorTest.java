@@ -26,8 +26,8 @@
 
 package fin.service.spring;
 
-import fin.model.BankTransaction;
-import fin.model.FiscalPeriod;
+import fin.entity.BankTransaction;
+import fin.entity.FiscalPeriod;
 import fin.repository.FiscalPeriodRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

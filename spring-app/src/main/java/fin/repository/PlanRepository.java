@@ -26,7 +26,7 @@
 
 package fin.repository;
 
-import fin.model.Plan;
+import fin.entity.Plan;
 
 import java.sql.*;
 import java.time.LocalDateTime;

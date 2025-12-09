@@ -1,6 +1,6 @@
 package fin.validation;
 
-import fin.model.Employee;
+import fin.entity.Employee;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;

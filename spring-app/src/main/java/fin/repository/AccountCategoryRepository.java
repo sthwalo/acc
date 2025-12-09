@@ -26,8 +26,8 @@
 
 package fin.repository;
 
-import fin.model.AccountCategory;
-import fin.model.AccountType;
+import fin.entity.AccountCategory;
+import fin.entity.AccountType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

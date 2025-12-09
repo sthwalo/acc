@@ -26,8 +26,10 @@
 
 package fin.model.dto;
 
-import fin.model.BankTransaction;
-import fin.service.spring.BankStatementProcessingService;
+import fin.dto.BankStatementUploadResponse;
+import fin.dto.RejectedTransaction;
+import fin.entity.BankTransaction;
+import fin.service.upload.BankStatementProcessingService;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;

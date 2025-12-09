@@ -27,7 +27,7 @@
 
 package fin.service;
 
-import fin.model.*;
+import fin.entity.*;
 import fin.config.DatabaseConfig;
 import fin.repository.CompanyRepository;
 import fin.repository.EmployeeImportDefaultsRepository;

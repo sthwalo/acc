@@ -26,7 +26,7 @@
 
 package fin.service;
 
-import fin.model.*;
+import fin.entity.*;
 import fin.repository.JdbcBaseRepository;
 import fin.exception.AccountException;
 import java.sql.*;

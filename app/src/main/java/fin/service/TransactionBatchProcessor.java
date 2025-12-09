@@ -26,7 +26,7 @@
 
 package fin.service;
 
-import fin.model.*;
+import fin.entity.*;
 import java.util.*;
 import java.util.logging.Logger;
 import java.util.logging.Level;

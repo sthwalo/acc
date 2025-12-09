@@ -1,6 +1,6 @@
 package fin.dto;
 
-import fin.model.FiscalPeriod;
+import fin.entity.FiscalPeriod;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 

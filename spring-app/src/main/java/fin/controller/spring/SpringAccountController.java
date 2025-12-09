@@ -26,8 +26,8 @@
 
 package fin.controller.spring;
 
-import fin.model.Account;
-import fin.service.spring.SpringAccountService;
+import fin.entity.Account;
+import fin.service.journal.SpringAccountService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 

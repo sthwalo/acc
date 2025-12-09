@@ -26,7 +26,7 @@
 
 package fin.repository;
 
-import fin.model.Company;
+import fin.entity.Company;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

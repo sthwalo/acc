@@ -26,7 +26,7 @@
 
 package fin.repository;
 
-import fin.model.JournalEntry;
+import fin.entity.JournalEntry;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

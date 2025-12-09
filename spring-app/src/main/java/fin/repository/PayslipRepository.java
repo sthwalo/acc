@@ -14,7 +14,7 @@
 
 package fin.repository;
 
-import fin.model.Payslip;
+import fin.entity.Payslip;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

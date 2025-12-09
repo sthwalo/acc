@@ -26,7 +26,7 @@
 
 package fin.service.spring;
 
-import fin.model.User;
+import fin.entity.User;
 import fin.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

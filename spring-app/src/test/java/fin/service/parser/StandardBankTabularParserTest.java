@@ -1,6 +1,6 @@
 package fin.service.parser;
 
-import fin.context.TransactionParsingContext;
+import fin.service.transaction.TransactionParsingContext;
 import fin.model.parser.ParsedTransaction;
 import fin.model.parser.TransactionType;
 import org.junit.jupiter.api.BeforeEach;
@@ -242,11 +242,10 @@ class StandardBankTabularParserTest {
         ParsedTransaction tx = parser.finalizeParsing();
         assertNull(tx); // No pending transactions initially
 
-        // Parse a transaction
-        parser.parse("TEST TX 100.00- 03 16 24,106.81", context);
+        // Parse a transaction - should return it immediately now
+        tx = parser.parse("TEST TX 100.00- 03 16 24,106.81", context);
 
         // Should have a completed transaction
-        tx = parser.finalizeParsing();
         assertNotNull(tx);
         assertEquals("TEST TX", tx.getDescription().trim());
     }

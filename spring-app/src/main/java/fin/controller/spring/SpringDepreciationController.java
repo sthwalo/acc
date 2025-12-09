@@ -26,7 +26,7 @@
 
 package fin.controller.spring;
 
-import fin.model.DepreciationSchedule;
+import fin.entity.DepreciationSchedule;
 import fin.service.spring.SpringDepreciationService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

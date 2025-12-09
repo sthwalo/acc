@@ -27,7 +27,7 @@
 package fin.service;
 
 import fin.config.DatabaseConfig;
-import fin.model.*;
+import fin.entity.*;
 import fin.repository.FinancialDataRepository;
 import java.math.BigDecimal;
 import java.sql.Connection;

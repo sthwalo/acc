@@ -26,7 +26,7 @@
 
 package fin.controller.spring;
 
-import fin.model.Budget;
+import fin.entity.Budget;
 import fin.service.spring.SpringBudgetService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

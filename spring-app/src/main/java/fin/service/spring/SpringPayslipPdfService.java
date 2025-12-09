@@ -14,10 +14,10 @@
 
 package fin.service.spring;
 
-import fin.model.Company;
-import fin.model.Employee;
-import fin.model.FiscalPeriod;
-import fin.model.Payslip;
+import fin.entity.Company;
+import fin.entity.Employee;
+import fin.entity.FiscalPeriod;
+import fin.entity.Payslip;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;

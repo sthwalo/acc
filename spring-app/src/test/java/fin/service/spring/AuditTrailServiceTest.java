@@ -26,17 +26,18 @@
 
 package fin.service.spring;
 
-import fin.model.dto.AuditTrailResponse;
-import fin.model.dto.JournalEntryDetailDTO;
-import fin.model.JournalEntry;
-import fin.model.JournalEntryLine;
-import fin.model.Account;
-import fin.model.Company;
-import fin.model.FiscalPeriod;
+import fin.dto.AuditTrailResponse;
+import fin.dto.JournalEntryDetailDTO;
+import fin.entity.JournalEntry;
+import fin.entity.JournalEntryLine;
+import fin.entity.Account;
+import fin.entity.Company;
+import fin.entity.FiscalPeriod;
 import fin.repository.JournalEntryRepository;
 import fin.repository.JournalEntryLineRepository;
 import fin.repository.FiscalPeriodRepository;
 import fin.repository.AccountRepository;
+import fin.service.reporting.AuditTrailService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;

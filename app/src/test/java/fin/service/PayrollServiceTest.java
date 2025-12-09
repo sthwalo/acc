@@ -26,7 +26,7 @@
 
 package fin.service;
 
-import fin.model.*;
+import fin.entity.*;
 import fin.repository.CompanyRepository;
 import fin.repository.EmployeeImportDefaultsRepository;
 import org.junit.jupiter.api.*;

@@ -26,7 +26,7 @@
 
 package fin.controller.spring;
 
-import fin.model.User;
+import fin.entity.User;
 import fin.service.spring.JwtService;
 import fin.service.spring.SpringUserService;
 import org.springframework.beans.factory.annotation.Autowired;

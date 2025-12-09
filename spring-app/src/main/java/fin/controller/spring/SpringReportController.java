@@ -32,10 +32,10 @@ import fin.dto.BalanceSheetDTO;
 import fin.dto.CashbookDTO;
 import fin.dto.GeneralLedgerDTO;
 import fin.dto.AuditTrailDTO;
-import fin.model.dto.AuditTrailResponse;
-import fin.model.dto.JournalEntryDetailDTO;
-import fin.service.spring.AuditTrailService;
-import fin.service.spring.SpringFinancialReportingService;
+import fin.dto.AuditTrailResponse;
+import fin.dto.JournalEntryDetailDTO;
+import fin.service.reporting.AuditTrailService;
+import fin.service.reporting.SpringFinancialReportingService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -546,7 +546,7 @@ public class SpringReportController {
             packageReport.append("========================\n\n");
 
             // Generate all reports
-            packageReport.append(reportingService.generateTrialBalance(companyId, fiscalPeriodId));
+            packageReport.append(reportingService.exportTrialBalanceToCSV(companyId, fiscalPeriodId));
             packageReport.append("\n\n");
 
             packageReport.append(reportingService.generateIncomeStatement(companyId, fiscalPeriodId));
@@ -563,7 +563,7 @@ public class SpringReportController {
             String reportContent = packageReport.toString();
 
             return ResponseEntity.ok(reportContent);
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException | SQLException e) {
             return ResponseEntity.badRequest().build();
         }
     }

@@ -27,7 +27,7 @@
 package fin.repository;
 
 import fin.dto.*;
-import fin.model.*;
+import fin.entity.*;
 import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.util.List;

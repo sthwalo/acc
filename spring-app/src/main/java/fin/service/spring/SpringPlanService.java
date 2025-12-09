@@ -26,7 +26,7 @@
 
 package fin.service.spring;
 
-import fin.model.Plan;
+import fin.entity.Plan;
 import fin.repository.SpringPlanRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

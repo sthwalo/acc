@@ -1,7 +1,7 @@
 package fin.service;
 
-import fin.model.BankTransaction;
-import fin.model.Company;
+import fin.entity.BankTransaction;
+import fin.entity.Company;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

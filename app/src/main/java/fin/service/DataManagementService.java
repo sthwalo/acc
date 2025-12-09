@@ -26,7 +26,7 @@
 
 package fin.service;
 
-import fin.model.*;
+import fin.entity.*;
 import java.sql.*;
 import java.math.BigDecimal;
 import java.time.*;

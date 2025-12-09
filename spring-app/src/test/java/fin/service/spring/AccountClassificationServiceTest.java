@@ -5,8 +5,9 @@
  */
 package fin.service.spring;
 
-import fin.model.*;
+import fin.entity.*;
 import fin.repository.*;
+import fin.service.classification.AccountClassificationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

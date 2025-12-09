@@ -26,7 +26,7 @@
 
 package fin.service.spring;
 
-import fin.model.User;
+import fin.entity.User;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import org.springframework.stereotype.Service;

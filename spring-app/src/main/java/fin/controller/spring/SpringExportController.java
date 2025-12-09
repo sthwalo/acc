@@ -26,14 +26,14 @@
 
 package fin.controller.spring;
 
-import fin.model.Company;
-import fin.model.FiscalPeriod;
+import fin.entity.Company;
+import fin.entity.FiscalPeriod;
 import fin.repository.FiscalPeriodRepository;
 import fin.service.spring.SpringCompanyService;
-import fin.service.spring.SpringCsvExportService;
-import fin.service.spring.SpringPdfExportService;
-import fin.service.spring.BankStatementProcessingService;
-import fin.model.BankTransaction;
+import fin.service.reporting.SpringCsvExportService;
+import fin.service.reporting.SpringPdfExportService;
+import fin.service.upload.BankStatementProcessingService;
+import fin.entity.BankTransaction;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;

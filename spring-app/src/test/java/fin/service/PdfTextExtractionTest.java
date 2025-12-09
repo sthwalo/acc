@@ -26,7 +26,7 @@
 
 package fin.service;
 
-import fin.service.spring.DocumentTextExtractor;
+import fin.service.upload.DocumentTextExtractor;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;

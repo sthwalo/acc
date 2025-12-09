@@ -26,9 +26,9 @@
 
 package fin.controller.spring;
 
-import fin.model.dto.*;
-import fin.service.spring.AuditTrailService;
-import fin.service.spring.SpringFinancialReportingService;
+import fin.dto.*;
+import fin.service.reporting.AuditTrailService;
+import fin.service.reporting.SpringFinancialReportingService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
@@ -38,6 +38,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.Arrays;
+import java.util.List;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -289,18 +292,21 @@ public class SpringReportControllerTest {
     }
 
         @Test
-        @DisplayName("GET /api/v1/reports/trial-balance should return 200 with text")
+        @DisplayName("GET /api/v1/reports/trial-balance should return 200 with trial balance data")
         public void testGetTrialBalance_success() {
                 // Arrange
                 Long companyId = 1L;
                 Long fiscalPeriodId = 1L;
-                String expectedReport = "TRIAL BALANCE REPORT TEXT";
+                List<TrialBalanceDTO> expectedReport = Arrays.asList(
+                        new TrialBalanceDTO("1001", "Cash", BigDecimal.valueOf(1000.00), BigDecimal.valueOf(500.00)),
+                        new TrialBalanceDTO("2001", "Accounts Payable", BigDecimal.valueOf(0.00), BigDecimal.valueOf(300.00))
+                );
 
                 when(reportingService.generateTrialBalance(companyId, fiscalPeriodId))
                                 .thenReturn(expectedReport);
 
                 // Act
-                ResponseEntity<String> response = controller.generateTrialBalance(companyId, fiscalPeriodId);
+                ResponseEntity<List<TrialBalanceDTO>> response = controller.generateTrialBalance(companyId, fiscalPeriodId);
 
                 // Assert
                 assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -551,53 +557,59 @@ public class SpringReportControllerTest {
         }
 
         @Test
-        @DisplayName("GET /api/v1/reports/cashbook should return 200 with text")
+        @DisplayName("GET /api/v1/reports/cashbook should return 200 with cashbook data")
         public void testGetCashbook_success() {
                 // Arrange
                 Long companyId = 1L;
                 Long fiscalPeriodId = 1L;
-                String expectedReport = "CASHBOOK REPORT TEXT";
+                List<CashbookDTO> expectedReport = Arrays.asList(
+                        new CashbookDTO(LocalDate.of(2024, 1, 1), "DEP001", "Deposit", BigDecimal.valueOf(1000.00), BigDecimal.ZERO, BigDecimal.valueOf(1000.00)),
+                        new CashbookDTO(LocalDate.of(2024, 1, 2), "WDL001", "Withdrawal", BigDecimal.ZERO, BigDecimal.valueOf(500.00), BigDecimal.valueOf(500.00))
+                );
 
-                when(reportingService.generateCashbook(companyId, fiscalPeriodId))
+                when(reportingService.generateCashbookDTOs(companyId, fiscalPeriodId))
                                 .thenReturn(expectedReport);
 
                 // Act
-                ResponseEntity<String> response = controller.generateCashbook(companyId, fiscalPeriodId);
+                ResponseEntity<List<CashbookDTO>> response = controller.generateCashbook(companyId, fiscalPeriodId);
 
                 // Assert
                 assertEquals(HttpStatus.OK, response.getStatusCode());
                 assertEquals(expectedReport, response.getBody());
-                verify(reportingService, times(1)).generateCashbook(companyId, fiscalPeriodId);
+                verify(reportingService, times(1)).generateCashbookDTOs(companyId, fiscalPeriodId);
         }
 
         @Test
-        @DisplayName("GET /api/v1/reports/general-ledger should return 200 with text")
+        @DisplayName("GET /api/v1/reports/general-ledger should return 200 with general ledger data")
         public void testGetGeneralLedger_success() {
                 // Arrange
                 Long companyId = 1L;
                 Long fiscalPeriodId = 1L;
-                String expectedReport = "GENERAL LEDGER REPORT TEXT";
+                List<GeneralLedgerDTO> expectedReport = Arrays.asList(
+                        new GeneralLedgerDTO(LocalDate.of(2024, 1, 1), "JE001", "Opening Balance", BigDecimal.valueOf(1000.00), BigDecimal.ZERO, BigDecimal.valueOf(1000.00)),
+                        new GeneralLedgerDTO(LocalDate.of(2024, 1, 2), "JE002", "Transaction", BigDecimal.ZERO, BigDecimal.valueOf(500.00), BigDecimal.valueOf(500.00))
+                );
 
-                when(reportingService.generateGeneralLedger(companyId, fiscalPeriodId))
+                when(reportingService.generateGeneralLedgerDTOs(companyId, fiscalPeriodId))
                                 .thenReturn(expectedReport);
 
                 // Act
-                ResponseEntity<String> response = controller.generateGeneralLedger(companyId, fiscalPeriodId);
+                ResponseEntity<List<GeneralLedgerDTO>> response = controller.generateGeneralLedger(companyId, fiscalPeriodId);
 
                 // Assert
                 assertEquals(HttpStatus.OK, response.getStatusCode());
                 assertEquals(expectedReport, response.getBody());
-                verify(reportingService, times(1)).generateGeneralLedger(companyId, fiscalPeriodId);
+                verify(reportingService, times(1)).generateGeneralLedgerDTOs(companyId, fiscalPeriodId);
         }
 
         @Test
         @DisplayName("GET /api/v1/reports/financial should return combined package text")
-        public void testGenerateFinancialReportPackage_success() {
+        public void testGenerateFinancialReportPackage_success() throws SQLException {
                 // Arrange
                 Long companyId = 1L;
                 Long fiscalPeriodId = 1L;
 
-                when(reportingService.generateTrialBalance(companyId, fiscalPeriodId)).thenReturn("TB");
+                when(reportingService.exportTrialBalanceToCSV(companyId, fiscalPeriodId)).thenReturn("TB");
                 when(reportingService.generateIncomeStatement(companyId, fiscalPeriodId)).thenReturn("IS");
                 when(reportingService.generateBalanceSheet(companyId, fiscalPeriodId)).thenReturn("BS");
                 when(reportingService.generateCashbook(companyId, fiscalPeriodId)).thenReturn("CB");
@@ -618,43 +630,49 @@ public class SpringReportControllerTest {
         }
 
         @Test
-        @DisplayName("GET /api/v1/reports/income-statement should return 200 with text")
+        @DisplayName("GET /api/v1/reports/income-statement should return 200 with income statement data")
         public void testGetIncomeStatement_success() {
                 // Arrange
                 Long companyId = 1L;
                 Long fiscalPeriodId = 1L;
-                String expectedReport = "INCOME STATEMENT TEXT";
+                List<IncomeStatementDTO> expectedReport = Arrays.asList(
+                        new IncomeStatementDTO("Revenue", "4000", "Sales Revenue", BigDecimal.valueOf(10000.00), "REVENUE"),
+                        new IncomeStatementDTO("Expenses", "5000", "Operating Expenses", BigDecimal.valueOf(6000.00), "EXPENSE")
+                );
 
-                when(reportingService.generateIncomeStatement(companyId, fiscalPeriodId))
+                when(reportingService.generateIncomeStatementDTOs(companyId, fiscalPeriodId))
                                 .thenReturn(expectedReport);
 
                 // Act
-                ResponseEntity<String> response = controller.generateIncomeStatement(companyId, fiscalPeriodId);
+                ResponseEntity<List<IncomeStatementDTO>> response = controller.generateIncomeStatement(companyId, fiscalPeriodId);
 
                 // Assert
                 assertEquals(HttpStatus.OK, response.getStatusCode());
                 assertEquals(expectedReport, response.getBody());
-                verify(reportingService, times(1)).generateIncomeStatement(companyId, fiscalPeriodId);
+                verify(reportingService, times(1)).generateIncomeStatementDTOs(companyId, fiscalPeriodId);
         }
 
         @Test
-        @DisplayName("GET /api/v1/reports/balance-sheet should return 200 with text")
+        @DisplayName("GET /api/v1/reports/balance-sheet should return 200 with balance sheet data")
         public void testGetBalanceSheet_success() {
                 // Arrange
                 Long companyId = 1L;
                 Long fiscalPeriodId = 1L;
-                String expectedReport = "BALANCE SHEET TEXT";
+                List<BalanceSheetDTO> expectedReport = Arrays.asList(
+                        new BalanceSheetDTO("Current Assets", "1001", "Cash", BigDecimal.valueOf(5000.00), "ASSETS"),
+                        new BalanceSheetDTO("Current Liabilities", "2001", "Accounts Payable", BigDecimal.valueOf(2000.00), "LIABILITIES")
+                );
 
-                when(reportingService.generateBalanceSheet(companyId, fiscalPeriodId))
+                when(reportingService.generateBalanceSheetDTOs(companyId, fiscalPeriodId))
                                 .thenReturn(expectedReport);
 
                 // Act
-                ResponseEntity<String> response = controller.generateBalanceSheet(companyId, fiscalPeriodId);
+                ResponseEntity<List<BalanceSheetDTO>> response = controller.generateBalanceSheet(companyId, fiscalPeriodId);
 
                 // Assert
                 assertEquals(HttpStatus.OK, response.getStatusCode());
                 assertEquals(expectedReport, response.getBody());
-                verify(reportingService, times(1)).generateBalanceSheet(companyId, fiscalPeriodId);
+                verify(reportingService, times(1)).generateBalanceSheetDTOs(companyId, fiscalPeriodId);
         }
 
         @Test

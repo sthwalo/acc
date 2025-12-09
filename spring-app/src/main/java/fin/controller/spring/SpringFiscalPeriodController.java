@@ -26,12 +26,12 @@
 
 package fin.controller.spring;
 
-import fin.controller.spring.ApiResponse;
-import fin.controller.spring.ErrorCode;
+import fin.dto.ApiResponse;
+import fin.exception.ErrorCode;
 import fin.dto.FiscalPeriodPayrollConfigRequest;
 import fin.dto.FiscalPeriodPayrollConfigResponse;
 import fin.dto.FiscalPeriodPayrollStatusResponse;
-import fin.model.FiscalPeriod;
+import fin.entity.FiscalPeriod;
 import fin.repository.FiscalPeriodRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

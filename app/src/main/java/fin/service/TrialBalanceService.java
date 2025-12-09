@@ -26,7 +26,7 @@
 
 package fin.service;
 
-import fin.model.*;
+import fin.entity.*;
 import fin.repository.FinancialDataRepository;
 import java.math.BigDecimal;
 import java.sql.SQLException;

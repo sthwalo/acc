@@ -26,10 +26,10 @@
 
 package fin.controller.spring;
 
-import fin.model.*;
-import fin.service.spring.SpringCsvExportService;
-import fin.service.spring.SpringDataManagementService;
-import fin.service.spring.SpringInteractiveClassificationService;
+import fin.entity.*;
+import fin.service.reporting.SpringCsvExportService;
+import fin.service.journal.SpringDataManagementService;
+import fin.service.classification.SpringInteractiveClassificationService;
 import fin.service.spring.SpringInvoicePdfService;
 import fin.util.SpringDebugger;
 import org.springframework.http.HttpHeaders;

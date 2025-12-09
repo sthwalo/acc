@@ -26,8 +26,8 @@
 
 package fin.controller.spring;
 
-import fin.model.BankTransaction;
-import fin.service.spring.SpringCsvImportService;
+import fin.entity.BankTransaction;
+import fin.service.upload.SpringCsvImportService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;

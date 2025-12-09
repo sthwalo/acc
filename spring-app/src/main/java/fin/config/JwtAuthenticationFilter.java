@@ -26,7 +26,7 @@
 
 package fin.config;
 
-import fin.model.User;
+import fin.entity.User;
 import fin.repository.UserRepository;
 import fin.service.spring.JwtService;
 import jakarta.servlet.FilterChain;

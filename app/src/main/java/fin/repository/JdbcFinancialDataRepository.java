@@ -26,7 +26,7 @@
 
 package fin.repository;
 
-import fin.model.*;
+import fin.entity.*;
 import java.math.BigDecimal;
 import java.sql.*;
 import java.util.*;

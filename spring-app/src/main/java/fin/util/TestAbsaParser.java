@@ -1,6 +1,6 @@
 package fin.util;
 
-import fin.context.TransactionParsingContext;
+import fin.service.transaction.TransactionParsingContext;
 import fin.model.parser.ParsedTransaction;
 import fin.service.parser.AbsaBankParser;
 import fin.service.parser.AbstractMultilineTransactionParser;
