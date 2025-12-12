@@ -63,7 +63,7 @@ check_dependencies() {
 # Build backend
 build_backend() {
     print_status "Building Spring Boot backend..."
-    cd spring-app
+    cd app
 
     if [ ! -f "build/libs/fin-spring.jar" ] || [ "build.gradle.kts" -nt "build/libs/fin-spring.jar" ]; then
         print_status "Building JAR file..."

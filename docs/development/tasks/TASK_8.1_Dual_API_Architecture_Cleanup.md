@@ -132,8 +132,8 @@ Spark App:
 └── app/src/main/java/fin/repository/[OtherRepositories].java
 
 Spring App:
-├── spring-app/src/main/java/fin/repository/BankTransactionRepository.java (JPA)
-└── spring-app/src/main/java/fin/repository/[OtherRepositories].java
+├── app/src/main/java/fin/repository/BankTransactionRepository.java (JPA)
+└── app/src/main/java/fin/repository/[OtherRepositories].java
 ```
 
 ### Model Files
@@ -144,9 +144,9 @@ Spark App Models (POJOs):
 └── app/src/main/java/fin/model/[OtherModels].java
 
 Spring App Models (Entities):
-├── spring-app/src/main/java/fin/model/BankTransaction.java (Integer id)
-├── spring-app/src/main/java/fin/model/Company.java (Integer id)
-└── spring-app/src/main/java/fin/model/[OtherModels].java
+├── app/src/main/java/fin/model/BankTransaction.java (Integer id)
+├── app/src/main/java/fin/model/Company.java (Integer id)
+└── app/src/main/java/fin/model/[OtherModels].java
 ```
 
 ### Service Files
@@ -158,7 +158,7 @@ Spark App Services (Comprehensive):
 └── app/src/main/java/fin/service/[OtherServices].java
 
 Spring App Services (Minimal):
-└── spring-app/src/main/java/fin/service/SpringTransactionService.java
+└── app/src/main/java/fin/service/SpringTransactionService.java
 ```
 
 ### Configuration Files
@@ -167,8 +167,8 @@ Spark App:
 └── .env
 
 Spring App:
-├── spring-app/src/main/resources/application.properties
-└── spring-app/src/main/resources/db/migration/V1__baseline_schema.sql
+├── app/src/main/resources/application.properties
+└── app/src/main/resources/db/migration/V1__baseline_schema.sql
 ```
 
 ## 🎯 Implementation Plan
@@ -268,14 +268,14 @@ Spring App:
 ## 📚 References
 
 - **Spark Application:** `app/` directory structure
-- **Spring Application:** `spring-app/` directory structure
-- **Database Schema:** `scripts/docker-init.sql` and `spring-app/src/main/resources/db/migration/`
+- **Spring Application:** `app/` directory structure
+- **Database Schema:** `scripts/docker-init.sql` and `app/src/main/resources/db/migration/`
 - **API Documentation:** Test endpoints on ports 8080 and 8081
 
 ---
 Read [](file:///Users/sthwalonyoni/FIN/scripts/migrations)
 
-Read [](file:///Users/sthwalonyoni/FIN/spring-app/src/main/resources/application.properties)
+Read [](file:///Users/sthwalonyoni/FIN/app/src/main/resources/application.properties)
 
 Read [](file:///Users/sthwalonyoni/FIN/.env)
 

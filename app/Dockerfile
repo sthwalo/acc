@@ -11,11 +11,11 @@ RUN apt-get update && \
     apt-get clean
 
 # Copy pre-built JAR from local build
-COPY spring-app/build/libs/fin-spring.jar /app/spring-app.jar
+COPY app/build/libs/fin-spring.jar /app/app.jar
 
 # Copy scripts
-COPY spring-app/wait-for-postgres.sh /app/wait-for-postgres.sh
-COPY spring-app/docker-entrypoint.sh /app/docker-entrypoint.sh
+COPY app/wait-for-postgres.sh /app/wait-for-postgres.sh
+COPY app/docker-entrypoint.sh /app/docker-entrypoint.sh
 RUN chmod +x /app/wait-for-postgres.sh /app/docker-entrypoint.sh
 
 # Set working directory

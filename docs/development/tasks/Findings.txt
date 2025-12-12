@@ -1,6 +1,6 @@
 Read [](file:///Users/sthwalonyoni/FIN/scripts/docker-init.sql#40-40), lines 40 to 155
 
-Read [](file:///Users/sthwalonyoni/FIN/spring-app/src/main/resources/db/migration/V1__baseline_schema.sql#1-1), lines 1 to 101
+Read [](file:///Users/sthwalonyoni/FIN/app/src/main/resources/db/migration/V1__baseline_schema.sql#1-1), lines 1 to 101
 
 Perfect questions! Let me address both of them:
 

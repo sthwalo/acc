@@ -30,7 +30,7 @@ trap cleanup EXIT INT TERM
 
 # Start backend server in background
 echo "📊 Starting Spring Boot backend server..."
-cd /Users/sthwalonyoni/FIN/spring-app
+cd /Users/sthwalonyoni/FIN/app
 ./gradlew bootRun --no-daemon &
 BACKEND_PID=$!
 

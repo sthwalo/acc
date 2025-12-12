@@ -149,7 +149,7 @@ A successful refactoring should show:
 ```dockerfile
 FROM openjdk:17-jre-slim
 LABEL author="Immaculate Nyoni <sthwaloe@gmail.com>"
-COPY spring-app/build/libs/fin-spring.jar /app.jar
+COPY app/build/libs/fin-spring.jar /app.jar
 EXPOSE 8080
 CMD ["java", "-jar", "/app.jar"]
 ```

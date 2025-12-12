@@ -11,4 +11,4 @@ echo "====================================="
 
 # Start the application
 echo "📊 Starting FIN Spring Boot application..."
-exec java ${JAVA_OPTS:--Xmx512m} -jar /app/spring-app.jar
+exec java ${JAVA_OPTS:--Xmx512m} -jar /app/app.jar

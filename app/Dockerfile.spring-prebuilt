@@ -9,7 +9,7 @@ RUN apt-get update && \
     apt-get clean
 
 # Copy pre-built JAR
-COPY build/libs/fin-spring.jar /app/spring-app.jar
+COPY build/libs/fin-spring.jar /app/app.jar
 
 # Copy scripts
 COPY wait-for-postgres.sh /app/wait-for-postgres.sh

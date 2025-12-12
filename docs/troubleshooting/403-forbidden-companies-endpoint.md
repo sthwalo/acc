@@ -111,10 +111,10 @@ Based on debugging results:
 
 ## Related Files
 - `frontend/src/services/ApiService.ts` - JWT interceptors
-- `spring-app/src/main/java/fin/config/SecurityConfig.java` - Security rules
-- `spring-app/src/main/java/fin/config/JwtAuthenticationFilter.java` - JWT processing
-- `spring-app/src/main/java/fin/controller/spring/SpringCompanyController.java` - Companies endpoint
-- `spring-app/src/main/java/fin/service/spring/SpringCompanyService.java` - Business logic
+- `app/src/main/java/fin/config/SecurityConfig.java` - Security rules
+- `app/src/main/java/fin/config/JwtAuthenticationFilter.java` - JWT processing
+- `app/src/main/java/fin/controller/spring/SpringCompanyController.java` - Companies endpoint
+- `app/src/main/java/fin/service/spring/SpringCompanyService.java` - Business logic
 
 ## Next Steps
 - Execute debugging steps above

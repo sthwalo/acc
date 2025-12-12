@@ -3,7 +3,7 @@ services:
   fin-app:
     build:
       context: .
-      dockerfile: spring-app/Dockerfile
+      dockerfile: app/Dockerfile
     container_name: fin-app
     env_file: .env
     environment:
