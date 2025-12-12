@@ -61,7 +61,6 @@ After making code changes:
 - ❌ **DO NOT** assume the fix works just because it compiles
 - ❌ **DO NOT** rush to commit and push
 
-
 ### ⚠️ CRITICAL RULE: NO FALLBACK DATA ALLOWED - ZERO TOLERANCE POLICY
 
 **ARCHITECTURAL PRINCIPLE**: Database is the SINGLE SOURCE OF TRUTH. ALL business data, templates, compliance text, and configuration MUST come from database. If database is empty, the system MUST throw a clear exception - NEVER silently fall back to hardcoded data.
@@ -126,7 +125,7 @@ processData(data);
 #### 🔍 CODE REVIEW CHECKLIST
 
 Before committing ANY code, verify:
-- [ ] No fallback methods (`createDefault*`, `useFallback*`, `getTemplate*`)
+- [ ] No fallback methods (`createDefault*`, `useFallback*()`, `getTemplate*()`)
 - [ ] No hardcoded strings > 50 chars (except SQL/log messages)
 - [ ] All database fetch methods throw SQLException when empty
 - [ ] Exception messages specify exact table and SQL INSERT example
@@ -138,49 +137,14 @@ A successful refactoring should show:
 - **Code Reduction**: 10-20% fewer lines (fallback methods deleted)
 - **Zero Fallbacks**: 0 occurrences of forbidden patterns
 - **Clear Errors**: All SQLException messages specify table + INSERT statement
-- *
-### 🐳 Docker Production Options (MANDATORY)
-
-**Build Metadata Requirements**:
-- ✅ **Include Author**: All Docker images MUST include `LABEL author="Immaculate Nyoni <sthwaloe@gmail.com>"`
-- ✅ **Copyright**: Copyright information is in the codebase (LICENSE, NOTICE files) - ensure it's included in builds
-
-**Spring Boot Production**:
-```dockerfile
-FROM openjdk:17-jre-slim
-LABEL author="Immaculate Nyoni <sthwaloe@gmail.com>"
-COPY app/build/libs/fin-spring.jar /app.jar
-EXPOSE 8080
-CMD ["java", "-jar", "/app.jar"]
-```
-
-**Frontend Production**:
-```dockerfile
-FROM nginx:alpine
-LABEL author="Immaculate Nyoni <sthwaloe@gmail.com>"
-COPY dist/ /usr/share/nginx/html/
-EXPOSE 3000
-CMD ["nginx", "-g", "daemon off;"]
-```
 
 ## Architecture Overview
-- **Backend**: Java 17 + Spring Boot 3.3 + PostgreSQL
+- **Backend**: Java 17 + Spring Boot 3.3 + PostgreSQL + JPA
 - **Frontend**: React 19 + TypeScript + Vite
 - **Modular Services**: 5 core services (TransactionClassifier, AccountManager, JournalEntryGenerator, RuleMappingService, TransactionBatchProcessor)
 - **Data Flow**: PDF Bank Statements → OCR/Text Extraction → Transaction Parsing → Classification → Journal Entries → PostgreSQL → Financial Reports
 
-## Key Directories & Structure
-- `app/src/main/java/fin/` - Main Java source code
-  - `service/` - Business logic services (classification/, journal/, parser/, reporting/, transaction/, upload/)
-  - `controller/spring/` - REST API controllers (all prefixed with "Spring")
-  - `entity/` - JPA entities (Company, BankTransaction, JournalEntry, etc.)
-  - `repository/` - Spring Data JPA repositories
-  - `dto/` - Data transfer objects
-
-- `frontend/src/components/` - React components (CompaniesView, TransactionsView, PayrollManagementView, etc.)
-- `docs/system_architecture/` - Technical specifications and implementation details
-
-## Development Workflows
+## Critical Developer Workflows
 
 ### Full-Stack Development (Recommended)
 ```bash
@@ -210,212 +174,52 @@ npm install
 npm run dev  # Runs on port 3000
 ```
 
-### Testing
-```bash
-# Backend tests
-./gradlew test
+## Key Architectural Patterns
 
-# Frontend tests
-cd frontend && npm test
-```
-
-## Code Patterns & Conventions
-
-### Service Naming
-- All Spring services prefixed with "Spring" (e.g., `SpringTransactionClassificationService`)
-- Business logic services in dedicated subdirectories (classification/, journal/, etc.)
-- Single source of truth: `AccountClassificationService` for all classification logic
+### Service Layer Organization
+- **Spring Services**: All prefixed with "Spring" (e.g., `SpringCompanyService`, `SpringTransactionClassificationService`)
+- **Business Logic Services**: Organized in subdirectories (`classification/`, `journal/`, `parser/`, `reporting/`, `transaction/`, `upload/`)
+- **Repository Pattern**: Spring Data JPA repositories in `repository/` package
+- **Transactional**: All service methods use `@Transactional`
 
 ### API Patterns
-- Base path: `/api/v1/`
-- Controllers return `ApiResponse<T>` wrapper
-- CORS enabled for `http://localhost:3000`
-- File uploads: `POST /companies/{id}/upload` for PDF processing
+- **Base Path**: `/api/v1/`
+- **Response Wrapper**: All controllers return `ApiResponse<T>`
+- **CORS**: Enabled for `http://localhost:3000`
+- **Controllers**: Located in `controller/spring/` package, all prefixed with "Spring"
 
 ### Database Patterns
-- PostgreSQL with Flyway migrations
-- Full ACID compliance with foreign key constraints
-- Multi-company data isolation
-- Real financial data with 7,000+ transactions
+- **PostgreSQL**: Production database with Flyway migrations
+- **JPA Entities**: Located in `entity/` package
+- **Connection**: Environment variables only (`DATABASE_URL`, `DATABASE_USER`, `DATABASE_PASSWORD`)
+- **ACID Compliance**: Full transaction safety for financial operations
 
-### Error Handling
-- Custom `BusinessException` with `ErrorCode` enum
-- Comprehensive exception management across all services
-- Transaction-safe operations with `@Transactional`
+### Frontend Patterns
+- **API Communication**: Axios-based `ApiService.ts` with TypeScript interfaces
+- **Proxy Configuration**: Vite proxies `/api` requests to backend (port 8080)
+- **Container Mode**: `CONTAINER_MODE=true` environment variable for containerized development
+- **Component Structure**: Feature-based components in `components/` directory
 
-### Build Configuration
-- Gradle with Spring Boot plugin
-- Java 17 toolchain requirement
-- Code quality: Checkstyle + SpotBugs
-- Custom tasks for PDF analysis and OCR extraction
+## Security Requirements (ZERO TOLERANCE)
 
-## External Dependencies & Integration
+### 🚫 ABSOLUTELY FORBIDDEN
+- **No Hardcoded Credentials**: Never commit database URLs, usernames, passwords, or API keys
+- **No Fallback Data**: Database is single source of truth - throw `SQLException` if data missing
+- **No Weak Defaults**: Environment variables required, no fallback values
 
-### Document Processing
-- **PDF Text Extraction**: Apache PDFBox 3.0.0
-- **OCR**: Tesseract via Tess4J 5.9.0 (for image-based PDFs)
-- **Excel Generation**: Apache POI 5.2.4 (professional financial reports)
-- **Email**: Spring Mail + Angus Mail (payslip distribution)
-
-### South African Tax Compliance
-- SARS-compliant tax calculations (PAYE, UIF, SDL)
-- EMP 201 report generation
-- Automatic SDL calculation (1% of payroll > R500k)
-- Tax number validation and form compliance
-
-### Security
-- Spring Security with JWT tokens
-- Role-based access control
-- Multi-factor authentication support
-- Audit logging for all financial operations
-
-## Common Development Tasks
-
-### Adding New Transaction Classification Rules
-1. Update `AccountClassificationService.classifyTransaction()`
-2. Add pattern matching in `SpringTransactionClassificationService`
-3. Test with real bank statement data
-4. Update unit tests in `src/test/`
-
-### Implementing New Financial Reports
-1. Add method to `reporting/` services
-2. Create Excel template in `SpringExportController`
-3. Use Apache POI for professional formatting
-4. Add to `GenerateReportsView.tsx` frontend component
-
-### Payroll Processing
-1. Use `SpringPayrollController` for employee management
-2. Tax calculations in dedicated service methods
-3. PDF payslip generation with JNA/Libharu
-4. Email distribution via SMTP
-
-## Testing & Validation
-
-### Backend Testing
-- JUnit 5 with Mockito for unit tests
-- Spring Boot Test for integration tests
-- H2 in-memory database for testing
-- 118+ existing tests covering all services
-
-### Frontend Testing
-- Vitest for unit testing
-- React Testing Library patterns
-- TypeScript strict mode enabled
-
-### Data Validation
-- Real financial data with 45+ accounts
-- Transaction balance verification
-- Double-entry accounting validation
-- SARS compliance checking
-
-## Deployment & Production
-
-### Containerized Deployment
-- Multi-stage Docker builds
-- PostgreSQL + Spring Boot + React containers
-- Health checks and service discovery
-- Environment-specific configurations
-
-### Licensing
-- Dual license: Apache 2.0 for personal use, Commercial for business
-- Copyright headers required on all source files
-- License checking scripts in `scripts/`
-
-## Key Files for Understanding
-- [System Architecture](../docs/system_architecture/SYSTEM_ARCHITECTURE.md)
-- [Technical Specifications](../docs/system_architecture/TECHNICAL_SPECIFICATIONS.md)
-- [API Documentation](../app/src/main/java/fin/controller/) - Controller classes
-- [Database Schema](../docs/technical/POSTGRESQL_MIGRATION_GUIDE.md)
-- [Build Configuration](../app/build.gradle.kts)
-
-## 🔒 CRITICAL SECURITY POLICY - ZERO TOLERANCE
-
-### ⚠️ MANDATORY SECURITY REQUIREMENTS - NEVER COMMIT CREDENTIALS
-
-**SECURITY PRINCIPLE**: `.env` file is the SINGLE SOURCE OF TRUTH for all credentials. NO credentials, passwords, database names, usernames, API keys, or secrets should EVER be hardcoded in committed files.
-
-#### 🚫 ABSOLUTELY FORBIDDEN (Will Be Rejected in Code Review)
-
-**Pattern 1: Hardcoded Credentials in Code**
+### ✅ REQUIRED PATTERNS
 ```java
-// ❌ FORBIDDEN - Never hardcode credentials
-String dbUrl = "jdbc:postgresql://localhost:5432/your_database";
-String dbUser = "your_username";
-String dbPassword = "your_password";
-Connection conn = DriverManager.getConnection(dbUrl, dbUser, dbPassword);
-```
-
-**Pattern 2: Default/Fallback Credentials in Properties**
-```properties
-# ❌ FORBIDDEN - Never use real credentials as defaults
-spring.datasource.url=${DATABASE_URL:jdbc:postgresql://localhost:5432/your_database}
-spring.datasource.username=${DATABASE_USER:your_username}
-spring.datasource.password=${DATABASE_PASSWORD:your_password}
-```
-
-**Pattern 3: Hardcoded Paths with Usernames**
-```java
-// ❌ FORBIDDEN - Never hardcode user-specific paths
-String basePath = "/Users/your_username/your_project";
-```
-
-**Pattern 4: Weak Default Secrets**
-```properties
-# ❌ FORBIDDEN - Never use weak defaults for production secrets
-fin.jwt.secret=${JWT_SECRET:fin-secret-key-change-in-production}
-```
-
-**Pattern 5: Database Names in Documentation**
-```bash
-# ❌ AVOID - Use environment variables in docs
-psql -U your_username -d your_database
-```
-
-#### ✅ REQUIRED SECURITY PATTERNS (Mandatory Across Entire Codebase)
-
-**Correct Pattern 1: Environment Variables Only**
-```java
-// ✅ CORRECT - Always fetch from environment
+// Correct: Environment variables only
 String dbUrl = System.getenv("DATABASE_URL");
-String dbUser = System.getenv("DATABASE_USER");
-String dbPassword = System.getenv("DATABASE_PASSWORD");
-
-if (dbUrl == null || dbUser == null || dbPassword == null) {
-    throw new IllegalStateException(
-        "Database credentials missing. Set DATABASE_URL, DATABASE_USER, and DATABASE_PASSWORD in .env file"
-    );
+if (dbUrl == null) {
+    throw new IllegalStateException("DATABASE_URL environment variable required");
 }
-```
 
-**Correct Pattern 2: Properties with NO Defaults**
-```properties
-# ✅ CORRECT - Force environment variables, no defaults
-spring.datasource.url=${DATABASE_URL}
-spring.datasource.username=${DATABASE_USER}
-spring.datasource.password=${DATABASE_PASSWORD}
-fin.jwt.secret=${JWT_SECRET}
-```
-
-**Correct Pattern 3: Dynamic Path Detection**
-```java
-// ✅ CORRECT - Detect paths dynamically
-String basePath = System.getenv("FIN_BASE_PATH");
-if (basePath == null) {
-    basePath = System.getProperty("user.dir");
+// Correct: Fail-fast for missing database data
+List<Data> data = repository.findByCompanyId(companyId);
+if (data.isEmpty()) {
+    throw new SQLException("No data found for company " + companyId + ". Insert data first.");
 }
-```
-
-**Correct Pattern 4: Strong Secrets Required**
-```properties
-# ✅ CORRECT - Require strong secrets from environment
-fin.jwt.secret=${JWT_SECRET}  # Must be set in .env, minimum 32 characters
-```
-
-**Correct Pattern 5: Generic Documentation Examples**
-```bash
-# ✅ CORRECT - Use placeholders in documentation
-source .env  # Load credentials from .env
-psql -U $DATABASE_USER -d $(basename $DATABASE_URL)
 ```
 
 #### 🔍 SECURITY CODE REVIEW CHECKLIST
@@ -452,41 +256,91 @@ Before committing ANY code, verify:
 - ✅ `secrets/*` - Encrypted secrets (gitignored)
 - ✅ `*.key`, `*.pem` - Private keys (gitignored)
 
-#### 🚨 IMMEDIATE ACTION REQUIRED IF CREDENTIALS EXPOSED
+## Code Quality Standards
 
-If credentials are accidentally committed:
-1. **Immediately rotate ALL exposed credentials** (change passwords, regenerate keys)
-2. **Remove from Git history**: `git filter-branch` or `BFG Repo-Cleaner`
-3. **Force push cleaned history**: `git push --force`
-4. **Update `.env` with new credentials**
-5. **Audit all services using exposed credentials**
-6. **Document incident in `docs/security/INCIDENT_*.md`**
-
-#### 📋 SECURITY SCANNING COMMANDS
-
-**Scan for exposed credentials before commit:**
-```bash
-# Scan for potential credential exposure
-grep -rn --exclude-dir={.git,node_modules,build,dist} \
-  -E "(password|PASSWORD|secret|SECRET|api.?key|API.?KEY).*=.*['\"].*['\"]" .
-
-# Scan for database names
-grep -rn --exclude-dir={.git,node_modules,build,dist} \
-  -E "jdbc:postgresql://.*5432/[a-zA-Z_]+" .
-
-# Scan for usernames in connection strings
-grep -rn --exclude-dir={.git,node_modules,build,dist} \
-  -E "user.*=.*['\"][a-zA-Z0-9_]+['\"]" .
-
-# Scan for hardcoded paths
-grep -rn --exclude-dir={.git,node_modules,build,dist} \
-  -E "/Users/[a-zA-Z0-9]+/" .
+### File Headers
+All source files must include comprehensive copyright headers:
+```java
+/*
+ * FIN Financial Management System
+ *
+ * Copyright (c) 2024-2025 Sthwalo Holdings (Pty) Ltd.
+ * Owner: Immaculate Nyoni
+ * Contact: sthwaloe@gmail.com | +27 61 514 6185
+ *
+ * Licensed under Apache License 2.0 - Commercial use requires separate licensing
+ */
 ```
 
-## Getting Started Tips
-1. Always run `./start.sh` for full development environment
-2. Check `docker compose logs -f` for troubleshooting
-3. Use real bank statement PDFs from `docs/` for testing
-4. Review existing services before adding new ones
-5. Maintain the modular service architecture pattern</content>
-<parameter name="filePath">.github/copilot-instructions.md
+### Build & Test
+```bash
+# Backend tests
+./gradlew test
+
+# Frontend tests
+cd frontend && npm test
+
+# Code quality checks
+./gradlew checkstyleMain checkstyleTest
+./gradlew spotbugsMain
+```
+
+## Integration Points
+
+### Document Processing
+- **PDF Text Extraction**: Apache PDFBox 3.0.0
+- **OCR**: Tesseract via Tess4J 5.9.0
+- **Excel Generation**: Apache POI 5.2.4
+- **Email**: Spring Mail + Angus Mail
+
+### South African Tax Compliance
+- **SARS Integration**: EMP 201 reports, PAYE/UIF/SDL calculations
+- **Tax Number Validation**: Built-in South African tax number validation
+- **Compliance Reports**: Automatic tax form generation
+
+## Development Environment Setup
+
+### Containerized Development
+```yaml
+# docker-compose.yml key services
+fin-app: # Spring Boot backend (port 8080)
+fin-frontend: # React frontend (port 3000)
+postgres: # PostgreSQL database
+```
+
+### Environment Variables Required
+```bash
+DATABASE_URL=jdbc:postgresql://localhost:5432/fin_database
+DATABASE_USER=fin_user
+DATABASE_PASSWORD=secure_password_here
+```
+
+## Common Development Tasks
+
+### Adding New Transaction Classification Rules
+1. Update `AccountClassificationService.classifyTransaction()`
+2. Add pattern matching in `SpringTransactionClassificationService`
+3. Test with real bank statement data
+4. Update unit tests
+
+### Implementing New Financial Reports
+1. Add method to `reporting/` services
+2. Create Excel template in `SpringExportController`
+3. Use Apache POI for professional formatting
+4. Add to `GenerateReportsView.tsx` frontend component
+
+### Payroll Processing
+1. Use `SpringPayrollController` for employee management
+2. Tax calculations in dedicated service methods
+3. PDF payslip generation with JNA/Libharu
+4. Email distribution via SMTP
+
+## Key Files for Understanding
+- **Architecture**: `docs/system_architecture/SYSTEM_ARCHITECTURE.md`
+- **Technical Specs**: `docs/system_architecture/TECHNICAL_SPECIFICATIONS.md`
+- **Database Schema**: `docs/technical/POSTGRESQL_MIGRATION_GUIDE.md`
+- **Main Application**: `app/src/main/java/fin/FinApplication.java`
+- **API Controllers**: `app/src/main/java/fin/controller/spring/`
+- **Business Services**: `app/src/main/java/fin/service/`
+- **Frontend App**: `frontend/src/App.tsx`
+- **API Service**: `frontend/src/services/ApiService.ts`
