@@ -26,8 +26,9 @@
 
 package fin.config;
 
-import fin.service.JwtService;
-import fin.service.UserService;
+import fin.entity.User;
+import fin.repository.UserRepository;
+import fin.service.spring.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -44,17 +45,17 @@ import java.io.IOException;
 
 /**
  * JWT Authentication Filter
- * Replaces custom AuthMiddleware with Spring Security JWT filter
+ * Extracts JWT token from Authorization header, validates it, and sets authentication context
  */
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
-    private final UserService userService;
+    private final UserRepository userRepository;
 
-    public JwtAuthenticationFilter(JwtService jwtService, UserService userService) {
+    public JwtAuthenticationFilter(JwtService jwtService, UserRepository userRepository) {
         this.jwtService = jwtService;
-        this.userService = userService;
+        this.userRepository = userRepository;
     }
 
     @Override
@@ -62,17 +63,33 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                   HttpServletResponse response,
                                   FilterChain filterChain) throws ServletException, IOException {
 
+        // Skip JWT processing for permitAll endpoints
+        String requestURI = request.getRequestURI();
+        if (requestURI.equals("/api/v1/health") ||
+            requestURI.equals("/api/v1/auth/login") ||
+            requestURI.equals("/api/v1/auth/register") ||
+            requestURI.startsWith("/api/v1/payroll/") ||
+            requestURI.matches("/api/v1/companies/\\d+/fiscal-periods/\\d+/imports/bank-statement")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         try {
             String jwt = parseJwt(request);
 
             if (jwt != null) {
-                Long userId = jwtService.getUserIdFromToken(jwt);
+                // Validate token and get user ID
+                User tokenUser = jwtService.validateToken(jwt);
+                Long userId = tokenUser.getId();
 
                 if (userId != null) {
-                    // Load user details (you might want to create a UserDetailsService)
-                    UserDetails userDetails = loadUserById(userId);
+                    // Load full user from database
+                    User user = userRepository.findById(userId).orElse(null);
 
-                    if (userDetails != null) {
+                    if (user != null && user.getActive()) {
+                        // Create UserDetails for Spring Security
+                        UserDetails userDetails = createUserDetails(user);
+
                         UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(
                                 userDetails, null, userDetails.getAuthorities());
@@ -81,6 +98,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                             new WebAuthenticationDetailsSource().buildDetails(request));
 
                         SecurityContextHolder.getContext().setAuthentication(authentication);
+
+                        // Set user as request attribute for controllers using @RequestAttribute("user")
+                        request.setAttribute("user", user);
                     }
                 }
             }
@@ -101,23 +121,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         return null;
     }
 
-    private UserDetails loadUserById(Long userId) {
-        // For now, create a simple UserDetails implementation
-        // In a full implementation, you'd use UserDetailsService
-        fin.model.User user = userService.getUserById(userId);
-
-        if (user != null && user.getActive()) {
-            return org.springframework.security.core.userdetails.User.builder()
-                .username(user.getUsername())
-                .password("") // Password not needed for JWT auth
-                .authorities("ROLE_USER") // You can add role-based authorities here
-                .accountExpired(false)
-                .accountLocked(false)
-                .credentialsExpired(false)
-                .disabled(!user.getActive())
-                .build();
-        }
-
-        return null;
+    private UserDetails createUserDetails(User user) {
+        return org.springframework.security.core.userdetails.User.builder()
+            .username(user.getUsername())
+            .password("") // Password not needed for JWT auth
+            .authorities("ROLE_" + user.getRole().toUpperCase()) // Add role-based authorities
+            .accountExpired(false)
+            .accountLocked(false)
+            .credentialsExpired(false)
+            .disabled(!user.getActive())
+            .build();
     }
 }

@@ -1,34 +1,10 @@
-/*
- * FIN Financial Management System
- * 
- * Copyright (c) 2024-2025 Sthwalo Holdings (Pty) Ltd.
- * Owner: Immaculate Nyoni
- * Contact: sthwaloe@gmail.com | +27 61 514 6185
- * 
- * This source code is licensed under the Apache License 2.0.
- * Commercial use of the APPLICATION requires separate licensing.
- * 
- * Contains proprietary algorithms and business logic.
- * Unauthorized commercial use is strictly prohibited.
- * 
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * 
- *     http://www.apache.org/licenses/LICENSE-2.0
- * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package fin.service.parser;
 
-import fin.context.TransactionParsingContext;
+import fin.service.transaction.TransactionParsingContext;
 import fin.model.parser.ParsedTransaction;
 import fin.model.parser.TransactionType;
+import org.springframework.stereotype.Component;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -46,6 +22,7 @@ import java.util.regex.Pattern;
  * 
  * CRITICAL: Address lines from document headers should NEVER appear in transaction details!
  */
+@Component
 public class StandardBankTabularParser implements TransactionParser {
     private static final Logger LOGGER = Logger.getLogger(StandardBankTabularParser.class.getName());
     
@@ -159,7 +136,7 @@ public class StandardBankTabularParser implements TransactionParser {
     @Override
     public ParsedTransaction parse(String line, TransactionParsingContext context) {
         if (!canParse(line, context)) {
-            throw new IllegalArgumentException("Cannot parse line: " + line);
+            return null;
         }
 
         // Check if this is a transaction line or continuation line
@@ -179,12 +156,14 @@ public class StandardBankTabularParser implements TransactionParser {
                 // Return the completed transaction (with continuation lines)
                 return completedTransaction;
             } else {
-                // This is the first transaction - create pending transaction
+                // This is the first transaction - create and return it immediately
                 TransactionData data = extractTransactionData(line);
                 if (data != null) {
                     createPendingTransaction(data, context);
+                    // For single transactions, finalize and return immediately
+                    return finalizePendingTransaction();
                 }
-                return null; // No completed transaction to return yet
+                return null;
             }
             
         } else if (isDescriptionLine(line)) {
@@ -277,7 +256,8 @@ public class StandardBankTabularParser implements TransactionParser {
     /**
      * Extracts transaction data from a transaction line
      * Since the PDF text extraction gives us space-separated format rather than fixed columns,
-     * we need to parse: "DESCRIPTION [AMOUNT] MM DD BALANCE"
+     * we need to parse: "DESCRIPTION [##] [AMOUNT] MM DD BALANCE"
+     * Where ## indicates a service fee in the Service Fee column.
      */
     private TransactionData extractTransactionData(String line) {
         Matcher dateMatcher = TRANSACTION_LINE_PATTERN.matcher(line);
@@ -298,29 +278,44 @@ public class StandardBankTabularParser implements TransactionParser {
         String dateBalancePattern = "\\s+" + String.format("%02d", data.month) + "\\s+" + String.format("%02d", data.day) + "\\s+[\\d,]+\\.\\d{2}-?\\s*$";
         String withoutDateBalance = fullLine.replaceAll(dateBalancePattern, "");
         
-        // Now extract amounts and description
-        // Check if this line has a debit amount (ending with -)
-        Pattern debitPattern = Pattern.compile("(.+?)\\s+([\\d,]+\\.\\d{2}-)\\s*$");
-        Matcher debitMatcher = debitPattern.matcher(withoutDateBalance);
-        
-        if (debitMatcher.matches()) {
-            // This is a debit transaction
-            data.details = debitMatcher.group(1).trim();
-            data.debitAmount = parseAmount(debitMatcher.group(2));
+        // Check if this line contains "##" indicating a service fee
+        if (withoutDateBalance.contains("##")) {
+            data.isServiceFee = true;
+            // For service fees, the amount is in the debits column after ##
+            // Remove ## and everything after it from description
+            int hashIndex = withoutDateBalance.indexOf("##");
+            data.details = withoutDateBalance.substring(0, hashIndex).trim();
             
-            // Check for service fee marker in the details
-            data.isServiceFee = data.details.contains("##");
+            // Extract the amount after ##
+            String afterHash = withoutDateBalance.substring(hashIndex + 2).trim();
+            // The amount should be the first numeric part before the date
+            Pattern amountPattern = Pattern.compile("([\\d,]+\\.\\d{2}-?)");
+            Matcher amountMatcher = amountPattern.matcher(afterHash);
+            if (amountMatcher.find()) {
+                data.debitAmount = parseAmount(amountMatcher.group(1));
+            }
         } else {
-            // Check if this is a credit transaction
-            Pattern creditPattern = Pattern.compile("(.+?)\\s+([\\d,]+\\.\\d{2})\\s*$");
-            Matcher creditMatcher = creditPattern.matcher(withoutDateBalance);
+            // Regular transaction parsing
+            // Check if this line has a debit amount (ending with -)
+            Pattern debitPattern = Pattern.compile("(.+?)\\s+([\\d,]+\\.\\d{2}-)\\s*$");
+            Matcher debitMatcher = debitPattern.matcher(withoutDateBalance);
             
-            if (creditMatcher.matches()) {
-                data.details = creditMatcher.group(1).trim();
-                data.creditAmount = parseAmount(creditMatcher.group(2));
+            if (debitMatcher.matches()) {
+                // This is a debit transaction
+                data.details = debitMatcher.group(1).trim();
+                data.debitAmount = parseAmount(debitMatcher.group(2));
             } else {
-                // No amount found, just description
-                data.details = withoutDateBalance.trim();
+                // Check if this is a credit transaction
+                Pattern creditPattern = Pattern.compile("(.+?)\\s+([\\d,]+\\.\\d{2})\\s*$");
+                Matcher creditMatcher = creditPattern.matcher(withoutDateBalance);
+                
+                if (creditMatcher.matches()) {
+                    data.details = creditMatcher.group(1).trim();
+                    data.creditAmount = parseAmount(creditMatcher.group(2));
+                } else {
+                    // No amount found, just description
+                    data.details = withoutDateBalance.trim();
+                }
             }
         }
         
@@ -343,9 +338,6 @@ public class StandardBankTabularParser implements TransactionParser {
         }
     }
     
-    /**
-     * Parse transaction date from month and day
-     */
     /**
      * Extract statement period from header line if present
      */

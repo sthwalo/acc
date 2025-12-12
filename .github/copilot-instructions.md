@@ -1,68 +1,66 @@
-# FIN Financial Management System - Copilot Instructions
-
-## 🐳 DOCKER-FIRST DEVELOPMENT - CRITICAL REQUIREMENT
-
-**🚨 EVERYTHING RUNS THROUGH DOCKER 🚨**
-
-**MANDATORY POLICY**: All development, testing, and production deployment MUST use Docker containers. No direct JAR execution allowed. This ensures:
-- ✅ **Zero deployment surprises**: Dev environment = Production environment
-- ✅ **Environment consistency**: Same JVM, dependencies, and configuration
-- ✅ **Frontend integration**: Test against real containerized APIs
-- ✅ **Production confidence**: Container = production deployment
+# AI Coding Agent Instructions for FIN Financial Management System
 
 ## Project Overview
-FIN is a production-ready financial management system built in Java 17 with PostgreSQL 17+, handling 7,156+ real transactions. It provides comprehensive financial document processing including bank statement processing, financial reporting, payroll management, budget planning, and REST API capabilities for South African businesses with SARS compliance.
+FIN is a production-ready financial management system for South African small businesses, handling bank statement processing, accounting, payroll, tax compliance (SARS), and financial reporting. The system processes 7,000+ real financial transactions with full double-entry accounting.
 
-**Architecture Overview**:
-- **Spring Boot `spring-app/`**: Pure Spring Boot implementation with Spring MVC and JPA
-- **Frontend**: React/TypeScript application with container-first development workflow
-- **Database**: PostgreSQL 17+ running in Docker containers
-- **All Services**: Containerized and orchestrated via Docker Compose
+## Collaboration Protocol
 
-## Architecture & Entry Points
+### ⚠️ CRITICAL COLLABORATION REQUIREMENTS
 
-The system is built with Spring Boot and runs in production Docker containers:
+**MANDATORY WORKFLOW**: We work together as a team. Do NOT jump into actions without explicit agreement.
 
-#### Spring Boot Implementation (`spring-app/` folder)
-- **Status**: Production-ready with full containerization
-- **Runtime**: `docker run -p 8080:8080 fin-app`
-- **Features**: Spring MVC, JPA, Security, JWT authentication
+#### 1. Phased Task Execution and Agreement
+- **One Task at a Time**: Proceed through the project one task at a time, based on the established project plan
+- **Mutual Agreement Required**: Mutual agreement on a task's scope and expected outcome is required before implementation begins
+- **Pause and Explain**: If either of us needs clarification or a pause during execution, we commit to stopping and explaining the context thoroughly
+- **Shared Ownership**: Both parties must understand and agree on what will be done before proceeding
 
-### 🐳 Docker Production Options (MANDATORY)
+#### 2. Code Implementation and Verification
+- **Adherence to Architecture**: All code changes and configuration updates must adhere to the suggestions and architectural decisions we mutually agree upon
+- **Rigorous Testing**: Use rigorous testing practices and verify fixes/implementations together before marking a task as complete
+- **Shared Quality**: Verify together before proceeding to the next stage - this ensures shared ownership of the solution's integrity
+- **No Premature Commits**: Do not commit or push code until user explicitly confirms the fix works
 
-**Build Metadata Requirements**:
-- ✅ **Include Author**: All Docker images MUST include `LABEL author="Immaculate Nyoni <sthwaloe@gmail.com>"`
-- ✅ **Copyright**: Copyright information is in the codebase (LICENSE, NOTICE files) - ensure it's included in builds
+#### 3. Thorough Analysis and Documentation
+- **Analysis First**: Before implementing any solution, commit to analyzing all related files, dependencies, and potential downstream impacts
+- **Shared Understanding**: This analysis phase is crucial for ensuring we both have a shared understanding of:
+  - **What** needs to be changed
+  - **Where** those changes occur
+  - **Why** they are necessary
+  - **How** they impact the rest of the system
+- **Document Key Decisions**: Document architectural decisions and significant changes in appropriate locations
 
-**Spring Boot Production**:
-```dockerfile
-FROM openjdk:17-jre-slim
-LABEL author="Immaculate Nyoni <sthwaloe@gmail.com>"
-COPY spring-app/build/libs/fin-spring.jar /app.jar
-EXPOSE 8080
-CMD ["java", "-jar", "/app.jar"]
-```
+#### Question-Answering Protocol
+1. **When Asked a Question**: First analyze the question, provide observations and analysis of the provided information
+2. **Outline Approach**: Present your proposed solution or investigation plan clearly
+3. **Wait for Agreement**: Only proceed with implementation or further actions after explicit user confirmation
+4. **Collaborative Decision Making**: Consider user suggestions and feedback before taking any action
 
-**Frontend Production**:
-```dockerfile
-FROM nginx:alpine
-LABEL author="Immaculate Nyoni <sthwaloe@gmail.com>"
-COPY dist/ /usr/share/nginx/html/
-EXPOSE 3000
-CMD ["nginx", "-g", "daemon off;"]
-```
+#### Investigation vs Implementation
+- **Investigations Allowed**: Database queries, code analysis, file searches, and exploratory queries can be performed proactively to gather information
+- **Implementation Requires Agreement**: Code changes, database modifications, or system alterations must wait for explicit user approval
+- **No Direct Database CRUD**: Do not perform direct database operations (INSERT, UPDATE, DELETE). Instead, write application code that handles these tasks through proper service/repository patterns
 
-## Implementation Strategy
+#### Communication Standards
+- **Clear Explanations**: Always explain WHAT you plan to do, WHY, and HOW before proceeding
+- **User Confirmation Required**: Wait for explicit statements like "yes, proceed" or "that approach looks good" before implementing
+- **Joint Problem Solving**: Work together to identify root causes and develop solutions
+- **Transparency**: If uncertain about any aspect, ask for clarification rather than making assumptions
 
-**Current Status**: Spring Boot is the primary and only implementation for new development.
+#### **USER VERIFICATION** (CRITICAL - DO NOT SKIP)
+**🚨 STOP - DO NOT COMMIT OR PUSH UNTIL USER CONFIRMS FIX WORKS 🚨**
 
-**Development Recommendations**:
-- **🐳 New Features**: Implement in `spring-app/` - **TEST IN DOCKER**
-- **🐳 Bug Fixes**: Apply fixes in `spring-app/` - **VERIFY IN DOCKER**
-- **🐳 Testing**: Test implementation against frontend - **DOCKER CONTAINERS ONLY**
-- **🐳 Production**: Use `spring-app/` for all deployments - **DOCKER DEPLOYMENT**
+After making code changes:
+- ✅ Explain **WHAT** you changed (which files, which methods)
+- ✅ Explain **WHY** you changed it (what problem does it solve)
+- ✅ Explain **HOW** to test the fix (specific steps user should follow)
+- ✅ Wait for user to **RUN THE APPLICATION** and verify the fix works
+- ✅ Wait for user to **EXPLICITLY CONFIRM** "the fix works" or "ready to commit"
+- ❌ **DO NOT** Make code changes without user review
+- ❌ **DO NOT** commit changes until user confirms
+- ❌ **DO NOT** assume the fix works just because it compiles
+- ❌ **DO NOT** rush to commit and push
 
-## Critical Development Patterns
 
 ### ⚠️ CRITICAL RULE: NO FALLBACK DATA ALLOWED - ZERO TOLERANCE POLICY
 
@@ -140,228 +138,195 @@ A successful refactoring should show:
 - **Code Reduction**: 10-20% fewer lines (fallback methods deleted)
 - **Zero Fallbacks**: 0 occurrences of forbidden patterns
 - **Clear Errors**: All SQLException messages specify table + INSERT statement
-- **Clean Build**: No compilation errors or warnings
+- *
+### 🐳 Docker Production Options (MANDATORY)
 
-**PDF Library Standards - CRITICAL**: 
-- ✅ **MUST USE**: Apache PDFBox 3.0.0 for PDF reading/text extraction
-- ✅ **MUST USE**: libharu via JNA for complex PDF generation (payslips, invoices)
-- ❌ **NEVER USE**: iText (commercial licensing restrictions)
-- **When to Use Which**: PDFBox for simple reports/PDF reading; libharu for complex layouts
+**Build Metadata Requirements**:
+- ✅ **Include Author**: All Docker images MUST include `LABEL author="Immaculate Nyoni <sthwaloe@gmail.com>"`
+- ✅ **Copyright**: Copyright information is in the codebase (LICENSE, NOTICE files) - ensure it's included in builds
 
-**Service Registration**:
-- **Spring Boot**: Use `@Service`, `@Repository`, `@Controller` annotations - Spring handles registration automatically
-
-**Database Access**: Use repositories over direct JDBC. Connection pooling via HikariCP is pre-configured:
-```java
-// Prefer this pattern
-public class SomeRepository {
-    public SomeRepository(String dbUrl) { /* use DatabaseConfig.getConnection() */ }
-}
+**Spring Boot Production**:
+```dockerfile
+FROM openjdk:17-jre-slim
+LABEL author="Immaculate Nyoni <sthwaloe@gmail.com>"
+COPY spring-app/build/libs/fin-spring.jar /app.jar
+EXPOSE 8080
+CMD ["java", "-jar", "/app.jar"]
 ```
 
-**Transaction Processing Pipeline**: 
-1. `DocumentTextExtractor` → PDF text extraction
-2. `BankStatementProcessingService` → orchestrates parsing via registered `TransactionParser` implementations
-3. `TransactionClassificationService` → applies business rules (2k+ lines - don't duplicate logic)
-4. Database persistence via repositories
-
-**UI Patterns**: 
-- Console: Inject `OutputFormatter`/`InputHandler` - never use `System.out.println` directly
-- API: Use `ApiServer.setup*` methods, return Gson-wrapped `{success, data}` responses
-
-## Essential Commands & Workflows
-
-**Build & Test**:
-```bash
-cd /Users/sthwalonyoni/FIN && ./start.sh.    
-cd /Users/sthwalonyoni/FIN/spring-app && ./gradlew clean build  # Full build with quality checks
-./gradlew test                          # Run test suite
-./gradlew checkstyleMain                # Code quality scan
+**Frontend Production**:
+```dockerfile
+FROM nginx:alpine
+LABEL author="Immaculate Nyoni <sthwaloe@gmail.com>"
+COPY dist/ /usr/share/nginx/html/
+EXPOSE 3000
+CMD ["nginx", "-g", "daemon off;"]
 ```
 
-**Database Setup**:
+## Architecture Overview
+- **Backend**: Java 17 + Spring Boot 3.3 + PostgreSQL
+- **Frontend**: React 19 + TypeScript + Vite
+- **Modular Services**: 5 core services (TransactionClassifier, AccountManager, JournalEntryGenerator, RuleMappingService, TransactionBatchProcessor)
+- **Data Flow**: PDF Bank Statements → OCR/Text Extraction → Transaction Parsing → Classification → Journal Entries → PostgreSQL → Financial Reports
+
+## Key Directories & Structure
+- `app/src/main/java/fin/` - Main Java source code
+  - `service/` - Business logic services (classification/, journal/, parser/, reporting/, transaction/, upload/)
+  - `controller/spring/` - REST API controllers (all prefixed with "Spring")
+  - `entity/` - JPA entities (Company, BankTransaction, JournalEntry, etc.)
+  - `repository/` - Spring Data JPA repositories
+  - `dto/` - Data transfer objects
+
+- `frontend/src/components/` - React components (CompaniesView, TransactionsView, PayrollManagementView, etc.)
+- `docs/system_architecture/` - Technical specifications and implementation details
+
+## Development Workflows
+
+### Full-Stack Development (Recommended)
 ```bash
-source .env                             # Load database credentials
-# Requires: DATABASE_URL, DATABASE_USER, DATABASE_PASSWORD
-# Tests use: TEST_DATABASE_URL, TEST_DATABASE_USER, TEST_DATABASE_PASSWORD
+# Build both backend/frontend and start containers with auto browser launch
+./start.sh
+
+# Alternative: Start containers from frontend directory
+cd frontend && npm run start:containers
 ```
 
-**Local Development**:
+### Backend-Only Development
 ```bash
-# Start both backend and frontend locally for development (hot reload enabled)
-./dev.sh
-
-# Alternative: Start services individually
-# Backend only: cd spring-app && ./gradlew bootRun
-# Frontend only: cd frontend && npm run dev
-```
-
-**Container Management**:
-```bash
-# Start both backend (fin-app) and frontend (fin-frontend-prod) containers
-docker compose -f docker-compose.yml -f docker-compose.frontend.yml up -d
-
-# Start backend container only (fin-app)
-docker compose -f docker-compose.yml up -d fin-app
-
-# Restart backend container
-docker compose -f docker-compose.yml restart fin-app
-
-# Check container status
-docker compose -f docker-compose.yml -f docker-compose.frontend.yml ps
-
-# Stop all containers
-docker compose -f docker-compose.yml -f docker-compose.frontend.yml down
-
-# View container logs
-docker compose -f docker-compose.yml -f docker-compose.frontend.yml logs -f
-```
-
-**Production Deployment**:
-```bash
-./gradlew build
-docker build -t fin-backend .
-docker run -d -p 8080:8080 --env-file .env fin-backend
-```
-
-## Code Quality & Documentation
-
-**Mandatory Pre-Work Check**: Before ANY file modification:
-```bash
-# Check existing task documentation
-ls -la spring-app/docs/development/tasks/
-grep -r "TASK.*" spring-app/docs/development/tasks/ | grep -i "[your-topic]"
-cat spring-app/docs/development/tasks/README.md
-```
-
-**Quality Protocol**:
-1. **Inventory violations**: `./gradlew clean checkstyleMain --no-daemon 2>&1 | grep -E "(ALL)" > violations_inventory.txt`
-2. **Fix ONE file at a time** - address ALL violations before moving on
-3. **Document ALL work** in `spring-app/docs/development/tasks/TASK_[NUMBER]_[Name].md`
-4. **Build verification**: `./gradlew clean build` after every change
-
-### ⚠️ CRITICAL ENFORCEMENT: Code Changes & Testing Protocol
-
-**MANDATORY REQUIREMENT**: After ANY changes to non-test code files (.java, .kt, build.gradle.kts, etc.):
-
-#### 1. **BUILD VERIFICATION** (Required After Every Code Change)
-```bash
-cd /Users/sthwalonyoni/FIN/spring-app && ./gradlew clean build --no-daemon
-```
-This ensures:
-- All code compiles correctly
-- Dependencies are resolved (PostgreSQL driver, PDFBox 3.0.0, Apache POI 5.2.4, Spark Java, etc.)
-- No regressions in existing functionality
-- Build artifacts (fat JAR) are up-to-date
-- Checkstyle issues are bypassed for faster development
-
-#### 2. **USER VERIFICATION** (CRITICAL - DO NOT SKIP)
-**🚨 STOP - DO NOT COMMIT OR PUSH UNTIL USER CONFIRMS FIX WORKS 🚨**
-
-After making code changes:
-- ✅ Explain **WHAT** you changed (which files, which methods)
-- ✅ Explain **WHY** you changed it (what problem does it solve)
-- ✅ Explain **HOW** to test the fix (specific steps user should follow)
-- ✅ Wait for user to **RUN THE APPLICATION** and verify the fix works
-- ✅ Wait for user to **EXPLICITLY CONFIRM** "the fix works" or "ready to commit"
-- ❌ **DO NOT** Make code changes without user review
-- ❌ **DO NOT** commit changes until user confirms
-- ❌ **DO NOT** assume the fix works just because it compiles
-- ❌ **DO NOT** rush to commit and push
-
-#### 3. **TESTING WORKFLOW** (Local Development + Container Validation)
-```bash
-# Option A: Local Development Testing (during active development)
-./dev.sh                                 # Start both services locally
-# Test endpoints in browser or with curl
-curl http://localhost:8080/api/v1/health
-curl http://localhost:3000
-
-# Option B: Container Testing (production-same environment)
-# Build JAR for testing (if needed)
+# Build JAR
 ./gradlew build
 
-# Start services in containers (production-same)
-docker compose -f docker-compose.yml -f docker-compose.frontend.yml up -d
+# Run API server
+java -jar app/build/libs/app.jar api
 
-# Test backend health (fin-app container)
-curl http://localhost:8080/api/v1/health
-
-# Test frontend health (fin-frontend-prod container)  
-curl http://localhost:3000
-
-# Test API endpoints
-curl http://localhost:8080/api/v1/companies
-curl http://localhost:8080/api/v1/companies/1/fiscal-periods
-
-# Stop services
-docker compose -f docker-compose.yml -f docker-compose.frontend.yml down
+# Run console application
+java -jar app/build/libs/app.jar
 ```
 
-#### 4. **CONSEQUENCES OF VIOLATION**
-- Committing untested code → production container failures
-- Skipping local development testing → development workflow issues
-- Skipping Docker compose testing → deployment surprises
-- Not testing all endpoints → broken frontend integration
-- Direct JAR execution → unreliable API testing
+### Frontend-Only Development
+```bash
+cd frontend
+npm install
+npm run dev  # Runs on port 3000
+```
 
-## Service Dependencies & Data Flow
+### Testing
+```bash
+# Backend tests
+./gradlew test
 
-**Core Services** (registered in `ApplicationContext`):
-- `CompanyService` → company/fiscal period management
-- `BankStatementProcessingService` → PDF processing orchestration  
-- `TransactionClassificationService` → business rule application (2k+ lines)
-- `PayrollService` → SARS-compliant payroll calculations with PAYE, UIF, SDL
-- `BudgetService` → strategic planning and budget management
-- `FinancialReportingService` → comprehensive report generation (uses repository pattern)
-- `DataManagementService` → manual data entry, corrections, and audit trails
-- `TransactionVerificationService` → data integrity validation and reconciliation
+# Frontend tests
+cd frontend && npm test
+```
 
-**Classification System**: Use existing pattern-matching in `TransactionClassificationService`. Don't recreate regex/keyword logic - extend `ClassificationRuleManager` instead.
+## Code Patterns & Conventions
 
-**System Architecture Components**:
-1. **Document Processing**: PDF/CSV upload → text extraction → structured data review
-2. **Financial Data Storage**: PostgreSQL 17+ with comprehensive schema and audit trails
-3. **Automated Accounting**: Categorization, reconciliation, general ledger, tax calculations
-4. **Payroll Processing**: Employee management, SARS tax calculations, payslip generation
-5. **Budget Management**: Strategic planning, variance analysis, cash flow forecasting
-6. **Output Generation**: Financial reports, tax returns, payroll documents, budget analysis
-7. **Security & Compliance**: POPIA compliance, role-based access, audit logging
+### Service Naming
+- All Spring services prefixed with "Spring" (e.g., `SpringTransactionClassificationService`)
+- Business logic services in dedicated subdirectories (classification/, journal/, etc.)
+- Single source of truth: `AccountClassificationService` for all classification logic
 
-## Database Schema Notes
+### API Patterns
+- Base path: `/api/v1/`
+- Controllers return `ApiResponse<T>` wrapper
+- CORS enabled for `http://localhost:3000`
+- File uploads: `POST /companies/{id}/upload` for PDF processing
 
-**Companies Table Schema** (PostgreSQL 17):
-- Core fields: `id`, `name`, `registration_number`, `tax_number`, `address`, `contact_email`, `contact_phone`, `created_at`, `updated_at`, `logo_path`
-- Banking fields: `bank_name`, `account_number`, `account_type`, `branch_code` (recently added)
-- Tax compliance: `vat_registered` (boolean, recently added)
-- **IMPORTANT**: When restoring from backups, verify banking columns exist: `bank_name`, `account_number`, `account_type`, `branch_code`, `vat_registered`
-- **Migration Command** if columns missing:
-  ```sql
-  ALTER TABLE companies 
-  ADD COLUMN IF NOT EXISTS bank_name VARCHAR(255),
-  ADD COLUMN IF NOT EXISTS account_number VARCHAR(50),
-  ADD COLUMN IF NOT EXISTS account_type VARCHAR(50),
-  ADD COLUMN IF NOT EXISTS branch_code VARCHAR(20),
-  ADD COLUMN IF NOT EXISTS vat_registered BOOLEAN DEFAULT FALSE;
-  ```
+### Database Patterns
+- PostgreSQL with Flyway migrations
+- Full ACID compliance with foreign key constraints
+- Multi-company data isolation
+- Real financial data with 7,000+ transactions
 
-## Testing & Environment
+### Error Handling
+- Custom `BusinessException` with `ErrorCode` enum
+- Comprehensive exception management across all services
+- Transaction-safe operations with `@Transactional`
 
-**Test Structure**:
-- **Spring Boot**: JUnit 5 + Spring Boot Test with `@SpringBootTest`
+### Build Configuration
+- Gradle with Spring Boot plugin
+- Java 17 toolchain requirement
+- Code quality: Checkstyle + SpotBugs
+- Custom tasks for PDF analysis and OCR extraction
 
-**Environment Variables**:
-- **Spring Boot**: Standard `application.properties` with profiles
+## External Dependencies & Integration
 
-**License Check**: `LicenseManager.checkLicenseCompliance()` required on all entry points
+### Document Processing
+- **PDF Text Extraction**: Apache PDFBox 3.0.0
+- **OCR**: Tesseract via Tess4J 5.9.0 (for image-based PDFs)
+- **Excel Generation**: Apache POI 5.2.4 (professional financial reports)
+- **Email**: Spring Mail + Angus Mail (payslip distribution)
 
-## Current Development Focus
+### South African Tax Compliance
+- SARS-compliant tax calculations (PAYE, UIF, SDL)
+- EMP 201 report generation
+- Automatic SDL calculation (1% of payroll > R500k)
+- Tax number validation and form compliance
 
-**Primary Framework**: Spring Boot is the standard framework for all new development and maintenance.
+### Security
+- Spring Security with JWT tokens
+- Role-based access control
+- Multi-factor authentication support
+- Audit logging for all financial operations
 
-## Architecture Decision Records
+## Common Development Tasks
 
-**ADR-001: Spring Boot as Primary Framework** - Standardize on Spring Boot for enterprise features, security, and testing capabilities.
+### Adding New Transaction Classification Rules
+1. Update `AccountClassificationService.classifyTransaction()`
+2. Add pattern matching in `SpringTransactionClassificationService`
+3. Test with real bank statement data
+4. Update unit tests in `src/test/`
+
+### Implementing New Financial Reports
+1. Add method to `reporting/` services
+2. Create Excel template in `SpringExportController`
+3. Use Apache POI for professional formatting
+4. Add to `GenerateReportsView.tsx` frontend component
+
+### Payroll Processing
+1. Use `SpringPayrollController` for employee management
+2. Tax calculations in dedicated service methods
+3. PDF payslip generation with JNA/Libharu
+4. Email distribution via SMTP
+
+## Testing & Validation
+
+### Backend Testing
+- JUnit 5 with Mockito for unit tests
+- Spring Boot Test for integration tests
+- H2 in-memory database for testing
+- 118+ existing tests covering all services
+
+### Frontend Testing
+- Vitest for unit testing
+- React Testing Library patterns
+- TypeScript strict mode enabled
+
+### Data Validation
+- Real financial data with 45+ accounts
+- Transaction balance verification
+- Double-entry accounting validation
+- SARS compliance checking
+
+## Deployment & Production
+
+### Containerized Deployment
+- Multi-stage Docker builds
+- PostgreSQL + Spring Boot + React containers
+- Health checks and service discovery
+- Environment-specific configurations
+
+### Licensing
+- Dual license: Apache 2.0 for personal use, Commercial for business
+- Copyright headers required on all source files
+- License checking scripts in `scripts/`
+
+## Key Files for Understanding
+- [System Architecture](../docs/system_architecture/SYSTEM_ARCHITECTURE.md)
+- [Technical Specifications](../docs/system_architecture/TECHNICAL_SPECIFICATIONS.md)
+- [API Documentation](../app/src/main/java/fin/controller/) - Controller classes
+- [Database Schema](../docs/technical/POSTGRESQL_MIGRATION_GUIDE.md)
+- [Build Configuration](../app/build.gradle.kts)
 
 ## 🔒 CRITICAL SECURITY POLICY - ZERO TOLERANCE
 
@@ -518,48 +483,10 @@ grep -rn --exclude-dir={.git,node_modules,build,dist} \
   -E "/Users/[a-zA-Z0-9]+/" .
 ```
 
----
-
-## Collaboration Protocol
-
-### ⚠️ CRITICAL COLLABORATION REQUIREMENTS
-
-**MANDATORY WORKFLOW**: We work together as a team. Do NOT jump into actions without explicit agreement.
-
-#### 1. Phased Task Execution and Agreement
-- **One Task at a Time**: Proceed through the project one task at a time, based on the established project plan
-- **Mutual Agreement Required**: Mutual agreement on a task's scope and expected outcome is required before implementation begins
-- **Pause and Explain**: If either of us needs clarification or a pause during execution, we commit to stopping and explaining the context thoroughly
-- **Shared Ownership**: Both parties must understand and agree on what will be done before proceeding
-
-#### 2. Code Implementation and Verification
-- **Adherence to Architecture**: All code changes and configuration updates must adhere to the suggestions and architectural decisions we mutually agree upon
-- **Rigorous Testing**: Use rigorous testing practices and verify fixes/implementations together before marking a task as complete
-- **Shared Quality**: Verify together before proceeding to the next stage - this ensures shared ownership of the solution's integrity
-- **No Premature Commits**: Do not commit or push code until user explicitly confirms the fix works
-
-#### 3. Thorough Analysis and Documentation
-- **Analysis First**: Before implementing any solution, commit to analyzing all related files, dependencies, and potential downstream impacts
-- **Shared Understanding**: This analysis phase is crucial for ensuring we both have a shared understanding of:
-  - **What** needs to be changed
-  - **Where** those changes occur
-  - **Why** they are necessary
-  - **How** they impact the rest of the system
-- **Document Key Decisions**: Document architectural decisions and significant changes in appropriate locations
-
-#### Question-Answering Protocol
-1. **When Asked a Question**: First analyze the question, provide observations and analysis of the provided information
-2. **Outline Approach**: Present your proposed solution or investigation plan clearly
-3. **Wait for Agreement**: Only proceed with implementation or further actions after explicit user confirmation
-4. **Collaborative Decision Making**: Consider user suggestions and feedback before taking any action
-
-#### Investigation vs Implementation
-- **Investigations Allowed**: Database queries, code analysis, file searches, and exploratory queries can be performed proactively to gather information
-- **Implementation Requires Agreement**: Code changes, database modifications, or system alterations must wait for explicit user approval
-- **No Direct Database CRUD**: Do not perform direct database operations (INSERT, UPDATE, DELETE). Instead, write application code that handles these tasks through proper service/repository patterns
-
-#### Communication Standards
-- **Clear Explanations**: Always explain WHAT you plan to do, WHY, and HOW before proceeding
-- **User Confirmation Required**: Wait for explicit statements like "yes, proceed" or "that approach looks good" before implementing
-- **Joint Problem Solving**: Work together to identify root causes and develop solutions
-- **Transparency**: If uncertain about any aspect, ask for clarification rather than making assumptions
+## Getting Started Tips
+1. Always run `./start.sh` for full development environment
+2. Check `docker compose logs -f` for troubleshooting
+3. Use real bank statement PDFs from `docs/` for testing
+4. Review existing services before adding new ones
+5. Maintain the modular service architecture pattern</content>
+<parameter name="filePath">.github/copilot-instructions.md

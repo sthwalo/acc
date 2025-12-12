@@ -413,8 +413,8 @@ public class DatabaseConfig {
     }
     
     /**
-     * Get appropriate SQL syntax for boolean values
-     */
+    * Get appropriate SQL syntax for boolean values
+    */
     public static String getBooleanSyntax(boolean value) {
         return value ? "TRUE" : "FALSE";
     }

@@ -26,7 +26,7 @@
 
 package fin.repository;
 
-import fin.model.Plan;
+import fin.entity.Plan;
 
 import java.sql.*;
 import java.time.LocalDateTime;
@@ -34,14 +34,19 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Repository;
+
 /**
  * Repository for managing pricing plans
  */
+@Repository
 public class PlanRepository {
-    private final String dbUrl;
+    @Value("${spring.datasource.url}")
+    private String dbUrl;
 
-    public PlanRepository(String dbUrl) {
-        this.dbUrl = dbUrl;
+    public PlanRepository() {
+        // Default constructor for Spring
     }
 
     /**

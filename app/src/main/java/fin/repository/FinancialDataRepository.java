@@ -1,22 +1,22 @@
 /*
  * FIN Financial Management System
- * 
+ *
  * Copyright (c) 2024-2025 Sthwalo Holdings (Pty) Ltd.
  * Owner: Immaculate Nyoni
  * Contact: sthwaloe@gmail.com | +27 61 514 6185
- * 
+ *
  * This source code is licensed under the Apache License 2.0.
  * Commercial use of the APPLICATION requires separate licensing.
- * 
+ *
  * Contains proprietary algorithms and business logic.
  * Unauthorized commercial use is strictly prohibited.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,14 +26,15 @@
 
 package fin.repository;
 
+import fin.dto.*;
 import fin.entity.*;
 import java.math.BigDecimal;
-import java.sql.*;
-import java.util.*;
+import java.sql.SQLException;
+import java.util.List;
 
 /**
  * Repository interface for financial data access.
- * Centralizes all database operations for financial reports to ensure data integrity.
+ * Centralizes all database operations for financial reports.
  */
 public interface FinancialDataRepository {
 
@@ -45,7 +46,7 @@ public interface FinancialDataRepository {
     /**
      * Get account balances by type for balance sheet and income statement
      */
-    Map<String, BigDecimal> getAccountBalancesByType(int companyId, int fiscalPeriodId, String accountType) throws SQLException;
+    java.util.Map<String, BigDecimal> getAccountBalancesByType(int companyId, int fiscalPeriodId, String accountType) throws SQLException;
 
     /**
      * Get trial balance data with opening balances, period movements, and closing balances
@@ -93,4 +94,33 @@ public interface FinancialDataRepository {
      * Excludes opening balance entries (reference pattern 'OB-%') to avoid duplication.
      */
     List<JournalEntryLineDetail> getJournalEntryLinesForAccount(int companyId, int fiscalPeriodId, String accountCode) throws SQLException;
+
+    // ============================================================================
+    // TASK_008: Structured DTO Methods for Report Export
+    // ============================================================================
+
+    /**
+     * Get trial balance data as structured DTOs
+     */
+    List<TrialBalanceDTO> getTrialBalanceDTOs(Long companyId, Long fiscalPeriodId) throws SQLException;
+
+    /**
+     * Get general ledger data as structured DTOs for a specific account
+     */
+    List<GeneralLedgerDTO> getGeneralLedgerDTOs(Long companyId, Long fiscalPeriodId, String accountCode) throws SQLException;
+
+    /**
+     * Get income statement data as structured DTOs
+     */
+    List<FinancialReportDTO> getIncomeStatementDTOs(Long companyId, Long fiscalPeriodId) throws SQLException;
+
+    /**
+     * Get balance sheet data as structured DTOs
+     */
+    List<FinancialReportDTO> getBalanceSheetDTOs(Long companyId, Long fiscalPeriodId) throws SQLException;
+
+    /**
+     * Get cashbook data as structured DTOs for a specific account
+     */
+    List<CashbookDTO> getCashbookDTOs(Long companyId, Long fiscalPeriodId, String accountCode) throws SQLException;
 }

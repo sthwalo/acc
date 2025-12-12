@@ -19,16 +19,14 @@
  */
 
 plugins {
-    // Apply the java-library plugin to create a library that can be depended on by other modules
-    `java-library`
-    // Spring Boot plugin
-    id("org.springframework.boot") version "3.5.8"
-    id("io.spring.dependency-management") version "1.1.4"
+    // Java plugin for compilation
+    java
+    // Spring Boot plugin for building JAR
+    id("org.springframework.boot") version "3.3.0"
+    id("io.spring.dependency-management") version "1.1.5"
     // Code quality plugins
     checkstyle
     id("com.github.spotbugs") version "5.2.5"
-    // Database migration plugin
-    id("org.flywaydb.flyway") version "10.0.1"
 }
 
 java {
@@ -47,6 +45,13 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-validation")
+    implementation("org.flywaydb:flyway-core")  // Database migration tool
+    implementation("org.flywaydb:flyway-database-postgresql")  // PostgreSQL support
+
+    // Lombok for reducing boilerplate code
+    compileOnly("org.projectlombok:lombok:1.18.30")
+    annotationProcessor("org.projectlombok:lombok:1.18.30")
+
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 
     // Use JUnit Jupiter for testing.
@@ -61,6 +66,7 @@ dependencies {
     
     // Database drivers
     runtimeOnly("org.postgresql:postgresql")  // PostgreSQL driver (managed by Spring Boot)
+    testRuntimeOnly("com.h2database:h2")      // H2 in-memory database for testing
     implementation("com.zaxxer:HikariCP:5.0.1")         // Connection pooling
     
     // PDF libraries - OPEN SOURCE ONLY (no iText due to commercial licensing)
@@ -70,6 +76,9 @@ dependencies {
     implementation("org.apache.pdfbox:preflight:3.0.0")
     implementation("org.bouncycastle:bcprov-jdk15on:1.70")
     implementation("org.bouncycastle:bcmail-jdk15on:1.70")
+    
+    // OCR library for image-based PDFs (Tesseract via Tess4J)
+    implementation("net.sourceforge.tess4j:tess4j:5.9.0")  // Tesseract OCR wrapper for Java
     
     // JNA for Libharu PDF library - for PDF generation (payslips, reports, invoices)
     implementation("net.java.dev.jna:jna:5.13.0")
@@ -95,15 +104,20 @@ dependencies {
     // Jakarta EE dependencies for servlet API (needed for Spring Security filters)
     implementation("jakarta.servlet:jakarta.servlet-api:6.0.0")
 
-    // Legacy SparkJava dependencies (temporary - will be removed after migration)
-    implementation("com.sparkjava:spark-core:2.9.4")
-    implementation("org.eclipse.jetty:jetty-server:9.4.53.v20231009")
-    implementation("org.eclipse.jetty:jetty-webapp:9.4.53.v20231009")
-    implementation("org.eclipse.jetty:jetty-security:9.4.53.v20231009")
-    implementation("org.eclipse.jetty:jetty-servlet:9.4.53.v20231009")
-    implementation("org.eclipse.jetty:jetty-util:9.4.53.v20231009")
-    implementation("org.slf4j:slf4j-simple:2.0.9")
+    //Actuator for monitoring
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
+    
 }
+
+// Custom task to run JAR with libharu JVM arguments
+tasks.register<Exec>("runWithLibharu") {
+    group = "application"
+    description = "Run the JAR with libharu library path for PDF generation"
+    commandLine("java", "-Djna.library.path=/opt/homebrew/lib:/usr/local/lib", "-jar", tasks.bootJar.get().archiveFile.get().asFile.absolutePath)
+    dependsOn(tasks.bootJar)
+}
+
+// Code quality configurations
 
 // Code quality configurations
 checkstyle {
@@ -123,105 +137,74 @@ java {
     }
 }
 
-
-
-
 tasks.named<Test>("test") {
     // Use JUnit Platform for unit tests.
     useJUnitPlatform()
-    maxHeapSize = "2G"
+}
+
+// Task to analyze PDF column structure
+tasks.register<JavaExec>("analyzeColumns") {
+    group = "analysis"
+    description = "Analyze PDF column structure for parser configuration"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass = "fin.util.PdfColumnAnalyzer"
     
-    // Pass system properties to tests
-    systemProperties = System.getProperties()
-        .filter { it.key is String }
-        .mapKeys { it.key as String }
-        .mapValues { it.value as Any }
+    // Get PDF path and bank name from command line properties
+    doFirst {
+        val pdfPath = project.findProperty("pdfPath") as String? 
+            ?: throw GradleException("Please specify -PpdfPath=<path-to-pdf>")
+        val bankName = project.findProperty("bankName") as String? 
+            ?: throw GradleException("Please specify -PbankName=<bank-name>")
+        
+        args = listOf(pdfPath, bankName)
+    }
+}
+
+// Task to extract OCR text with coordinates
+tasks.register<JavaExec>("extractOcrCoordinates") {
+    group = "analysis"
+    description = "Extract text from OCR-based PDF with X,Y coordinates"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass = "fin.util.OcrCoordinateExtractor"
     
-    // Pass environment variables to tests (especially for CI/CD)
-    // Environment variables should be set via .env file or system environment
-    val testDbUrl = System.getenv("TEST_DATABASE_URL") ?: System.getProperty("TEST_DATABASE_URL")
-    val testDbUser = System.getenv("TEST_DATABASE_USER") ?: System.getProperty("TEST_DATABASE_USER")
-    val testDbPassword = System.getenv("TEST_DATABASE_PASSWORD") ?: System.getProperty("TEST_DATABASE_PASSWORD")
-    val testMode = System.getenv("TEST_MODE") ?: "true"
-
-    if (testDbUrl != null) systemProperty("TEST_DATABASE_URL", testDbUrl)
-    if (testDbUser != null) systemProperty("TEST_DATABASE_USER", testDbUser)
-    if (testDbPassword != null) systemProperty("TEST_DATABASE_PASSWORD", testDbPassword)
-    systemProperty("TEST_MODE", testMode)
+    // Set JNA library path for Tesseract on macOS
+    systemProperty("jna.library.path", "/opt/homebrew/lib")
     
-    // Set working directory to project root so test.env can be found
-    workingDir = rootProject.projectDir
-
-    // Exclude integration tests from unit test run - they run separately in integrationTest task
-    exclude("**/*IntegrationTest.class")
-    exclude("**/integration/**")
-}
-
-// Integration Test Task - JAR-First Testing
-tasks.register<Test>("integrationTest") {
-    group = "verification"
-    description = "Runs integration tests against the built JAR (JAR-first approach)"
-
-    // Use JUnit Platform
-    useJUnitPlatform()
-
-    // Include only integration tests
-    include("**/*IntegrationTest.class")
-    include("**/integration/**")
-
-    // Test against built JAR (JAR-first approach)
-    dependsOn("build")
-
-    // Configure test environment
-    maxHeapSize = "2G"
-    systemProperties = System.getProperties()
-        .filter { it.key is String }
-        .mapKeys { it.key as String }
-        .mapValues { it.value as Any }
-
-    // Pass environment variables
-    val testDbUrl = System.getenv("TEST_DATABASE_URL") ?: System.getProperty("TEST_DATABASE_URL")
-    val testDbUser = System.getenv("TEST_DATABASE_USER") ?: System.getProperty("TEST_DATABASE_USER")
-    val testDbPassword = System.getenv("TEST_DATABASE_PASSWORD") ?: System.getProperty("TEST_DATABASE_PASSWORD")
-
-    if (testDbUrl != null) systemProperty("TEST_DATABASE_URL", testDbUrl)
-    if (testDbUser != null) systemProperty("TEST_DATABASE_USER", testDbUser)
-    if (testDbPassword != null) systemProperty("TEST_DATABASE_PASSWORD", testDbPassword)
-
-    systemProperty("TEST_MODE", "integration")
-    workingDir = rootProject.projectDir
-
-    // Make sure integration tests don't run with unit tests
-    shouldRunAfter(tasks.named<Test>("test"))
-}
-
-tasks.jar {
-    manifest {
-        attributes(mapOf(
-            "Main-Class" to "fin.ConsoleApplication"
-        ))
-    }
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    from(configurations.runtimeClasspath.get().map { if (it.isDirectory) it else zipTree(it) }) {
-        exclude("META-INF/*.SF")
-        exclude("META-INF/*.DSA")
-        exclude("META-INF/*.RSA")
+    doFirst {
+        val pdfPath = project.findProperty("pdfPath") as String? 
+            ?: throw GradleException("Please specify -PpdfPath=<path-to-pdf>")
+        val pageNum = project.findProperty("pageNum") as String? ?: "0"
+        
+        args = listOf(pdfPath, pageNum)
     }
 }
 
-tasks.register<Jar>("fatJar") {
-    dependsOn.addAll(listOf("compileJava", "processResources"))
-    archiveClassifier.set("fat")
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    manifest {
-        attributes(mapOf(
-            "Main-Class" to "fin.ConsoleApplication"
-        ))
+tasks.register<JavaExec>("testAbsaParser") {
+    group = "analysis"
+    description = "Test Absa parser on OCR-extracted text file"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass = "fin.util.TestAbsaParser"
+    
+    doFirst {
+        val textFile = project.findProperty("textFile") as String? 
+            ?: throw GradleException("Please specify -PtextFile=<path-to-text-file>")
+        
+        args = listOf(textFile)
     }
-    from(configurations.runtimeClasspath.get().map { if (it.isDirectory) it else zipTree(it) }) {
-        exclude("META-INF/*.SF")
-        exclude("META-INF/*.DSA")
-        exclude("META-INF/*.RSA")
-    }
-    with(tasks.jar.get())
 }
+
+tasks.register<JavaExec>("testFnbParser") {
+    group = "analysis"
+    description = "Test FNB parser on text file"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass = "fin.util.TestFnbParser"
+    
+    doFirst {
+        val textFile = project.findProperty("textFile") as String? 
+            ?: throw GradleException("Please specify -PtextFile=<path-to-text-file>")
+        
+        args = listOf(textFile)
+    }
+}
+
+

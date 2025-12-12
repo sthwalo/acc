@@ -1,22 +1,22 @@
 /*
  * FIN Financial Management System
- * 
+ *
  * Copyright (c) 2024-2025 Sthwalo Holdings (Pty) Ltd.
  * Owner: Immaculate Nyoni
  * Contact: sthwaloe@gmail.com | +27 61 514 6185
- * 
+ *
  * This source code is licensed under the Apache License 2.0.
  * Commercial use of the APPLICATION requires separate licensing.
- * 
+ *
  * Contains proprietary algorithms and business logic.
  * Unauthorized commercial use is strictly prohibited.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -36,8 +36,28 @@ import com.sun.jna.Pointer;
  * Provides Java access to libharu's native C functions for manual PDF generation
  */
 public interface Libharu extends Library {
-    // Load the library explicitly from the Homebrew path
-    Libharu INSTANCE = (Libharu) Native.load("/opt/homebrew/lib/libhpdf.dylib", Libharu.class);
+    // Load the library - try Linux first (Docker), then macOS (development)
+    Libharu INSTANCE = loadLibharu();
+
+    private static Libharu loadLibharu() {
+        // Try Linux paths first (for Docker containers)
+        String[] linuxPaths = {"/usr/lib/libhpdf.so", "/usr/local/lib/libhpdf.so", "libhpdf.so"};
+        for (String path : linuxPaths) {
+            try {
+                return (Libharu) Native.load(path, Libharu.class);
+            } catch (UnsatisfiedLinkError e) {
+                // Continue to next path
+            }
+        }
+
+        // Try macOS path (for local development)
+        try {
+            return (Libharu) Native.load("/opt/homebrew/lib/libhpdf.dylib", Libharu.class);
+        } catch (UnsatisfiedLinkError e) {
+            throw new RuntimeException("Failed to load libharu library. Please ensure libharu is installed. " +
+                "On macOS: brew install libharu. On Linux/Docker: apt-get install libhpdf-dev", e);
+        }
+    }
 
     // PDF document creation and management
     Pointer HPDF_New(Pointer errorHandler, Pointer userData);

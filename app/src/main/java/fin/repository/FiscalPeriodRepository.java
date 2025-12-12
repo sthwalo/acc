@@ -1,213 +1,67 @@
-/*
- * FIN Financial Management System
- * 
- * Copyright (c) 2024-2025 Sthwalo Holdings (Pty) Ltd.
- * Owner: Immaculate Nyoni
- * Contact: sthwaloe@gmail.com | +27 61 514 6185
- * 
- * This source code is licensed under the Apache License 2.0.
- * Commercial use of the APPLICATION requires separate licensing.
- * 
- * Contains proprietary algorithms and business logic.
- * Unauthorized commercial use is strictly prohibited.
- * 
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * 
- *     http://www.apache.org/licenses/LICENSE-2.0
- * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package fin.repository;
 
-import fin.model.FiscalPeriod;
-import java.sql.*;
-import java.util.ArrayList;
+import fin.entity.FiscalPeriod;
+import fin.entity.FiscalPeriodSummary;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Repository implementation for FiscalPeriod entities.
- */
-public class FiscalPeriodRepository implements BaseRepository<FiscalPeriod, Long> {
-    private final String dbUrl;
+@Repository
+public interface FiscalPeriodRepository extends JpaRepository<FiscalPeriod, Long> {
 
-    // Parameter constants for PreparedStatement indices
-    private static final int PARAM_COMPANY_ID = 1;
-    private static final int PARAM_PERIOD_NAME = 2;
-    private static final int PARAM_START_DATE = 3;
-    private static final int PARAM_END_DATE = 4;
-    private static final int PARAM_IS_CLOSED = 5;
-    private static final int PARAM_ID_UPDATE = 6;
+    /**
+     * Find all fiscal periods for a specific company
+     */
+    List<FiscalPeriod> findByCompanyId(Long companyId);
 
-    public FiscalPeriodRepository(String initialDbUrl) {
-        this.dbUrl = initialDbUrl;
-    }
+    /**
+     * Find all active (non-closed) fiscal periods for a specific company
+     */
+    List<FiscalPeriod> findByCompanyIdAndIsClosedFalse(Long companyId);
 
-    @Override
-    public FiscalPeriod save(FiscalPeriod period) {
-        String sql = period.getId() == null ?
-            "INSERT INTO fiscal_periods (company_id, period_name, start_date, end_date, is_closed) VALUES (?, ?, ?, ?, ?)" :
-            "UPDATE fiscal_periods SET company_id = ?, period_name = ?, start_date = ?, end_date = ?, is_closed = ? WHERE id = ?";
+    /**
+     * Find fiscal periods that contain a specific date for a company
+     */
+    @Query("SELECT fp FROM FiscalPeriod fp WHERE fp.companyId = :companyId AND fp.startDate <= :date AND fp.endDate >= :date")
+    List<FiscalPeriod> findByCompanyIdAndDateRange(@Param("companyId") Long companyId, @Param("date") LocalDate date);
 
-        try (Connection conn = DriverManager.getConnection(dbUrl);
-             PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            
-            stmt.setLong(PARAM_COMPANY_ID, period.getCompanyId());
-            stmt.setString(PARAM_PERIOD_NAME, period.getPeriodName());
-            stmt.setDate(PARAM_START_DATE, Date.valueOf(period.getStartDate()));
-            stmt.setDate(PARAM_END_DATE, Date.valueOf(period.getEndDate()));
-            stmt.setBoolean(PARAM_IS_CLOSED, period.isClosed());
-            
-            if (period.getId() != null) {
-                stmt.setLong(PARAM_ID_UPDATE, period.getId());
-            }
+    /**
+     * Find fiscal periods within a date range for a company
+     */
+    @Query("SELECT fp FROM FiscalPeriod fp WHERE fp.companyId = :companyId AND ((fp.startDate <= :endDate AND fp.endDate >= :startDate))")
+    List<FiscalPeriod> findByCompanyIdAndDateRangeBetween(@Param("companyId") Long companyId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 
-            stmt.executeUpdate();
+    /**
+     * Find the current fiscal period for a company (active period containing today's date)
+     */
+    @Query("SELECT fp FROM FiscalPeriod fp WHERE fp.companyId = :companyId AND fp.isClosed = false AND fp.startDate <= CURRENT_DATE AND fp.endDate >= CURRENT_DATE")
+    Optional<FiscalPeriod> findCurrentPeriodByCompanyId(@Param("companyId") Long companyId);
 
-            if (period.getId() == null) {
-                ResultSet rs = stmt.getGeneratedKeys();
-                if (rs.next()) {
-                    period.setId(rs.getLong(1));
-                }
-            }
+    /**
+     * Check if a fiscal period exists for a company with the given name
+     */
+    boolean existsByCompanyIdAndPeriodName(Long companyId, String periodName);
 
-            return period;
-        } catch (SQLException e) {
-            throw new RuntimeException("Error saving fiscal period", e);
-        }
-    }
+    /**
+     * Find fiscal periods by company ID ordered by start date descending
+     */
+    List<FiscalPeriod> findByCompanyIdOrderByStartDateDesc(Long companyId);
 
-    @Override
-    public Optional<FiscalPeriod> findById(Long id) {
-        String sql = "SELECT * FROM fiscal_periods WHERE id = ?";
-        
-        try (Connection conn = DriverManager.getConnection(dbUrl);
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
-            stmt.setLong(1, id);
-            ResultSet rs = stmt.executeQuery();
-            
-            if (rs.next()) {
-                return Optional.of(mapResultSetToFiscalPeriod(rs));
-            }
-            
-            return Optional.empty();
-        } catch (SQLException e) {
-            throw new RuntimeException("Error finding fiscal period by id", e);
-        }
-    }
+    /**
+     * Delete fiscal periods by company ID
+     */
+    void deleteByCompanyId(Long companyId);
 
-    @Override
-    public List<FiscalPeriod> findAll() {
-        String sql = "SELECT * FROM fiscal_periods";
-        List<FiscalPeriod> periods = new ArrayList<>();
-        
-        try (Connection conn = DriverManager.getConnection(dbUrl);
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
-            
-            while (rs.next()) {
-                periods.add(mapResultSetToFiscalPeriod(rs));
-            }
-            
-            return periods;
-        } catch (SQLException e) {
-            throw new RuntimeException("Error finding all fiscal periods", e);
-        }
-    }
-
-    @Override
-    public void delete(FiscalPeriod period) {
-        if (period.getId() != null) {
-            deleteById(period.getId());
-        }
-    }
-
-    @Override
-    public void deleteById(Long id) {
-        String sql = "DELETE FROM fiscal_periods WHERE id = ?";
-        
-        try (Connection conn = DriverManager.getConnection(dbUrl);
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
-            stmt.setLong(1, id);
-            stmt.executeUpdate();
-        } catch (SQLException e) {
-            throw new RuntimeException("Error deleting fiscal period", e);
-        }
-    }
-
-    @Override
-    public boolean exists(Long id) {
-        String sql = "SELECT 1 FROM fiscal_periods WHERE id = ?";
-        
-        try (Connection conn = DriverManager.getConnection(dbUrl);
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
-            stmt.setLong(1, id);
-            ResultSet rs = stmt.executeQuery();
-            return rs.next();
-        } catch (SQLException e) {
-            throw new RuntimeException("Error checking fiscal period existence", e);
-        }
-    }
-
-    private FiscalPeriod mapResultSetToFiscalPeriod(ResultSet rs) throws SQLException {
-        FiscalPeriod period = new FiscalPeriod();
-        period.setId(rs.getLong("id"));
-        period.setCompanyId(rs.getLong("company_id"));
-        period.setPeriodName(rs.getString("period_name"));
-        period.setStartDate(rs.getDate("start_date").toLocalDate());
-        period.setEndDate(rs.getDate("end_date").toLocalDate());
-        period.setClosed(rs.getBoolean("is_closed"));
-        return period;
-    }
-
-    // Additional query methods
-    public List<FiscalPeriod> findByCompanyId(Long companyId) {
-        String sql = "SELECT * FROM fiscal_periods WHERE company_id = ?";
-        List<FiscalPeriod> periods = new ArrayList<>();
-        
-        try (Connection conn = DriverManager.getConnection(dbUrl);
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
-            stmt.setLong(1, companyId);
-            ResultSet rs = stmt.executeQuery();
-            
-            while (rs.next()) {
-                periods.add(mapResultSetToFiscalPeriod(rs));
-            }
-            
-            return periods;
-        } catch (SQLException e) {
-            throw new RuntimeException("Error finding fiscal periods by company", e);
-        }
-    }
-
-    public List<FiscalPeriod> findActiveByCompanyId(Long companyId) {
-        String sql = "SELECT * FROM fiscal_periods WHERE company_id = ? AND is_closed = false";
-        List<FiscalPeriod> periods = new ArrayList<>();
-        
-        try (Connection conn = DriverManager.getConnection(dbUrl);
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
-            stmt.setLong(1, companyId);
-            ResultSet rs = stmt.executeQuery();
-            
-            while (rs.next()) {
-                periods.add(mapResultSetToFiscalPeriod(rs));
-            }
-            
-            return periods;
-        } catch (SQLException e) {
-            throw new RuntimeException("Error finding active fiscal periods by company", e);
-        }
-    }
+    /**
+     * Get all fiscal periods with company information for frontend display
+     */
+    @Query("SELECT new fin.entity.FiscalPeriodSummary(c.name, fp.id, fp.periodName, fp.startDate, fp.endDate, fp.isClosed) " +
+           "FROM Company c LEFT JOIN FiscalPeriod fp ON c.id = fp.companyId " +
+           "ORDER BY c.name, fp.startDate")
+    List<FiscalPeriodSummary> findAllFiscalPeriodsWithCompanyInfo();
 }
