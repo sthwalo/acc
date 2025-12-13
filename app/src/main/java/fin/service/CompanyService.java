@@ -120,10 +120,18 @@ public class CompanyService {
     /**
      * Create a new company
      */
-    public Company createCompany(Company company) {
+    public Company createCompany(Company company, Long userId) {
         // For JDBC version, we can't easily check uniqueness constraints without custom queries
         // This would need to be implemented with custom SQL queries in the repository
-        return companyRepository.save(company);
+        Company savedCompany = companyRepository.save(company);
+        
+        // Create UserCompany relationship - creator becomes ADMIN
+        UserCompany userCompany = new UserCompany(userId, savedCompany.getId(), "ADMIN");
+        userCompany.setCreatedBy("USER_" + userId);
+        userCompany.setUpdatedBy("USER_" + userId);
+        userCompanyRepository.save(userCompany);
+        
+        return savedCompany;
     }
 
     /**
@@ -189,13 +197,11 @@ public class CompanyService {
     }
 
     /**
-     * Check if company exists by registration number
+     * Check if user has access to a company
      */
     @Transactional(readOnly = true)
-    public boolean existsByRegistrationNumber(String registrationNumber) {
-        // JDBC version doesn't have findByRegistrationNumber
-        // This would need custom SQL implementation
-        return false; // Placeholder
+    public boolean hasUserAccessToCompany(Long userId, Long companyId) {
+        return userCompanyRepository.existsByUserIdAndCompanyIdAndIsActive(userId, companyId, true);
     }
 
     /**

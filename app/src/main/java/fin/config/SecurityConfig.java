@@ -42,7 +42,16 @@ public class SecurityConfig {
                 .authenticationEntryPoint(new HttpStatusEntryPoint(org.springframework.http.HttpStatus.UNAUTHORIZED))
             )
             .authorizeHttpRequests(authz -> authz
-                .anyRequest().permitAll()  // TEMPORARY: Allow all requests for testing
+                // Public endpoints
+                .requestMatchers("/api/v1/health", "/api/v1/health/**").permitAll()
+                .requestMatchers("/api/v1/auth/login", "/api/v1/auth/register").permitAll()
+                .requestMatchers("/api/docs/**", "/api/swagger-ui/**").permitAll()
+                
+                // All other API endpoints require authentication
+                .requestMatchers("/api/**").authenticated()
+                
+                // Fallback
+                .anyRequest().permitAll()  // TEMPORARY: Allow all other requests for testing
             )
             .headers(headers -> headers.disable())
             .sessionManagement(session -> session.disable())

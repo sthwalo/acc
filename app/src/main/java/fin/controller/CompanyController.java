@@ -130,8 +130,16 @@ public class CompanyController {
      * Get company by ID
      */
     @GetMapping("/{id}")
-    public ResponseEntity<Map<String, Object>> getCompanyById(@PathVariable Long id) {
+    public ResponseEntity<Map<String, Object>> getCompanyById(@PathVariable Long id, @RequestAttribute("user") User user) {
         try {
+            // Check if user has access to this company
+            if (!companyService.hasUserAccessToCompany(user.getId(), id)) {
+                return ResponseEntity.status(403).body(Map.of(
+                    "success", false,
+                    "message", "Access denied: You do not have permission to access this company"
+                ));
+            }
+            
             Company company = companyService.getCompanyById(id);
             if (company == null) {
                 return ResponseEntity.notFound().build();
@@ -192,9 +200,9 @@ public class CompanyController {
      * Create a new company
      */
     @PostMapping
-    public ResponseEntity<Map<String, Object>> createCompany(@RequestBody Company company) {
+    public ResponseEntity<Map<String, Object>> createCompany(@RequestBody Company company, @RequestAttribute("user") User user) {
         try {
-            Company createdCompany = companyService.createCompany(company);
+            Company createdCompany = companyService.createCompany(company, user.getId());
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("data", createdCompany);
@@ -212,8 +220,16 @@ public class CompanyController {
      * Update an existing company
      */
     @PutMapping("/{id}")
-    public ResponseEntity<Map<String, Object>> updateCompany(@PathVariable Long id, @RequestBody Company company) {
+    public ResponseEntity<Map<String, Object>> updateCompany(@PathVariable Long id, @RequestBody Company company, @RequestAttribute("user") User user) {
         try {
+            // Check if user has access to this company
+            if (!companyService.hasUserAccessToCompany(user.getId(), id)) {
+                return ResponseEntity.status(403).body(Map.of(
+                    "success", false,
+                    "message", "Access denied: You do not have permission to update this company"
+                ));
+            }
+            
             company.setId(id);
             Company updatedCompany = companyService.updateCompany(company);
             Map<String, Object> response = new HashMap<>();
@@ -233,8 +249,16 @@ public class CompanyController {
      * Delete a company
      */
     @DeleteMapping("/{id}")
-    public ResponseEntity<Map<String, Object>> deleteCompany(@PathVariable Long id) {
+    public ResponseEntity<Map<String, Object>> deleteCompany(@PathVariable Long id, @RequestAttribute("user") User user) {
         try {
+            // Check if user has access to this company
+            if (!companyService.hasUserAccessToCompany(user.getId(), id)) {
+                return ResponseEntity.status(403).body(Map.of(
+                    "success", false,
+                    "message", "Access denied: You do not have permission to delete this company"
+                ));
+            }
+            
             boolean deleted = companyService.deleteCompany(id);
             if (!deleted) {
                 return ResponseEntity.notFound().build();
@@ -255,8 +279,16 @@ public class CompanyController {
      * Get fiscal periods for a company
      */
     @GetMapping("/{companyId}/fiscal-periods")
-    public ResponseEntity<Map<String, Object>> getFiscalPeriods(@PathVariable Long companyId) {
+    public ResponseEntity<Map<String, Object>> getFiscalPeriods(@PathVariable Long companyId, @RequestAttribute("user") User user) {
         try {
+            // Check if user has access to this company
+            if (!companyService.hasUserAccessToCompany(user.getId(), companyId)) {
+                return ResponseEntity.status(403).body(Map.of(
+                    "success", false,
+                    "message", "Access denied: You do not have permission to access this company's fiscal periods"
+                ));
+            }
+            
             List<FiscalPeriod> fiscalPeriods = companyService.getFiscalPeriodsByCompany(companyId);
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
@@ -320,8 +352,16 @@ public class CompanyController {
      * Create a new fiscal period
      */
     @PostMapping("/{companyId}/fiscal-periods")
-    public ResponseEntity<Map<String, Object>> createFiscalPeriod(@PathVariable Long companyId, @RequestBody FiscalPeriod fiscalPeriod) {
+    public ResponseEntity<Map<String, Object>> createFiscalPeriod(@PathVariable Long companyId, @RequestBody FiscalPeriod fiscalPeriod, @RequestAttribute("user") User user) {
         try {
+            // Check if user has access to this company
+            if (!companyService.hasUserAccessToCompany(user.getId(), companyId)) {
+                return ResponseEntity.status(403).body(Map.of(
+                    "success", false,
+                    "message", "Access denied: You do not have permission to create fiscal periods for this company"
+                ));
+            }
+            
             fiscalPeriod.setCompanyId(companyId);
             FiscalPeriod createdPeriod = companyService.createFiscalPeriod(fiscalPeriod);
             Map<String, Object> response = new HashMap<>();
