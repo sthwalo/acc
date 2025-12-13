@@ -19,8 +19,25 @@ interface AuthContextType {
     paypalCaptureId?: string;
   }) => Promise<void>;
   logout: () => void;
+  handleAuthError: () => void;
   selectPlan: (planId: number, billingCycle: 'monthly' | 'yearly') => Promise<void>;
 }
+
+// Helper function to check if JWT token is expired
+const isTokenExpired = (token: string): boolean => {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const exp = payload.exp;
+    if (!exp) return true;
+
+    // Convert exp to milliseconds and compare with current time
+    const expiryTime = exp * 1000; // JWT exp is in seconds
+    return Date.now() >= expiryTime;
+  } catch (error) {
+    console.warn('Error parsing token:', error);
+    return true; // Consider invalid tokens as expired
+  }
+};
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -44,14 +61,35 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const token = localStorage.getItem('auth_token');
       if (token) {
+        // First validate token format and expiry locally before API call
+        if (isTokenExpired(token)) {
+          console.warn('Token expired locally, clearing...');
+          localStorage.removeItem('auth_token');
+          setUser(null);
+          setIsLoading(false);
+          return;
+        }
+
         const currentUser = await apiService.getCurrentUser();
         setUser(currentUser);
+      } else {
+        setUser(null);
       }
-    } catch (error) {
-      // Token is invalid, clear it and reset state
-      console.warn('Authentication check failed, clearing token:', error);
-      localStorage.removeItem('auth_token');
-      setUser(null);
+    } catch (error: unknown) {
+      console.warn('Authentication check failed:', error);
+
+      // Only clear token for authentication errors, not network errors
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response?: { status?: number } };
+        if (axiosError.response?.status === 401 || axiosError.response?.status === 403) {
+          console.warn('Authentication failed, clearing token');
+          handleAuthError();
+        }
+      } else {
+        // Network error or server error - keep token and retry later
+        console.warn('Network/server error, keeping token for retry');
+        setUser(null); // Show login screen but keep token
+      }
     } finally {
       setIsLoading(false);
     }
@@ -59,6 +97,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   useEffect(() => {
     checkAuthStatus();
+
+    // Set up periodic token validation (every 5 minutes)
+    const interval = setInterval(() => {
+      const token = localStorage.getItem('auth_token');
+      if (token && isTokenExpired(token)) {
+        console.warn('Token expired during session, logging out...');
+        handleAuthError();
+      }
+    }, 5 * 60 * 1000); // 5 minutes
+
+    return () => clearInterval(interval);
   }, [checkAuthStatus]);
 
   const login = async (email: string, password: string) => {
@@ -94,6 +143,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setUser(null);
   };
 
+  const handleAuthError = () => {
+    console.warn('Authentication error detected, clearing session');
+    localStorage.removeItem('auth_token');
+    setUser(null);
+  };
+
   const selectPlan = async (planId: number, billingCycle: 'monthly' | 'yearly') => {
     const response = await apiService.selectPlan({ planId, billingCycle });
     localStorage.setItem('auth_token', response.token);
@@ -107,6 +162,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     login,
     register,
     logout,
+    handleAuthError,
     selectPlan,
   };
 

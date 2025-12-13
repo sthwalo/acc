@@ -486,11 +486,20 @@ The complete user onboarding workflow follows this sequence:
 
 ---
 
-**Document Version**: 1.4
+**Document Version**: 1.5
 **Created**: December 13, 2025
 **Updated**: December 13, 2025
 **Author**: Immaculate Nyoni
-**Review Status**: Updated - Company CRUD Operations Fully Functional
+**Review Status**: Updated - Fiscal Period Management & Navigation Complete
+
+**Changelog v1.5:**
+- ✅ **Fiscal Period Naming**: Changed from "Mar 2023 - Feb 2024" to "Financial Year 2024" format for better clarity
+- ✅ **FiscalPeriodCalculationService**: Updated generatePeriodName() method to use "Financial Year YYYY" format
+- ✅ **API URL Fixes**: Corrected fiscal period endpoint URLs in ApiService.ts (update, delete, close operations)
+- ✅ **Button Navigation**: Fixed FiscalPeriodsView buttons - "View Reports" → 'generate-reports', "Manage Transactions" → 'data-management'
+- ✅ **Fiscal Period CRUD**: All fiscal period operations (create, update, delete, close) now use correct API endpoints
+- ✅ **Frontend Build**: All changes compile successfully, no breaking changes
+- ✅ **Progress Update**: Fiscal period management workflow fully functional
 
 **Changelog v1.4:**
 - ✅ **Company CRUD Operations**: Full create/read/update/delete functionality implemented with DTO pattern

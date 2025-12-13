@@ -15,10 +15,10 @@ Based on your IAS 16 fiscal-year-based depreciation requirements, here are the *
 **Required Changes:**
 - Modify `saveDepreciationEntries()` to calculate periods based on fiscal year end (Feb 28/29)
 - **Year 0**: Nov 2021 - Feb 2022 (4 months)
-- **Year 1**: Mar 2022 - Feb 2023 (12 months)  
-- **Year 2**: Mar 2023 - Feb 2024 (12 months)
-- **Year 3**: Mar 2024 - Feb 2025 (12 months)
-- **Year 4**: Mar 2025 - Feb 2026 (12 months)
+- **Year 1**: Financial Year 2023 (12 months)  
+- **Year 2**: Financial Year 2024 (12 months)
+- **Year 3**: Financial Year 2025 (12 months)
+- **Year 4**: Financial Year 2026 (12 months)
 
 ### 2. **DepreciationService.java** - **Business Logic & Posting**
 **Current Issues:**

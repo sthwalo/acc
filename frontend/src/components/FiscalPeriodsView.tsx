@@ -4,11 +4,13 @@ import { serviceRegistry } from '../services/ServiceRegistry';
 import { ApiService } from '../services/ApiService';
 import { formatDate } from '../utils/date';
 import ApiMessageBanner from './shared/ApiMessageBanner';
+import FiscalPeriodSetupModal from './FiscalPeriodSetupModal';
 import type { FiscalPeriod, Company } from '../types/api';
 
 interface FiscalPeriodsViewProps {
   selectedCompany: Company;
   onFiscalPeriodSelect?: (fiscalPeriod: FiscalPeriod | null) => void;
+  onViewChange?: (view: string) => void;
 }
 
 interface FiscalPeriodFormData {
@@ -17,11 +19,11 @@ interface FiscalPeriodFormData {
   endDate: string;
 }
 
-export default function FiscalPeriodsView({ selectedCompany, onFiscalPeriodSelect }: FiscalPeriodsViewProps) {
+export default function FiscalPeriodsView({ selectedCompany, onFiscalPeriodSelect, onViewChange }: FiscalPeriodsViewProps) {
   const [fiscalPeriods, setFiscalPeriods] = useState<FiscalPeriod[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [showFiscalPeriodSetup, setShowFiscalPeriodSetup] = useState(false);
   const [editingPeriod, setEditingPeriod] = useState<FiscalPeriod | null>(null);
   const [formData, setFormData] = useState<FiscalPeriodFormData>({
     periodName: '',
@@ -37,70 +39,15 @@ export default function FiscalPeriodsView({ selectedCompany, onFiscalPeriodSelec
       const data = await apiService.fiscalPeriods.getFiscalPeriods(Number(selectedCompany.id));
       setFiscalPeriods(data);
       setError(null);
+
+      // If no fiscal periods exist, show the setup modal for automated creation
+      if (data.length === 0) {
+        console.log('No fiscal periods found for company, showing automated setup modal');
+        setShowFiscalPeriodSetup(true);
+      }
     } catch (err) {
-      // Check if this is a "no fiscal periods" error that should trigger create mode
+      // Handle API errors
       let message = 'Failed to load fiscal periods';
-      let shouldShowCreateForm = false;
-
-      try {
-        const anyErr: unknown = err;
-        if (anyErr && typeof anyErr === 'object' && 'response' in anyErr) {
-          const axiosErr = anyErr as { response?: { data?: { errorCode?: string; message?: string } } };
-          if (axiosErr.response?.data?.errorCode === 'NO_FISCAL_PERIODS') {
-            // This is expected for new companies - show create form instead of error
-            shouldShowCreateForm = true;
-            setShowCreateForm(true);
-            setError(null);
-            setFiscalPeriods([]);
-            setLoading(false);
-            return;
-          } else if (axiosErr.response?.data?.message) {
-            message = axiosErr.response.data.message;
-          }
-        } else if (anyErr && typeof anyErr === 'object' && 'message' in anyErr && typeof anyErr.message === 'string') {
-          message = anyErr.message;
-        }
-      } catch {
-        // fallback below
-      }
-
-      if (!shouldShowCreateForm) {
-        setError(message);
-        console.error('Error loading fiscal periods:', err);
-      }
-    } finally {
-      if (!showCreateForm) {
-        setLoading(false);
-      }
-    }
-  }, [selectedCompany.id, showCreateForm]);
-
-  const handleCreateFiscalPeriod = async () => {
-    if (!formData.periodName || !formData.startDate || !formData.endDate) {
-      setError('Please fill in all required fields');
-      return;
-    }
-
-    try {
-      setSubmitting(true);
-      const apiService = serviceRegistry.get<ApiService>('apiService');
-      await apiService.fiscalPeriods.createFiscalPeriod(Number(selectedCompany.id), {
-        companyId: Number(selectedCompany.id),
-        periodName: formData.periodName,
-        startDate: formData.startDate,
-        endDate: formData.endDate,
-        closed: false,
-        createdAt: new Date().toISOString(),
-        createdBy: null,
-        updatedBy: null,
-        updatedAt: null
-      });
-      setShowCreateForm(false);
-      setFormData({ periodName: '', startDate: '', endDate: '' });
-      await loadFiscalPeriods();
-    } catch (err) {
-      // Prefer structured API/axios error message where possible
-      let message = 'Failed to create fiscal period';
       try {
         const anyErr: unknown = err;
         if (anyErr && typeof anyErr === 'object' && 'response' in anyErr) {
@@ -115,11 +62,11 @@ export default function FiscalPeriodsView({ selectedCompany, onFiscalPeriodSelec
         // fallback below
       }
       setError(message);
-      console.error('Error creating fiscal period:', err);
+      console.error('Error loading fiscal periods:', err);
     } finally {
-      setSubmitting(false);
+      setLoading(false);
     }
-  };
+  }, [selectedCompany.id]);
 
   const handleEditFiscalPeriod = (period: FiscalPeriod) => {
     setEditingPeriod(period);
@@ -232,10 +179,21 @@ export default function FiscalPeriodsView({ selectedCompany, onFiscalPeriodSelec
 
   const cancelEdit = () => {
     setEditingPeriod(null);
-    setShowCreateForm(false);
     setFormData({ periodName: '', startDate: '', endDate: '' });
     setError(null);
   };
+
+  const handleFiscalPeriodSetupSuccess = useCallback((fiscalPeriod: FiscalPeriod) => {
+    console.log('Fiscal period setup successful:', fiscalPeriod);
+    setShowFiscalPeriodSetup(false);
+    // Reload fiscal periods to show the newly created one
+    loadFiscalPeriods();
+  }, [loadFiscalPeriods]);
+
+  const handleFiscalPeriodSetupClose = useCallback(() => {
+    console.log('Fiscal period setup modal closed');
+    setShowFiscalPeriodSetup(false);
+  }, []);
 
   useEffect(() => {
     if (selectedCompany) {
@@ -274,25 +232,21 @@ export default function FiscalPeriodsView({ selectedCompany, onFiscalPeriodSelec
         <p>Financial periods and performance metrics</p>
         <button
           className="create-button"
-          onClick={() => setShowCreateForm(true)}
-          disabled={showCreateForm || editingPeriod !== null}
+          onClick={() => setShowFiscalPeriodSetup(true)}
+          disabled={editingPeriod !== null || showFiscalPeriodSetup}
         >
           <Plus size={16} />
           Create Fiscal Period
         </button>
       </div>
 
-      {(showCreateForm || editingPeriod) && (
+      {editingPeriod && (
         <div className="form-overlay">
           <div className="form-container">
-            <h3>{editingPeriod ? 'Edit Fiscal Period' : 'Create New Fiscal Period'}</h3>
+            <h3>Edit Fiscal Period</h3>
             <form onSubmit={(e) => {
               e.preventDefault();
-              if (editingPeriod) {
-                handleUpdateFiscalPeriod();
-              } else {
-                handleCreateFiscalPeriod();
-              }
+              handleUpdateFiscalPeriod();
             }}>
               <div className="form-group">
                 <label htmlFor="periodName">Period Name *</label>
@@ -344,83 +298,91 @@ export default function FiscalPeriodsView({ selectedCompany, onFiscalPeriodSelec
         </div>
       )}
 
-      <div className="fiscal-periods-grid">
-        {fiscalPeriods.map((period) => (
-          <div key={period.id} className={`fiscal-period-card ${period.closed ? 'closed' : 'active'}`}>
-            <div className="period-header">
-              <Calendar size={24} />
-              <h3>{period.periodName}</h3>
-              <span className={`status-badge ${!period.closed ? 'active' : 'closed'}`}>
-                {!period.closed ? 'Active' : 'Closed'}
-              </span>
-            </div>
-
-            <div className="period-details">
-              <div className="detail-row">
-                <span className="label">Start Date:</span>
-                <span className="value">{formatDate(period.startDate)}</span>
+      {fiscalPeriods.length > 0 && (
+        <div className="fiscal-periods-grid">
+          {fiscalPeriods.map((period) => (
+            <div key={period.id} className={`fiscal-period-card ${period.closed ? 'closed' : 'active'}`}>
+              <div className="period-header">
+                <Calendar size={24} />
+                <h3>{period.periodName}</h3>
+                <span className={`status-badge ${!period.closed ? 'active' : 'closed'}`}>
+                  {!period.closed ? 'Active' : 'Closed'}
+                </span>
               </div>
 
-              <div className="detail-row">
-                <span className="label">End Date:</span>
-                <span className="value">{formatDate(period.endDate)}</span>
+              <div className="period-details">
+                <div className="detail-row">
+                  <span className="label">Start Date:</span>
+                  <span className="value">{formatDate(period.startDate)}</span>
+                </div>
+
+                <div className="detail-row">
+                  <span className="label">End Date:</span>
+                  <span className="value">{formatDate(period.endDate)}</span>
+                </div>
+
+                <div className="detail-row">
+                  <span className="label">Created:</span>
+                  <span className="value">{formatDate(period.createdAt)}</span>
+                </div>
               </div>
 
-              <div className="detail-row">
-                <span className="label">Created:</span>
-                <span className="value">{formatDate(period.createdAt)}</span>
-              </div>
-            </div>
-
-            <div className="period-actions">
-              <button
-                className="select-button"
-                onClick={() => onFiscalPeriodSelect?.(period)}
-              >
-                Select Period
-              </button>
-              <button className="view-reports-button">
-                View Reports
-              </button>
-              <button className="manage-transactions-button">
-                Manage Transactions
-              </button>
-              {!period.closed && (
-                <>
-                  <button
-                    className="edit-button"
-                    onClick={() => handleEditFiscalPeriod(period)}
-                    disabled={showCreateForm || editingPeriod !== null}
-                  >
-                    <Edit size={16} />
-                    Edit
-                  </button>
-                  <button
-                    className="close-button"
-                    onClick={() => handleCloseFiscalPeriod(period)}
-                  >
-                    <Lock size={16} />
-                    Close
-                  </button>
-                  <button
-                    className="delete-button"
-                    onClick={() => handleDeleteFiscalPeriod(period)}
-                  >
-                    <Trash2 size={16} />
-                    Delete
-                  </button>
-                </>
-              )}
-              {period.closed && (
-                <button className="closed-indicator" disabled>
-                  <Lock size={16} />
-                  Period Closed
+              <div className="period-actions">
+                <button
+                  className="select-button"
+                  onClick={() => onFiscalPeriodSelect?.(period)}
+                >
+                  Select Period
                 </button>
-              )}
+                <button 
+                  className="view-reports-button"
+                  onClick={() => onViewChange?.('generate-reports')}
+                >
+                  View Reports
+                </button>
+                <button 
+                  className="manage-transactions-button"
+                  onClick={() => onViewChange?.('data-management')}
+                >
+                  Manage Transactions
+                </button>
+                {!period.closed && (
+                  <>
+                    <button
+                      className="edit-button"
+                      onClick={() => handleEditFiscalPeriod(period)}
+                      disabled={editingPeriod !== null}
+                    >
+                      <Edit size={16} />
+                      Edit
+                    </button>
+                    <button
+                      className="close-button"
+                      onClick={() => handleCloseFiscalPeriod(period)}
+                    >
+                      <Lock size={16} />
+                      Close
+                    </button>
+                    <button
+                      className="delete-button"
+                      onClick={() => handleDeleteFiscalPeriod(period)}
+                    >
+                      <Trash2 size={16} />
+                      Delete
+                    </button>
+                  </>
+                )}
+                {period.closed && (
+                  <button className="closed-indicator" disabled>
+                    <Lock size={16} />
+                    Period Closed
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {fiscalPeriods.length === 0 && (
         <div className="empty-state">
@@ -429,12 +391,20 @@ export default function FiscalPeriodsView({ selectedCompany, onFiscalPeriodSelec
           <p>No fiscal periods have been set up for this company yet.</p>
           <button
             className="create-button"
-            onClick={() => setShowCreateForm(true)}
+            onClick={() => setShowFiscalPeriodSetup(true)}
           >
             <Plus size={16} />
             Create First Fiscal Period
           </button>
         </div>
+      )}
+
+      {showFiscalPeriodSetup && (
+        <FiscalPeriodSetupModal
+          company={selectedCompany}
+          onClose={handleFiscalPeriodSetupClose}
+          onSuccess={handleFiscalPeriodSetupSuccess}
+        />
       )}
     </div>
   );

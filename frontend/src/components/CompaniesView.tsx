@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, memo } from 'react';
 import { Building2, Phone, Mail, Plus, Edit, Trash2, Eye, ArrowLeft, Save } from 'lucide-react';
 import { useApi } from '../hooks/useApi';
 import ApiMessageBanner from './shared/ApiMessageBanner';
+import FiscalPeriodSetupModal from './FiscalPeriodSetupModal';
 import type { Company } from '../types/api';
 
 interface CompaniesViewProps {
@@ -242,6 +243,8 @@ export default function CompaniesView({ onCompanySelect }: CompaniesViewProps) {
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
   const [formData, setFormData] = useState<Partial<Company>>({});
   const [saving, setSaving] = useState(false);
+  const [showFiscalPeriodSetup, setShowFiscalPeriodSetup] = useState(false);
+  const [companyForSetup, setCompanyForSetup] = useState<Company | null>(null);
   const api = useApi();
 
   const loadCompanies = useCallback(async () => {
@@ -290,6 +293,26 @@ export default function CompaniesView({ onCompanySelect }: CompaniesViewProps) {
       setCompanies(prev => [...prev, newCompany]);
       setMenuMode('list');
       setFormData({});
+
+      // Check if the new company needs fiscal period setup
+      try {
+        console.log('Checking fiscal periods for new company:', newCompany.id);
+        const hasPeriods = await api.fiscalPeriods.hasFiscalPeriods(newCompany.id);
+        console.log('Has fiscal periods result:', hasPeriods);
+        if (!hasPeriods) {
+          console.log('Showing fiscal period setup modal for company:', newCompany.name);
+          setCompanyForSetup(newCompany);
+          setShowFiscalPeriodSetup(true);
+        } else {
+          console.log('Company already has fiscal periods, skipping setup');
+        }
+      } catch (fiscalCheckError) {
+        console.warn('Could not check fiscal periods for new company:', fiscalCheckError);
+        // If we can't check fiscal periods, assume setup is needed
+        console.log('Assuming setup is needed due to error, showing modal');
+        setCompanyForSetup(newCompany);
+        setShowFiscalPeriodSetup(true);
+      }
     } catch (err) {
       // Prefer structured API/axios error message where possible
       let message = 'Failed to create company';
@@ -408,6 +431,20 @@ export default function CompaniesView({ onCompanySelect }: CompaniesViewProps) {
     setFormData({});
     setError(null);
   };
+
+  const handleFiscalPeriodSetupSuccess = useCallback(() => {
+    setShowFiscalPeriodSetup(false);
+    setCompanyForSetup(null);
+    // Optionally notify the parent component that a company with fiscal period is now ready
+    if (companyForSetup) {
+      onCompanySelect(companyForSetup);
+    }
+  }, [companyForSetup, onCompanySelect]);
+
+  const handleFiscalPeriodSetupClose = useCallback(() => {
+    setShowFiscalPeriodSetup(false);
+    setCompanyForSetup(null);
+  }, []);
 
   if (loading) {
     return (
@@ -676,6 +713,17 @@ export default function CompaniesView({ onCompanySelect }: CompaniesViewProps) {
           </div>
         ))}
       </div>
+
+      {showFiscalPeriodSetup && companyForSetup && (
+        <>
+          {console.log('Rendering fiscal period setup modal for:', companyForSetup.name)}
+          <FiscalPeriodSetupModal
+            company={companyForSetup}
+            onClose={handleFiscalPeriodSetupClose}
+            onSuccess={handleFiscalPeriodSetupSuccess}
+          />
+        </>
+      )}
     </div>
   );
 }

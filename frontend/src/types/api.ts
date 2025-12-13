@@ -70,6 +70,11 @@ export interface FiscalPeriod {
   processed?: boolean;
 }
 
+export interface FiscalPeriodSetupDTO {
+  yearEndMonth: number;
+  fiscalYear: number;
+}
+
 export interface Transaction {
   id: number;
   company_id: number;

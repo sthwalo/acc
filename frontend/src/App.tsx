@@ -90,6 +90,7 @@ function App() {
           <FiscalPeriodsView 
             selectedCompany={selectedCompany} 
             onFiscalPeriodSelect={handleFiscalPeriodSelect}
+            onViewChange={handleViewChange}
           />
         ) : (
           <div className="empty-state">

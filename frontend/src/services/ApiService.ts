@@ -30,7 +30,8 @@ import type {
   PayPalCaptureOrderRequest,
   PayPalOrderResponse,
   PayPalCaptureResponse,
-  BackendPayslip
+  BackendPayslip,
+  FiscalPeriodSetupDTO
 } from '../types/api';
 
 /**
@@ -117,19 +118,9 @@ abstract class BaseApiService {
       (response) => response,
       (error: AxiosError) => {
         if (error.response?.status === 401) {
-          // If this request had an Authorization header then this 401 is
-          // likely due to an expired/invalid token, so clear and redirect.
-          // However, if the request wasn't sent with Authorization (race/unauth),
-          // we don't want to clear/redirect, because that can cause a login race
-          // where another component may successfully log in simultaneously.
-          const authHeader = (error.config as InternalAxiosRequestConfig)?.headers?.Authorization ||
-                            (error.config as InternalAxiosRequestConfig)?.headers?.authorization;
-          if (authHeader) {
-            // Clear invalid token and redirect to login
-            localStorage.removeItem('auth_token');
-            window.location.href = '/login';
-            throw new Error('Authentication failed. Please log in again.');
-          }
+          // Don't automatically clear token and redirect - let AuthContext handle it
+          // This prevents race conditions and gives more control over auth flow
+          throw new Error('Authentication failed. Token may be expired.');
         }
 
         if (error.response?.status === 403) {
@@ -297,7 +288,7 @@ class CompanyApiService extends BaseApiService {
 class FiscalPeriodApiService extends BaseApiService {
   async getFiscalPeriods(companyId: number): Promise<FiscalPeriod[]> {
     try {
-      const response = await this.client.get<ApiResponse<FiscalPeriod[]>>(`/v1/companies/${companyId}/fiscal-periods`);
+      const response = await this.client.get<ApiResponse<FiscalPeriod[]>>(`/v1/fiscal-periods/companies/${companyId}/fiscal-periods`);
       const periods = response.data.data;
 
       // Don't throw error for empty arrays - let backend handle database-first logic
@@ -323,7 +314,7 @@ class FiscalPeriodApiService extends BaseApiService {
 
   async createFiscalPeriod(companyId: number, period: Omit<FiscalPeriod, 'id'>): Promise<FiscalPeriod> {
     try {
-      const response = await this.client.post<ApiResponse<FiscalPeriod>>(`/v1/companies/${companyId}/fiscal-periods`, period);
+      const response = await this.client.post<ApiResponse<FiscalPeriod>>(`/v1/fiscal-periods/companies/${companyId}/fiscal-periods`, period);
       return response.data.data;
     } catch (error) {
       this.handleError('Create fiscal period', error);
@@ -358,9 +349,36 @@ class FiscalPeriodApiService extends BaseApiService {
 
   async selectFiscalPeriod(companyId: number, id: number): Promise<void> {
     try {
-      await this.client.get(`/v1/companies/${companyId}/fiscal-periods/${id}/select`);
+      await this.client.get(`/v1/fiscal-periods/companies/${companyId}/fiscal-periods/${id}/select`);
     } catch (error) {
       this.handleError('Select fiscal period', error);
+    }
+  }
+
+  async setupFiscalPeriod(companyId: number, setupDTO: FiscalPeriodSetupDTO): Promise<FiscalPeriod> {
+    try {
+      const response = await this.client.post<ApiResponse<FiscalPeriod>>(`/v1/fiscal-periods/setup?companyId=${companyId}`, setupDTO);
+      return response.data.data;
+    } catch (error) {
+      this.handleError('Setup fiscal period', error);
+    }
+  }
+
+  async hasFiscalPeriods(companyId: number): Promise<boolean> {
+    try {
+      const response = await this.client.get<ApiResponse<boolean>>(`/v1/fiscal-periods/company/${companyId}/exists`);
+      return response.data.data;
+    } catch (error) {
+      this.handleError('Check fiscal periods existence', error);
+    }
+  }
+
+  async getFiscalPeriodsForCompany(companyId: number): Promise<FiscalPeriod[]> {
+    try {
+      const response = await this.client.get<ApiResponse<FiscalPeriod[]>>(`/v1/fiscal-periods/company/${companyId}`);
+      return response.data.data || [];
+    } catch (error) {
+      this.handleError('Get fiscal periods for company', error);
     }
   }
 }

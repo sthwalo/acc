@@ -31,11 +31,14 @@ import fin.exception.ErrorCode;
 import fin.dto.FiscalPeriodPayrollConfigRequest;
 import fin.dto.FiscalPeriodPayrollConfigResponse;
 import fin.dto.FiscalPeriodPayrollStatusResponse;
+import fin.dto.FiscalPeriodSetupDTO;
 import fin.entity.FiscalPeriod;
 import fin.repository.FiscalPeriodRepository;
+import fin.service.FiscalPeriodSetupService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.validation.Valid;
 import java.util.List;
 
 /**
@@ -47,9 +50,148 @@ import java.util.List;
 public class FiscalPeriodController {
 
     private final FiscalPeriodRepository fiscalPeriodRepository;
+    private final FiscalPeriodSetupService fiscalPeriodSetupService;
 
-    public FiscalPeriodController(FiscalPeriodRepository fiscalPeriodRepository) {
+    public FiscalPeriodController(
+            FiscalPeriodRepository fiscalPeriodRepository,
+            FiscalPeriodSetupService fiscalPeriodSetupService) {
         this.fiscalPeriodRepository = fiscalPeriodRepository;
+        this.fiscalPeriodSetupService = fiscalPeriodSetupService;
+    }
+
+    /**
+     * Set up a fiscal period for a company based on year-end month selection.
+     * Used during company onboarding to establish the first fiscal period.
+     */
+    @PostMapping("/setup")
+    public ResponseEntity<ApiResponse<FiscalPeriod>> setupFiscalPeriod(
+            @RequestParam Long companyId,
+            @Valid @RequestBody FiscalPeriodSetupDTO setupDTO) {
+        try {
+            FiscalPeriod fiscalPeriod = fiscalPeriodSetupService.setupFiscalPeriod(setupDTO, companyId);
+            return ResponseEntity.ok(ApiResponse.success(
+                "Fiscal period set up successfully",
+                fiscalPeriod
+            ));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(e.getMessage(), ErrorCode.VALIDATION_ERROR.getCode())
+            );
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error("Failed to set up fiscal period: " + e.getMessage(), ErrorCode.INTERNAL_ERROR.getCode())
+            );
+        }
+    }
+
+    /**
+     * Get all fiscal periods for a company.
+     */
+    @GetMapping("/company/{companyId}")
+    public ResponseEntity<ApiResponse<List<FiscalPeriod>>> getFiscalPeriodsForCompany(@PathVariable Long companyId) {
+        try {
+            List<FiscalPeriod> fiscalPeriods = fiscalPeriodSetupService.getFiscalPeriodsForCompany(companyId);
+            return ResponseEntity.ok(ApiResponse.success(
+                "Fiscal periods retrieved successfully",
+                fiscalPeriods
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error("Failed to retrieve fiscal periods: " + e.getMessage(), ErrorCode.INTERNAL_ERROR.getCode())
+            );
+        }
+    }
+
+    /**
+     * Check if a company has any fiscal periods set up.
+     */
+    @GetMapping("/company/{companyId}/exists")
+    public ResponseEntity<ApiResponse<Boolean>> hasFiscalPeriods(@PathVariable Long companyId) {
+        try {
+            boolean hasPeriods = fiscalPeriodSetupService.hasFiscalPeriods(companyId);
+            return ResponseEntity.ok(ApiResponse.success(
+                "Fiscal period check completed",
+                hasPeriods
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error("Failed to check fiscal periods: " + e.getMessage(), ErrorCode.INTERNAL_ERROR.getCode())
+            );
+        }
+    }
+
+    /**
+     * Get all fiscal periods for a company (legacy endpoint for FiscalPeriodsView).
+     * @deprecated Use /company/{companyId} instead
+     */
+    @GetMapping("/companies/{companyId}/fiscal-periods")
+    public ResponseEntity<ApiResponse<List<FiscalPeriod>>> getFiscalPeriods(@PathVariable Long companyId) {
+        return getFiscalPeriodsForCompany(companyId);
+    }
+
+    /**
+     * Create a fiscal period for a company (legacy endpoint for FiscalPeriodsView).
+     * @deprecated Use /setup instead for automatic period calculation
+     */
+    @PostMapping("/companies/{companyId}/fiscal-periods")
+    public ResponseEntity<ApiResponse<FiscalPeriod>> createFiscalPeriod(
+            @PathVariable Long companyId,
+            @Valid @RequestBody FiscalPeriod fiscalPeriod) {
+        try {
+            // Validate that the fiscal period belongs to the correct company
+            if (!companyId.equals(fiscalPeriod.getCompanyId())) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error("Company ID mismatch", ErrorCode.VALIDATION_ERROR.getCode())
+                );
+            }
+
+            // Check for overlapping periods
+            List<FiscalPeriod> existingPeriods = fiscalPeriodRepository.findByCompanyId(companyId);
+            for (FiscalPeriod existing : existingPeriods) {
+                if (periodsOverlap(fiscalPeriod, existing)) {
+                    return ResponseEntity.badRequest().body(
+                        ApiResponse.error(
+                            "Cannot create fiscal period '" + fiscalPeriod.getPeriodName() +
+                            "' as it overlaps with existing period '" + existing.getPeriodName() + "'",
+                            ErrorCode.VALIDATION_ERROR.getCode()
+                        )
+                    );
+                }
+            }
+
+            // Check for duplicate period names
+            boolean exists = fiscalPeriodRepository.existsByCompanyIdAndPeriodName(
+                companyId,
+                fiscalPeriod.getPeriodName()
+            );
+            if (exists) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(
+                        "A fiscal period with name '" + fiscalPeriod.getPeriodName() +
+                        "' already exists for this company",
+                        ErrorCode.VALIDATION_ERROR.getCode()
+                    )
+                );
+            }
+
+            FiscalPeriod savedPeriod = fiscalPeriodRepository.save(fiscalPeriod);
+            return ResponseEntity.ok(ApiResponse.success(
+                "Fiscal period created successfully",
+                savedPeriod
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error("Failed to create fiscal period: " + e.getMessage(), ErrorCode.INTERNAL_ERROR.getCode())
+            );
+        }
+    }
+
+    /**
+     * Checks if two fiscal periods overlap.
+     */
+    private boolean periodsOverlap(FiscalPeriod period1, FiscalPeriod period2) {
+        return period1.getStartDate().isBefore(period2.getEndDate().plusDays(1)) &&
+               period2.getStartDate().isBefore(period1.getEndDate().plusDays(1));
     }
 
     /**
