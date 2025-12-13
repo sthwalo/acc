@@ -53,5 +53,7 @@ export default defineConfig({
   // Environment variables for container-first development
   define: {
     __CONTAINER_MODE__: JSON.stringify(process.env.CONTAINER_MODE === 'true'),
+    // PayPal configuration
+    'import.meta.env.VITE_PAYPAL_CLIENT_ID': JSON.stringify(process.env.VITE_PAYPAL_CLIENT_ID || 'test'),
   },
 });

@@ -15,6 +15,8 @@ interface AuthContextType {
     firstName: string;
     lastName: string;
     planId: number;
+    paypalOrderId?: string;
+    paypalCaptureId?: string;
   }) => Promise<void>;
   logout: () => void;
   selectPlan: (planId: number, billingCycle: 'monthly' | 'yearly') => Promise<void>;
@@ -71,6 +73,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     firstName: string;
     lastName: string;
     planId: number;
+    paypalOrderId?: string;
+    paypalCaptureId?: string;
   }) => {
     const response = await apiService.register({
       email: userData.email,
@@ -78,6 +82,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       firstName: userData.firstName,
       lastName: userData.lastName,
       planId: userData.planId,
+      paypalOrderId: userData.paypalOrderId,
+      paypalCaptureId: userData.paypalCaptureId,
     });
     localStorage.setItem('auth_token', response.token);
     setUser(response.user);

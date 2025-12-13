@@ -26,6 +26,7 @@
 
 package fin.service.spring;
 
+import fin.service.SARSTaxCalculator;
 import java.io.IOException;
 
 public class TaxCalculationTest {

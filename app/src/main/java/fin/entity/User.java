@@ -62,6 +62,12 @@ public class User {
     @Column(name = "plan_id")
     private Long planId; // Reference to pricing plan
 
+    @Column(name = "paypal_order_id")
+    private String paypalOrderId;
+
+    @Column(name = "paypal_capture_id")
+    private String paypalCaptureId;
+
     @Column(name = "is_active", nullable = false)
     private boolean isActive = true;
 
@@ -149,6 +155,12 @@ public class User {
 
     public Long getPlanId() { return planId; }
     public void setPlanId(Long newPlanId) { this.planId = newPlanId; }
+
+    public String getPaypalOrderId() { return paypalOrderId; }
+    public void setPaypalOrderId(String paypalOrderId) { this.paypalOrderId = paypalOrderId; }
+
+    public String getPaypalCaptureId() { return paypalCaptureId; }
+    public void setPaypalCaptureId(String paypalCaptureId) { this.paypalCaptureId = paypalCaptureId; }
 
     public boolean isActive() { return isActive; }
     public void setActive(boolean active) { isActive = active; }

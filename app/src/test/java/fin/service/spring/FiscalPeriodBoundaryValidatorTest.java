@@ -29,6 +29,7 @@ package fin.service.spring;
 import fin.entity.BankTransaction;
 import fin.entity.FiscalPeriod;
 import fin.repository.FiscalPeriodRepository;
+import fin.service.FiscalPeriodBoundaryValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;

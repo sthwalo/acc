@@ -115,7 +115,6 @@ export interface ApiTransaction {
   accountName: string | null;
   description: string;
   statementPeriod: string | null;
-  // Double-entry classification fields (from journal_entry_lines)
   debitAccountId: number | null;
   creditAccountId: number | null;
   debitAccountCode: string | null;
@@ -150,8 +149,8 @@ export interface UploadResponse {
     outOfPeriodTransactions: number;
     validationErrors: number;
   };
-  savedTransactions: any[];
-  rejectedTransactions: any[];
+  savedTransactions: Transaction[];
+  rejectedTransactions: Transaction[];
   errors: string[];
 }
 
@@ -218,6 +217,8 @@ export interface RegisterRequest {
   firstName: string;
   lastName: string;
   planId: number;
+  paypalOrderId?: string;
+  paypalCaptureId?: string;
 }
 
 export interface AuthResponse {
@@ -569,4 +570,93 @@ export interface AuditTrailDTO {
   createdBy: string;
   createdAt: string;
   lines: AuditTrailLineDTO[];
+}
+
+// PayPal Integration Types
+export interface PayPalCreateOrderRequest {
+  amount: number;
+  currency: string;
+  description?: string;
+  planId?: number;
+}
+
+export interface PayPalCaptureOrderRequest {
+  orderId: string;
+  planId?: number;
+}
+
+export interface PayPalOrderResponse {
+  orderId: string;
+  status: string;
+  approvalUrl: string;
+}
+
+export interface PayPalCaptureResponse {
+  orderId: string;
+  status: string;
+  completed: boolean;
+  captureId?: string;
+  amount?: number;
+  currency?: string;
+}
+
+export interface PayPalError {
+  message?: string;
+  details?: unknown;
+  issue?: string;
+  name?: string;
+  stack?: string;
+}
+
+export interface BackendPayslip {
+  id: number;
+  companyId: number;
+  employeeId: number;
+  fiscalPeriodId: number;
+  payslipNumber: string;
+  basicSalary: number;
+  overtimeHours: number;
+  overtimeAmount: number;
+  grossSalary: number;
+  housingAllowance: number;
+  transportAllowance: number;
+  medicalAllowance: number;
+  otherAllowances: number;
+  commission: number;
+  bonus: number;
+  totalEarnings: number;
+  payeTax: number;
+  uifEmployee: number;
+  uifEmployer: number;
+  sdlLevy: number;
+  medicalAid: number;
+  pensionFund: number;
+  loanDeduction: number;
+  otherDeductions: number;
+  totalDeductions: number;
+  netPay: number;
+  annualGross: number;
+  annualPaye: number;
+  annualUif: number;
+  status: string;
+  paymentMethod: string;
+  paymentDate: string;
+  paymentReference: string;
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string;
+}
+
+export interface Payslip {
+  id: number;
+  employeeId: number;
+  fiscalPeriodId: number;
+  employeeNumber: string;
+  employeeName: string;
+  grossPay: number;
+  deductions: number;
+  netPay: number;
+  payDate: string;
+  generatedAt: string;
+  status: 'GENERATED' | 'SENT' | 'DOWNLOADED';
 }

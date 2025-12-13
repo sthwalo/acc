@@ -6,6 +6,7 @@ package fin.service.spring;
 import fin.entity.*;
 import fin.dto.JournalEntryDetailDTO;
 import fin.repository.*;
+import fin.service.CompanyService;
 import fin.service.reporting.AuditTrailService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -25,7 +26,7 @@ import static org.mockito.Mockito.*;
 public class AuditTrailServiceDescriptionSanitizeTest {
     @Mock private JournalEntryRepository journalEntryRepository;
     @Mock private JournalEntryLineRepository journalEntryLineRepository;
-    @Mock private SpringCompanyService companyService;
+    @Mock private CompanyService companyService;
     @Mock private FiscalPeriodRepository fiscalPeriodRepository;
     @Mock private AccountRepository accountRepository;
 

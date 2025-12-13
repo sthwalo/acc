@@ -98,6 +98,12 @@ dependencies {
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.11.5")
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.11.5")
 
+    // PayPal Checkout SDK for payment processing
+    implementation("com.paypal.sdk:checkout-sdk:1.0.2")
+
+    // Bucket4j for simple in-memory rate limiting
+    implementation("com.github.vladimir-bukhtoyarov:bucket4j-core:7.6.0")
+
     // Keep Gson for JSON processing (Spring Boot uses Jackson by default, but we can keep Gson for compatibility)
     implementation("com.google.code.gson:gson:2.10.1")
 
@@ -137,9 +143,14 @@ java {
     }
 }
 
-tasks.named<Test>("test") {
-    // Use JUnit Platform for unit tests.
-    useJUnitPlatform()
+// Configure bootJar to produce the correct filename for production
+tasks.bootJar {
+    archiveBaseName = "fin-spring"
+}
+
+// Disable the regular jar task since we only need the bootJar for Spring Boot applications
+tasks.jar {
+    enabled = false
 }
 
 // Task to analyze PDF column structure

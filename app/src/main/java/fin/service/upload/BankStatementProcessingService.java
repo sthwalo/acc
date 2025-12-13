@@ -9,9 +9,9 @@ import fin.model.parser.ParsedTransaction;
 import fin.repository.BankTransactionRepository;
 import fin.repository.FiscalPeriodRepository;
 import fin.service.parser.*;
-import fin.service.spring.SpringCompanyService;
+import fin.service.CompanyService;
 import fin.service.transaction.TransactionDuplicateChecker;
-import fin.service.spring.FiscalPeriodBoundaryValidator;
+import fin.service.FiscalPeriodBoundaryValidator;
 import fin.validation.BankTransactionValidator;
 import fin.validation.ValidationResult;
 import org.slf4j.Logger;
@@ -40,7 +40,7 @@ public class BankStatementProcessingService {
     private final BankTransactionRepository transactionRepository;
     private final FiscalPeriodRepository fiscalPeriodRepository;
     private final BankTransactionValidator validator;
-    private final SpringCompanyService companyService;
+    private final CompanyService companyService;
     private final TransactionDuplicateChecker duplicateChecker;
     private final FiscalPeriodBoundaryValidator fiscalPeriodValidator;
 
@@ -54,7 +54,7 @@ public class BankStatementProcessingService {
             BankTransactionRepository transactionRepository,
             FiscalPeriodRepository fiscalPeriodRepository,
             BankTransactionValidator validator,
-            SpringCompanyService companyService,
+            CompanyService companyService,
             TransactionDuplicateChecker duplicateChecker,
             FiscalPeriodBoundaryValidator fiscalPeriodValidator,
             StandardBankTabularParser standardBankParser,

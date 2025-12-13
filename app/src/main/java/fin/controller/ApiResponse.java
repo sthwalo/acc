@@ -24,7 +24,7 @@
  * limitations under the License.
  */
 
-package fin.controller.spring;
+package fin.controller;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.LocalDateTime;

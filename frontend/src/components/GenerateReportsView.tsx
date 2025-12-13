@@ -174,12 +174,13 @@ export default function GenerateReportsView({ selectedCompany }: GenerateReports
           case 'cashbook':
             reportData = await api.generateCashbook(Number(selectedCompany.id), selectedPeriod.id, 'text');
             break;
-          case 'audit-trail':
+          case 'audit-trail': {
             // For audit trail, get structured JSON data instead of text
             const auditTrailData = await api.reports.getAuditTrail(Number(selectedCompany.id), selectedPeriod.id);
             setAuditTrailJsonData(auditTrailData);
             setReportContent(''); // Clear text content for JSON view
             break;
+          }
           default:
             return;
         }

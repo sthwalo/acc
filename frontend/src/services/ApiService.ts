@@ -25,7 +25,12 @@ import type {
   FiscalPeriodPayrollStatusResponse,
   PayrollDocument,
   AuditTrailDTO,
-  JournalEntryDetailDTO
+  JournalEntryDetailDTO,
+  PayPalCreateOrderRequest,
+  PayPalCaptureOrderRequest,
+  PayPalOrderResponse,
+  PayPalCaptureResponse,
+  BackendPayslip
 } from '../types/api';
 
 /**
@@ -1044,6 +1049,26 @@ class DataManagementApiService extends BaseApiService {
   }
 }
 
+class PayPalApiService extends BaseApiService {
+  async createOrder(request: PayPalCreateOrderRequest): Promise<PayPalOrderResponse> {
+    try {
+      const response = await this.client.post<ApiResponse<PayPalOrderResponse>>('/v1/paypal/orders', request);
+      return response.data.data;
+    } catch (error) {
+      this.handleError('Create PayPal order', error);
+    }
+  }
+
+  async captureOrder(request: PayPalCaptureOrderRequest): Promise<PayPalCaptureResponse> {
+    try {
+      const response = await this.client.post<ApiResponse<PayPalCaptureResponse>>('/v1/paypal/orders/capture', request);
+      return response.data.data;
+    } catch (error) {
+      this.handleError('Capture PayPal order', error);
+    }
+  }
+}
+
 /**
  * Main ApiService - Composition/Inheritance principle
  * Composes all specialized services for a unified API interface
@@ -1062,6 +1087,7 @@ export class ApiService extends BaseApiService {
   public readonly classification: ClassificationApiService;
   public readonly accounts: AccountApiService;
   public readonly dataManagement: DataManagementApiService;
+  public readonly paypal: PayPalApiService;
 
   constructor() {
     super(); // Call BaseApiService constructor
@@ -1077,6 +1103,7 @@ export class ApiService extends BaseApiService {
     this.classification = new ClassificationApiService();
     this.accounts = new AccountApiService();
     this.dataManagement = new DataManagementApiService();
+    this.paypal = new PayPalApiService();
   }
 
   // Backwards compatibility methods - Polymorphism principle
@@ -1541,7 +1568,7 @@ export class ApiService extends BaseApiService {
   }
 
   // Payslips methods
-  async getPayslipsByFiscalPeriod(fiscalPeriodId: number): Promise<any[]> {
+  async getPayslipsByFiscalPeriod(fiscalPeriodId: number): Promise<BackendPayslip[]> {
     try {
       const response = await this.client.get(`/v1/payroll/payslips/period/${fiscalPeriodId}`);
       return response.data;

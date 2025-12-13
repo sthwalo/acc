@@ -29,7 +29,7 @@ package fin.service.reporting;
 import fin.entity.*;
 import fin.dto.*;
 import fin.repository.*;
-import fin.service.spring.SpringCompanyService;
+import fin.service.CompanyService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -58,13 +58,13 @@ public class AuditTrailService {
 
     private final JournalEntryRepository journalEntryRepository;
     private final JournalEntryLineRepository journalEntryLineRepository;
-    private final SpringCompanyService companyService;
+    private final CompanyService companyService;
     private final FiscalPeriodRepository fiscalPeriodRepository;
     private final AccountRepository accountRepository;
 
     public AuditTrailService(JournalEntryRepository journalEntryRepository,
                            JournalEntryLineRepository journalEntryLineRepository,
-                           SpringCompanyService companyService,
+                           CompanyService companyService,
                            FiscalPeriodRepository fiscalPeriodRepository,
                            AccountRepository accountRepository) {
         this.journalEntryRepository = journalEntryRepository;

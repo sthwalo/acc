@@ -27,19 +27,10 @@ import static org.mockito.Mockito.*;
 public class AccountClassificationServiceTest {
 
     @Mock
-    private CompanyRepository companyRepository;
-
-    @Mock
     private AccountRepository accountRepository;
 
     @Mock
-    private AccountCategoryRepository accountCategoryRepository;
-
-    @Mock
     private BankTransactionRepository bankTransactionRepository;
-
-    @Mock
-    private TransactionMappingRuleRepository transactionMappingRuleRepository;
 
     @Mock
     private JournalEntryRepository journalEntryRepository;
@@ -53,11 +44,8 @@ public class AccountClassificationServiceTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
         accountClassificationService = new AccountClassificationService(
-                companyRepository,
-                accountRepository,
-                accountCategoryRepository,
                 bankTransactionRepository,
-                transactionMappingRuleRepository,
+                accountRepository,
                 journalEntryRepository,
                 journalEntryLineRepository
         );

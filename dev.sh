@@ -11,7 +11,14 @@ echo "=========================================="
 # Load environment variables from .env file
 if [ -f .env ]; then
     echo "📋 Loading environment variables from .env..."
-    export $(cat .env | grep -v '^#' | grep -v '^\s*$' | xargs)
+    while IFS='=' read -r key value; do
+        # Skip comments and empty lines
+        [[ $key =~ ^[[:space:]]*# ]] && continue
+        [[ -z $key ]] && continue
+        # Remove quotes from value if present
+        value=$(echo "$value" | sed 's/^"\(.*\)"$/\1/' | sed "s/^'\(.*\)'$/\1/")
+        export "$key=$value"
+    done < .env
 else
     echo "⚠️  Warning: .env file not found!"
 fi
@@ -30,7 +37,7 @@ trap cleanup EXIT INT TERM
 
 # Start backend server in background
 echo "📊 Starting Spring Boot backend server..."
-cd /Users/sthwalonyoni/FIN/app
+cd app
 ./gradlew bootRun --no-daemon &
 BACKEND_PID=$!
 
@@ -39,7 +46,8 @@ sleep 5
 
 # Start frontend development server in background
 echo "🌐 Starting React frontend development server..."
-cd /Users/sthwalonyoni/FIN/frontend
+cd ..
+cd frontend
 npm run dev &
 FRONTEND_PID=$!
 

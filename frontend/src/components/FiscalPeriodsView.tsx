@@ -73,7 +73,7 @@ export default function FiscalPeriodsView({ selectedCompany, onFiscalPeriodSelec
         setLoading(false);
       }
     }
-  }, [selectedCompany.id]);
+  }, [selectedCompany.id, showCreateForm]);
 
   const handleCreateFiscalPeriod = async () => {
     if (!formData.periodName || !formData.startDate || !formData.endDate) {

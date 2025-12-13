@@ -21,6 +21,7 @@
     "start:containers": "../start.sh"
   },
   "dependencies": {
+    "@paypal/paypal-js": "^9.0.1",
     "@types/uuid": "^10.0.0",
     "axios": "^1.13.2",
     "lucide-react": "^0.553.0",

@@ -51,7 +51,7 @@ public class Plan {
     private BigDecimal price;
 
     @Column(name = "currency", nullable = false)
-    private String currency = "ZAR";
+    private String currency = "USD";
 
     @Column(name = "billing_cycle")
     private String billingCycle; // MONTHLY, YEARLY

@@ -28,7 +28,7 @@ package fin.config;
 
 import fin.entity.User;
 import fin.repository.UserRepository;
-import fin.service.spring.JwtService;
+import fin.service.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

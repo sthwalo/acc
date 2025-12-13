@@ -37,6 +37,7 @@ import fin.repository.JournalEntryRepository;
 import fin.repository.JournalEntryLineRepository;
 import fin.repository.FiscalPeriodRepository;
 import fin.repository.AccountRepository;
+import fin.service.CompanyService;
 import fin.service.reporting.AuditTrailService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -72,7 +73,7 @@ public class AuditTrailServiceTest {
     private JournalEntryLineRepository journalEntryLineRepository;
 
     @Mock
-    private SpringCompanyService companyService;
+    private CompanyService companyService;
 
     @Mock
     private FiscalPeriodRepository fiscalPeriodRepository;

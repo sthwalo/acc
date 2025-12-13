@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { UserPlus, Eye, EyeOff, AlertCircle, CheckCircle } from 'lucide-react';
+import { UserPlus, Eye, EyeOff, AlertCircle, CheckCircle, CreditCard } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { serviceRegistry } from '../../services/ServiceRegistry';
 import { ApiService } from '../../services/ApiService';
+import { PayPalButton } from './PayPalButton';
 import type { Plan } from '../../types/api';
 
 interface RegisterProps {
@@ -23,7 +24,7 @@ export default function Register({ onSwitchToLogin }: RegisterProps) {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [step, setStep] = useState<'form' | 'plan'>('form');
+  const [step, setStep] = useState<'form' | 'plan' | 'payment'>('form');
 
   const { register } = useAuth();
 
@@ -86,8 +87,12 @@ export default function Register({ onSwitchToLogin }: RegisterProps) {
     }
   };
 
-  const handlePlanSelection = async (plan: Plan) => {
+  const handlePlanSelection = (plan: Plan) => {
     setSelectedPlan(plan);
+    setStep('payment');
+  };
+
+  const handlePaymentSuccess = async (orderId: string, captureId?: string) => {
     setIsLoading(true);
     setError('');
 
@@ -97,7 +102,9 @@ export default function Register({ onSwitchToLogin }: RegisterProps) {
         password: formData.password,
         firstName: formData.firstName,
         lastName: formData.lastName,
-        planId: plan.id,
+        planId: selectedPlan!.id,
+        paypalOrderId: orderId,
+        paypalCaptureId: captureId
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed. Please try again.');
@@ -105,10 +112,14 @@ export default function Register({ onSwitchToLogin }: RegisterProps) {
     }
   };
 
+  const handlePaymentError = (errorMessage: string) => {
+    setError(errorMessage);
+  };
+
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-ZA', {
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'ZAR',
+      currency: 'USD',
     }).format(amount);
   };
 
@@ -177,6 +188,75 @@ export default function Register({ onSwitchToLogin }: RegisterProps) {
               disabled={isLoading}
             >
               ← Back to form
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (step === 'payment') {
+    return (
+      <div className="auth-container">
+        <div className="auth-card">
+          <div className="auth-header">
+            <CreditCard size={48} className="auth-icon" />
+            <h1>Complete Payment</h1>
+            <p>Secure payment for your {selectedPlan?.name} plan</p>
+          </div>
+
+          <div className="payment-summary">
+            <div className="summary-card">
+              <h3>Order Summary</h3>
+              <div className="summary-row">
+                <span>Plan:</span>
+                <span>{selectedPlan?.name}</span>
+              </div>
+              <div className="summary-row">
+                <span>Price:</span>
+                <span className="price">{formatCurrency(selectedPlan?.price_monthly || 0)}</span>
+              </div>
+              <div className="summary-row total">
+                <span>Total:</span>
+                <span className="price">{formatCurrency(selectedPlan?.price_monthly || 0)}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="payment-section">
+            <PayPalButton
+              amount={selectedPlan?.price_monthly || 0}
+              currency="USD"
+              description={`FIN ${selectedPlan?.name} Plan - Monthly Subscription`}
+              planId={selectedPlan?.id}
+              onSuccess={handlePaymentSuccess}
+              onError={handlePaymentError}
+              disabled={isLoading}
+            />
+          </div>
+
+          {error && (
+            <div className="error-message">
+              <AlertCircle size={20} />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {isLoading && (
+            <div className="loading-message">
+              <div className="spinner"></div>
+              <span>Creating your account...</span>
+            </div>
+          )}
+
+          <div className="auth-footer">
+            <button
+              type="button"
+              className="link-button"
+              onClick={() => setStep('plan')}
+              disabled={isLoading}
+            >
+              ← Back to plans
             </button>
           </div>
         </div>

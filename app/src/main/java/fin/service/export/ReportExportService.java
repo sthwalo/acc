@@ -29,7 +29,7 @@ package fin.service.export;
 import fin.entity.Company;
 import fin.entity.FiscalPeriod;
 import fin.model.report.ColumnDefinition;
-import fin.service.spring.SpringCompanyService;
+import fin.service.CompanyService;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
@@ -96,10 +96,10 @@ public class ReportExportService {
     @Value("${fin.reports.csv.include-header:true}")
     private boolean csvIncludeHeader;
     
-    private final SpringCompanyService companyService;
+    private final CompanyService companyService;
     private final NumberFormat currencyFormat;
     
-    public ReportExportService(SpringCompanyService companyService) {
+    public ReportExportService(CompanyService companyService) {
         this.companyService = companyService;
         this.currencyFormat = NumberFormat.getCurrencyInstance(Locale.forLanguageTag("en-ZA"));
     }

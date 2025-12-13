@@ -3,21 +3,7 @@ import axios from 'axios';
 import { FileText, Download, Mail, Users, AlertCircle, CheckCircle, Eye, ArrowLeft } from 'lucide-react';
 import { useApi } from '../hooks/useApi';
 import ApiMessageBanner from './shared/ApiMessageBanner';
-import type { FiscalPeriod } from '../types/api';
-
-interface Payslip {
-  id: number;
-  employeeId: number;
-  fiscalPeriodId: number;
-  employeeNumber: string;
-  employeeName: string;
-  grossPay: number;
-  deductions: number;
-  netPay: number;
-  payDate: string;
-  generatedAt: string;
-  status: 'GENERATED' | 'SENT' | 'DOWNLOADED';
-}
+import type { FiscalPeriod, Payslip, BackendPayslip } from '../types/api';
 
 interface PayslipsViewProps {
   selectedFiscalPeriod: FiscalPeriod;
@@ -46,7 +32,7 @@ export default function PayslipsView({ selectedFiscalPeriod, onViewChange }: Pay
       const backendPayslips = await api.getPayslipsByFiscalPeriod(selectedFiscalPeriod.id);
 
       // Transform backend payslips to frontend format
-      const transformedPayslips: Payslip[] = backendPayslips.map((payslip: any) => ({
+      const transformedPayslips: Payslip[] = backendPayslips.map((payslip: BackendPayslip) => ({
         id: payslip.id,
         employeeId: payslip.employeeId,
         fiscalPeriodId: payslip.fiscalPeriodId,
@@ -54,8 +40,8 @@ export default function PayslipsView({ selectedFiscalPeriod, onViewChange }: Pay
         employeeName: `Employee ${payslip.employeeId}`, // Placeholder until we fetch employee data
         grossPay: payslip.grossSalary || payslip.totalEarnings || 0,
         deductions: payslip.totalDeductions || 0,
-        netPay: payslip.netPay || payslip.netSalary || 0,
-        payDate: payslip.paymentDate || payslip.payDate || selectedFiscalPeriod.endDate,
+        netPay: payslip.netPay || 0,
+        payDate: payslip.paymentDate || selectedFiscalPeriod.endDate,
         generatedAt: payslip.createdAt || new Date().toISOString(),
         status: payslip.status === 'PAID' ? 'SENT' : payslip.status === 'APPROVED' ? 'GENERATED' : 'GENERATED'
       }));
@@ -80,7 +66,7 @@ export default function PayslipsView({ selectedFiscalPeriod, onViewChange }: Pay
     } finally {
       setIsLoading(false);
     }
-  }, [selectedFiscalPeriod]);
+  }, [selectedFiscalPeriod, api]);
 
   useEffect(() => {
     loadPayslips();
