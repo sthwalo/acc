@@ -172,7 +172,13 @@ The complete user onboarding workflow follows this sequence:
 - **✅ Controller Integration**: CompanyController.updateCompany() accepts DTO and passes to service
 - **✅ Architecture Compliance**: Implementation follows SOC, DRY, and small methods principles
 - **✅ Testing Validation**: All tests pass, compilation successful, server running without errors
-
+#### **Fiscal Period Setup Logic (Active Development)**
+- **✅ Year-End Month Selection**: Users select month (Jan-Dec) representing fiscal year-end (when fiscal year closes)
+- **✅ Fiscal Year Calculation**: System calculates 12-month fiscal period from following month to selected month
+- **✅ Date Logic**: Start = First day of month (M+1) in year (Y-1), End = Last day of month M in year Y
+- **✅ Example**: November 2024 year-end → Fiscal year: Dec 1, 2023 - Nov 30, 2024
+- **✅ UI Flow**: Month dropdown → Year selection → Auto-calculate and display dates
+- **✅ Validation**: Prevent overlapping fiscal periods per company, ensure proper date ranges
 ### **❌ REMAINING COMPONENTS**
 
 #### **PHASE 1: Database Schema Extensions** (HIGH PRIORITY)
@@ -217,7 +223,7 @@ The complete user onboarding workflow follows this sequence:
 - ❌ Plan-based feature limitations
 - ❌ Complete API endpoint testing
 
-**Next Priority**: Focus on **PHASE 1** (Database Schema Extensions) starting with chart of accounts templates, followed by the company setup service and controller.
+**Next Priority**: **ACTIVE DEVELOPMENT** - Fiscal Period Setup Logic implementation following SOC/DRY principles. Focus on clean date calculation service, proper company binding, and maintainable code structure.
 
 ## Detailed Task Breakdown
 
