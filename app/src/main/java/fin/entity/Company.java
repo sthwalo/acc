@@ -37,6 +37,8 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.CascadeType;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Entity
 @Table(name = "companies")
 public class Company {
@@ -69,6 +71,15 @@ public class Company {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
     
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+    
+    @Column(name = "created_by")
+    private String createdBy;
+    
+    @Column(name = "updated_by")
+    private String updatedBy;
+    
     // Banking details
     @Column(name = "bank_name")
     private String bankName;
@@ -88,6 +99,7 @@ public class Company {
     
     // Relationships
     @OneToMany(mappedBy = "company", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     private List<UserCompany> userCompanies;
     
     // Constructors, getters, and setters
@@ -116,6 +128,9 @@ public class Company {
         this.contactPhone = other.contactPhone;
         this.logoPath = other.logoPath;
         this.createdAt = other.createdAt;
+        this.updatedAt = other.updatedAt;
+        this.createdBy = other.createdBy;
+        this.updatedBy = other.updatedBy;
         this.bankName = other.bankName;
         this.accountNumber = other.accountNumber;
         this.accountType = other.accountType;
@@ -151,6 +166,15 @@ public class Company {
     
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime newCreatedAt) { this.createdAt = newCreatedAt; }
+    
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(LocalDateTime newUpdatedAt) { this.updatedAt = newUpdatedAt; }
+    
+    public String getCreatedBy() { return createdBy; }
+    public void setCreatedBy(String newCreatedBy) { this.createdBy = newCreatedBy; }
+    
+    public String getUpdatedBy() { return updatedBy; }
+    public void setUpdatedBy(String newUpdatedBy) { this.updatedBy = newUpdatedBy; }
     
     // Banking details getters and setters
     public String getBankName() { return bankName; }

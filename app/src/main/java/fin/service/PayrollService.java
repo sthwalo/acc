@@ -95,7 +95,7 @@ public class PayrollService {
     public Employee createEmployee(String employeeCode, String firstName, String lastName,
                                  String email, String phone, String bankName, String accountNumber,
                                  String branchCode, String taxNumber, LocalDate hireDate, BigDecimal salary,
-                                 Long companyId) {
+                                 Long companyId, Long userId) {
         // Create employee object from parameters
         Employee employee = new Employee();
         employee.setEmployeeCode(employeeCode);
@@ -123,10 +123,10 @@ public class PayrollService {
             throw new IllegalArgumentException(errorMessage.toString());
         }
 
-        // Validate company exists
-        Company company = companyService.getCompanyById(companyId);
+        // Validate company exists and user has access
+        Company company = companyService.getCompanyByIdForUser(userId, companyId);
         if (company == null) {
-            throw new IllegalArgumentException("Company not found: " + companyId);
+            throw new IllegalArgumentException("Company not found or access denied: " + companyId);
         }
 
         // Check if employee code already exists for this company

@@ -29,6 +29,7 @@ package fin.service;
 import fin.entity.Company;
 import fin.entity.FiscalPeriod;
 import fin.entity.FiscalPeriodSummary;
+import fin.entity.User;
 import fin.entity.UserCompany;
 import fin.repository.CompanyRepository;
 import fin.repository.FiscalPeriodRepository;
@@ -37,6 +38,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.SQLException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -67,24 +69,23 @@ public class CompanyService {
     }
 
     /**
-     * Get all companies
+     * Get company by ID with user access control
      */
     @Transactional(readOnly = true)
-    public List<Company> getAllCompanies() {
-        return companyRepository.findAll();
+    public Company getCompanyByIdForUser(Long userId, Long companyId) {
+        // First check if user has access to this company
+        if (!hasUserAccessToCompany(userId, companyId)) {
+            return null; // Return null instead of throwing to maintain compatibility
+        }
+
+        Optional<Company> company = companyRepository.findById(companyId);
+        return company.orElse(null);
     }
 
     /**
-     * Get active companies only
+     * Get company by ID (DEPRECATED - use getCompanyByIdForUser for security)
      */
-    @Transactional(readOnly = true)
-    public List<Company> getActiveCompanies() {
-        return companyRepository.findAll(); // JDBC version returns all companies
-    }
-
-    /**
-     * Get company by ID
-     */
+    @Deprecated
     @Transactional(readOnly = true)
     public Company getCompanyById(Long id) {
         Optional<Company> company = companyRepository.findById(id);
@@ -120,15 +121,25 @@ public class CompanyService {
     /**
      * Create a new company
      */
-    public Company createCompany(Company company, Long userId) {
-        // For JDBC version, we can't easily check uniqueness constraints without custom queries
-        // This would need to be implemented with custom SQL queries in the repository
-        Company savedCompany = companyRepository.save(company);
+    public Company createCompany(Company company, User user) {
+        // Set timestamps for the company
+        LocalDateTime now = LocalDateTime.now();
+        if (company.getCreatedAt() == null) {
+            company.setCreatedAt(now);
+        }
+        company.setUpdatedAt(now);
         
-        // Create UserCompany relationship - creator becomes ADMIN
-        UserCompany userCompany = new UserCompany(userId, savedCompany.getId(), "ADMIN");
-        userCompany.setCreatedBy("USER_" + userId);
-        userCompany.setUpdatedBy("USER_" + userId);
+        // Set user tracking information
+        if (company.getCreatedBy() == null) {
+            company.setCreatedBy(user.getEmail());
+        }
+        company.setUpdatedBy(user.getEmail());
+        
+        
+        Company savedCompany = companyRepository.save(company);
+        UserCompany userCompany = new UserCompany(user.getId(), savedCompany.getId(), "ADMIN");
+        userCompany.setCreatedBy(user.getEmail());
+        userCompany.setUpdatedBy(user.getEmail());
         userCompanyRepository.save(userCompany);
         
         return savedCompany;
@@ -137,7 +148,7 @@ public class CompanyService {
     /**
      * Update an existing company
      */
-    public Company updateCompany(Company company) {
+    public Company updateCompany(Company company, User user) {
         if (company.getId() == null) {
             throw new IllegalArgumentException("Company ID cannot be null for update operation");
         }
@@ -146,6 +157,10 @@ public class CompanyService {
         if (!companyRepository.existsById(company.getId())) {
             throw new IllegalArgumentException("Company not found with ID: " + company.getId());
         }
+
+        // Set updated timestamp and user
+        company.setUpdatedAt(java.time.LocalDateTime.now());
+        company.setUpdatedBy(user.getEmail());
 
         // For JDBC version, uniqueness validation would need custom implementation
         return companyRepository.save(company);

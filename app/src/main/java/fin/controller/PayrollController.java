@@ -4,6 +4,7 @@ import fin.entity.Company;
 import fin.entity.Employee;
 import fin.entity.FiscalPeriod;
 import fin.entity.Payslip;
+import fin.entity.User;
 import fin.service.PayslipPdfService;
 import fin.service.PayrollService;
 import fin.service.reporting.PayrollReportService;
@@ -78,7 +79,7 @@ public class PayrollController {
      * Create a new employee
      */
     @PostMapping("/employees")
-    public ResponseEntity<?> createEmployee(@RequestBody EmployeeCreateRequest request) {
+    public ResponseEntity<?> createEmployee(@RequestBody EmployeeCreateRequest request, @RequestAttribute("user") User user) {
         try {
             Employee createdEmployee = payrollService.createEmployee(
                 request.getEmployeeCode(),
@@ -92,7 +93,8 @@ public class PayrollController {
                 request.getTaxNumber(),
                 request.getHireDate(),
                 request.getBasicSalary(),
-                request.getCompanyId()
+                request.getCompanyId(),
+                user.getId() // Add user ID for access control
             );
             return ResponseEntity.ok(createdEmployee);
         } catch (IllegalArgumentException e) {

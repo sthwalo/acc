@@ -266,7 +266,13 @@ export default function CompaniesView({ onCompanySelect }: CompaniesViewProps) {
       } catch {
         // fallback below
       }
-      setError(message);
+      // If no companies found, treat as empty list instead of error
+      if (message.includes('No companies found')) {
+        setCompanies([]);
+        setError(null);
+      } else {
+        setError(message);
+      }
       console.error('Error loading companies:', err);
     } finally {
       setLoading(false);

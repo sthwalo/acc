@@ -278,6 +278,18 @@ body {
   font-size: var(--lwc-fontSize5);
 }
 
+/* Header Content Layout */
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--lwc-spacingMedium);
+}
+
+.header-content > div:first-child {
+  flex: 1;
+}
+
 /* Header Actions */
 .header-actions {
   display: flex;

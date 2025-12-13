@@ -40,6 +40,7 @@ import fin.repository.AccountRepository;
 import fin.repository.JournalEntryLineRepository;
 import fin.service.upload.BankStatementProcessingService;
 import fin.service.CompanyService;
+import fin.validation.CompanyValidator;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -60,50 +61,18 @@ public class CompanyController {
     private final BankStatementProcessingService bankStatementService;
     private final JournalEntryLineRepository journalEntryLineRepository;
     private final AccountRepository accountRepository;
+    private final CompanyValidator companyValidator;
 
     public CompanyController(CompanyService companyService,
                                  BankStatementProcessingService bankStatementService,
                                  JournalEntryLineRepository journalEntryLineRepository,
-                                 AccountRepository accountRepository) {
+                                 AccountRepository accountRepository,
+                                 CompanyValidator companyValidator) {
         this.companyService = companyService;
         this.bankStatementService = bankStatementService;
         this.journalEntryLineRepository = journalEntryLineRepository;
         this.accountRepository = accountRepository;
-    }
-
-    /**
-     * Get all companies
-     */
-    @GetMapping
-    public ResponseEntity<ApiResponse<List<Company>>> getAllCompanies() {
-        try {
-            List<Company> companies = companyService.getAllCompanies();
-            return ResponseEntity.ok(ApiResponse.success("Companies retrieved successfully", companies, companies.size()));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(
-                ApiResponse.error("Failed to retrieve companies: " + e.getMessage(), ErrorCode.INTERNAL_ERROR.getCode())
-            );
-        }
-    }
-
-    /**
-     * Get active companies
-     */
-    @GetMapping("/active")
-    public ResponseEntity<Map<String, Object>> getActiveCompanies() {
-        try {
-            List<Company> companies = companyService.getActiveCompanies();
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("data", companies);
-            response.put("count", companies.size());
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of(
-                "success", false,
-                "message", "Failed to retrieve active companies: " + e.getMessage()
-            ));
-        }
+        this.companyValidator = companyValidator;
     }
 
     /**
@@ -202,7 +171,26 @@ public class CompanyController {
     @PostMapping
     public ResponseEntity<Map<String, Object>> createCompany(@RequestBody Company company, @RequestAttribute("user") User user) {
         try {
-            Company createdCompany = companyService.createCompany(company, user.getId());
+            // Check if validator is injected
+            if (companyValidator == null) {
+                return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "CompanyValidator not injected"
+                ));
+            }
+
+            // Validate company creation permissions
+            var validationResult = companyValidator.validateCompanyCreation(company, user);
+            if (!validationResult.isValid()) {
+                // Return first validation error
+                var firstError = validationResult.getErrors().get(0);
+                return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", firstError.getMessage()
+                ));
+            }
+
+            Company createdCompany = companyService.createCompany(company, user);
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("data", createdCompany);
@@ -231,7 +219,7 @@ public class CompanyController {
             }
             
             company.setId(id);
-            Company updatedCompany = companyService.updateCompany(company);
+            Company updatedCompany = companyService.updateCompany(company, user);
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("data", updatedCompany);
