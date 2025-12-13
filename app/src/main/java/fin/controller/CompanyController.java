@@ -36,6 +36,7 @@ import fin.entity.FiscalPeriod;
 import fin.entity.FiscalPeriodSummary;
 import fin.entity.JournalEntryLine;
 import fin.entity.User;
+import fin.dto.CompanyUpdateDTO;
 import fin.repository.AccountRepository;
 import fin.repository.JournalEntryLineRepository;
 import fin.service.upload.BankStatementProcessingService;
@@ -208,7 +209,7 @@ public class CompanyController {
      * Update an existing company
      */
     @PutMapping("/{id}")
-    public ResponseEntity<Map<String, Object>> updateCompany(@PathVariable Long id, @RequestBody Company company, @RequestAttribute("user") User user) {
+    public ResponseEntity<Map<String, Object>> updateCompany(@PathVariable Long id, @RequestBody CompanyUpdateDTO dto, @RequestAttribute("user") User user) {
         try {
             // Check if user has access to this company
             if (!companyService.hasUserAccessToCompany(user.getId(), id)) {
@@ -218,8 +219,7 @@ public class CompanyController {
                 ));
             }
             
-            company.setId(id);
-            Company updatedCompany = companyService.updateCompany(company, user);
+            Company updatedCompany = companyService.updateCompany(id, dto, user);
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("data", updatedCompany);

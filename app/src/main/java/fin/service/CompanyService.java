@@ -31,6 +31,7 @@ import fin.entity.FiscalPeriod;
 import fin.entity.FiscalPeriodSummary;
 import fin.entity.User;
 import fin.entity.UserCompany;
+import fin.dto.CompanyUpdateDTO;
 import fin.repository.CompanyRepository;
 import fin.repository.FiscalPeriodRepository;
 import fin.repository.UserCompanyRepository;
@@ -148,22 +149,38 @@ public class CompanyService {
     /**
      * Update an existing company
      */
-    public Company updateCompany(Company company, User user) {
-        if (company.getId() == null) {
+    public Company updateCompany(Long companyId, CompanyUpdateDTO dto, User user) {
+        if (companyId == null) {
             throw new IllegalArgumentException("Company ID cannot be null for update operation");
         }
 
-        // Check if company exists
-        if (!companyRepository.existsById(company.getId())) {
-            throw new IllegalArgumentException("Company not found with ID: " + company.getId());
-        }
+        // Load existing company to preserve relationships
+        Company existingCompany = companyRepository.findById(companyId)
+            .orElseThrow(() -> new IllegalArgumentException("Company not found with ID: " + companyId));
+
+        // Map DTO fields to existing company
+        existingCompany.setName(dto.getName());
+        existingCompany.setRegistrationNumber(dto.getRegistrationNumber());
+        existingCompany.setTaxNumber(dto.getTaxNumber());
+        existingCompany.setAddress(dto.getAddress());
+        existingCompany.setContactEmail(dto.getContactEmail());
+        existingCompany.setContactPhone(dto.getContactPhone());
+        existingCompany.setLogoPath(dto.getLogoPath());
+        existingCompany.setBankName(dto.getBankName());
+        existingCompany.setAccountNumber(dto.getAccountNumber());
+        existingCompany.setAccountType(dto.getAccountType());
+        existingCompany.setBranchCode(dto.getBranchCode());
+        existingCompany.setVatRegistered(dto.isVatRegistered());
+
+        // Preserve the userCompanies relationship to avoid cascade="all-delete-orphan" issues
+        existingCompany.setUserCompanies(existingCompany.getUserCompanies());
 
         // Set updated timestamp and user
-        company.setUpdatedAt(java.time.LocalDateTime.now());
-        company.setUpdatedBy(user.getEmail());
+        existingCompany.setUpdatedAt(java.time.LocalDateTime.now());
+        existingCompany.setUpdatedBy(user.getEmail());
 
         // For JDBC version, uniqueness validation would need custom implementation
-        return companyRepository.save(company);
+        return companyRepository.save(existingCompany);
     }
 
     /**

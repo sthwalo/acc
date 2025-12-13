@@ -146,7 +146,7 @@ The complete user onboarding workflow follows this sequence:
 
 ## Progress Assessment
 
-### **Completion Status**: ~20% of total tasks completed
+### **Completion Status**: ~25% of total tasks completed
 
 ### **✅ COMPLETED COMPONENTS**
 
@@ -164,6 +164,14 @@ The complete user onboarding workflow follows this sequence:
 - **✅ CompanyController**: Modified to pass user context to service methods
 - **✅ Database Migration**: V8 migration added user tracking columns to companies table
 - **✅ Frontend**: CompaniesView updated to display audit information
+
+#### **Company CRUD Operations (Just Completed)**
+- **✅ CompanyUpdateDTO**: Created dedicated DTO for update operations following SOC principles
+- **✅ Hibernate Cascade Fix**: Resolved "collection with cascade='all-delete-orphan'" error by preserving userCompanies relationships
+- **✅ Service Layer Refactoring**: CompanyService.updateCompany() now uses DTO pattern with proper relationship preservation
+- **✅ Controller Integration**: CompanyController.updateCompany() accepts DTO and passes to service
+- **✅ Architecture Compliance**: Implementation follows SOC, DRY, and small methods principles
+- **✅ Testing Validation**: All tests pass, compilation successful, server running without errors
 
 ### **❌ REMAINING COMPONENTS**
 
@@ -200,6 +208,7 @@ The complete user onboarding workflow follows this sequence:
 - ✅ Basic authentication and access control
 - ✅ Multi-tenant data isolation
 - ✅ Timestamp and user tracking in company records
+- ✅ **Company CRUD Operations**: Full create/read/update/delete functionality with proper relationship management
 
 **What's Missing:**
 - ❌ Industry-specific chart of accounts templates
@@ -471,11 +480,21 @@ The complete user onboarding workflow follows this sequence:
 
 ---
 
-**Document Version**: 1.3
+**Document Version**: 1.4
 **Created**: December 13, 2025
 **Updated**: December 13, 2025
 **Author**: Immaculate Nyoni
-**Review Status**: Updated - Company Audit Fields Implementation Complete
+**Review Status**: Updated - Company CRUD Operations Fully Functional
+
+**Changelog v1.4:**
+- ✅ **Company CRUD Operations**: Full create/read/update/delete functionality implemented with DTO pattern
+- ✅ **CompanyUpdateDTO**: Created dedicated DTO following SOC principles for update operations
+- ✅ **Hibernate Cascade Fix**: Resolved "collection with cascade='all-delete-orphan'" error by preserving userCompanies relationships
+- ✅ **Service Layer Refactoring**: CompanyService.updateCompany() refactored to use DTO with proper relationship preservation
+- ✅ **Controller Integration**: CompanyController.updateCompany() updated to accept DTO and pass to service
+- ✅ **Architecture Compliance**: Implementation follows SOC, DRY, and small methods principles
+- ✅ **Testing Validation**: All tests pass, compilation successful, server running without errors
+- ✅ **Progress Update**: Completion status increased from ~20% to ~25%
 
 **Changelog v1.3:**
 - ✅ **Company Audit Fields**: Added createdAt, updatedAt, createdBy, updatedBy fields to Company entity
