@@ -53,6 +53,22 @@ public class PayPalController {
         try {
             logger.info("Creating PayPal order for amount: {} {}", request.getAmount(), request.getCurrency());
 
+            // Check for dummy mode
+            String dummyMode = System.getenv("PAYPAL_DUMMY_MODE");
+            if ("true".equalsIgnoreCase(dummyMode)) {
+                logger.info("DUMMY MODE: Creating mock PayPal order");
+
+                // Return mock response for testing
+                PayPalDto.OrderResponse mockResponse = new PayPalDto.OrderResponse();
+                mockResponse.setOrderId("DUMMY_ORDER_" + System.currentTimeMillis());
+                mockResponse.setStatus("CREATED");
+                mockResponse.setApprovalUrl("dummy://approve");
+
+                return ResponseEntity.ok(
+                    ApiResponse.success("Mock PayPal order created successfully", mockResponse)
+                );
+            }
+
             // Validate request
             if (request.getAmount() == null || request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
                 return ResponseEntity.badRequest().body(
@@ -118,6 +134,25 @@ public class PayPalController {
     public ResponseEntity<ApiResponse<PayPalDto.CaptureResponse>> captureOrder(@RequestBody PayPalDto.CaptureOrderRequest request) {
         try {
             logger.info("Capturing PayPal order: {}", request.getOrderId());
+
+            // Check for dummy mode
+            String dummyMode = System.getenv("PAYPAL_DUMMY_MODE");
+            if ("true".equalsIgnoreCase(dummyMode)) {
+                logger.info("DUMMY MODE: Mock capturing PayPal order: {}", request.getOrderId());
+
+                // Return mock capture response for testing
+                PayPalDto.CaptureResponse mockResponse = new PayPalDto.CaptureResponse();
+                mockResponse.setOrderId(request.getOrderId());
+                mockResponse.setStatus("COMPLETED");
+                mockResponse.setCompleted(true);
+                mockResponse.setCaptureId("DUMMY_CAPTURE_" + System.currentTimeMillis());
+                mockResponse.setAmount(new BigDecimal("299.00"));
+                mockResponse.setCurrency("USD");
+
+                return ResponseEntity.ok(
+                    ApiResponse.success("Mock payment captured successfully", mockResponse)
+                );
+            }
 
             // Validate request
             if (request.getOrderId() == null || request.getOrderId().trim().isEmpty()) {

@@ -43,6 +43,16 @@ export const PayPalButton: React.FC<PayPalButtonProps> = ({
   useEffect(() => {
     const loadPayPalScript = async () => {
       try {
+        // Check for dummy mode
+        const dummyMode = import.meta.env.VITE_PAYPAL_DUMMY_MODE === 'true';
+        console.log('PayPal Dummy Mode:', dummyMode);
+
+        if (dummyMode) {
+          console.log('DUMMY MODE: Skipping PayPal script load');
+          setPaypalLoaded(true);
+          return;
+        }
+
         // Load PayPal script with client ID from environment
         const clientId = import.meta.env.VITE_PAYPAL_CLIENT_ID;
         console.log('PayPal Client ID:', clientId ? 'Set' : 'Not set');
@@ -136,6 +146,49 @@ export const PayPalButton: React.FC<PayPalButtonProps> = ({
     loadPayPalScript();
   }, [amount, currency, description, planId, onSuccess, onError]);
 
+  const handleDummyPayment = async () => {
+    try {
+      // Create dummy order
+      const request: PayPalCreateOrderRequest = {
+        amount,
+        currency,
+        description,
+        planId
+      };
+
+      const apiService = serviceRegistry.get<ApiService>('apiService');
+      const orderResponse = await apiService.paypal.createOrder(request);
+
+      // Simulate approval delay
+      setTimeout(async () => {
+        try {
+          // Capture dummy order
+          const captureRequest: PayPalCaptureOrderRequest = {
+            orderId: orderResponse.orderId,
+            planId
+          };
+
+          const captureResponse = await apiService.paypal.captureOrder(captureRequest);
+
+          if (captureResponse.completed) {
+            onSuccess(orderResponse.orderId, captureResponse.captureId);
+          } else {
+            onError('Dummy payment was not completed successfully.');
+          }
+        } catch (error) {
+          console.error('Error capturing dummy order:', error);
+          const errorMessage = error instanceof Error ? error.message : 'Failed to process dummy payment.';
+          onError(errorMessage);
+        }
+      }, 1000); // 1 second delay to simulate PayPal approval
+
+    } catch (error) {
+      console.error('Error creating dummy order:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create dummy payment order.';
+      onError(errorMessage);
+    }
+  };
+
   if (disabled) {
     return (
       <div className={`paypal-button-container ${className}`}>
@@ -151,6 +204,8 @@ export const PayPalButton: React.FC<PayPalButtonProps> = ({
     );
   }
 
+  const dummyMode = import.meta.env.VITE_PAYPAL_DUMMY_MODE === 'true';
+
   return (
     <div className={`paypal-button-container ${className}`}>
       {isLoading && (
@@ -160,13 +215,46 @@ export const PayPalButton: React.FC<PayPalButtonProps> = ({
         </div>
       )}
 
-      {!isLoading && !paypalLoaded && (
+      {!isLoading && !paypalLoaded && !dummyMode && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
           <p className="text-red-700 text-sm">Failed to load PayPal. Please refresh the page.</p>
         </div>
       )}
 
-      <div ref={paypalRef} className={isLoading ? 'hidden' : ''}></div>
+      {dummyMode && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
+          <div className="mb-4">
+            <svg className="mx-auto h-12 w-12 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-medium text-yellow-800 mb-2">Dummy Payment Mode</h3>
+          <p className="text-yellow-700 text-sm mb-4">
+            This is a test environment. No real payment will be processed.
+          </p>
+          <button
+            onClick={handleDummyPayment}
+            disabled={isLoading}
+            className="bg-yellow-600 hover:bg-yellow-700 disabled:bg-yellow-400 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center mx-auto"
+          >
+            {isLoading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Processing...
+              </>
+            ) : (
+              <>
+                <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                Complete Dummy Payment
+              </>
+            )}
+          </button>
+        </div>
+      )}
+
+      <div ref={paypalRef} className={isLoading || dummyMode ? 'hidden' : ''}></div>
     </div>
   );
 };

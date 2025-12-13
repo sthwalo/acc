@@ -221,7 +221,7 @@ class AuthApiService extends BaseApiService {
 class CompanyApiService extends BaseApiService {
   async getCompanies(): Promise<Company[]> {
     try {
-      const response = await this.client.get<ApiResponse<Company[]>>('/v1/companies');
+      const response = await this.client.get<ApiResponse<Company[]>>('/v1/companies/user');
       const companies = response.data.data;
 
       if (!companies || companies.length === 0) {
