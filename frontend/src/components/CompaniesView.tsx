@@ -413,11 +413,22 @@ export default function CompaniesView({ onCompanySelect }: CompaniesViewProps) {
   }
 
   if (error) {
+    const isNoCompaniesError = error.includes('No companies found');
+
     return (
       <div className="companies-view">
         <div className="view-header">
-          <h2>Company Setup</h2>
-          <p>Manage your companies - create, view, edit, or delete company records</p>
+          <div className="header-content">
+            <div>
+              <h2>Company Setup</h2>
+              <p>Manage your companies - create, view, edit, or delete company records</p>
+            </div>
+            {isNoCompaniesError && (
+              <button onClick={() => setMenuMode('create')} className="primary-button">
+                Create Company
+              </button>
+            )}
+          </div>
         </div>
         <ApiMessageBanner message={error} type="error" />
         <div className="error">
