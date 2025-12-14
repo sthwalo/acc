@@ -85,8 +85,7 @@ build_frontend() {
         print_status "Building frontend dist..."
         npm install
         # Set API URL for containerized frontend to reach backend via host port
-        export VITE_API_URL=http://localhost:8080/api
-        npm run build
+        VITE_API_URL=http://localhost:8080/api npm run build
         print_success "Frontend built successfully"
     else
         print_warning "Frontend dist is up to date, skipping build"

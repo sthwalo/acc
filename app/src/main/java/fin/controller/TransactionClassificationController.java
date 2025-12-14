@@ -32,6 +32,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.util.List;
 
 /**
  * Spring REST Controller for transaction classification operations.
@@ -153,15 +154,31 @@ public class TransactionClassificationController {
     }
 
     /**
-     * Get uncategorized transactions for a company
+     * Get unclassified transactions for a specific fiscal period.
+     * Used by the frontend TransactionClassificationReview component.
      */
-    @GetMapping("/uncategorized")
-    public ResponseEntity<String> getUncategorizedTransactions(@PathVariable Long companyId) {
+    @GetMapping("/unclassified/{fiscalPeriodId}")
+    public ResponseEntity<ApiResponse<List<fin.service.classification.TransactionClassificationService.UnclassifiedTransaction>>> getUnclassifiedTransactions(
+            @PathVariable Long companyId,
+            @PathVariable Long fiscalPeriodId) {
         try {
-            String transactions = classificationService.getUncategorizedTransactions(companyId);
-            return ResponseEntity.ok(transactions);
+            List<fin.service.classification.TransactionClassificationService.UnclassifiedTransaction> transactions =
+                classificationService.getUnclassifiedTransactions(companyId, fiscalPeriodId);
+            
+            return ResponseEntity.ok(ApiResponse.success(
+                "Unclassified transactions retrieved successfully",
+                transactions
+            ));
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error("Invalid request: " + e.getMessage(),
+                    ErrorCode.VALIDATION_ERROR.getCode())
+            );
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error("Failed to retrieve unclassified transactions: " + e.getMessage(),
+                    ErrorCode.INTERNAL_ERROR.getCode())
+            );
         }
     }
 
@@ -221,6 +238,123 @@ public class TransactionClassificationController {
                     ErrorCode.INTERNAL_ERROR.getCode())
             );
         }
+    }
+
+    /**
+     * Create a new transaction mapping rule for a company.
+     * Used by the frontend TransactionClassificationReview component.
+     */
+    @PostMapping("/rules")
+    public ResponseEntity<ApiResponse<String>> createClassificationRule(
+            @PathVariable Long companyId,
+            @RequestBody CreateRuleRequest request,
+            Principal principal) {
+        try {
+            String username = principal != null ? principal.getName() : "FIN";
+            
+            classificationService.createTransactionMappingRule(
+                companyId,
+                request.getRuleName(),
+                request.getMatchType(),
+                request.getMatchValue(),
+                request.getAccountCode(),
+                request.getAccountName(),
+                request.getPriority(),
+                username
+            );
+            
+            return ResponseEntity.ok(ApiResponse.success(
+                "Classification rule created successfully",
+                "Rule '" + request.getRuleName() + "' created for company " + companyId
+            ));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error("Invalid request: " + e.getMessage(),
+                    ErrorCode.VALIDATION_ERROR.getCode())
+            );
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error("Failed to create classification rule: " + e.getMessage(),
+                    ErrorCode.INTERNAL_ERROR.getCode())
+            );
+        }
+    }
+
+    /**
+     * Classify a transaction with an account code.
+     * Used by the frontend TransactionClassificationReview component for manual classification.
+     */
+    @PostMapping("/transactions/{transactionId}/classify")
+    public ResponseEntity<ApiResponse<String>> classifyTransaction(
+            @PathVariable Long companyId,
+            @PathVariable Long transactionId,
+            @RequestBody ClassifyTransactionRequest request,
+            Principal principal) {
+        try {
+            String username = principal != null ? principal.getName() : "FIN";
+            
+            classificationService.classifyTransactionByAccountCode(
+                companyId,
+                transactionId,
+                request.getAccountCode(),
+                username
+            );
+            
+            return ResponseEntity.ok(ApiResponse.success(
+                "Transaction classified successfully",
+                "Transaction " + transactionId + " classified with account " + request.getAccountCode()
+            ));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error("Invalid request: " + e.getMessage(),
+                    ErrorCode.VALIDATION_ERROR.getCode())
+            );
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error("Failed to classify transaction: " + e.getMessage(),
+                    ErrorCode.INTERNAL_ERROR.getCode())
+            );
+        }
+    }
+
+    /**
+     * Request body for creating a classification rule.
+     */
+    public static class CreateRuleRequest {
+        private String ruleName;
+        private String matchType;
+        private String matchValue;
+        private String accountCode;
+        private String accountName;
+        private Integer priority;
+
+        public String getRuleName() { return ruleName; }
+        public void setRuleName(String ruleName) { this.ruleName = ruleName; }
+
+        public String getMatchType() { return matchType; }
+        public void setMatchType(String matchType) { this.matchType = matchType; }
+
+        public String getMatchValue() { return matchValue; }
+        public void setMatchValue(String matchValue) { this.matchValue = matchValue; }
+
+        public String getAccountCode() { return accountCode; }
+        public void setAccountCode(String accountCode) { this.accountCode = accountCode; }
+
+        public String getAccountName() { return accountName; }
+        public void setAccountName(String accountName) { this.accountName = accountName; }
+
+        public Integer getPriority() { return priority; }
+        public void setPriority(Integer priority) { this.priority = priority; }
+    }
+
+    /**
+     * Request body for classifying a transaction.
+     */
+    public static class ClassifyTransactionRequest {
+        private String accountCode;
+
+        public String getAccountCode() { return accountCode; }
+        public void setAccountCode(String accountCode) { this.accountCode = accountCode; }
     }
 
     /**

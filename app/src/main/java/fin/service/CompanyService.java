@@ -50,7 +50,6 @@ import java.util.logging.Logger;
  * Replaces manual JDBC CompanyService with Spring-managed service using JPA
  */
 @Service
-@Transactional
 public class CompanyService {
 
     private static final Logger LOGGER = Logger.getLogger(CompanyService.class.getName());
@@ -149,38 +148,85 @@ public class CompanyService {
     /**
      * Update an existing company
      */
-    public Company updateCompany(Long companyId, CompanyUpdateDTO dto, User user) {
+    @Transactional
+    public Company updateCompanyTest(Long companyId, CompanyUpdateDTO dto, User user) {
+        LOGGER.info("🔧 DEBUG: updateCompany called with companyId=" + companyId + ", dto.industryId=" + dto.getIndustryId().orElse(null));
         if (companyId == null) {
             throw new IllegalArgumentException("Company ID cannot be null for update operation");
         }
 
-        // Load existing company to preserve relationships
+        // Load the existing company
         Company existingCompany = companyRepository.findById(companyId)
             .orElseThrow(() -> new IllegalArgumentException("Company not found with ID: " + companyId));
 
-        // Map DTO fields to existing company
-        existingCompany.setName(dto.getName());
-        existingCompany.setRegistrationNumber(dto.getRegistrationNumber());
-        existingCompany.setTaxNumber(dto.getTaxNumber());
-        existingCompany.setAddress(dto.getAddress());
-        existingCompany.setContactEmail(dto.getContactEmail());
-        existingCompany.setContactPhone(dto.getContactPhone());
-        existingCompany.setLogoPath(dto.getLogoPath());
-        existingCompany.setBankName(dto.getBankName());
-        existingCompany.setAccountNumber(dto.getAccountNumber());
-        existingCompany.setAccountType(dto.getAccountType());
-        existingCompany.setBranchCode(dto.getBranchCode());
-        existingCompany.setVatRegistered(dto.isVatRegistered());
+        boolean hasUpdates = false;
 
-        // Preserve the userCompanies relationship to avoid cascade="all-delete-orphan" issues
-        existingCompany.setUserCompanies(existingCompany.getUserCompanies());
+        // Update fields that are present in the DTO
+        if (dto.getName().isPresent()) {
+            existingCompany.setName(dto.getName().get());
+            hasUpdates = true;
+        }
+        if (dto.getRegistrationNumber().isPresent()) {
+            existingCompany.setRegistrationNumber(dto.getRegistrationNumber().get());
+            hasUpdates = true;
+        }
+        if (dto.getTaxNumber().isPresent()) {
+            existingCompany.setTaxNumber(dto.getTaxNumber().get());
+            hasUpdates = true;
+        }
+        if (dto.getAddress().isPresent()) {
+            existingCompany.setAddress(dto.getAddress().get());
+            hasUpdates = true;
+        }
+        if (dto.getContactEmail().isPresent()) {
+            existingCompany.setContactEmail(dto.getContactEmail().get());
+            hasUpdates = true;
+        }
+        if (dto.getContactPhone().isPresent()) {
+            existingCompany.setContactPhone(dto.getContactPhone().get());
+            hasUpdates = true;
+        }
+        if (dto.getLogoPath().isPresent()) {
+            existingCompany.setLogoPath(dto.getLogoPath().get());
+            hasUpdates = true;
+        }
+        if (dto.getBankName().isPresent()) {
+            existingCompany.setBankName(dto.getBankName().get());
+            hasUpdates = true;
+        }
+        if (dto.getAccountNumber().isPresent()) {
+            existingCompany.setAccountNumber(dto.getAccountNumber().get());
+            hasUpdates = true;
+        }
+        if (dto.getAccountType().isPresent()) {
+            existingCompany.setAccountType(dto.getAccountType().get());
+            hasUpdates = true;
+        }
+        if (dto.getBranchCode().isPresent()) {
+            existingCompany.setBranchCode(dto.getBranchCode().get());
+            hasUpdates = true;
+        }
+        if (dto.getVatRegistered().isPresent()) {
+            existingCompany.setVatRegistered(dto.getVatRegistered().get());
+            hasUpdates = true;
+        }
+        if (dto.getIndustryId().isPresent()) {
+            LOGGER.info("🔧 DEBUG: Updating industryId to " + dto.getIndustryId().get() + " for company " + companyId);
+            existingCompany.setIndustryId(dto.getIndustryId().get());
+            hasUpdates = true;
+        }
 
-        // Set updated timestamp and user
-        existingCompany.setUpdatedAt(java.time.LocalDateTime.now());
-        existingCompany.setUpdatedBy(user.getEmail());
+        // Only save if there are actual updates
+        if (hasUpdates) {
+            LocalDateTime now = LocalDateTime.now();
+            existingCompany.setUpdatedAt(now);
+            existingCompany.setUpdatedBy(user.getEmail());
+            existingCompany = companyRepository.save(existingCompany);
+            LOGGER.info("🔧 DEBUG: Company updated successfully");
+        }
 
-        // For JDBC version, uniqueness validation would need custom implementation
-        return companyRepository.save(existingCompany);
+        LOGGER.info("🔧 DEBUG: Final company industryId: " + existingCompany.getIndustryId());
+        return existingCompany;
     }
 
     /**

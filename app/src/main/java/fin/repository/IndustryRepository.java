@@ -26,33 +26,30 @@
 
 package fin.repository;
 
-import fin.entity.Company;
+import fin.entity.Industry;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
-import org.springframework.stereotype.Repository;
-
-import java.util.Optional;
+import java.util.List;
 
 /**
- * Repository interface for Company entities.
+ * Repository for Industry entity operations.
  */
 @Repository
-public interface CompanyRepository extends JpaRepository<Company, Long> {
+public interface IndustryRepository extends JpaRepository<Industry, Long> {
 
     /**
-     * Find a company by name
+     * Find all active industries
      */
-    Optional<Company> findByName(String name);
+    List<Industry> findByIsActiveTrue();
 
     /**
-     * Update only the industry_id of a company
+     * Find industries by category
      */
-    @Modifying
-    @Query("UPDATE Company c SET c.industryId = :industryId, c.updatedAt = :updatedAt, c.updatedBy = :updatedBy WHERE c.id = :companyId")
-    int updateIndustryId(@Param("companyId") Long companyId, @Param("industryId") Long industryId, @Param("updatedAt") LocalDateTime updatedAt, @Param("updatedBy") String updatedBy);
+    List<Industry> findByCategoryAndIsActiveTrue(String category);
+
+    /**
+     * Find industry by division code
+     */
+    Industry findByDivisionCodeAndIsActiveTrue(String divisionCode);
 }

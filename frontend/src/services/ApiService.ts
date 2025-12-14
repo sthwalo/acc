@@ -31,7 +31,8 @@ import type {
   PayPalOrderResponse,
   PayPalCaptureResponse,
   BackendPayslip,
-  FiscalPeriodSetupDTO
+  FiscalPeriodSetupDTO,
+  Industry
 } from '../types/api';
 
 /**
@@ -255,10 +256,9 @@ class CompanyApiService extends BaseApiService {
     }
   }
 
-  async updateCompany(id: number, company: Partial<Company>): Promise<Company> {
+  async updateCompany(id: number, company: Partial<Company>): Promise<void> {
     try {
-      const response = await this.client.put<ApiResponse<Company>>(`/v1/companies/${id}`, company);
-      return response.data.data;
+      await this.client.put(`/v1/companies/update/${id}`, company);
     } catch (error) {
       this.handleError('Update company', error);
     }
@@ -921,7 +921,7 @@ class SystemApiService extends BaseApiService {
 class ClassificationApiService extends BaseApiService {
   async initializeChartOfAccounts(companyId: number): Promise<{success: boolean, message: string, data: unknown}> {
     try {
-      const response = await this.client.post(`/v1/companies/${companyId}/classification/initialize-chart-of-accounts`);
+      const response = await this.client.post(`/v1/import/chart-of-accounts/company/${companyId}/initialize`);
       return response.data;
     } catch (error) {
       this.handleError('Initialize chart of accounts', error);
@@ -982,12 +982,30 @@ class ClassificationApiService extends BaseApiService {
     }
   }
 
-  async getUncategorizedTransactions(companyId: number): Promise<{success: boolean, message: string, data: string}> {
+  async getUnclassifiedTransactions(companyId: number, fiscalPeriodId: number): Promise<{success: boolean, message: string, data: unknown}> {
     try {
-      const response = await this.client.get(`/v1/companies/${companyId}/classification/uncategorized`);
+      const response = await this.client.get(`/v1/companies/${companyId}/classification/unclassified/${fiscalPeriodId}`);
       return response.data;
     } catch (error) {
-      this.handleError('Get uncategorized transactions', error);
+      this.handleError('Get unclassified transactions', error);
+    }
+  }
+
+  async classifyTransaction(transactionId: number, accountCode: string): Promise<{success: boolean, message: string, data: unknown}> {
+    try {
+      const response = await this.client.post(`/v1/transactions/${transactionId}/classify`, { accountCode });
+      return response.data;
+    } catch (error) {
+      this.handleError('Classify transaction', error);
+    }
+  }
+
+  async createClassificationRule(companyId: number, rule: unknown): Promise<{success: boolean, message: string, data: unknown}> {
+    try {
+      const response = await this.client.post(`/v1/companies/${companyId}/classification/rules`, rule);
+      return response.data;
+    } catch (error) {
+      this.handleError('Create classification rule', error);
     }
   }
 
@@ -1088,6 +1106,36 @@ class PayPalApiService extends BaseApiService {
 }
 
 /**
+ * Industry Management Service - Encapsulation principle
+ * Handles all industry-related operations
+ */
+class IndustryApiService extends BaseApiService {
+  async getIndustries(): Promise<Industry[]> {
+    try {
+      const response = await this.client.get<ApiResponse<Industry[]>>('/v1/industries');
+      const industries = response.data.data;
+
+      if (!industries) {
+        throw new Error('No industries found. Please contact support.');
+      }
+
+      return industries;
+    } catch (error) {
+      this.handleError('Load industries', error);
+    }
+  }
+
+  async getIndustry(id: number): Promise<Industry> {
+    try {
+      const response = await this.client.get<ApiResponse<Industry>>(`/v1/industries/${id}`);
+      return response.data.data;
+    } catch (error) {
+      this.handleError('Get industry details', error);
+    }
+  }
+}
+
+/**
  * Main ApiService - Composition/Inheritance principle
  * Composes all specialized services for a unified API interface
  * Provides backwards compatibility while enabling OOP structure
@@ -1096,6 +1144,7 @@ export class ApiService extends BaseApiService {
   // Composition - Encapsulation principle
   public readonly auth: AuthApiService;
   public readonly companies: CompanyApiService;
+  public readonly industries: IndustryApiService;
   public readonly fiscalPeriods: FiscalPeriodApiService;
   public readonly transactions: TransactionApiService;
   public readonly reports: ReportApiService;
@@ -1112,6 +1161,7 @@ export class ApiService extends BaseApiService {
     // Initialize all specialized services
     this.auth = new AuthApiService();
     this.companies = new CompanyApiService();
+    this.industries = new IndustryApiService();
     this.fiscalPeriods = new FiscalPeriodApiService();
     this.transactions = new TransactionApiService();
     this.reports = new ReportApiService(this.companies, this.fiscalPeriods);

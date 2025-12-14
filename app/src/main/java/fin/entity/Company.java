@@ -39,8 +39,11 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+import org.hibernate.annotations.DynamicUpdate;
+
 @Entity
 @Table(name = "companies")
+@DynamicUpdate
 public class Company {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -97,6 +100,10 @@ public class Company {
     @Column(name = "vat_registered")
     private boolean vatRegistered;
     
+    // Industry classification
+    @Column(name = "industry_id")
+    private Long industryId;
+    
     // Relationships
     @OneToMany(mappedBy = "company", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
@@ -136,6 +143,7 @@ public class Company {
         this.accountType = other.accountType;
         this.branchCode = other.branchCode;
         this.vatRegistered = other.vatRegistered;
+        this.industryId = other.industryId;
         this.userCompanies = other.userCompanies; // Reference copy for relationships
     }
     
@@ -192,6 +200,10 @@ public class Company {
     // VAT registration getters and setters
     public boolean isVatRegistered() { return vatRegistered; }
     public void setVatRegistered(boolean newVatRegistered) { this.vatRegistered = newVatRegistered; }
+    
+    // Industry classification getters and setters
+    public Long getIndustryId() { return industryId; }
+    public void setIndustryId(Long newIndustryId) { this.industryId = newIndustryId; }
     
     // Relationship getters and setters
     public List<UserCompany> getUserCompanies() { return userCompanies; }

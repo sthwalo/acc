@@ -29,12 +29,19 @@ package fin.service.classification;
 import fin.entity.*;
 import fin.repository.BankTransactionRepository;
 import fin.repository.FiscalPeriodRepository;
+import fin.repository.AccountCategoryRepository;
+import fin.repository.RuleTemplateRepository;
+import fin.repository.TransactionMappingRuleRepository;
 import fin.service.journal.AccountService;
 import fin.service.CompanyService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+
 import java.math.BigDecimal;
+import java.sql.SQLException;
 import java.text.NumberFormat;
 import java.util.List;
 import java.util.Locale;
@@ -60,15 +67,27 @@ public class TransactionClassificationService {
     private final CompanyService companyService;
     private final BankTransactionRepository bankTransactionRepository;
     private final FiscalPeriodRepository fiscalPeriodRepository;
+    private final AccountCategoryRepository accountCategoryRepository;
+    private final RuleTemplateRepository ruleTemplateRepository;
+    private final TransactionMappingRuleRepository transactionMappingRuleRepository;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     public TransactionClassificationService(AccountService accountService,
                                                 CompanyService companyService,
                                                 BankTransactionRepository bankTransactionRepository,
-                                                FiscalPeriodRepository fiscalPeriodRepository) {
+                                                FiscalPeriodRepository fiscalPeriodRepository,
+                                                AccountCategoryRepository accountCategoryRepository,
+                                                RuleTemplateRepository ruleTemplateRepository,
+                                                TransactionMappingRuleRepository transactionMappingRuleRepository) {
         this.accountService = accountService;
         this.companyService = companyService;
         this.bankTransactionRepository = bankTransactionRepository;
         this.fiscalPeriodRepository = fiscalPeriodRepository;
+        this.accountCategoryRepository = accountCategoryRepository;
+        this.ruleTemplateRepository = ruleTemplateRepository;
+        this.transactionMappingRuleRepository = transactionMappingRuleRepository;
         this.currencyFormat = NumberFormat.getCurrencyInstance(Locale.forLanguageTag("en-ZA"));
     }
 
@@ -87,11 +106,23 @@ public class TransactionClassificationService {
                 throw new IllegalArgumentException("Company not found: " + companyId);
             }
 
-            // DELEGATE TO SINGLE SOURCE OF TRUTH
-            this.initializeChartOfAccounts(companyId);
+            if (company.getIndustryId() == null) {
+                throw new IllegalArgumentException("Company must have an industry selected before initializing chart of accounts");
+            }
 
-            LOGGER.info("Chart of accounts initialization completed successfully");
-            return true;
+            // Get chart of accounts templates for the company's industry
+            List<ChartOfAccountsTemplate> templates = getChartOfAccountsTemplates(company.getIndustryId());
+
+            if (templates.isEmpty()) {
+                throw new SQLException("No chart of accounts templates found for industry " + company.getIndustryId() +
+                    ". Please ensure industry templates are populated in the database.");
+            }
+
+            // Create accounts from templates
+            int accountsCreated = createAccountsFromTemplates(companyId, templates);
+
+            LOGGER.info("Chart of accounts initialization completed successfully - created " + accountsCreated + " accounts");
+            return accountsCreated > 0;
 
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error initializing chart of accounts", e);
@@ -101,11 +132,105 @@ public class TransactionClassificationService {
     }
 
     /**
+     * Get chart of accounts templates for a specific industry
+     */
+    private List<ChartOfAccountsTemplate> getChartOfAccountsTemplates(Long industryId) {
+        // Use native query to get templates for the industry
+        String sql = "SELECT * FROM chart_of_accounts_templates WHERE industry_id = ? ORDER BY level, account_code";
+        return entityManager.createNativeQuery(sql, ChartOfAccountsTemplate.class)
+            .setParameter(1, industryId)
+            .getResultList();
+    }
+
+    /**
+     * Create accounts from templates for a company
+     */
+    private int createAccountsFromTemplates(Long companyId, List<ChartOfAccountsTemplate> templates) {
+        int count = 0;
+        for (ChartOfAccountsTemplate template : templates) {
+            // Check if account already exists
+            if (accountService.getAccountByCompanyAndCode(companyId, template.getAccountCode()).isPresent()) {
+                continue; // Skip if already exists
+            }
+
+            // Determine account type from template or account code
+            AccountType accountType = template.getAccountType();
+            if (accountType == null) {
+                accountType = determineAccountTypeFromCode(template.getAccountCode());
+            }
+
+            // Get or create account category
+            Long categoryId = getOrCreateAccountCategory(companyId, accountType);
+
+            // Set parent account if template has parent
+            Long parentAccountId = null;
+            if (template.getParentTemplate() != null) {
+                // Find the parent account that was created from the parent template
+                Optional<Account> parentAccount = accountService.getAccountByCompanyAndCode(companyId, template.getParentTemplate().getAccountCode());
+                if (parentAccount.isPresent()) {
+                    parentAccountId = parentAccount.get().getId();
+                }
+            }
+
+            // Create new account from template
+            accountService.createAccount(
+                template.getAccountCode(),
+                template.getAccountName(),
+                companyId,
+                categoryId,
+                template.getDescription(),
+                parentAccountId
+            );
+            count++;
+        }
+        return count;
+    }
+
+    /**
+     * Determine account type from account code using IFRS conventions
+     */
+    private AccountType determineAccountTypeFromCode(String accountCode) {
+        if (accountCode == null || accountCode.length() < 1) {
+            return AccountType.ASSET; // Default
+        }
+
+        char firstChar = accountCode.charAt(0);
+        switch (firstChar) {
+            case '1': return AccountType.ASSET;
+            case '2': return AccountType.LIABILITY; // Or EQUITY, but we'll use LIABILITY as default
+            case '3': return AccountType.REVENUE;
+            case '4': return AccountType.EXPENSE;
+            default: return AccountType.ASSET; // Default fallback
+        }
+    }
+
+    /**
+     * Get or create account category for the company and account type
+     */
+    private Long getOrCreateAccountCategory(Long companyId, AccountType accountType) {
+        // Try to find existing category
+        List<AccountCategory> categories = accountCategoryRepository.findByCompanyIdAndAccountType(companyId, accountType);
+        if (!categories.isEmpty()) {
+            return categories.get(0).getId();
+        }
+
+        // Create new category
+        Company company = companyService.getCompanyById(companyId);
+        AccountCategory category = new AccountCategory(
+            accountType.name() + " Accounts",
+            "Default category for " + accountType.name().toLowerCase() + " accounts",
+            accountType,
+            company
+        );
+        AccountCategory saved = accountCategoryRepository.save(category);
+        return saved.getId();
+    }
+
+    /**
      * Create standard chart of accounts for a company
      */
     private void createStandardChartOfAccounts(Long companyId) {
         // REMOVED: Now delegated to AccountClassificationService
-        throw new UnsupportedOperationException("Chart of accounts creation now delegated to AccountClassificationService");
     }
 
     /**
@@ -151,9 +276,71 @@ public class TransactionClassificationService {
      * Create standard mapping rules for a company
      */
     private int createStandardMappingRules(Long companyId) {
-        // TODO: Implement standard mapping rules creation
-        // For now, return 1 to indicate success
-        return 1;
+        try {
+            // Get the company to determine its industry
+            Company company = companyService.getCompanyById(companyId);
+            if (company == null) {
+                LOGGER.warning("Company not found for ID: " + companyId);
+                return 0;
+            }
+
+            if (company.getIndustryId() == null) {
+                LOGGER.info("Company " + companyId + " has no industry set, skipping rule template initialization");
+                return 0;
+            }
+
+            // Get active rule templates for the company's industry
+            List<RuleTemplate> templates = ruleTemplateRepository.findActiveByIndustryId(company.getIndustryId());
+            if (templates.isEmpty()) {
+                LOGGER.info("No rule templates found for industry ID: " + company.getIndustryId());
+                return 0;
+            }
+
+            int rulesCreated = 0;
+            for (RuleTemplate template : templates) {
+                try {
+                    // Find the corresponding account by code
+                    Account account = null;
+                    if (template.getAccountCode() != null && !template.getAccountCode().trim().isEmpty()) {
+                        Optional<Account> accountOpt = accountService.getAccountByCompanyAndCode(companyId, template.getAccountCode());
+                        if (accountOpt.isPresent()) {
+                            account = accountOpt.get();
+                        } else {
+                            LOGGER.warning("Account not found for code: " + template.getAccountCode() + " in company: " + companyId);
+                            continue; // Skip this rule if account doesn't exist
+                        }
+                    }
+
+                    // Create the mapping rule from template
+                    TransactionMappingRule rule = new TransactionMappingRule();
+                    rule.setCompany(company);
+                    rule.setRuleName(template.getRuleName());
+                    rule.setDescription(template.getDescription());
+                    rule.setMatchType(TransactionMappingRule.MatchType.valueOf(template.getMatchType()));
+                    rule.setMatchValue(template.getMatchValue());
+                    rule.setAccount(account);
+                    rule.setPriority(template.getPriority());
+                    rule.setActive(true);
+
+                    // Save the rule
+                    transactionMappingRuleRepository.save(rule);
+                    rulesCreated++;
+
+                    LOGGER.fine("Created rule: " + template.getRuleName() + " for company: " + companyId);
+
+                } catch (Exception e) {
+                    LOGGER.warning("Failed to create rule from template: " + template.getRuleName() + " - " + e.getMessage());
+                    // Continue with other templates
+                }
+            }
+
+            LOGGER.info("Successfully created " + rulesCreated + " mapping rules from templates for company: " + companyId);
+            return rulesCreated;
+
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error creating standard mapping rules for company: " + companyId, e);
+            return 0;
+        }
     }
 
     /**
@@ -643,5 +830,177 @@ public class TransactionClassificationService {
         // TODO: Implement transaction classification update logic
         // Placeholder implementation
         LOGGER.info("Updating transaction classification for transaction " + transactionId);
+    }
+
+    /**
+     * Get unclassified transactions for a specific fiscal period as JSON data.
+     * Used by the frontend TransactionClassificationReview component.
+     * 
+     * @param companyId The company ID
+     * @param fiscalPeriodId The fiscal period ID
+     * @return List of unclassified transactions with suggested classifications
+     */
+    @Transactional(readOnly = true)
+    public List<UnclassifiedTransaction> getUnclassifiedTransactions(Long companyId, Long fiscalPeriodId) {
+        List<BankTransaction> unclassified = bankTransactionRepository
+            .findByCompanyIdAndFiscalPeriodIdAndAccountCodeIsNull(companyId, fiscalPeriodId);
+        
+        return unclassified.stream()
+            .map(this::convertToUnclassifiedTransaction)
+            .toList();
+    }
+
+    /**
+     * Create a new transaction mapping rule for a company.
+     * Used by the frontend TransactionClassificationReview component.
+     * 
+     * @param companyId The company ID
+     * @param ruleName The name of the rule
+     * @param matchType The match type (CONTAINS, STARTS_WITH, etc.)
+     * @param matchValue The value to match against
+     * @param accountCode The account code to assign
+     * @param accountName The account name (optional)
+     * @param priority The rule priority
+     * @param createdBy The user creating the rule
+     */
+    @Transactional
+    public void createTransactionMappingRule(Long companyId, String ruleName, String matchType, 
+                                           String matchValue, String accountCode, String accountName, 
+                                           Integer priority, String createdBy) {
+        // Validate company exists
+        Company company = companyService.getCompanyById(companyId);
+        if (company == null) {
+            throw new IllegalArgumentException("Company not found: " + companyId);
+        }
+
+        // Validate account exists
+        Optional<Account> accountOpt = accountService.getAccountByCompanyAndCode(companyId, accountCode);
+        if (accountOpt.isEmpty()) {
+            throw new IllegalArgumentException("Account not found: " + accountCode + " for company " + companyId);
+        }
+
+        // Create the rule
+        TransactionMappingRule rule = new TransactionMappingRule();
+        rule.setCompany(company);
+        rule.setRuleName(ruleName);
+        rule.setMatchType(TransactionMappingRule.MatchType.valueOf(matchType));
+        rule.setMatchValue(matchValue);
+        rule.setAccount(accountOpt.get());
+        rule.setPriority(priority != null ? priority : 50);
+        rule.setActive(true);
+
+        transactionMappingRuleRepository.save(rule);
+    }
+
+    /**
+     * Classify a transaction with an account code.
+     * Used by the frontend TransactionClassificationReview component for manual classification.
+     * 
+     * @param companyId The company ID
+     * @param transactionId The transaction ID
+     * @param accountCode The account code to assign
+     * @param classifiedBy The user performing the classification
+     */
+    @Transactional
+    public void classifyTransactionByAccountCode(Long companyId, Long transactionId, 
+                                               String accountCode, String classifiedBy) {
+        // Validate transaction exists and belongs to company
+        BankTransaction transaction = bankTransactionRepository.findById(transactionId).orElse(null);
+        if (transaction == null) {
+            throw new IllegalArgumentException("Transaction not found: " + transactionId);
+        }
+        if (!transaction.getCompanyId().equals(companyId)) {
+            throw new IllegalArgumentException("Transaction does not belong to company: " + transactionId);
+        }
+
+        // Validate account exists for company
+        Optional<Account> accountOpt = accountService.getAccountByCompanyAndCode(companyId, accountCode);
+        if (accountOpt.isEmpty()) {
+            throw new IllegalArgumentException("Account not found: " + accountCode + " for company " + companyId);
+        }
+
+        // Update the transaction
+        transaction.setAccountCode(accountCode);
+        transaction.setClassifiedBy(classifiedBy);
+        bankTransactionRepository.save(transaction);
+    }
+
+    /**
+     * Convert BankTransaction to UnclassifiedTransaction with suggestions
+     */
+    private UnclassifiedTransaction convertToUnclassifiedTransaction(BankTransaction transaction) {
+        UnclassifiedTransaction result = new UnclassifiedTransaction();
+        result.setId(transaction.getId());
+        result.setDate(transaction.getTransactionDate().toString());
+        result.setDescription(transaction.getDescription() != null ? transaction.getDescription() : "");
+        
+        // Calculate net amount (debit - credit)
+        BigDecimal debit = transaction.getDebitAmount() != null ? transaction.getDebitAmount() : BigDecimal.ZERO;
+        BigDecimal credit = transaction.getCreditAmount() != null ? transaction.getCreditAmount() : BigDecimal.ZERO;
+        result.setAmount(debit.subtract(credit).doubleValue());
+        
+        result.setType(debit.compareTo(credit) > 0 ? "debit" : "credit");
+        result.setReference(transaction.getReference() != null ? transaction.getReference() : "");
+        
+        // For now, don't include suggestions to avoid complexity
+        // TODO: Add suggestion logic later if needed
+        result.setSuggestedClassification(null);
+        
+        return result;
+    }
+
+    /**
+     * DTO for unclassified transactions
+     */
+    public static class UnclassifiedTransaction {
+        private Long id;
+        private String date;
+        private String description;
+        private Double amount;
+        private String type;
+        private String reference;
+        private SuggestedClassification suggestedClassification;
+
+        public Long getId() { return id; }
+        public void setId(Long id) { this.id = id; }
+
+        public String getDate() { return date; }
+        public void setDate(String date) { this.date = date; }
+
+        public String getDescription() { return description; }
+        public void setDescription(String description) { this.description = description; }
+
+        public Double getAmount() { return amount; }
+        public void setAmount(Double amount) { this.amount = amount; }
+
+        public String getType() { return type; }
+        public void setType(String type) { this.type = type; }
+
+        public String getReference() { return reference; }
+        public void setReference(String reference) { this.reference = reference; }
+
+        public SuggestedClassification getSuggestedClassification() { return suggestedClassification; }
+        public void setSuggestedClassification(SuggestedClassification suggestedClassification) {
+            this.suggestedClassification = suggestedClassification;
+        }
+    }
+
+    /**
+     * DTO for classification suggestions
+     */
+    public static class SuggestedClassification {
+        private String accountCode;
+        private String accountName;
+        private Double confidence;
+
+        public SuggestedClassification(String accountCode, String accountName, Double confidence) {
+            this.accountCode = accountCode;
+            this.accountName = accountName;
+            this.confidence = confidence;
+        }
+
+        public String getAccountCode() { return accountCode; }
+        public String getAccountName() { return accountName; }
+        public Double getConfidence() { return confidence; }
     }
 }

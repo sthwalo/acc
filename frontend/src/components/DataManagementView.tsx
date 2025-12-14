@@ -3,6 +3,7 @@ import { Database, Edit, Trash2, Plus, Save, X, AlertCircle, CheckCircle, Calend
 import { useApi } from '../hooks/useApi';
 import ApiMessageBanner from './shared/ApiMessageBanner';
 import AccountSelector from './shared/AccountSelector';
+import TransactionClassificationReview from './TransactionClassificationReview';
 import type { Company, Transaction, FiscalPeriod, ApiTransaction, ApiError } from '../types/api';
 
 interface DataManagementViewProps {
@@ -30,6 +31,7 @@ const ITEMS_PER_PAGE = 50;
 export default function DataManagementView({ selectedCompany }: DataManagementViewProps) {
   const api = useApi();
   const [activeTab, setActiveTab] = useState<TabType>('manual-entry');
+  const [showClassificationReview, setShowClassificationReview] = useState(false);
   const [transactions, setTransactions] = useState<EditableTransaction[]>([]);
   const [fiscalPeriods, setFiscalPeriods] = useState<FiscalPeriod[]>([]);
   const [selectedPeriod, setSelectedPeriod] = useState<FiscalPeriod | null>(null);
@@ -107,11 +109,6 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
     return response;
   }), [handleOperation, api, selectedCompany.id]);
 
-  const viewUnclassifiedAction = useCallback(() => handleOperation('View Unclassified', async () => {
-    const response = await api.classification.getUncategorizedTransactions(selectedCompany.id);
-    return response;
-  }), [handleOperation, api, selectedCompany.id]);
-
   const classificationMenuItems: MenuItem[] = useMemo(() => [
     {
       id: 'initialize-accounts',
@@ -164,12 +161,12 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
     },
     {
       id: 'view-unclassified',
-      name: 'View Unclassified Transactions',
-      description: 'List transactions that need classification',
+      name: 'Review & Classify Transactions',
+      description: 'Review and manually classify unclassified transactions',
       icon: AlertTriangle,
-      action: viewUnclassifiedAction
+      action: () => setShowClassificationReview(true)
     }
-  ], [initializeAccountsAction, initializeRulesAction, fullInitializationAction, autoClassifyAction, syncEntriesAction, regenerateEntriesAction, viewSummaryAction, viewUnclassifiedAction]);
+  ], [initializeAccountsAction, initializeRulesAction, fullInitializationAction, autoClassifyAction, syncEntriesAction, regenerateEntriesAction, viewSummaryAction]);
 
   // Memoize operations menu item actions to prevent infinite re-renders
   const createInvoiceAction = useCallback(() => handleOperation('Create Invoice', async () => {
@@ -543,24 +540,39 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
             <p>Manage transaction classification and journal entry creation</p>
           </div>
 
-          <div className="menu-grid">
-            {classificationMenuItems.map((item) => (
+          {showClassificationReview ? (
+            <div>
               <button
-                key={item.id}
-                onClick={item.action}
-                disabled={item.disabled || isProcessing}
-                className="menu-item"
+                className="back-button"
+                onClick={() => setShowClassificationReview(false)}
               >
-                <div className="menu-item-content">
-                  <item.icon className="menu-icon" />
-                  <div className="menu-text">
-                    <h4>{item.name}</h4>
-                    <p>{item.description}</p>
-                  </div>
-                </div>
+                ← Back to Operations
               </button>
-            ))}
-          </div>
+              <TransactionClassificationReview
+                selectedCompany={selectedCompany}
+                selectedPeriod={selectedPeriod}
+              />
+            </div>
+          ) : (
+            <div className="menu-grid">
+              {classificationMenuItems.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={item.action}
+                  disabled={item.disabled || isProcessing}
+                  className="menu-item"
+                >
+                  <div className="menu-item-content">
+                    <item.icon className="menu-icon" />
+                    <div className="menu-text">
+                      <h4>{item.name}</h4>
+                      <p>{item.description}</p>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -735,8 +747,10 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
                             setEditingTransaction(prev => prev ? {
                               ...prev,
                               debit_account_id: accountId,
-                              debit_account_code: account?.code || account?.accountCode || null,
-                              debit_account_name: account?.name || account?.accountName || null
+                              ...(account && {
+                                debit_account_code: account.code || account.accountCode,
+                                debit_account_name: account.name || account.accountName
+                              })
                             } : null);
                           }}
                           placeholder="Select debit account..."
@@ -767,8 +781,10 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
                             setEditingTransaction(prev => prev ? {
                               ...prev,
                               credit_account_id: accountId,
-                              credit_account_code: account?.code || account?.accountCode || null,
-                              credit_account_name: account?.name || account?.accountName || null
+                              ...(account && {
+                                credit_account_code: account.code || account.accountCode,
+                                credit_account_name: account.name || account.accountName
+                              })
                             } : null);
                           }}
                           placeholder="Select credit account..."

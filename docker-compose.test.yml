@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:17
+    container_name: fin-postgres
+    environment:
+      POSTGRES_DB: drimacc_db
+      POSTGRES_USER: ${DATABASE_USER:-postgres}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-postgres}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - fin-test-network
+
+volumes:
+  postgres_data:
+
+networks:
+  fin-test-network:
+    driver: bridge

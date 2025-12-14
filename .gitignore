@@ -333,6 +333,14 @@ app/bin/
 # But allow test schema in test resources (needed for CI/CD)
 !app/src/test/resources/test_schema.sql
 
+# ========================================
+# TECHNICAL DOCUMENTATION - INTERNAL ONLY
+# ========================================
+
+# Technical documentation files (internal use only - not for public repo)
+docs/technical/CURRENT_DATABASE_ERD.md
+docs/technical/INDUSTRY_TEMPLATE_STRATEGY.md
+
 # Monitoring and deployment scripts
 scripts/backup_database.sh
 scripts/deploy_migrations.sh

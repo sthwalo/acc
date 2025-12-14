@@ -16,12 +16,24 @@ export interface AuthResponsePayload {
 
 export interface ApiEnvelope<T> {
   success: boolean;
-  data: T | null;
-  message: string | null;
+  data: T ;
+  message: string;
   timestamp: number;
 }
 
 // API Types
+export interface Industry {
+  id: number;
+  divisionCode: string;
+  name: string;
+  description?: string;
+  category?: string;
+  isActive?: boolean;
+  isSarsCompliant?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface Company {
   id: number;
   name: string;
@@ -37,6 +49,8 @@ export interface Company {
   accountType?: string;
   branchCode?: string;
   vatRegistered?: boolean;
+  industryId?: number;
+  industry?: Industry;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -48,24 +62,24 @@ export interface FiscalPeriod {
   startDate: string;
   endDate: string;
   createdAt: string;
-  createdBy: number | null;
-  updatedBy: number | null;
-  updatedAt: string | null;
+  createdBy: number;
+  updatedBy: number;
+  updatedAt: string;
   closed: boolean;
   // Payroll-related fields (added to FiscalPeriod in backend)
-  payDate?: string | null;
+  payDate?: string;
   periodType?: string;
   payrollStatus?: 'OPEN' | 'PROCESSED' | 'APPROVED' | 'PAID' | 'CLOSED';
   totalGrossPay?: number;
   totalDeductions?: number;
   totalNetPay?: number;
   employeeCount?: number;
-  processedAt?: string | null;
-  processedBy?: string | null;
-  approvedAt?: string | null;
-  approvedBy?: string | null;
+  processedAt?: string;
+  processedBy?: string;
+  approvedAt?: string;
+  approvedBy?: string;
   payrollProcessed?: boolean;
-  paymentDate?: string | null;
+  paymentDate?: string;
   payrollActive?: boolean;
   processed?: boolean;
 }
@@ -87,45 +101,44 @@ export interface Transaction {
   reference: string;
   balance: number;
   created_at: string;
-  // Double-entry classification fields
   debit_account_id?: number | null;
   credit_account_id?: number | null;
-  debit_account_name?: string | null;
-  credit_account_name?: string | null;
-  debit_account_code?: string | null;
-  credit_account_code?: string | null;
+  debit_account_name?: string;
+  credit_account_name?: string;
+  debit_account_code?: string;
+  credit_account_code?: string;
 }
 
 export interface ApiTransaction {
   id: number;
   companyId: number;
-  bankAccountId: number | null;
+  bankAccountId: number;
   fiscalPeriodId: number;
-  accountCode: string | null;
-  accountNumber: string | null;
-  sourceFile: string | null;
+  accountCode: string;
+  accountNumber: string;
+  sourceFile: string;
   serviceFee: boolean;
   transactionDate: string;
   debitAmount: number;
   creditAmount: number;
   balance: number;
-  reference: string | null;
+  reference: string;
   createdAt: string;
-  transactionTypeId: number | null;
+  transactionTypeId: number;
   category: string;
   subcategory: string;
   isReconciled: boolean;
   updatedAt: string;
-  updatedBy: string | null;
-  accountName: string | null;
+  updatedBy: string;
+  accountName: string;
   description: string;
-  statementPeriod: string | null;
-  debitAccountId: number | null;
-  creditAccountId: number | null;
-  debitAccountCode: string | null;
-  creditAccountCode: string | null;
-  debitAccountName: string | null;
-  creditAccountName: string | null;
+  statementPeriod: string;
+  debitAccountId: number;
+  creditAccountId: number;
+  debitAccountCode: string;
+  creditAccountCode: string;
+  debitAccountName: string;
+  creditAccountName: string;
 }
 
 export interface ApiResponse<T> {
@@ -175,7 +188,7 @@ export interface User {
   salt: string;
   createdBy: string;
   updatedBy: string;
-  lastLoginAt: string | null;
+  lastLoginAt: string;
   token?: string;
   username: string;
   fullName: string;
@@ -211,7 +224,7 @@ export interface Account {
   companyId?: number;
   categoryId?: number;
   description?: string;
-  parentAccountId?: number | null;
+  parentAccountId?: number;
   accountCode?: string;
   accountName?: string;
 }
@@ -274,7 +287,7 @@ export interface FiscalPeriodPayrollConfigResponse {
   periodName: string;
   startDate: string;
   endDate: string;
-  payDate: string | null;
+  payDate: string;
   periodType: 'WEEKLY' | 'MONTHLY' | 'QUARTERLY';
   payrollStatus: 'OPEN' | 'PROCESSED' | 'APPROVED' | 'PAID' | 'CLOSED';
   totalGrossPay: number;
@@ -289,7 +302,7 @@ export interface FiscalPeriodPayrollStatusResponse {
   periodName: string;
   startDate: string;
   endDate: string;
-  payDate: string | null;
+  payDate: string;
   payrollStatus: 'OPEN' | 'PROCESSED' | 'APPROVED' | 'PAID' | 'CLOSED';
   totalGrossPay: number;
   totalNetPay: number;
@@ -492,7 +505,7 @@ export interface PayrollDocument {
   employeeId: number;
   periodId: number;
   fileName: string;
-  fileData: string | null;
+  fileData: string;
   documentType: 'PAYSLIP' | 'TAX_CERTIFICATE' | 'EMPLOYEE_CONTRACT' | 'BANK_STATEMENT' | 'OTHER';
   uploadDate: string;
 }

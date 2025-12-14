@@ -3,7 +3,7 @@ import { Building2, Phone, Mail, Plus, Edit, Trash2, Eye, ArrowLeft, Save } from
 import { useApi } from '../hooks/useApi';
 import ApiMessageBanner from './shared/ApiMessageBanner';
 import FiscalPeriodSetupModal from './FiscalPeriodSetupModal';
-import type { Company } from '../types/api';
+import type { Company, Industry } from '../types/api';
 
 interface CompaniesViewProps {
   onCompanySelect: (company: Company) => void;
@@ -14,13 +14,14 @@ type MenuMode = 'list' | 'create' | 'view' | 'edit';
 interface CompanyFormProps {
   isEdit: boolean;
   formData: Partial<Company>;
+  industries: Industry[];
   onFormDataChange: (data: Partial<Company>) => void;
   onSave: () => void;
   onCancel: () => void;
   saving: boolean;
 }
 
-const CompanyForm = memo(({ isEdit, formData, onFormDataChange, onSave, onCancel, saving }: CompanyFormProps) => {
+const CompanyForm = memo(({ isEdit, formData, industries, onFormDataChange, onSave, onCancel, saving }: CompanyFormProps) => {
   const handleNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     onFormDataChange({ ...formData, name: e.target.value });
   }, [formData, onFormDataChange]);
@@ -63,6 +64,11 @@ const CompanyForm = memo(({ isEdit, formData, onFormDataChange, onSave, onCancel
 
   const handleVatRegisteredChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     onFormDataChange({ ...formData, vatRegistered: e.target.checked });
+  }, [formData, onFormDataChange]);
+
+  const handleIndustryChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    const industryId = e.target.value ? parseInt(e.target.value) : undefined;
+    onFormDataChange({ ...formData, industryId });
   }, [formData, onFormDataChange]);
 
   return (
@@ -209,6 +215,24 @@ const CompanyForm = memo(({ isEdit, formData, onFormDataChange, onSave, onCancel
             VAT Registered (15% VAT on invoices)
           </label>
         </div>
+
+        <div className="form-group">
+          <label htmlFor="industryId">Industry *</label>
+          <select
+            id="industryId"
+            name="industryId"
+            value={formData.industryId || ''}
+            onChange={handleIndustryChange}
+            required
+          >
+            <option value="">Select industry</option>
+            {industries.map(industry => (
+              <option key={industry.id} value={industry.id}>
+                {industry.divisionCode} - {industry.name}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div className="form-actions">
@@ -245,6 +269,7 @@ export default function CompaniesView({ onCompanySelect }: CompaniesViewProps) {
   const [saving, setSaving] = useState(false);
   const [showFiscalPeriodSetup, setShowFiscalPeriodSetup] = useState(false);
   const [companyForSetup, setCompanyForSetup] = useState<Company | null>(null);
+  const [industries, setIndustries] = useState<Industry[]>([]);
   const api = useApi();
 
   const loadCompanies = useCallback(async () => {
@@ -282,9 +307,20 @@ export default function CompaniesView({ onCompanySelect }: CompaniesViewProps) {
     }
   }, [api]);
 
+  const loadIndustries = useCallback(async () => {
+    try {
+      const data = await api.industries.getIndustries();
+      setIndustries(data);
+    } catch (err) {
+      console.error('Error loading industries:', err);
+      // Don't set error state for industries as it's not critical for company operations
+    }
+  }, [api]);
+
   useEffect(() => {
     loadCompanies();
-  }, [loadCompanies]);
+    loadIndustries();
+  }, [loadCompanies, loadIndustries]);
 
   const handleCreateCompany = useCallback(async () => {
     try {
@@ -339,8 +375,10 @@ export default function CompaniesView({ onCompanySelect }: CompaniesViewProps) {
     if (!selectedCompany) return;
     try {
       setSaving(true);
-      const updatedCompany = await api.companies.updateCompany(selectedCompany.id, formData);
-      setCompanies(prev => prev.map(c => c.id === selectedCompany.id ? updatedCompany : c));
+      await api.companies.updateCompany(selectedCompany.id, formData);
+      // Refetch companies to get updated data
+      const updatedCompanies = await api.getCompanies();
+      setCompanies(updatedCompanies);
       setMenuMode('list');
       setSelectedCompany(null);
       setFormData({});
@@ -486,6 +524,7 @@ export default function CompaniesView({ onCompanySelect }: CompaniesViewProps) {
     return <CompanyForm 
       isEdit={menuMode === 'edit'} 
       formData={formData}
+      industries={industries}
       onFormDataChange={handleFormDataChange}
       onSave={handleSave}
       onCancel={handleCancel}
