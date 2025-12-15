@@ -531,14 +531,15 @@ public class JdbcFinancialDataRepository implements FinancialDataRepository {
             stmt.setInt(1, companyId);
             stmt.setInt(2, fiscalPeriodId);
 
-            ResultSet rs = stmt.executeQuery();
-            while (rs.next()) {
-                AccountInfo account = new AccountInfo();
-                account.setAccountCode(rs.getString("account_code"));
-                account.setAccountName(rs.getString("account_name"));
-                account.setNormalBalance(rs.getString("normal_balance"));
-                account.setAccountType(rs.getString("account_type"));
-                accounts.add(account);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    AccountInfo account = new AccountInfo();
+                    account.setAccountCode(rs.getString("account_code"));
+                    account.setAccountName(rs.getString("account_name"));
+                    account.setNormalBalance(rs.getString("normal_balance"));
+                    account.setAccountType(rs.getString("account_type"));
+                    accounts.add(account);
+                }
             }
         }
 
@@ -579,11 +580,12 @@ public class JdbcFinancialDataRepository implements FinancialDataRepository {
             stmt.setInt(2, fiscalPeriodId);
             stmt.setString(PREPARED_STATEMENT_PARAM_3, accountCode);
 
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                return rs.getBigDecimal("opening_balance");
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getBigDecimal("opening_balance");
+                }
+                return BigDecimal.ZERO;
             }
-            return BigDecimal.ZERO;
         }
     }
 
@@ -620,20 +622,21 @@ public class JdbcFinancialDataRepository implements FinancialDataRepository {
             stmt.setInt(2, fiscalPeriodId);
             stmt.setString(PREPARED_STATEMENT_PARAM_3, accountCode);
 
-            ResultSet rs = stmt.executeQuery();
-            while (rs.next()) {
-                JournalEntryLineDetail line = new JournalEntryLineDetail();
-                line.setLineId(rs.getLong("line_id"));
-                line.setJournalEntryId(rs.getLong("journal_entry_id"));
-                line.setEntryDate(rs.getDate("entry_date").toLocalDate());
-                line.setReference(rs.getString("reference"));
-                line.setDescription(rs.getString("description"));
-                line.setAccountId(rs.getLong("account_id"));
-                line.setAccountCode(rs.getString("account_code"));
-                line.setAccountName(rs.getString("account_name"));
-                line.setDebitAmount(rs.getBigDecimal("debit_amount"));
-                line.setCreditAmount(rs.getBigDecimal("credit_amount"));
-                lines.add(line);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    JournalEntryLineDetail line = new JournalEntryLineDetail();
+                    line.setLineId(rs.getLong("line_id"));
+                    line.setJournalEntryId(rs.getLong("journal_entry_id"));
+                    line.setEntryDate(rs.getDate("entry_date").toLocalDate());
+                    line.setReference(rs.getString("reference"));
+                    line.setDescription(rs.getString("description"));
+                    line.setAccountId(rs.getLong("account_id"));
+                    line.setAccountCode(rs.getString("account_code"));
+                    line.setAccountName(rs.getString("account_name"));
+                    line.setDebitAmount(rs.getBigDecimal("debit_amount"));
+                    line.setCreditAmount(rs.getBigDecimal("credit_amount"));
+                    lines.add(line);
+                }
             }
         }
 

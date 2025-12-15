@@ -61,17 +61,20 @@ public class AuditTrailService {
     private final CompanyService companyService;
     private final FiscalPeriodRepository fiscalPeriodRepository;
     private final AccountRepository accountRepository;
+    private final fin.service.journal.JournalEntryMapper journalEntryMapper;
 
     public AuditTrailService(JournalEntryRepository journalEntryRepository,
                            JournalEntryLineRepository journalEntryLineRepository,
                            CompanyService companyService,
                            FiscalPeriodRepository fiscalPeriodRepository,
-                           AccountRepository accountRepository) {
+                           AccountRepository accountRepository,
+                           fin.service.journal.JournalEntryMapper journalEntryMapper) {
         this.journalEntryRepository = journalEntryRepository;
         this.journalEntryLineRepository = journalEntryLineRepository;
         this.companyService = companyService;
         this.fiscalPeriodRepository = fiscalPeriodRepository;
         this.accountRepository = accountRepository;
+        this.journalEntryMapper = journalEntryMapper;
     }
 
     /**
@@ -203,88 +206,10 @@ public class AuditTrailService {
      * Convert JournalEntry entity to summary DTO.
      */
     private JournalEntryDTO convertToDTO(JournalEntry entry) {
-        // Load lines explicitly to avoid lazy loading issues
-        List<JournalEntryLine> lines = journalEntryLineRepository.findByJournalEntryId(entry.getId());
-        
-        // Calculate totals from journal entry lines
-        BigDecimal totalDebit = BigDecimal.ZERO;
-        BigDecimal totalCredit = BigDecimal.ZERO;
-        int lineCount = lines.size();
-
-        for (JournalEntryLine line : lines) {
-            if (line.getDebitAmount() != null) {
-                totalDebit = totalDebit.add(line.getDebitAmount());
-            }
-            if (line.getCreditAmount() != null) {
-                totalCredit = totalCredit.add(line.getCreditAmount());
-            }
-        }
-
-        // Build description from journal entry lines (showing both accounts)
-        String description = buildDescriptionFromLines(entry, lines);
-
-        return new JournalEntryDTO(
-            entry.getId(),
-            entry.getReference(),
-            entry.getEntryDate(),
-            description,
-            "Bank Transaction", // Default transaction type - could be enhanced with lookup
-            entry.getCreatedBy() != null ? entry.getCreatedBy() : "FIN",
-            entry.getCreatedAt(),
-            totalDebit,
-            totalCredit,
-            lineCount
-        );
+        return journalEntryMapper.toDto(entry);
     }
 
-    /**
-     * Build journal entry description from line items showing both accounts.
-     * Format: "DebitAccount - CreditAccount" (e.g., "Cash - Revenue" or "Expenses - Cash")
-     * This follows the legacy system's pattern of showing the double-entry structure.
-     */
-    private String buildDescriptionFromLines(JournalEntry entry, List<JournalEntryLine> lines) {
-        // If header has a valid description, use it. Treat literal 'null' or 'null - null' as invalid.
-        if (entry.getDescription() != null) {
-            String headerDesc = entry.getDescription().trim();
-            // Normalize 'null' strings produced by legacy concatenation
-            if (!headerDesc.equalsIgnoreCase("null") && !headerDesc.matches("(?i)\\s*null\\s*(-\\s*null\\s*)?")) {
-                if (!headerDesc.isEmpty()) {
-                    return headerDesc;
-                }
-            }
-        }
 
-        // Otherwise, build from lines (show both accounts in double-entry format)
-        if (lines == null || lines.isEmpty()) {
-            return "No description";
-        }
-        
-        // Find debit and credit accounts
-        String debitAccount = null;
-        String creditAccount = null;
-
-        for (JournalEntryLine line : lines) {
-            Account account = accountRepository.findById(line.getAccountId()).orElse(null);
-            if (account != null) {
-                if (line.getDebitAmount() != null && line.getDebitAmount().compareTo(BigDecimal.ZERO) > 0) {
-                    debitAccount = account.getAccountName();
-                } else if (line.getCreditAmount() != null && line.getCreditAmount().compareTo(BigDecimal.ZERO) > 0) {
-                    creditAccount = account.getAccountName();
-                }
-            }
-        }
-
-        // Build description in format: "Debit Account - Credit Account"
-        if (debitAccount != null && creditAccount != null) {
-            return debitAccount + " - " + creditAccount;
-        } else if (debitAccount != null) {
-            return debitAccount;
-        } else if (creditAccount != null) {
-            return creditAccount;
-        }
-
-        return "Journal Entry";
-    }
 
     /**
      * Convert JournalEntry entity to detail DTO with all lines.
@@ -321,7 +246,7 @@ public class AuditTrailService {
 
         String description = entry.getDescription();
         if (description == null || description.trim().isEmpty() || description.matches("(?i)\\s*null\\s*(-\\s*null\\s*)?")) {
-            description = buildDescriptionFromLines(entry, lines);
+            description = journalEntryMapper.toDto(entry).getDescription();
         }
 
         return new JournalEntryDetailDTO(

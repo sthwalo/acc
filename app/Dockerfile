@@ -6,7 +6,8 @@ FROM eclipse-temurin:17-jre
 
 # Install PostgreSQL client, libharu for PDF generation, and Tesseract OCR
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends postgresql-client wget unzip libhpdf-dev fonts-dejavu-core fonts-liberation tesseract-ocr tesseract-ocr-eng && \
+    (apt-get install -y --no-install-recommends postgresql-client-17 || apt-get install -y --no-install-recommends postgresql-client) && \
+    apt-get install -y --no-install-recommends wget unzip libhpdf-dev fonts-dejavu-core fonts-liberation tesseract-ocr tesseract-ocr-eng && \
     rm -rf /var/lib/apt/lists/* && \
     apt-get clean
 

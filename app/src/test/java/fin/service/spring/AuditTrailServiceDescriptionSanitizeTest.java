@@ -35,7 +35,8 @@ public class AuditTrailServiceDescriptionSanitizeTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        auditTrailService = new AuditTrailService(journalEntryRepository, journalEntryLineRepository, companyService, fiscalPeriodRepository, accountRepository);
+        fin.service.journal.JournalEntryMapper journalEntryMapper = new fin.service.journal.JournalEntryMapper(journalEntryLineRepository, accountRepository);
+        auditTrailService = new AuditTrailService(journalEntryRepository, journalEntryLineRepository, companyService, fiscalPeriodRepository, accountRepository, journalEntryMapper);
     }
 
     @Test

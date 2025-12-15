@@ -81,7 +81,8 @@ public class BankStatementProcessingTest {
     private static void testDocumentTextExtraction() throws Exception {
         System.out.println("\n📄 Test 2: Document Text Extraction");
 
-        DocumentTextExtractor extractor = new DocumentTextExtractor();
+        fin.config.PdfBoxConfigurator pdfBoxConfigurator = new fin.config.PdfBoxConfigurator();
+        DocumentTextExtractor extractor = new DocumentTextExtractor(pdfBoxConfigurator);
 
         // Test with a simple text file (create a mock PDF scenario)
         // Since we don't have a real PDF, we'll just test that the service can be instantiated

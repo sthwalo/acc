@@ -33,6 +33,8 @@ import org.apache.pdfbox.rendering.PDFRenderer;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import fin.config.PdfBoxConfigurator;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.awt.image.BufferedImage;
@@ -51,14 +53,16 @@ import java.util.regex.Pattern;
 @Service
 public class DocumentTextExtractor {
 
+    private final PdfBoxConfigurator pdfBoxConfigurator;
+
+    @Autowired
+    public DocumentTextExtractor(PdfBoxConfigurator pdfBoxConfigurator) {
+        this.pdfBoxConfigurator = pdfBoxConfigurator;
+    }
+
     private static final Logger logger = LoggerFactory.getLogger(DocumentTextExtractor.class);
 
-    // Configure PDFBox to prevent font initialization errors in containerized environments
-    static {
-        System.setProperty("org.apache.pdfbox.font.FontMapperImpl$DefaultFontProvider.disable", "true");
-        System.setProperty("pdfbox.fontcache", "/dev/null");
-        logger.info("PDFBox configured to disable font scanning for container compatibility");
-    }
+
 
     private String accountNumber;
     private String statementPeriod;
@@ -75,123 +79,139 @@ public class DocumentTextExtractor {
         long startTime = System.currentTimeMillis();
         final int MAX_PROCESSING_TIME_MS = 240000; // 4 minutes max processing time
 
+        // Check PDFBox health before attempting extraction
+        if (!pdfBoxConfigurator.isPdfBoxAvailable()) {
+            logger.warn("PDFBox is not available ({}), falling back to OCR extraction only", pdfBoxConfigurator.getPdfBoxStatus());
+            // Use OCR fallback directly
+            try (PDDocument document = Loader.loadPDF(pdfFile)) {
+                return extractWithOCR(document, startTime, MAX_PROCESSING_TIME_MS);
+            }
+        }
+
         try (PDDocument document = Loader.loadPDF(pdfFile)) {
             List<String> lines = new ArrayList<>();
+            try {
+                // Strategy 1: Try PDFBox text extraction first (fast)
+                PDFTextStripper stripper = new PDFTextStripper();
+                stripper.setSortByPosition(true);
+                String text = stripper.getText(document);
 
-            // Strategy 1: Try PDFBox text extraction first (fast)
-            PDFTextStripper stripper = new PDFTextStripper();
-            stripper.setSortByPosition(true);
-            String text = stripper.getText(document);
+                // ...existing code for quality assessment and fallback logic...
+                String[] testLines = text.split("\r?\n");
+                int shortLineCount = 0;
+                int totalNonEmptyLines = 0;
+                int dateLineCount = 0;
+                int amountLineCount = 0;
+                int financialTermCount = 0;
 
-            // Check extraction quality comprehensively
-            String[] testLines = text.split("\\r?\\n");
-            int shortLineCount = 0;
-            int totalNonEmptyLines = 0;
-            int dateLineCount = 0;
-            int amountLineCount = 0;
-            int financialTermCount = 0;
-
-            for (String line : testLines) {
-                String trimmed = line.trim();
-                if (!trimmed.isEmpty()) {
-                    totalNonEmptyLines++;
-                    if (trimmed.length() < 10) {
-                        shortLineCount++;
-                    }
-                    // Check for date patterns
-                    if (trimmed.matches(".*\\d{2}[/\\-]\\d{2}[/\\-]\\d{4}.*") ||
-                        trimmed.matches(".*\\d{4}[/\\-]\\d{2}[/\\-]\\d{2}.*")) {
-                        dateLineCount++;
-                    }
-                    // Check for monetary amounts
-                    if (trimmed.matches(".*\\$?\\d+[,.]\\d{2}.*")) {
-                        amountLineCount++;
-                    }
-                    // Check for financial terms
-                    if (trimmed.matches("(?i).*\\b(credit|debit|deposit|withdrawal|transfer|payment|fee|balance|statement)\\b.*")) {
-                        financialTermCount++;
-                    }
-                }
-            }
-
-            logger.info("PDF extraction quality: {} total lines, {} short lines ({}%), {} dates, {} amounts, {} financial terms",
-                       totalNonEmptyLines, shortLineCount,
-                       totalNonEmptyLines > 0 ? (shortLineCount * 100 / totalNonEmptyLines) : 0,
-                       dateLineCount, amountLineCount, financialTermCount);
-
-            // Enhanced decision logic for extraction method
-            boolean needsOCR = false;
-            String reason = "";
-
-            if (totalNonEmptyLines == 0) {
-                needsOCR = true;
-                reason = "No text extracted by PDFBox";
-            } else if (shortLineCount > (totalNonEmptyLines * 0.8)) {
-                needsOCR = true;
-                reason = "Over 80% of lines are very short (likely image-based PDF)";
-            } else if (amountLineCount < 5 && financialTermCount < 3) {
-                needsOCR = true;
-                reason = "Insufficient financial content (likely watermark/stamp only)";
-            } else if (shortLineCount > (totalNonEmptyLines * 0.6)) {
-                // Text-based but heavily fragmented - try reconstruction first
-                logger.info("Text-based PDF with heavy fragmentation, attempting reconstruction");
-                List<String> reconstructedLines = reconstructLines(testLines);
-                if (reconstructedLines.size() < totalNonEmptyLines * 0.5) {
-                    needsOCR = true;
-                    reason = "Reconstruction failed to improve quality";
-                } else {
-                    lines = reconstructedLines;
-                    logger.info("Using reconstructed text extraction with {} lines", lines.size());
-                }
-            }
-
-            if (needsOCR) {
-                // Check timeout before starting expensive OCR
-                long elapsedTime = System.currentTimeMillis() - startTime;
-                if (elapsedTime > MAX_PROCESSING_TIME_MS) {
-                    throw new IOException("PDF processing timeout: exceeded " + MAX_PROCESSING_TIME_MS + "ms during quality assessment");
-                }
-
-                logger.info("PDFBox extraction insufficient ({}), falling back to OCR", reason);
-                lines = extractWithOCR(document, startTime, MAX_PROCESSING_TIME_MS);
-                logger.info("OCR extraction completed with {} lines", lines.size());
-            } else if (lines.isEmpty()) {
-                // Good text extraction, use as-is
-                logger.info("Using PDFBox text extraction");
                 for (String line : testLines) {
-                    line = line.trim();
-                    if (!line.isEmpty()) {
-                        lines.add(line);
-                        extractMetadata(line);
+                    String trimmed = line.trim();
+                    if (!trimmed.isEmpty()) {
+                        totalNonEmptyLines++;
+                        if (trimmed.length() < 10) {
+                            shortLineCount++;
+                        }
+                        // Check for date patterns
+                        if (trimmed.matches(".*\\d{2}[/\\-]\\d{2}[/\\-]\\d{4}.*") ||
+                            trimmed.matches(".*\\d{4}[/\\-]\\d{2}[/\\-]\\d{2}.*")) {
+                            dateLineCount++;
+                        }
+                        // Check for monetary amounts
+                        if (trimmed.matches(".*\\$?\\d+[,.]\\d{2}.*")) {
+                            amountLineCount++;
+                        }
+                        // Check for financial terms
+                        if (trimmed.matches("(?i).*\\b(credit|debit|deposit|withdrawal|transfer|payment|fee|balance|statement)\\b.*")) {
+                            financialTermCount++;
+                        }
                     }
                 }
+
+                logger.info("PDF extraction quality: {} total lines, {} short lines ({}%), {} dates, {} amounts, {} financial terms",
+                           totalNonEmptyLines, shortLineCount,
+                           totalNonEmptyLines > 0 ? (shortLineCount * 100 / totalNonEmptyLines) : 0,
+                           dateLineCount, amountLineCount, financialTermCount);
+
+                // Enhanced decision logic for extraction method
+                boolean needsOCR = false;
+                String reason = "";
+
+                if (totalNonEmptyLines == 0) {
+                    needsOCR = true;
+                    reason = "No text extracted by PDFBox";
+                } else if (shortLineCount > (totalNonEmptyLines * 0.8)) {
+                    needsOCR = true;
+                    reason = "Over 80% of lines are very short (likely image-based PDF)";
+                } else if (amountLineCount < 5 && financialTermCount < 3) {
+                    needsOCR = true;
+                    reason = "Insufficient financial content (likely watermark/stamp only)";
+                } else if (shortLineCount > (totalNonEmptyLines * 0.6)) {
+                    // Text-based but heavily fragmented - try reconstruction first
+                    logger.info("Text-based PDF with heavy fragmentation, attempting reconstruction");
+                    List<String> reconstructedLines = reconstructLines(testLines);
+                    if (reconstructedLines.size() < totalNonEmptyLines * 0.5) {
+                        needsOCR = true;
+                        reason = "Reconstruction failed to improve quality";
+                    } else {
+                        lines = reconstructedLines;
+                        logger.info("Using reconstructed text extraction with {} lines", lines.size());
+                    }
+                }
+
+                if (needsOCR) {
+                    // Check timeout before starting expensive OCR
+                    long elapsedTime = System.currentTimeMillis() - startTime;
+                    if (elapsedTime > MAX_PROCESSING_TIME_MS) {
+                        throw new IOException("PDF processing timeout: exceeded " + MAX_PROCESSING_TIME_MS + "ms during quality assessment");
+                    }
+
+                    logger.info("PDFBox extraction insufficient ({}), falling back to OCR", reason);
+                    lines = extractWithOCR(document, startTime, MAX_PROCESSING_TIME_MS);
+                    logger.info("OCR extraction completed with {} lines", lines.size());
+                } else if (lines.isEmpty()) {
+                    // Good text extraction, use as-is
+                    logger.info("Using PDFBox text extraction");
+                    for (String line : testLines) {
+                        line = line.trim();
+                        if (!line.isEmpty()) {
+                            lines.add(line);
+                            extractMetadata(line);
+                        }
+                    }
+                }
+
+                // Final validation
+                if (lines.isEmpty()) {
+                    throw new IOException("No text could be extracted from PDF using either PDFBox or OCR");
+                }
+
+                long totalTime = System.currentTimeMillis() - startTime;
+                logger.info("Text extraction completed successfully: {} lines total in {}ms", lines.size(), totalTime);
+
+                // Log first 20 lines for debugging
+                int logCount = Math.min(20, lines.size());
+                logger.info("First {} extracted lines: {}", logCount, lines.subList(0, logCount));
+
+                return lines;
+
+            } catch (NoClassDefFoundError | ExceptionInInitializerError e) {
+                logger.error("PDFBox failed during extraction ({}), falling back to OCR: {}", e.getClass().getSimpleName(), e.getMessage());
+                // Fallback to OCR
+                return extractWithOCR(document, startTime, MAX_PROCESSING_TIME_MS);
+            } catch (IOException e) {
+                logger.error("Failed to extract text from PDF: {}", e.getMessage());
+                throw e;
             }
-
-            // Final validation
-            if (lines.isEmpty()) {
-                throw new IOException("No text could be extracted from PDF using either PDFBox or OCR");
-            }
-
-            long totalTime = System.currentTimeMillis() - startTime;
-            logger.info("Text extraction completed successfully: {} lines total in {}ms", lines.size(), totalTime);
-
-            // Log first 20 lines for debugging
-            int logCount = Math.min(20, lines.size());
-            logger.info("First {} extracted lines: {}", logCount, lines.subList(0, logCount));
-
-            return lines;
-
-        } catch (IOException e) {
-            logger.error("Failed to extract text from PDF: {}", e.getMessage());
-            throw e;
         }
-    }    /**
+    }
+
+    /**
      * Extract text from image-based PDF using Tesseract OCR.
      * Enhanced with better error handling and quality checks.
      * OPTIMIZED: Reduced DPI from 300 to 200 for faster processing while maintaining accuracy.
      * Added timeout protection to prevent infinite processing.
      */
-    private List<String> extractWithOCR(PDDocument document, long startTime, int maxProcessingTimeMs) throws IOException {
+    List<String> extractWithOCR(PDDocument document, long startTime, int maxProcessingTimeMs) throws IOException {
         List<String> allLines = new ArrayList<>();
 
         // Create PDF renderer with optimized DPI for better performance/accuracy balance

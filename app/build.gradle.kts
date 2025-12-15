@@ -45,8 +45,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-validation")
-    implementation("org.flywaydb:flyway-core")  // Database migration tool
-    implementation("org.flywaydb:flyway-database-postgresql")  // PostgreSQL support
+    implementation("org.flywaydb:flyway-core:10.12.0")  // Database migration tool (pin to support Postgres 17)
+    implementation("org.flywaydb:flyway-database-postgresql:10.12.0")  // PostgreSQL support
 
     // Lombok for reducing boilerplate code
     compileOnly("org.projectlombok:lombok:1.18.30")

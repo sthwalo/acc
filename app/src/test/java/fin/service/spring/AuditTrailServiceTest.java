@@ -90,12 +90,14 @@ public class AuditTrailServiceTest {
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
+        fin.service.journal.JournalEntryMapper journalEntryMapper = new fin.service.journal.JournalEntryMapper(journalEntryLineRepository, accountRepository);
         auditTrailService = new AuditTrailService(
                 journalEntryRepository,
                 journalEntryLineRepository,
                 companyService,
                 fiscalPeriodRepository,
-                accountRepository
+                accountRepository,
+                journalEntryMapper
         );
 
         // Setup test data

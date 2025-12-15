@@ -78,7 +78,7 @@ public class FiscalPeriodController {
                 ApiResponse.error(e.getMessage(), ErrorCode.VALIDATION_ERROR.getCode())
             );
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(
+            return ResponseEntity.internalServerError().body(
                 ApiResponse.error("Failed to set up fiscal period: " + e.getMessage(), ErrorCode.INTERNAL_ERROR.getCode())
             );
         }
@@ -96,7 +96,7 @@ public class FiscalPeriodController {
                 fiscalPeriods
             ));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(
+            return ResponseEntity.internalServerError().body(
                 ApiResponse.error("Failed to retrieve fiscal periods: " + e.getMessage(), ErrorCode.INTERNAL_ERROR.getCode())
             );
         }
@@ -211,7 +211,7 @@ public class FiscalPeriodController {
                 response
             ));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(
+            return ResponseEntity.internalServerError().body(
                 ApiResponse.error("Failed to retrieve payroll configuration: " + e.getMessage(), ErrorCode.INTERNAL_ERROR.getCode())
             );
         }
@@ -252,7 +252,7 @@ public class FiscalPeriodController {
                 response
             ));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(
+            return ResponseEntity.internalServerError().body(
                 ApiResponse.error("Failed to configure payroll: " + e.getMessage(), ErrorCode.INTERNAL_ERROR.getCode())
             );
         }
@@ -298,7 +298,7 @@ public class FiscalPeriodController {
                 responses.size()
             ));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(
+            return ResponseEntity.internalServerError().body(
                 ApiResponse.error("Failed to retrieve fiscal periods payroll status: " + e.getMessage(), ErrorCode.INTERNAL_ERROR.getCode())
             );
         }
@@ -343,7 +343,7 @@ public class FiscalPeriodController {
                 "Payroll configuration has been reset for fiscal period " + id
             ));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(
+            return ResponseEntity.internalServerError().body(
                 ApiResponse.error("Failed to reset payroll configuration: " + e.getMessage(), ErrorCode.INTERNAL_ERROR.getCode())
             );
         }

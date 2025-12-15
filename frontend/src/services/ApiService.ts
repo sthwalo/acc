@@ -1073,6 +1073,103 @@ class DataManagementApiService extends BaseApiService {
     }
   }
 
+  async generateInvoicePdf(companyId: number, invoiceId: number): Promise<{success: boolean, message: string}> {
+    try {
+      const response = await this.client.post(`/v1/companies/${companyId}/data-management/invoices/${invoiceId}/generate-pdf`);
+      // Debug: log raw axios response for diagnosis of client-side issues when server returns 200
+      // eslint-disable-next-line no-console
+      console.debug('API generateInvoicePdf response:', response);
+      const data = response.data;
+      if (typeof data === 'string') {
+        return { success: true, message: data };
+      }
+      return data as {success: boolean, message: string};
+    } catch (error) {
+      this.handleError('Generate invoice PDF', error);
+    }
+  }
+
+  async downloadInvoicePdf(companyId: number, invoiceId: number): Promise<Blob> {
+    try {
+      const response = await this.client.get(`/v1/companies/${companyId}/data-management/invoices/${invoiceId}/pdf`, { responseType: 'blob' });
+      return response.data as Blob;
+    } catch (error) {
+      this.handleError('Download invoice PDF', error);
+    }
+  }
+
+  /**
+   * Download invoice PDF and save it with a useful filename using company and invoice metadata when available
+   */
+  async downloadInvoice(companyId: number, invoiceId: number): Promise<void> {
+    try {
+      // Try to fetch company and invoice metadata for filename
+      const [companyResp, invoiceResp] = await Promise.all([
+        this.client.get(`/v1/companies/${companyId}`),
+        // invoice details endpoint may exist; if not, this will 404 and be handled
+        this.client.get(`/v1/companies/${companyId}/data-management/invoices/${invoiceId}`)
+      ].map(p => p.catch((e) => e)));
+
+      const company = companyResp && !(companyResp instanceof Error) ? companyResp.data?.data : null;
+      const invoice = invoiceResp && !(invoiceResp instanceof Error) ? invoiceResp.data?.data : null;
+
+      const response = await this.client.get(`/v1/companies/${companyId}/data-management/invoices/${invoiceId}/pdf`, { responseType: 'blob' });
+      // Debug: log response type/headers when downloading invoice
+      // eslint-disable-next-line no-console
+      console.debug('API downloadInvoice response headers:', response.headers);
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+
+      const companyName = (company?.name || `company_${companyId}`).replace(/[^a-zA-Z0-9]/g, '_');
+      const invoiceRef = (invoice?.invoiceNumber || invoice?.id || invoiceId).toString().replace(/[^a-zA-Z0-9]/g, '_');
+      link.setAttribute('download', `Invoice_${companyName}_${invoiceRef}.pdf`);
+
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      this.handleError('Download invoice', error);
+    }
+  }
+
+  async createManualInvoice(companyId: number, invoice: { invoiceNumber: string; invoiceDate: string; description?: string; amount: number; debitAccountId: number; creditAccountId: number; fiscalPeriodId: number }): Promise<ApiResponse<Invoice> | Invoice> {
+    try {
+      const response = await this.client.post(`/v1/companies/${companyId}/data-management/invoices`, invoice);
+      return response.data;
+    } catch (error) {
+      this.handleError('Create manual invoice', error);
+    }
+  }
+
+  async getManualInvoices(companyId: number): Promise<ApiResponse<Invoice[]>> {
+    try {
+      const response = await this.client.get(`/v1/companies/${companyId}/data-management/invoices`);
+      return response.data;
+    } catch (error) {
+      // If server returns 5xx (server error), or the global interceptor turned it into a
+      // plain Error('Server error...'), fall back to the public invoices endpoint which
+      // historically returns a plain list of invoices. This avoids blocking the UI while the
+      // backend `data-management` endpoint is investigated.
+      const isServerError = (error instanceof AxiosError && error.response && error.response.status >= 500)
+        || (error instanceof Error && /server error/i.test(error.message || ''));
+
+      if (isServerError) {
+        try {
+          const alt = await this.client.get<Invoice[]>(`/v1/companies/${companyId}/invoices`);
+          return { success: true, data: alt.data, message: 'Invoices retrieved (fallback endpoint)' } as ApiResponse<Invoice[]>;
+        } catch (altErr) {
+          // fall through to generic handler
+          this.handleError('Get manual invoices (fallback)', altErr);
+        }
+      }
+
+      this.handleError('Get manual invoices', error);
+    }
+  }
+
   async resetCompanyData(companyId: number, includeTransactions: boolean): Promise<{success: boolean, message: string, data: unknown}> {
     try {
       const response = await this.client.post(`/v1/companies/${companyId}/data-management/reset`, {

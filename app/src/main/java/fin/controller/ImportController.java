@@ -30,6 +30,8 @@ import fin.entity.BankTransaction;
 import fin.dto.BankStatementUploadResponse;
 import fin.service.upload.BankStatementProcessingService;
 import fin.service.classification.TransactionClassificationService;
+import fin.service.classification.engine.TransactionClassificationEngine.BatchClassificationResult;
+import fin.service.classification.rules.TransactionMappingRuleService.ClassificationRule;
 import fin.service.CompanyService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -132,7 +134,7 @@ public class ImportController {
     public ResponseEntity<BankTransaction> classifyTransaction(@PathVariable Long transactionId,
                                                              @RequestParam Long accountId) {
         try {
-            BankTransaction classifiedTransaction = classificationService.classifyTransaction(transactionId, accountId);
+            BankTransaction classifiedTransaction = classificationService.classifyTransactionWithAccountId(transactionId, accountId);
             return ResponseEntity.ok(classifiedTransaction);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
@@ -143,10 +145,10 @@ public class ImportController {
      * Auto-classify transactions for a company
      */
     @PostMapping("/companies/{companyId}/transactions/auto-classify")
-    public ResponseEntity<TransactionClassificationService.ClassificationResult> autoClassifyTransactions(
+    public ResponseEntity<BatchClassificationResult> autoClassifyTransactions(
             @PathVariable Long companyId) {
         try {
-            TransactionClassificationService.ClassificationResult result =
+            BatchClassificationResult result =
                 classificationService.autoClassifyTransactions(companyId);
             return ResponseEntity.ok(result);
         } catch (IllegalArgumentException e) {
@@ -171,10 +173,10 @@ public class ImportController {
      * Get classification rules for a company
      */
     @GetMapping("/classification-rules/company/{companyId}")
-    public ResponseEntity<List<TransactionClassificationService.ClassificationRule>> getClassificationRules(
+    public ResponseEntity<List<ClassificationRule>> getClassificationRules(
             @PathVariable Long companyId) {
         try {
-            List<TransactionClassificationService.ClassificationRule> rules =
+            List<ClassificationRule> rules =
                 classificationService.getClassificationRules(companyId);
             return ResponseEntity.ok(rules);
         } catch (IllegalArgumentException e) {
@@ -186,10 +188,10 @@ public class ImportController {
      * Add a classification rule
      */
     @PostMapping("/classification-rules")
-    public ResponseEntity<TransactionClassificationService.ClassificationRule> addClassificationRule(
-            @RequestBody TransactionClassificationService.ClassificationRule rule) {
+    public ResponseEntity<ClassificationRule> addClassificationRule(
+            @RequestBody ClassificationRule rule) {
         try {
-            TransactionClassificationService.ClassificationRule createdRule =
+            ClassificationRule createdRule =
                 classificationService.addClassificationRule(rule);
             return ResponseEntity.ok(createdRule);
         } catch (IllegalArgumentException e) {
@@ -201,11 +203,11 @@ public class ImportController {
      * Update a classification rule
      */
     @PutMapping("/classification-rules/{id}")
-    public ResponseEntity<TransactionClassificationService.ClassificationRule> updateClassificationRule(
+    public ResponseEntity<ClassificationRule> updateClassificationRule(
             @PathVariable Long id,
-            @RequestBody TransactionClassificationService.ClassificationRule rule) {
+            @RequestBody ClassificationRule rule) {
         try {
-            TransactionClassificationService.ClassificationRule updatedRule =
+            ClassificationRule updatedRule =
                 classificationService.updateClassificationRule(id, rule);
             return ResponseEntity.ok(updatedRule);
         } catch (IllegalArgumentException e) {

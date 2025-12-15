@@ -26,10 +26,12 @@
 
 package fin.controller;
 
-import fin.controller.ApiResponse;
+import fin.dto.ApiResponse;
 import fin.dto.IndustryDto;
 import fin.entity.Industry;
+import fin.exception.ErrorCode;
 import fin.repository.IndustryRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -59,10 +61,10 @@ public class IndustryController {
             List<IndustryDto> industryDtos = industries.stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
-            return ResponseEntity.ok(ApiResponse.success(industryDtos));
+            return ResponseEntity.ok(ApiResponse.success("Industries retrieved successfully", industryDtos));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(
-                ApiResponse.error("Failed to retrieve industries: " + e.getMessage())
+            return ResponseEntity.internalServerError().body(
+                ApiResponse.error("Failed to retrieve industries: " + e.getMessage(), ErrorCode.INTERNAL_ERROR.getCode())
             );
         }
     }
@@ -76,12 +78,14 @@ public class IndustryController {
             Industry industry = industryRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Industry not found"));
             IndustryDto industryDto = convertToDto(industry);
-            return ResponseEntity.ok(ApiResponse.success(industryDto));
+            return ResponseEntity.ok(ApiResponse.success("Industry retrieved successfully", industryDto));
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                ApiResponse.error(e.getMessage(), ErrorCode.NOT_FOUND.getCode())
+            );
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(
-                ApiResponse.error("Failed to retrieve industry: " + e.getMessage())
+            return ResponseEntity.internalServerError().body(
+                ApiResponse.error("Failed to retrieve industry: " + e.getMessage(), ErrorCode.INTERNAL_ERROR.getCode())
             );
         }
     }

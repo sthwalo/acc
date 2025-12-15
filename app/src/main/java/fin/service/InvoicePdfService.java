@@ -77,13 +77,14 @@ public class InvoicePdfService {
 
     private final ManualInvoiceRepository manualInvoiceRepository;
     private final Debugger debugger;
-    @Value("${spring.datasource.url}")
-    private String dbUrl;
+    private final fin.repository.InvoicePdfRepository invoicePdfRepository;
 
     public InvoicePdfService(ManualInvoiceRepository manualInvoiceRepository,
-                                 Debugger debugger) {
+                                 Debugger debugger,
+                                 fin.repository.InvoicePdfRepository invoicePdfRepository) {
         this.manualInvoiceRepository = manualInvoiceRepository;
         this.debugger = debugger;
+        this.invoicePdfRepository = invoicePdfRepository;
     }
 
     /**
@@ -113,34 +114,14 @@ public class InvoicePdfService {
     }
 
     private InvoiceData fetchInvoiceData(Long invoiceId) throws SQLException {
-        String sql = """
-            SELECT mi.invoice_number, mi.invoice_date, mi.description, mi.amount,
-                   da.account_code as debit_code, da.account_name as debit_name,
-                   ca.account_code as credit_code, ca.account_name as credit_name
-            FROM manual_invoices mi
-            JOIN accounts da ON mi.debit_account_id = da.id
-            JOIN accounts ca ON mi.credit_account_id = ca.id
-            WHERE mi.id = ?
-            """;
-
-        try (Connection conn = DriverManager.getConnection(dbUrl);
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            pstmt.setLong(1, invoiceId);
-
-            try (ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next()) {
-                    return new InvoiceData(
-                        rs.getString("invoice_number"),
-                        rs.getDate("invoice_date").toLocalDate(),
-                        rs.getString("description"),
-                        rs.getBigDecimal("amount")
-                    );
-                }
-            }
+        try {
+            fin.dto.InvoicePdfData dto = invoicePdfRepository.findInvoicePdfDataByInvoiceId(invoiceId);
+            if (dto == null) return null;
+            return new InvoiceData(dto.getInvoiceNumber(), dto.getInvoiceDate(), dto.getDescription(), dto.getAmount());
+        } catch (Exception e) {
+            debugger.logException("Fetch Invoice Data", "InvoicePdfService", "fetchInvoiceData", new SQLException(e), invoiceId);
+            throw new SQLException(e);
         }
-
-        return null;
     }
 
     private byte[] generatePdfBytesWithPdfBox(InvoiceData invoiceData, Company company, FiscalPeriod fiscalPeriod) throws IOException {

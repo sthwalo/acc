@@ -27,6 +27,8 @@
 package fin.service;
 
 import fin.service.upload.DocumentTextExtractor;
+import fin.config.PdfBoxConfigurator;
+import static org.mockito.Mockito.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -55,8 +57,11 @@ class PdfTextExtractionTest {
         System.out.println("📍 Path: " + pdfFile.getAbsolutePath());
         System.out.println("==========================================\n");
 
-        // Extract text using DocumentTextExtractor
-        DocumentTextExtractor extractor = new DocumentTextExtractor();
+        // Prepare PdfBoxConfigurator mock and extract text using DocumentTextExtractor
+        PdfBoxConfigurator pdfBoxConfigurator = mock(PdfBoxConfigurator.class);
+        when(pdfBoxConfigurator.isPdfBoxAvailable()).thenReturn(true);
+        when(pdfBoxConfigurator.getPdfBoxStatus()).thenReturn("AVAILABLE");
+        DocumentTextExtractor extractor = new DocumentTextExtractor(pdfBoxConfigurator);
         List<String> lines = extractor.parseDocument(pdfFile);
 
         System.out.println("✅ Extraction completed!");

@@ -28,8 +28,8 @@ package fin.service.classification;
 
 import fin.entity.*;
 import fin.repository.AccountRepository;
-import fin.service.classification.AccountClassificationService;
 import fin.repository.BankTransactionRepository;
+import fin.service.classification.engine.TransactionClassificationEngine;
 import fin.util.Debugger;
 import org.springframework.stereotype.Service;
 
@@ -49,16 +49,16 @@ public class InteractiveClassificationService {
 
     private final BankTransactionRepository bankTransactionRepository;
     private final AccountRepository accountRepository;
-    private final AccountClassificationService accountClassificationService;
+    private final TransactionClassificationEngine classificationEngine;
     private final Debugger debugger;
 
     public InteractiveClassificationService(BankTransactionRepository bankTransactionRepository,
                                                 AccountRepository accountRepository,
-                                                AccountClassificationService accountClassificationService,
+                                                TransactionClassificationEngine classificationEngine,
                                                 Debugger debugger) {
         this.bankTransactionRepository = bankTransactionRepository;
         this.accountRepository = accountRepository;
-        this.accountClassificationService = accountClassificationService;
+        this.classificationEngine = classificationEngine;
         this.debugger = debugger;
     }
 
@@ -148,7 +148,7 @@ public class InteractiveClassificationService {
 
         // Ensure any lacking journal entries are created for this transaction
         try {
-            accountClassificationService.generateJournalEntriesForClassifiedTransactions(saved.getCompanyId(), classifiedBy);
+            classificationEngine.syncJournalEntries(saved.getCompanyId());
         } catch (Exception e) {
             // Don't fail classification if journal entry generation fails; log and continue
             debugger.logException("Interactive classification - generate journal entries", "InteractiveClassificationService", "classifyTransaction", e, transactionId);

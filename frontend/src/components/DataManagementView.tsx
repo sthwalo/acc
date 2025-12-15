@@ -1,10 +1,14 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { Database, Edit, Trash2, Plus, Save, X, AlertCircle, CheckCircle, Calendar, Settings, FileText, Receipt, FileCheck, BookOpen, AlertTriangle, History, RotateCcw, Download, Loader, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useApi } from '../hooks/useApi';
 import ApiMessageBanner from './shared/ApiMessageBanner';
 import AccountSelector from './shared/AccountSelector';
 import TransactionClassificationReview from './TransactionClassificationReview';
-import type { Company, Transaction, FiscalPeriod, ApiTransaction, ApiError } from '../types/api';
+import useTransactions from '../hooks/useTransactions';
+import type { Company, Transaction, ApiError } from '../types/api';
+import InvoiceForm from './InvoiceForm';
+import InvoicePickerModal from './InvoicePickerModal';
+import OperationsMenu from './OperationsMenu';
 
 interface DataManagementViewProps {
   selectedCompany: Company;
@@ -32,12 +36,21 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
   const api = useApi();
   const [activeTab, setActiveTab] = useState<TabType>('manual-entry');
   const [showClassificationReview, setShowClassificationReview] = useState(false);
-  const [transactions, setTransactions] = useState<EditableTransaction[]>([]);
-  const [fiscalPeriods, setFiscalPeriods] = useState<FiscalPeriod[]>([]);
-  const [selectedPeriod, setSelectedPeriod] = useState<FiscalPeriod | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [showInvoiceForm, setShowInvoiceForm] = useState(false);
+  const [showInvoicePicker, setShowInvoicePicker] = useState(false);
+  // transactions are provided by hook
+  const {
+    fiscalPeriods,
+    selectedPeriod,
+    setSelectedPeriod,
+    transactions,
+    isLoading,
+    error: transactionsError,
+    apiMessage,
+    loadTransactions
+  } = useTransactions(selectedCompany.id);
+  // Local UI error state (separate from transactions error)
   const [error, setError] = useState<string | null>(null);
-  const [apiMessage, setApiMessage] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [editingTransaction, setEditingTransaction] = useState<EditableTransaction | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -96,13 +109,16 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
 
   const syncEntriesAction = useCallback(() => handleOperation('Sync Journal Entries', async () => {
     const response = await api.classification.syncJournalEntries(selectedCompany.id);
+    // Refresh transactions after syncing journal entries so UI reflects server state
+    try { await loadTransactions(); } catch { /* ignore refresh errors */ }
     return response;
-  }), [handleOperation, api, selectedCompany.id]);
+  }), [handleOperation, api, selectedCompany.id, loadTransactions]);
 
   const regenerateEntriesAction = useCallback(() => handleOperation('Regenerate Journal Entries', async () => {
     const response = await api.classification.regenerateAllJournalEntries(selectedCompany.id);
+    try { await loadTransactions(); } catch { /* ignore refresh errors */ }
     return response;
-  }), [handleOperation, api, selectedCompany.id]);
+  }), [handleOperation, api, selectedCompany.id, loadTransactions]);
 
   const viewSummaryAction = useCallback(() => handleOperation('View Summary', async () => {
     const response = await api.classification.getClassificationSummary(selectedCompany.id);
@@ -169,34 +185,28 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
   ], [initializeAccountsAction, initializeRulesAction, fullInitializationAction, autoClassifyAction, syncEntriesAction, regenerateEntriesAction, viewSummaryAction]);
 
   // Memoize operations menu item actions to prevent infinite re-renders
-  const createInvoiceAction = useCallback(() => handleOperation('Create Invoice', async () => {
-    // TODO: Implement invoice creation form
-    return 'Invoice creation not yet implemented';
+  const generateInvoicePdfAction = useCallback(() => handleOperation('Generate Invoice PDF', async () => {
+    // Open invoice picker modal; actual generation happens in onSelect handler
+    setShowInvoicePicker(true);
+    return 'Opening invoice picker';
   }), [handleOperation]);
 
-  const generateInvoicePdfAction = useCallback(() => handleOperation('Generate Invoice PDF', async () => {
-    // TODO: Implement PDF generation
-    return 'PDF generation not yet implemented';
+  const createInvoiceAction = useCallback(() => handleOperation('Create Invoice', async () => {
+    setShowInvoiceForm(true);
+    return 'Opening invoice form';
   }), [handleOperation]);
 
   const syncInvoiceJournalEntriesAction = useCallback(() => handleOperation('Sync Invoice Journal Entries', async () => {
     const response = await api.dataManagement.syncInvoiceJournalEntries(selectedCompany.id);
+    try { await loadTransactions(); } catch { /* ignore refresh errors */ }
     return response;
-  }), [handleOperation, api, selectedCompany.id]);
-
-  const createJournalEntryAction = useCallback(() => handleOperation('Create Journal Entry', async () => {
-    // TODO: Implement journal entry creation form
-    return 'Journal entry creation not yet implemented';
-  }), [handleOperation]);
-
-  const correctCategoriesAction = useCallback(() => handleOperation('Correct Categories', async () => {
-    // TODO: Implement category correction
-    return 'Category correction not yet implemented';
-  }), [handleOperation]);
+  }), [handleOperation, api, selectedCompany.id, loadTransactions]);
 
   const viewHistoryAction = useCallback(() => handleOperation('View History', async () => {
     // TODO: Implement history view
-    return 'History view not yet implemented';
+      setShowInvoiceForm(true);
+      return 'Opening invoice form';
+
   }), [handleOperation]);
 
   const resetDataAction = useCallback(() => handleOperation('Reset Data', async () => {
@@ -206,6 +216,16 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
     const response = await api.dataManagement.resetCompanyData(selectedCompany.id, true);
     return response;
   }), [handleOperation, api, selectedCompany.id]);
+    const createJournalEntryAction = useCallback(() => handleOperation('Create Journal Entry', async () => {
+      // TODO: Implement journal entry creation form
+      return 'Journal entry creation not yet implemented';
+    }), [handleOperation]);
+
+    const correctCategoriesAction = useCallback(() => handleOperation('Correct Categories', async () => {
+      // TODO: Implement category correction
+      return 'Category correction not yet implemented';
+    }), [handleOperation]);
+
 
   const exportCsvAction = useCallback(() => handleOperation('Export CSV', async () => {
     // TODO: Implement CSV export
@@ -271,109 +291,13 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
     }
   ], [createInvoiceAction, generateInvoicePdfAction, syncInvoiceJournalEntriesAction, createJournalEntryAction, correctCategoriesAction, viewHistoryAction, resetDataAction, exportCsvAction]);
 
-  const loadTransactions = useCallback(async () => {
-    if (!selectedPeriod) return;
 
-    try {
-      setIsLoading(true);
-      setError(null);
-      setApiMessage(null);
-      const result = await api.transactions.getTransactions(Number(selectedCompany.id), selectedPeriod.id);
-      const mappedTransactions: Transaction[] = result.data.map((apiTransaction: ApiTransaction) => ({
-        id: apiTransaction.id,
-        company_id: apiTransaction.companyId,
-        fiscal_period_id: apiTransaction.fiscalPeriodId,
-        date: apiTransaction.transactionDate,
-        description: apiTransaction.description || '',
-        amount: apiTransaction.debitAmount > 0 ? apiTransaction.debitAmount : (apiTransaction.creditAmount || 0),
-        type: apiTransaction.debitAmount > 0 ? 'debit' : 'credit',
-        category: apiTransaction.category || '',
-        reference: apiTransaction.reference || '',
-        balance: apiTransaction.balance,
-        created_at: apiTransaction.createdAt,
-        // Map double-entry classification fields from API response
-        debit_account_id: apiTransaction.debitAccountId,
-        credit_account_id: apiTransaction.creditAccountId,
-        debit_account_name: apiTransaction.debitAccountName,
-        credit_account_name: apiTransaction.creditAccountName,
-        debit_account_code: apiTransaction.debitAccountCode,
-        credit_account_code: apiTransaction.creditAccountCode,
-      }));
-      setTransactions(mappedTransactions.map(t => ({ ...t, isEditing: false })));
-      setCurrentPage(1); // Reset to first page when loading new data
-      // Show any API note/message returned by backend
-      if (result && typeof result === 'object' && 'note' in result && typeof result.note === 'string') {
-        setApiMessage(result.note);
-      }
-    } catch (err) {
-      // Extract error message where possible
-      let message = 'Failed to load transactions';
-      try {
-        const anyErr: unknown = err;
-        if (anyErr && typeof anyErr === 'object' && 'response' in anyErr) {
-          const axiosErr = anyErr as { response?: { data?: { message?: string } } };
-          if (axiosErr.response?.data?.message) {
-            message = axiosErr.response.data.message;
-          }
-        } else if (anyErr && typeof anyErr === 'object' && 'message' in anyErr && typeof anyErr.message === 'string') {
-          message = anyErr.message;
-        }
-      } catch {
-        // ignore parsing error
-      }
-      setError(message);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [api, selectedCompany.id, selectedPeriod]);
-
-  const loadFiscalPeriods = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const result = await api.fiscalPeriods.getFiscalPeriods(selectedCompany.id);
-      setFiscalPeriods(result || []);
-      if (result && result.length > 0 && !selectedPeriod) {
-        setSelectedPeriod(result[0]);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load fiscal periods');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [api, selectedCompany.id, selectedPeriod]);
-
-  useEffect(() => {
-    loadFiscalPeriods();
-  }, [loadFiscalPeriods]);
-
-  useEffect(() => {
-    if (selectedPeriod) {
-      loadTransactions();
-    }
-  }, [selectedPeriod, loadTransactions]);
 
   const startEditing = (transaction: EditableTransaction) => {
     setEditingTransaction({ ...transaction, originalData: { ...transaction } });
-    setTransactions(prev =>
-      prev.map(t =>
-        t.id === transaction.id
-          ? { ...t, isEditing: true }
-          : { ...t, isEditing: false }
-      )
-    );
   };
 
   const cancelEditing = () => {
-    if (editingTransaction?.originalData) {
-      setTransactions(prev =>
-        prev.map(t =>
-          t.id === editingTransaction.id
-            ? { ...editingTransaction.originalData!, isEditing: false }
-            : t
-        )
-      );
-    }
     setEditingTransaction(null);
   };
 
@@ -397,19 +321,14 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
         }
 
         setSuccess('Transaction classification updated successfully');
+        try { await loadTransactions(); } catch { /* ignore refresh errors */ }
       } else {
         // TODO: Implement general transaction update API call for non-classification fields
         setSuccess('Transaction updated successfully (classification pending)');
       }
 
-      // Update local state
-      setTransactions(prev =>
-        prev.map(t =>
-          t.id === editingTransaction.id
-            ? { ...editingTransaction, isEditing: false }
-            : t
-        )
-      );
+      // Refresh transactions from server to reflect updates
+      try { await loadTransactions(); } catch { /* ignore refresh errors */ }
 
       setEditingTransaction(null);
       setTimeout(() => setSuccess(null), 3000);
@@ -418,7 +337,7 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
     }
   };
 
-  const deleteTransaction = async (transactionId: number) => {
+  const deleteTransaction = async (transactionId?: number) => {
     if (!confirm('Are you sure you want to delete this transaction? This action cannot be undone.')) {
       return;
     }
@@ -429,7 +348,7 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
       // For now, simulate the deletion
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      setTransactions(prev => prev.filter(t => t.id !== transactionId));
+      try { await loadTransactions(); } catch { /* ignore refresh errors */ }
       setSuccess('Transaction deleted successfully');
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
@@ -584,22 +503,44 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
           </div>
 
           <div className="menu-grid">
-            {operationsMenuItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={item.action}
-                disabled={item.disabled || isProcessing}
-                className="menu-item"
-              >
-                <div className="menu-item-content">
-                  <item.icon className="menu-icon" />
-                  <div className="menu-text">
-                    <h4>{item.name}</h4>
-                    <p>{item.description}</p>
-                  </div>
-                </div>
-              </button>
-            ))}
+            <OperationsMenu items={operationsMenuItems} isProcessing={isProcessing} />
+            {showInvoiceForm && (
+              <InvoiceForm
+                company={selectedCompany}
+                selectedPeriod={selectedPeriod}
+                onClose={() => setShowInvoiceForm(false)}
+                onCreated={() => {
+                  // show success and refresh transactions
+                  setSuccess('Invoice created successfully');
+                  setTimeout(() => setSuccess(null), 3000);
+                  try { loadTransactions(); } catch { /* ignore refresh errors */ }
+                }}
+              />
+            )}
+            {showInvoicePicker && (
+              <InvoicePickerModal
+                company={selectedCompany}
+                onClose={() => setShowInvoicePicker(false)}
+                onSelect={async (invoiceId) => {
+                  setShowInvoicePicker(false);
+                  try {
+                    const gen = await api.dataManagement.generateInvoicePdf(selectedCompany.id, invoiceId);
+                    if (!gen || !gen.success) throw new Error(gen?.message || 'Failed to generate invoice PDF');
+                    try {
+                      await api.dataManagement.downloadInvoice(selectedCompany.id, invoiceId);
+                    } catch (downloadErr: unknown) {
+                      const message = downloadErr instanceof Error ? downloadErr.message : String(downloadErr);
+                      setOperationResult({ success: true, message: `PDF generated but download failed: ${message}. Use /api/v1/companies/${selectedCompany.id}/data-management/invoices/${invoiceId}/pdf` });
+                      return;
+                    }
+                    setOperationResult({ success: true, message: 'PDF generated and downloaded' });
+                    try { await loadTransactions(); } catch { /* ignore refresh errors */ }
+                  } catch (err) {
+                    setOperationResult({ success: false, message: err instanceof Error ? err.message : String(err) });
+                  }
+                }}
+              />
+            )}
           </div>
         </div>
       )}
@@ -678,7 +619,7 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
                 })().map((transaction) => (
                   <tr key={transaction.id}>
                     <td>
-                      {transaction.isEditing ? (
+                      {editingTransaction?.id === transaction.id ? (
                         <input
                           type="date"
                           id={`transaction-date-${transaction.id}`}
@@ -692,7 +633,7 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
                       )}
                     </td>
                     <td>
-                      {transaction.isEditing ? (
+                      {editingTransaction?.id === transaction.id ? (
                         <input
                           type="text"
                           id={`transaction-description-${transaction.id}`}
@@ -706,7 +647,7 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
                       )}
                     </td>
                     <td>
-                      {transaction.isEditing ? (
+                      {editingTransaction?.id === transaction.id ? (
                         <input
                           type="number"
                           id={`transaction-amount-${transaction.id}`}
@@ -721,7 +662,7 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
                       )}
                     </td>
                     <td>
-                      {transaction.isEditing ? (
+                      {editingTransaction?.id === transaction.id ? (
                         <select
                           id={`transaction-type-${transaction.id}`}
                           name={`transaction-type-${transaction.id}`}
@@ -738,7 +679,7 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
                       )}
                     </td>
                     <td>
-                      {transaction.isEditing ? (
+                      {editingTransaction?.id === transaction.id ? (
                         <AccountSelector
                           companyId={selectedCompany.id}
                           value={editingTransaction?.debit_account_id || transaction.debit_account_id || null}
@@ -772,7 +713,7 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
                       )}
                     </td>
                     <td>
-                      {transaction.isEditing ? (
+                      {editingTransaction?.id === transaction.id ? (
                         <AccountSelector
                           companyId={selectedCompany.id}
                           value={editingTransaction?.credit_account_id || transaction.credit_account_id || null}
@@ -807,7 +748,7 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
                     </td>
                     <td>
                       <div className="action-buttons">
-                        {transaction.isEditing ? (
+                        {editingTransaction?.id === transaction.id ? (
                           <>
                             <button
                               className="action-button save"

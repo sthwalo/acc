@@ -27,7 +27,10 @@
 package fin.controller;
 
 import fin.service.classification.TransactionClassificationService;
+import fin.service.classification.reporting.TransactionClassificationReportingService.UnclassifiedTransaction;
+import fin.service.classification.engine.TransactionClassificationEngine.BatchClassificationResult;
 import fin.exception.ErrorCode;
+import fin.dto.ApiResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -70,16 +73,30 @@ public class TransactionClassificationController {
      * Initialize transaction mapping rules for a company
      */
     @PostMapping("/initialize-mapping-rules")
-    public ResponseEntity<String> initializeTransactionMappingRules(@PathVariable Long companyId) {
+    public ResponseEntity<ApiResponse<String>> initializeTransactionMappingRules(@PathVariable Long companyId) {
         try {
             boolean success = classificationService.initializeTransactionMappingRules(companyId);
             if (success) {
-                return ResponseEntity.ok("Transaction mapping rules initialized successfully");
+                return ResponseEntity.ok(ApiResponse.success(
+                    "Transaction mapping rules initialized successfully",
+                    "Rules have been created from industry templates"
+                ));
             } else {
-                return ResponseEntity.internalServerError().body("Failed to initialize transaction mapping rules");
+                return ResponseEntity.internalServerError().body(ApiResponse.error(
+                    "Failed to initialize transaction mapping rules",
+                    ErrorCode.CLASSIFICATION_RULE_NOT_FOUND.getCode()
+                ));
             }
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.badRequest().body(ApiResponse.error(
+                "Invalid request",
+                ErrorCode.VALIDATION_ERROR.getCode()
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(ApiResponse.error(
+                "Database error",
+                ErrorCode.DATABASE_ERROR.getCode()
+            ));
         }
     }
 
@@ -104,13 +121,13 @@ public class TransactionClassificationController {
      * Auto-classify unclassified transactions for a company
      */
     @PostMapping("/auto-classify")
-    public ResponseEntity<String> autoClassifyTransactions(@PathVariable Long companyId) {
+    public ResponseEntity<BatchClassificationResult> autoClassifyTransactions(@PathVariable Long companyId) {
         try {
-            TransactionClassificationService.ClassificationResult result =
+            BatchClassificationResult result =
                 classificationService.autoClassifyTransactions(companyId);
-            return ResponseEntity.ok(result.getRuleApplied());
+            return ResponseEntity.ok(result);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.badRequest().body(null);
         }
     }
 
@@ -158,11 +175,11 @@ public class TransactionClassificationController {
      * Used by the frontend TransactionClassificationReview component.
      */
     @GetMapping("/unclassified/{fiscalPeriodId}")
-    public ResponseEntity<ApiResponse<List<fin.service.classification.TransactionClassificationService.UnclassifiedTransaction>>> getUnclassifiedTransactions(
+    public ResponseEntity<ApiResponse<List<UnclassifiedTransaction>>> getUnclassifiedTransactions(
             @PathVariable Long companyId,
             @PathVariable Long fiscalPeriodId) {
         try {
-            List<fin.service.classification.TransactionClassificationService.UnclassifiedTransaction> transactions =
+            List<UnclassifiedTransaction> transactions =
                 classificationService.getUnclassifiedTransactions(companyId, fiscalPeriodId);
             
             return ResponseEntity.ok(ApiResponse.success(
@@ -175,7 +192,7 @@ public class TransactionClassificationController {
                     ErrorCode.VALIDATION_ERROR.getCode())
             );
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(
+            return ResponseEntity.internalServerError().body(
                 ApiResponse.error("Failed to retrieve unclassified transactions: " + e.getMessage(),
                     ErrorCode.INTERNAL_ERROR.getCode())
             );
@@ -195,7 +212,7 @@ public class TransactionClassificationController {
                 message
             ));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(
+            return ResponseEntity.internalServerError().body(
                 ApiResponse.error("Failed to retrieve mapping rules: " + e.getMessage(), 
                     ErrorCode.INTERNAL_ERROR.getCode())
             );
@@ -233,7 +250,7 @@ public class TransactionClassificationController {
                     ErrorCode.VALIDATION_ERROR.getCode())
             );
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(
+            return ResponseEntity.internalServerError().body(
                 ApiResponse.error("Failed to update transaction classification: " + e.getMessage(),
                     ErrorCode.INTERNAL_ERROR.getCode())
             );
@@ -273,7 +290,7 @@ public class TransactionClassificationController {
                     ErrorCode.VALIDATION_ERROR.getCode())
             );
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(
+            return ResponseEntity.internalServerError().body(
                 ApiResponse.error("Failed to create classification rule: " + e.getMessage(),
                     ErrorCode.INTERNAL_ERROR.getCode())
             );
@@ -310,7 +327,7 @@ public class TransactionClassificationController {
                     ErrorCode.VALIDATION_ERROR.getCode())
             );
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(
+            return ResponseEntity.internalServerError().body(
                 ApiResponse.error("Failed to classify transaction: " + e.getMessage(),
                     ErrorCode.INTERNAL_ERROR.getCode())
             );

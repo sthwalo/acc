@@ -4799,7 +4799,8 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(2px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -4808,14 +4809,76 @@ body {
 }
 
 .rule-modal-content {
-  background: var(--background-primary);
+  background: #ffffff;
   border-radius: 0.5rem;
   padding: 2rem;
   max-width: 600px;
   width: 100%;
   max-height: 90vh;
   overflow-y: auto;
-  border: 1px solid var(--border-color);
+  border: 1px solid #e1e5e9;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.rule-help-section {
+  background: #f8f9fa;
+  border: 1px solid #e1e5e9;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.help-item {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  align-items: flex-start;
+}
+
+.help-item:last-child {
+  margin-bottom: 0;
+}
+
+.help-item svg {
+  color: #6c757d;
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+}
+
+.help-item div {
+  font-size: 0.875rem;
+  line-height: 1.4;
+  color: #495057;
+}
+
+.field-help {
+  display: block;
+  font-size: 0.75rem;
+  color: #6c757d;
+  margin-top: 0.25rem;
+  font-style: italic;
+}
+
+.account-select {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ced4da;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  background: white;
+}
+
+.selected-account-info {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: #e8f5e8;
+  border: 1px solid #c3e6c3;
+  border-radius: 0.25rem;
+}
+
+.selected-account-info .field-help {
+  color: #2d5a2d;
+  margin: 0;
 }
 
 .rule-modal-header {

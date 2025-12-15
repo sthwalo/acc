@@ -136,6 +136,73 @@ public class HealthController {
     }
 
     /**
+     * Database diagnostics endpoint
+     */
+    @GetMapping("/diagnostics")
+    public ResponseEntity<DatabaseDiagnosticsResponse> diagnostics() {
+        int industriesCount = 0;
+        int ruleTemplatesCount = 0;
+        int companiesWithIndustryCount = 0;
+        int totalCompaniesCount = 0;
+
+        try (Connection connection = dataSource.getConnection()) {
+            // Check industries count
+            try (var industriesStmt = connection.prepareStatement("SELECT COUNT(*) FROM industries");
+                 var industriesResult = industriesStmt.executeQuery()) {
+                if (industriesResult.next()) {
+                    industriesCount = industriesResult.getInt(1);
+                }
+            }
+
+            // Check rule templates count
+            try (var templatesStmt = connection.prepareStatement("SELECT COUNT(*) FROM rule_templates");
+                 var templatesResult = templatesStmt.executeQuery()) {
+                if (templatesResult.next()) {
+                    ruleTemplatesCount = templatesResult.getInt(1);
+                }
+            }
+
+            // Check companies with industries
+            try (var companiesStmt = connection.prepareStatement("SELECT COUNT(*) FROM companies WHERE industry_id IS NOT NULL");
+                 var companiesResult = companiesStmt.executeQuery()) {
+                if (companiesResult.next()) {
+                    companiesWithIndustryCount = companiesResult.getInt(1);
+                }
+            }
+
+            // Check total companies
+            try (var totalCompaniesStmt = connection.prepareStatement("SELECT COUNT(*) FROM companies");
+                 var totalCompaniesResult = totalCompaniesStmt.executeQuery()) {
+                if (totalCompaniesResult.next()) {
+                    totalCompaniesCount = totalCompaniesResult.getInt(1);
+                }
+            }
+
+            DatabaseDiagnosticsResponse response = new DatabaseDiagnosticsResponse(
+                "success",
+                null,
+                industriesCount,
+                ruleTemplatesCount,
+                companiesWithIndustryCount,
+                totalCompaniesCount
+            );
+
+            return ResponseEntity.ok(response);
+
+        } catch (SQLException e) {
+            DatabaseDiagnosticsResponse response = new DatabaseDiagnosticsResponse(
+                "error",
+                e.getMessage(),
+                industriesCount,
+                ruleTemplatesCount,
+                companiesWithIndustryCount,
+                totalCompaniesCount
+            );
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
+
+    /**
      * Calculate current fiscal period based on date
      */
     private String calculateCurrentFiscalPeriod(java.time.LocalDate date) {
@@ -216,5 +283,34 @@ public class HealthController {
 
         public List<String> getLogs() { return logs; }
         public String getLogType() { return logType; }
+    }
+
+    /**
+     * Database diagnostics response DTO
+     */
+    public static class DatabaseDiagnosticsResponse {
+        private final String status;
+        private final String error;
+        private final int industriesCount;
+        private final int ruleTemplatesCount;
+        private final int companiesWithIndustryCount;
+        private final int totalCompaniesCount;
+
+        public DatabaseDiagnosticsResponse(String status, String error, int industriesCount, int ruleTemplatesCount,
+                                           int companiesWithIndustryCount, int totalCompaniesCount) {
+            this.status = status;
+            this.error = error;
+            this.industriesCount = industriesCount;
+            this.ruleTemplatesCount = ruleTemplatesCount;
+            this.companiesWithIndustryCount = companiesWithIndustryCount;
+            this.totalCompaniesCount = totalCompaniesCount;
+        }
+
+        public String getStatus() { return status; }
+        public String getError() { return error; }
+        public int getIndustriesCount() { return industriesCount; }
+        public int getRuleTemplatesCount() { return ruleTemplatesCount; }
+        public int getCompaniesWithIndustryCount() { return companiesWithIndustryCount; }
+        public int getTotalCompaniesCount() { return totalCompaniesCount; }
     }
 }

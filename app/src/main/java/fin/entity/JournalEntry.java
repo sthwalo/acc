@@ -101,18 +101,20 @@ public class JournalEntry {
      * Calculates the total debit amount from all lines
      */
     public BigDecimal getTotalDebits() {
+        if (lines == null) return BigDecimal.ZERO;
         return lines.stream()
-                .map(JournalEntryLine::getDebitAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+            .map(line -> line.getDebitAmount() != null ? line.getDebitAmount() : BigDecimal.ZERO)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     /**
      * Calculates the total credit amount from all lines
      */
     public BigDecimal getTotalCredits() {
+        if (lines == null) return BigDecimal.ZERO;
         return lines.stream()
-                .map(JournalEntryLine::getCreditAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+            .map(line -> line.getCreditAmount() != null ? line.getCreditAmount() : BigDecimal.ZERO)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     /**
@@ -212,6 +214,9 @@ public class JournalEntry {
     }
 
     public List<JournalEntryLine> getLines() {
+        if (lines == null) {
+            lines = new ArrayList<>();
+        }
         return new ArrayList<>(lines);
     }
 

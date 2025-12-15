@@ -91,10 +91,10 @@ public class BankTransaction {
     @Column(name = "classified_by")
     private String classifiedBy;
     
-    // Transient fields for double-entry accounting classification (from journal_entry_lines)
-    @Transient
+    // Persistent account ids for manual double-entry classification
+    @Column(name = "debit_account_id")
     private Long debitAccountId;
-    @Transient
+    @Column(name = "credit_account_id")
     private Long creditAccountId;
     @Transient
     private String debitAccountCode;

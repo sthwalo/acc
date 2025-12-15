@@ -229,6 +229,19 @@ export interface Account {
   accountName?: string;
 }
 
+export interface Invoice {
+  id: number;
+  companyId: number;
+  invoiceNumber: string;
+  invoiceDate: string;
+  description?: string;
+  amount: number;
+  debitAccountId: number;
+  creditAccountId: number;
+  fiscalPeriodId: number;
+  createdAt?: string;
+}
+
 export interface RegisterRequest {
   email: string;
   password: string;

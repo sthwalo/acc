@@ -172,10 +172,10 @@ public class DataManagementController {
      * Get journal entries for a company
      */
     @GetMapping("/{companyId}/data-management/journal-entries")
-    public ResponseEntity<List<JournalEntry>> getJournalEntriesByCompany(@PathVariable Long companyId) {
+    public ResponseEntity<fin.dto.ApiResponse<java.util.List<fin.dto.JournalEntryDTO>>> getJournalEntriesByCompany(@PathVariable Long companyId) {
         try {
-            List<JournalEntry> entries = dataManagementService.getJournalEntriesByCompany(companyId);
-            return ResponseEntity.ok(entries);
+            java.util.List<fin.dto.JournalEntryDTO> entries = dataManagementService.getJournalEntriesByCompanyDto(companyId);
+            return ResponseEntity.ok(fin.dto.ApiResponse.success("Journal entries retrieved", entries, entries.size()));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
         }
@@ -185,10 +185,10 @@ public class DataManagementController {
      * Get journal entries for a fiscal period
      */
     @GetMapping("/{companyId}/data-management/journal-entries/fiscal-period/{fiscalPeriodId}")
-    public ResponseEntity<List<JournalEntry>> getJournalEntriesByFiscalPeriod(@PathVariable Long companyId, @PathVariable Long fiscalPeriodId) {
+    public ResponseEntity<fin.dto.ApiResponse<java.util.List<fin.dto.JournalEntryDTO>>> getJournalEntriesByFiscalPeriod(@PathVariable Long companyId, @PathVariable Long fiscalPeriodId) {
         try {
-            List<JournalEntry> entries = dataManagementService.getJournalEntriesByFiscalPeriod(fiscalPeriodId);
-            return ResponseEntity.ok(entries);
+            java.util.List<fin.dto.JournalEntryDTO> entries = dataManagementService.getJournalEntriesByFiscalPeriodDto(fiscalPeriodId);
+            return ResponseEntity.ok(fin.dto.ApiResponse.success("Journal entries retrieved", entries, entries.size()));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
         }
@@ -249,7 +249,7 @@ public class DataManagementController {
      * Generate PDF for a manual invoice
      */
     @PostMapping("/{companyId}/data-management/invoices/{invoiceId}/generate-pdf")
-    public ResponseEntity<String> generateInvoicePdf(@PathVariable Long companyId, @PathVariable Long invoiceId) {
+    public ResponseEntity<fin.dto.ApiResponse<String>> generateInvoicePdf(@PathVariable Long companyId, @PathVariable Long invoiceId) {
         debugger.logMethodEntry("SpringDataManagementController", "generateInvoicePdf", companyId, invoiceId);
 
         try {
@@ -268,7 +268,7 @@ public class DataManagementController {
 
             invoicePdfService.generateInvoicePdfBytes(invoiceId, company, fiscalPeriod);
             debugger.logMethodExit("SpringDataManagementController", "generateInvoicePdf", "PDF generated successfully");
-            return ResponseEntity.ok("PDF generated successfully");
+            return ResponseEntity.ok(fin.dto.ApiResponse.success("PDF generated successfully", null));
         } catch (IllegalArgumentException e) {
             debugger.logValidationError("SpringDataManagementController", "generateInvoicePdf", "invoiceId", invoiceId.toString(), e.getMessage());
             return ResponseEntity.badRequest().build();
@@ -311,6 +311,65 @@ public class DataManagementController {
             return ResponseEntity.badRequest().build();
         } catch (Exception e) {
             debugger.logException("Invoice PDF Download", "SpringDataManagementController", "downloadInvoicePdf", e, companyId, invoiceId);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * List manual invoices for a company
+     */
+    @GetMapping("/{companyId}/data-management/invoices")
+    public ResponseEntity<fin.dto.ApiResponse<java.util.List<fin.dto.ManualInvoiceDTO>>> listInvoices(@PathVariable Long companyId) {
+        debugger.logMethodEntry("SpringDataManagementController", "listInvoices", companyId);
+        try {
+            java.util.List<fin.entity.ManualInvoice> invoices = dataManagementService.getManualInvoicesByCompany(companyId);
+            java.util.List<fin.dto.ManualInvoiceDTO> dtos = new java.util.ArrayList<>();
+            if (invoices != null) {
+                for (fin.entity.ManualInvoice mi : invoices) {
+                    dtos.add(fin.dto.ManualInvoiceDTO.fromEntity(mi));
+                }
+            }
+            debugger.logMethodExit("SpringDataManagementController", "listInvoices", "found " + (dtos == null ? 0 : dtos.size()) + " invoices");
+            return ResponseEntity.ok(fin.dto.ApiResponse.success("Invoices retrieved", dtos));
+        } catch (IllegalArgumentException e) {
+            debugger.logValidationError("SpringDataManagementController", "listInvoices", "companyId", companyId.toString(), e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            debugger.logException("List Invoices", "SpringDataManagementController", "listInvoices", e, companyId);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * Get a single manual invoice for a company
+     */
+    @GetMapping("/{companyId}/data-management/invoices/{invoiceId}")
+    public ResponseEntity<fin.dto.ApiResponse<fin.dto.ManualInvoiceDTO>> getInvoice(@PathVariable Long companyId, @PathVariable Long invoiceId) {
+        debugger.logMethodEntry("SpringDataManagementController", "getInvoice", companyId, invoiceId);
+
+        try {
+            java.util.Optional<fin.entity.ManualInvoice> invoiceOpt = dataManagementService.getManualInvoiceById(invoiceId);
+            if (invoiceOpt.isEmpty()) {
+                debugger.logValidationError("SpringDataManagementController", "getInvoice", "invoiceId", String.valueOf(invoiceId), "Invoice not found");
+                return ResponseEntity.status(org.springframework.http.HttpStatus.NOT_FOUND)
+                        .body(fin.dto.ApiResponse.error("Invoice not found", fin.exception.ErrorCode.NOT_FOUND.getCode()));
+            }
+
+            fin.entity.ManualInvoice invoice = invoiceOpt.get();
+            if (!invoice.getCompanyId().equals(companyId)) {
+                debugger.logValidationError("SpringDataManagementController", "getInvoice", "companyId", companyId.toString(), "Invoice does not belong to company");
+                return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN)
+                        .body(fin.dto.ApiResponse.error("Invoice does not belong to company", fin.exception.ErrorCode.FORBIDDEN.getCode()));
+            }
+
+            fin.dto.ManualInvoiceDTO dto = fin.dto.ManualInvoiceDTO.fromEntity(invoice);
+            debugger.logMethodExit("SpringDataManagementController", "getInvoice", dto.getId());
+            return ResponseEntity.ok(fin.dto.ApiResponse.success("Invoice retrieved", dto));
+        } catch (IllegalArgumentException e) {
+            debugger.logValidationError("SpringDataManagementController", "getInvoice", "invoiceId", String.valueOf(invoiceId), e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            debugger.logException("Get Invoice", "SpringDataManagementController", "getInvoice", e, companyId, invoiceId);
             return ResponseEntity.internalServerError().build();
         }
     }

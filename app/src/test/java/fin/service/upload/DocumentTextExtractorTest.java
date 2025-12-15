@@ -26,9 +26,14 @@
 
 package fin.service.upload;
 
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.mockito.Mockito;
+import static org.mockito.Mockito.*;
+import fin.config.PdfBoxConfigurator;
+import org.apache.pdfbox.pdmodel.PDDocument;
 
 import java.io.IOException;
 import java.util.List;
@@ -39,13 +44,43 @@ import static org.junit.jupiter.api.Assertions.*;
  * Test class for DocumentTextExtractor enhanced parsing capabilities.
  * Tests hybrid extraction strategy, OCR fallback, and quality assessment.
  */
+
 public class DocumentTextExtractorTest {
 
+
+    // For legacy tests
     private DocumentTextExtractor extractor;
+    private PdfBoxConfigurator pdfBoxConfigurator;
 
     @BeforeEach
     void setUp() {
-        extractor = new DocumentTextExtractor();
+        // Default extractor for legacy tests
+        pdfBoxConfigurator = mock(PdfBoxConfigurator.class);
+        when(pdfBoxConfigurator.isPdfBoxAvailable()).thenReturn(true);
+        when(pdfBoxConfigurator.getPdfBoxStatus()).thenReturn("AVAILABLE");
+        extractor = new DocumentTextExtractor(pdfBoxConfigurator);
+    }
+
+    @Test
+    @DisplayName("Should fallback to OCR if PDFBox is unavailable")
+    void testFallbackToOcrWhenPdfBoxUnavailable() throws Exception {
+        PdfBoxConfigurator pdfBoxConfigurator = mock(PdfBoxConfigurator.class);
+        when(pdfBoxConfigurator.isPdfBoxAvailable()).thenReturn(false);
+        when(pdfBoxConfigurator.getPdfBoxStatus()).thenReturn("TEST_UNAVAILABLE");
+
+        // Use a minimal valid PDF file (empty doc)
+        java.io.File tempPdf = java.io.File.createTempFile("test", ".pdf");
+        tempPdf.deleteOnExit();
+        try (PDDocument doc = new PDDocument()) { doc.save(tempPdf); }
+
+        // Spy to verify OCR path is called
+        DocumentTextExtractor spyExtractor = Mockito.spy(new DocumentTextExtractor(pdfBoxConfigurator));
+        doReturn(java.util.List.of("OCR LINE 1", "OCR LINE 2")).when(spyExtractor)
+                .extractWithOCR(any(PDDocument.class), anyLong(), anyInt());
+
+        java.util.List<String> result = spyExtractor.parseDocument(tempPdf);
+        assertEquals(java.util.List.of("OCR LINE 1", "OCR LINE 2"), result);
+        verify(spyExtractor, times(1)).extractWithOCR(any(PDDocument.class), anyLong(), anyInt());
     }
 
     @Test
@@ -60,7 +95,7 @@ public class DocumentTextExtractorTest {
     @Test
     @DisplayName("Should handle OCR error correction for financial text")
     void testOCRErrorCorrection() {
-        DocumentTextExtractor extractor = new DocumentTextExtractor();
+        DocumentTextExtractor extractor = new DocumentTextExtractor(pdfBoxConfigurator);
 
         // Test number corrections
         String result1 = extractor.cleanOCRErrors("lO/O5/2O24");
@@ -84,7 +119,7 @@ public class DocumentTextExtractorTest {
     @Test
     @DisplayName("Should reconstruct fragmented lines correctly")
     void testLineReconstruction() {
-        DocumentTextExtractor extractor = new DocumentTextExtractor();
+        DocumentTextExtractor extractor = new DocumentTextExtractor(pdfBoxConfigurator);
 
         // Test fragmented transaction line
         String[] fragments = {
@@ -104,7 +139,7 @@ public class DocumentTextExtractorTest {
     @Test
     @DisplayName("Should extract metadata from document lines")
     void testMetadataExtraction() {
-        DocumentTextExtractor extractor = new DocumentTextExtractor();
+        DocumentTextExtractor extractor = new DocumentTextExtractor(pdfBoxConfigurator);
 
         // Test account number extraction
         extractor.extractMetadata("Account Number: 1234567890");
@@ -118,7 +153,7 @@ public class DocumentTextExtractorTest {
     @Test
     @DisplayName("Should handle empty or invalid input gracefully")
     void testEmptyInputHandling() {
-        DocumentTextExtractor extractor = new DocumentTextExtractor();
+        DocumentTextExtractor extractor = new DocumentTextExtractor(pdfBoxConfigurator);
 
         // Test with empty array
         String[] emptyFragments = new String[0];

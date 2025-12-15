@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { CheckCircle, AlertTriangle, Edit, X, Plus, Search } from 'lucide-react';
+import { CheckCircle, AlertTriangle, Edit, X, Plus, Search, HelpCircle, Info } from 'lucide-react';
 import { useApi } from '../hooks/useApi';
-import type { Company, Transaction, FiscalPeriod } from '../types/api';
+import type { Company, Transaction, FiscalPeriod, Account } from '../types/api';
 
 interface TransactionClassificationReviewProps {
   selectedCompany: Company;
@@ -32,7 +32,9 @@ export default function TransactionClassificationReview({
 }: TransactionClassificationReviewProps) {
   const api = useApi();
   const [unclassifiedTransactions, setUnclassifiedTransactions] = useState<UnclassifiedTransaction[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingAccounts, setIsLoadingAccounts] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<UnclassifiedTransaction | null>(null);
   const [showRuleCreator, setShowRuleCreator] = useState(false);
   const [newRule, setNewRule] = useState<ClassificationRule>({
@@ -45,6 +47,22 @@ export default function TransactionClassificationReview({
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [filterBy, setFilterBy] = useState<'all' | 'high-confidence' | 'low-confidence'>('all');
+
+  // Load accounts for the company
+  const loadAccounts = useCallback(async () => {
+    if (!selectedCompany?.id) return;
+
+    try {
+      setIsLoadingAccounts(true);
+      const response = await api.accounts.getChartOfAccounts(selectedCompany.id);
+      setAccounts(response.data || []);
+    } catch (error) {
+      console.error('Failed to load accounts:', error);
+      setAccounts([]);
+    } finally {
+      setIsLoadingAccounts(false);
+    }
+  }, [api, selectedCompany?.id]);
 
   // Load unclassified transactions
   const loadUnclassifiedTransactions = useCallback(async () => {
@@ -63,8 +81,9 @@ export default function TransactionClassificationReview({
   }, [api, selectedCompany.id, selectedPeriod]);
 
   useEffect(() => {
+    loadAccounts();
     loadUnclassifiedTransactions();
-  }, [loadUnclassifiedTransactions]);
+  }, [loadAccounts, loadUnclassifiedTransactions]);
 
   // Filter transactions based on search and filter criteria
   const filteredTransactions = unclassifiedTransactions.filter(transaction => {
@@ -220,6 +239,34 @@ export default function TransactionClassificationReview({
                 <X size={20} />
               </button>
             </div>
+
+            {/* Help Section */}
+            <div className="rule-help-section">
+              <div className="help-item">
+                <Info size={16} />
+                <div>
+                  <strong>How Classification Rules Work:</strong> Rules automatically categorize bank transactions based on text patterns in their descriptions. When a transaction matches your rule, it gets assigned to the selected account.
+                </div>
+              </div>
+              <div className="help-item">
+                <HelpCircle size={16} />
+                <div>
+                  <strong>Examples:</strong>
+                  <ul style={{ margin: '0.5rem 0', paddingLeft: '1.2rem' }}>
+                    <li><strong>"ATM"</strong> matches any transaction with "ATM" in the description</li>
+                    <li><strong>"SALARY"</strong> matches payroll deposits</li>
+                    <li><strong>"OFFICE SUPPLIES"</strong> matches expense transactions</li>
+                  </ul>
+                </div>
+              </div>
+              <div className="help-item">
+                <AlertTriangle size={16} />
+                <div>
+                  <strong>Tip:</strong> Start with broad patterns and use priority to control which rules apply first. Test your rules on a few transactions before applying them widely.
+                </div>
+              </div>
+            </div>
+
             <div className="rule-form">
               <div className="form-group">
                 <label>Rule Name:</label>
@@ -227,9 +274,11 @@ export default function TransactionClassificationReview({
                   type="text"
                   value={newRule.ruleName}
                   onChange={(e) => setNewRule(prev => ({ ...prev, ruleName: e.target.value }))}
-                  placeholder="Descriptive name for the rule"
+                  placeholder="e.g., ATM Withdrawals, Office Supplies"
                 />
+                <small className="field-help">Give your rule a descriptive name that explains what it does</small>
               </div>
+
               <div className="rule-form">
                 <div className="form-row">
                   <div className="form-group">
@@ -244,6 +293,7 @@ export default function TransactionClassificationReview({
                       <option value="EQUALS">Equals</option>
                       <option value="REGEX">Regular Expression</option>
                     </select>
+                    <small className="field-help">How to match the transaction description</small>
                   </div>
                   <div className="form-group">
                     <label>Priority:</label>
@@ -254,47 +304,67 @@ export default function TransactionClassificationReview({
                       min="1"
                       max="100"
                     />
+                    <small className="field-help">Higher numbers = higher priority (1-100)</small>
                   </div>
                 </div>
               </div>
+
               <div className="form-group">
                 <label>Match Value:</label>
                 <input
                   type="text"
                   value={newRule.matchValue}
                   onChange={(e) => setNewRule(prev => ({ ...prev, matchValue: e.target.value }))}
-                  placeholder="Text to match in transaction description"
+                  placeholder="e.g., ATM, OFFICE SUPPLIES, INTERNET"
                 />
+                <small className="field-help">Text to search for in transaction descriptions</small>
               </div>
-              <div className="rule-form">
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Account Code:</label>
-                    <input
-                      type="text"
-                      value={newRule.accountCode}
-                      onChange={(e) => setNewRule(prev => ({ ...prev, accountCode: e.target.value }))}
-                      placeholder="e.g., 4100, 3110"
-                    />
+
+              <div className="form-group">
+                <label>Account to Assign:</label>
+                {isLoadingAccounts ? (
+                  <div className="loading-spinner small"></div>
+                ) : (
+                  <select
+                    value={`${newRule.accountCode}|${newRule.accountName}`}
+                    onChange={(e) => {
+                      const [code, name] = e.target.value.split('|');
+                      setNewRule(prev => ({
+                        ...prev,
+                        accountCode: code,
+                        accountName: name
+                      }));
+                    }}
+                    className="account-select"
+                  >
+                    <option value="">Select an account...</option>
+                    {accounts
+                      .filter(account => account.isActive)
+                      .sort((a, b) => a.code.localeCompare(b.code))
+                      .map(account => (
+                        <option key={account.id} value={`${account.code}|${account.name}`}>
+                          {account.code} - {account.name}
+                        </option>
+                      ))}
+                  </select>
+                )}
+                {newRule.accountCode && (
+                  <div className="selected-account-info">
+                    <small className="field-help">
+                      Selected: <strong>{newRule.accountCode} - {newRule.accountName}</strong>
+                    </small>
                   </div>
-                  <div className="form-group">
-                    <label>Account Name:</label>
-                    <input
-                      type="text"
-                      value={newRule.accountName}
-                      onChange={(e) => setNewRule(prev => ({ ...prev, accountName: e.target.value }))}
-                      placeholder="e.g., Office Supplies, Rent Expense"
-                    />
-                  </div>
-                </div>
+                )}
+                <small className="field-help">Choose which account transactions matching this rule should be assigned to</small>
               </div>
             </div>
+
             <div className="rule-modal-actions">
               <button className="cancel-button" onClick={() => setShowRuleCreator(false)}>Cancel</button>
               <button
                 className="create-button"
                 onClick={handleCreateRule}
-                disabled={!newRule.ruleName || !newRule.matchValue || !newRule.accountCode}
+                disabled={!newRule.ruleName || !newRule.matchValue || !newRule.accountCode || isLoadingAccounts}
               >
                 Create Rule
               </button>

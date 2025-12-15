@@ -59,6 +59,7 @@ public class DataManagementService {
     private final ManualInvoiceRepository manualInvoiceRepository;
     private final JournalEntryRepository journalEntryRepository;
     private final JournalEntryLineRepository journalEntryLineRepository;
+    private final JournalEntryMapper journalEntryMapper;
     private final DataCorrectionRepository dataCorrectionRepository;
     private final Debugger debugger;
 
@@ -68,10 +69,11 @@ public class DataManagementService {
                                      FiscalPeriodRepository fiscalPeriodRepository,
                                      BankTransactionRepository bankTransactionRepository,
                                      ManualInvoiceRepository manualInvoiceRepository,
-                                     JournalEntryRepository journalEntryRepository,
-                                     JournalEntryLineRepository journalEntryLineRepository,
-                                     DataCorrectionRepository dataCorrectionRepository,
-                                     Debugger debugger) {
+                                    JournalEntryRepository journalEntryRepository,
+                                    JournalEntryLineRepository journalEntryLineRepository,
+                                    JournalEntryMapper journalEntryMapper,
+                                    DataCorrectionRepository dataCorrectionRepository,
+                                    Debugger debugger) {
         this.companyService = companyService;
         this.accountService = accountService;
         this.accountRepository = accountRepository;
@@ -80,6 +82,7 @@ public class DataManagementService {
         this.manualInvoiceRepository = manualInvoiceRepository;
         this.journalEntryRepository = journalEntryRepository;
         this.journalEntryLineRepository = journalEntryLineRepository;
+                                this.journalEntryMapper = journalEntryMapper;
         this.dataCorrectionRepository = dataCorrectionRepository;
         this.debugger = debugger;
     }
@@ -426,6 +429,19 @@ public class DataManagementService {
         return journalEntryRepository.findByCompanyId(companyId);
     }
 
+    @Transactional(readOnly = true)
+    public List<fin.dto.JournalEntryDTO> getJournalEntriesByCompanyDto(Long companyId) {
+        if (companyId == null) {
+            throw new IllegalArgumentException("Company ID is required");
+        }
+        List<JournalEntry> entries = journalEntryRepository.findByCompanyId(companyId);
+        List<fin.dto.JournalEntryDTO> dtos = new ArrayList<>();
+        for (JournalEntry entry : entries) {
+            dtos.add(journalEntryMapper.toDto(entry));
+        }
+        return dtos;
+    }
+
     /**
      * Gets journal entries for a fiscal period
      */
@@ -436,6 +452,20 @@ public class DataManagementService {
         }
         return journalEntryRepository.findByFiscalPeriodId(fiscalPeriodId);
     }
+
+    @Transactional(readOnly = true)
+    public List<fin.dto.JournalEntryDTO> getJournalEntriesByFiscalPeriodDto(Long fiscalPeriodId) {
+        if (fiscalPeriodId == null) {
+            throw new IllegalArgumentException("Fiscal period ID is required");
+        }
+        List<JournalEntry> entries = journalEntryRepository.findByFiscalPeriodId(fiscalPeriodId);
+        List<fin.dto.JournalEntryDTO> dtos = new ArrayList<>();
+        for (JournalEntry entry : entries) {
+            dtos.add(journalEntryMapper.toDto(entry));
+        }
+        return dtos;
+    }
+
 
     /**
      * Validates data integrity for a company

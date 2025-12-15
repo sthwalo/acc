@@ -526,7 +526,7 @@ public class CompanyController {
                 transactions.size()
             ));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(
+            return ResponseEntity.internalServerError().body(
                 ApiResponse.error("Failed to retrieve transactions: " + e.getMessage(), ErrorCode.INTERNAL_ERROR.getCode())
             );
         }
