@@ -32,7 +32,8 @@ import type {
   PayPalCaptureResponse,
   BackendPayslip,
   FiscalPeriodSetupDTO,
-  Industry
+  Industry,
+  Invoice
 } from '../types/api';
 
 /**

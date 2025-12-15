@@ -8,8 +8,8 @@ vi.mock('../../hooks/useApi', () => {
   return {
     useApi: () => ({
       dataManagement: {
-        generateInvoicePdf: vi.fn(async (companyId: number, invoiceId: number) => ({ success: true, message: 'PDF generated successfully' })),
-        downloadInvoice: vi.fn(async (companyId: number, invoiceId: number) => { throw new Error('download failed'); }),
+        generateInvoicePdf: vi.fn(async () => ({ success: true, message: 'PDF generated successfully' })),
+        downloadInvoice: vi.fn(async () => { throw new Error('download failed'); }),
         getManualInvoices: async (companyId: number) => ({ success: true, data: [{ id: 3, companyId, invoiceNumber: 'INV-3', invoiceDate: '2025-12-01', amount: 123 }] })
       },
       classification: {

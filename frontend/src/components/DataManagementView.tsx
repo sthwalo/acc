@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
-import { Database, Edit, Trash2, Plus, Save, X, AlertCircle, CheckCircle, Calendar, Settings, FileText, Receipt, FileCheck, BookOpen, AlertTriangle, History, RotateCcw, Download, Loader, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Database, Edit, Trash2, Plus, Save, X, AlertCircle, CheckCircle, Calendar, Settings, FileText, Receipt, FileCheck, BookOpen, AlertTriangle, RotateCcw, Download, Loader, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useApi } from '../hooks/useApi';
 import ApiMessageBanner from './shared/ApiMessageBanner';
 import AccountSelector from './shared/AccountSelector';
@@ -45,7 +45,6 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
     setSelectedPeriod,
     transactions,
     isLoading,
-    error: transactionsError,
     apiMessage,
     loadTransactions
   } = useTransactions(selectedCompany.id);
@@ -202,12 +201,7 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
     return response;
   }), [handleOperation, api, selectedCompany.id, loadTransactions]);
 
-  const viewHistoryAction = useCallback(() => handleOperation('View History', async () => {
-    // TODO: Implement history view
-      setShowInvoiceForm(true);
-      return 'Opening invoice form';
-
-  }), [handleOperation]);
+  // View history action removed (no implementation)
 
   const resetDataAction = useCallback(() => handleOperation('Reset Data', async () => {
     if (!confirm('Are you sure you want to reset all transaction data? This cannot be undone.')) {
@@ -221,10 +215,7 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
       return 'Journal entry creation not yet implemented';
     }), [handleOperation]);
 
-    const correctCategoriesAction = useCallback(() => handleOperation('Correct Categories', async () => {
-      // TODO: Implement category correction
-      return 'Category correction not yet implemented';
-    }), [handleOperation]);
+  // Correct categories action removed (no implementation)
 
 
   const exportCsvAction = useCallback(() => handleOperation('Export CSV', async () => {
@@ -261,20 +252,8 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
       icon: BookOpen,
       action: createJournalEntryAction
     },
-    {
-      id: 'correct-categories',
-      name: 'Correct Transaction Categories',
-      description: 'Fix incorrectly categorized transactions',
-      icon: AlertTriangle,
-      action: correctCategoriesAction
-    },
-    {
-      id: 'view-history',
-      name: 'View Transaction History',
-      description: 'View transaction correction history',
-      icon: History,
-      action: viewHistoryAction
-    },
+    // Correct Transaction Categories (removed)
+    // View Transaction History (removed)
     {
       id: 'reset-data',
       name: 'Reset Company Data',
@@ -289,7 +268,7 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
       icon: Download,
       action: exportCsvAction
     }
-  ], [createInvoiceAction, generateInvoicePdfAction, syncInvoiceJournalEntriesAction, createJournalEntryAction, correctCategoriesAction, viewHistoryAction, resetDataAction, exportCsvAction]);
+  ], [createInvoiceAction, generateInvoicePdfAction, syncInvoiceJournalEntriesAction, createJournalEntryAction, resetDataAction, exportCsvAction]);
 
 
 
@@ -345,11 +324,11 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
     try {
       setError(null);
       // TODO: Implement actual delete API call
-      // For now, simulate the deletion
+      // For now, simulate the deletion (use transactionId in message)
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       try { await loadTransactions(); } catch { /* ignore refresh errors */ }
-      setSuccess('Transaction deleted successfully');
+      setSuccess(`Transaction ${transactionId ?? ''} deleted successfully`);
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete transaction');
@@ -590,7 +569,7 @@ export default function DataManagementView({ selectedCompany }: DataManagementVi
               <Plus size={20} />
               Add New Transaction
             </button>
-            <button className="action-button secondary" onClick={loadTransactions}>
+            <button className="action-button secondary" onClick={() => loadTransactions()}>
               <Database size={20} />
               Refresh Data
             </button>
