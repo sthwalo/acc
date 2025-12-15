@@ -280,10 +280,20 @@ public class TransactionClassificationController {
                 username
             );
             
-            return ResponseEntity.ok(ApiResponse.success(
-                "Classification rule created successfully",
-                "Rule '" + request.getRuleName() + "' created for company " + companyId
-            ));
+            // Run auto-classification immediately so the newly created rule is applied
+            try {
+                var result = classificationService.autoClassifyTransactions(companyId);
+                return ResponseEntity.ok(ApiResponse.success(
+                    "Classification rule created successfully",
+                    "Rule '" + request.getRuleName() + "' created for company " + companyId + ". Auto-classified " + result.getTotalClassified() + " transactions"
+                ));
+            } catch (Exception e) {
+                // Creation succeeded but auto-classification failed; still return success for creation
+                return ResponseEntity.ok(ApiResponse.success(
+                    "Classification rule created successfully",
+                    "Rule '" + request.getRuleName() + "' created for company " + companyId + ". Auto-classification failed: " + e.getMessage()
+                ));
+            }
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(
                 ApiResponse.error("Invalid request: " + e.getMessage(),

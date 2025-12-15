@@ -125,10 +125,17 @@ public class TransactionMappingRuleService {
                     // Find account by account code if specified
                     Account account = null;
                     if (template.getAccountCode() != null) {
-                        Optional<Account> accountOpt = accountRepository.findByCompanyIdAndAccountCode(companyId, template.getAccountCode());
-                        if (accountOpt.isPresent()) {
-                            account = accountOpt.get();
-                        }
+                            // Support accountCode values in display format like "4230 - Utilities" by extracting leading code
+                            String lookupCode = template.getAccountCode().trim();
+                            java.util.regex.Matcher m = java.util.regex.Pattern.compile("^(\\d+)").matcher(lookupCode);
+                            if (m.find()) {
+                                lookupCode = m.group(1);
+                            }
+
+                            Optional<Account> accountOpt = accountRepository.findByCompanyIdAndAccountCode(companyId, lookupCode);
+                            if (accountOpt.isPresent()) {
+                                account = accountOpt.get();
+                            }
                     }
 
                     // Create new rule from template
@@ -181,12 +188,14 @@ public class TransactionMappingRuleService {
         TransactionMappingRule saved = transactionMappingRuleRepository.save(entity);
         return convertToClassificationRule(saved);
     }
-
-    /**
-     * Update a classification rule
-     */
     @Transactional
     public ClassificationRule updateClassificationRule(Long id, ClassificationRule rule) {
+        
+        
+        
+        
+        
+    
         TransactionMappingRule existing = transactionMappingRuleRepository.findById(id)
             .orElseThrow(() -> new IllegalArgumentException("Rule not found: " + id));
 
@@ -218,11 +227,20 @@ public class TransactionMappingRuleService {
             throw new IllegalArgumentException("Company not found: " + companyId);
         }
 
-        // Find account by code
+        // Find account by code (support display format '1234 - Name')
         Account account = null;
         if (accountCode != null && !accountCode.trim().isEmpty()) {
-            // This would need account service - for now assume it's available
-            // account = accountService.getAccountByCompanyAndCode(companyId, accountCode).orElse(null);
+            String lookupCode = accountCode.trim();
+            java.util.regex.Matcher m = java.util.regex.Pattern.compile("^(\\d+)").matcher(lookupCode);
+            if (m.find()) {
+                lookupCode = m.group(1);
+            }
+
+            Optional<Account> acctOpt = accountRepository.findByCompanyIdAndAccountCode(companyId, lookupCode);
+            if (acctOpt.isEmpty()) {
+                throw new IllegalArgumentException("Account not found for company: " + lookupCode);
+            }
+            account = acctOpt.get();
         }
 
         TransactionMappingRule rule = new TransactionMappingRule();

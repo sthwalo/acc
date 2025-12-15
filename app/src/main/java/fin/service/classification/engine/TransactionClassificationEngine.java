@@ -38,6 +38,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -65,6 +66,7 @@ public class TransactionClassificationEngine {
     private final JournalEntryRepository journalEntryRepository;
     private final JournalEntryLineRepository journalEntryLineRepository;
     private final TransactionMappingRuleService transactionMappingRuleService;
+    private final fin.validation.BankAccountResolver bankAccountResolver;
 
     public TransactionClassificationEngine(AccountService accountService,
                                         CompanyService companyService,
@@ -72,7 +74,8 @@ public class TransactionClassificationEngine {
                                         FiscalPeriodRepository fiscalPeriodRepository,
                                         JournalEntryRepository journalEntryRepository,
                                         JournalEntryLineRepository journalEntryLineRepository,
-                                        TransactionMappingRuleService transactionMappingRuleService) {
+                                        TransactionMappingRuleService transactionMappingRuleService,
+                                        fin.validation.BankAccountResolver bankAccountResolver) {
         this.accountService = accountService;
         this.companyService = companyService;
         this.bankTransactionRepository = bankTransactionRepository;
@@ -80,6 +83,7 @@ public class TransactionClassificationEngine {
         this.journalEntryRepository = journalEntryRepository;
         this.journalEntryLineRepository = journalEntryLineRepository;
         this.transactionMappingRuleService = transactionMappingRuleService;
+        this.bankAccountResolver = bankAccountResolver;
     }
 
     /**
@@ -258,22 +262,6 @@ public class TransactionClassificationEngine {
 
         LOGGER.info("Transaction " + transactionId + " updated with debit account " + debitAccountId +
                    " and credit account " + creditAccountId + " by " + username);
-
-        // Ensure journal entry is created/updated immediately for manual classifications
-        try {
-            String reference = "TXN-" + transaction.getId();
-            JournalEntry existing = journalEntryRepository.findByCompanyIdAndReference(transaction.getCompanyId(), reference);
-            if (existing != null) {
-                // Remove existing lines and entry before recreating
-                journalEntryLineRepository.deleteByJournalEntryId(existing.getId());
-                journalEntryRepository.delete(existing);
-            }
-
-            createJournalEntryForTransaction(transaction, username);
-            LOGGER.info("Journal entry created/updated for transaction: " + transaction.getId());
-        } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Failed to create/update journal entry for transaction " + transaction.getId(), e);
-        }
     }
 
     /**
@@ -305,40 +293,31 @@ public class TransactionClassificationEngine {
      * Sync journal entries for new classified transactions
      */
     @Transactional
-    public int syncJournalEntries(Long companyId) {
-        try {
-            LOGGER.info("Syncing journal entries for company: " + companyId);
+    public int syncJournalEntries(Long companyId) throws SQLException {
+        LOGGER.info("Syncing journal entries for company: " + companyId);
 
-            // Find classified transactions without journal entries
-            List<BankTransaction> transactionsWithoutJournalEntries =
-                bankTransactionRepository.findClassifiedTransactionsWithoutJournalEntries(companyId);
+        // Find classified transactions without journal entries
+        List<BankTransaction> transactionsWithoutJournalEntries =
+            bankTransactionRepository.findClassifiedTransactionsWithoutJournalEntries(companyId);
 
-            int syncedCount = 0;
+        int syncedCount = 0;
 
-            for (BankTransaction transaction : transactionsWithoutJournalEntries) {
-                try {
-                    createJournalEntryForTransaction(transaction, "FIN");
-                    syncedCount++;
-                    LOGGER.info("Created journal entry for transaction: " + transaction.getId());
-                } catch (Exception e) {
-                    LOGGER.log(Level.WARNING, "Failed to create journal entry for transaction " +
-                               transaction.getId() + ", skipping", e);
-                }
-            }
-
-            LOGGER.info("Successfully synced " + syncedCount + " journal entries for company: " + companyId);
-            return syncedCount;
-
-        } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Failed to sync journal entries for company: " + companyId, e);
-            return 0;
+        for (BankTransaction transaction : transactionsWithoutJournalEntries) {
+            // Fail fast: if creating a journal entry fails (e.g., missing bank account), let the exception bubble
+            // so the caller is alerted and can take corrective action. Do not silently skip transactions.
+            createJournalEntryForTransaction(transaction, "FIN");
+            syncedCount++;
+            LOGGER.info("Created journal entry for transaction: " + transaction.getId());
         }
+
+        LOGGER.info("Successfully synced " + syncedCount + " journal entries for company: " + companyId);
+        return syncedCount;
     }
 
     /**
      * Create a journal entry for a classified transaction
      */
-    private void createJournalEntryForTransaction(BankTransaction transaction, String createdBy) {
+    private void createJournalEntryForTransaction(BankTransaction transaction, String createdBy) throws SQLException {
         // Determine transaction type and amounts
         BigDecimal amount = transaction.getCreditAmount().compareTo(BigDecimal.ZERO) != 0 ?
                            transaction.getCreditAmount() : transaction.getDebitAmount();
@@ -400,7 +379,7 @@ public class TransactionClassificationEngine {
      */
     private void createJournalEntryLinesForAccountCode(JournalEntry journalEntry,
                                                       BankTransaction transaction,
-                                                      BigDecimal amount, boolean isCreditTransaction, String createdBy) {
+                                                      BigDecimal amount, boolean isCreditTransaction, String createdBy) throws SQLException {
         // Find the classified account
         Optional<Account> classifiedAccount = accountService.getAccountByCompanyAndCode(
             transaction.getCompanyId(), transaction.getAccountCode());
@@ -409,37 +388,15 @@ public class TransactionClassificationEngine {
             throw new IllegalStateException("Account not found for code: " + transaction.getAccountCode());
         }
 
-        // Find the bank account (assuming account code "1000" for bank)
-        Optional<Account> bankAccount = accountService.getAccountByCompanyAndCode(
-            transaction.getCompanyId(), "1000");
-
+        // Resolve bank/cash account by name using resolver. Per project policy do NOT fall back silently - fail fast with clear message.
+        Optional<Account> bankAccount = bankAccountResolver.getDefaultCashAccount(transaction.getCompanyId());
         if (bankAccount.isEmpty()) {
-            throw new IllegalStateException("Bank account (1000) not found for company: " + transaction.getCompanyId());
+            throw new SQLException("Bank/cash account not found in table 'accounts' for company " + transaction.getCompanyId() + ". Please insert an active bank/cash account. Example: INSERT INTO accounts (company_id, account_code, account_name, category_id, is_active) VALUES (" + transaction.getCompanyId() + ", '1230', 'Bank', <category_id>, true)");
         }
 
         if (isCreditTransaction) {
             // Credit transaction: money coming into bank account
-            // Debit the classified account, credit the bank account
-            JournalEntryLine debitLine = new JournalEntryLine();
-            debitLine.setJournalEntryId(journalEntry.getId());
-            debitLine.setAccountId(classifiedAccount.get().getId());
-            debitLine.setDescription(transaction.getDescription());
-            debitLine.setDebitAmount(amount);
-            debitLine.setCreditAmount(BigDecimal.ZERO);
-            debitLine.setSourceTransactionId(transaction.getId());
-            journalEntryLineRepository.save(debitLine);
-
-            JournalEntryLine creditLine = new JournalEntryLine();
-            creditLine.setJournalEntryId(journalEntry.getId());
-            creditLine.setAccountId(bankAccount.get().getId());
-            creditLine.setDescription(transaction.getDescription());
-            creditLine.setDebitAmount(BigDecimal.ZERO);
-            creditLine.setCreditAmount(amount);
-            creditLine.setSourceTransactionId(transaction.getId());
-            journalEntryLineRepository.save(creditLine);
-        } else {
-            // Debit transaction: money going out of bank account
-            // Debit the bank account, credit the classified account
+            // Correct accounting: Debit the bank account (asset increases), Credit the classified account (income)
             JournalEntryLine debitLine = new JournalEntryLine();
             debitLine.setJournalEntryId(journalEntry.getId());
             debitLine.setAccountId(bankAccount.get().getId());
@@ -452,6 +409,26 @@ public class TransactionClassificationEngine {
             JournalEntryLine creditLine = new JournalEntryLine();
             creditLine.setJournalEntryId(journalEntry.getId());
             creditLine.setAccountId(classifiedAccount.get().getId());
+            creditLine.setDescription(transaction.getDescription());
+            creditLine.setDebitAmount(BigDecimal.ZERO);
+            creditLine.setCreditAmount(amount);
+            creditLine.setSourceTransactionId(transaction.getId());
+            journalEntryLineRepository.save(creditLine);
+        } else {
+            // Debit transaction: money going out of bank account
+            // Correct accounting: Debit the classified account (expense), Credit the bank account (asset decreases)
+            JournalEntryLine debitLine = new JournalEntryLine();
+            debitLine.setJournalEntryId(journalEntry.getId());
+            debitLine.setAccountId(classifiedAccount.get().getId());
+            debitLine.setDescription(transaction.getDescription());
+            debitLine.setDebitAmount(amount);
+            debitLine.setCreditAmount(BigDecimal.ZERO);
+            debitLine.setSourceTransactionId(transaction.getId());
+            journalEntryLineRepository.save(debitLine);
+
+            JournalEntryLine creditLine = new JournalEntryLine();
+            creditLine.setJournalEntryId(journalEntry.getId());
+            creditLine.setAccountId(bankAccount.get().getId());
             creditLine.setDescription(transaction.getDescription());
             creditLine.setDebitAmount(BigDecimal.ZERO);
             creditLine.setCreditAmount(amount);
