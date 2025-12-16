@@ -65,6 +65,12 @@ After making code changes:
 
 **ARCHITECTURAL PRINCIPLE**: Database is the SINGLE SOURCE OF TRUTH. ALL business data, templates, compliance text, and configuration MUST come from database. If database is empty, the system MUST throw a clear exception - NEVER silently fall back to hardcoded data.
 
+#### Why? This is Better for SOC/DRY/Small Classes:
+- **SOC**: Entity = persistence, DTO = API transfer, Service = business logic.
+- **DRY**: Avoids repeating relationship-handling logic across methods; centralizes in service.
+- **Small Methods**: Service method becomes a simple mapper + saver; no bloated entity manipulation.
+- **Maintainability**: Changes to API fields only affect the DTO; entities stay lean.
+
 **This rule applies to ALL services across the ENTIRE codebase:**
 - ✅ Financial reporting services (ExcelFinancialReportService, FinancialReportingService, TextReportToPdfService)
 - ✅ Document generation (reports, invoices, statements, letters)

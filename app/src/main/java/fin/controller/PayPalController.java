@@ -53,6 +53,13 @@ public class PayPalController {
         try {
             logger.info("Creating PayPal order for amount: {} {}", request.getAmount(), request.getCurrency());
 
+            // Log diagnostic info about PayPal config and dummy-mode for debugging
+            String paypalDummy = System.getenv("PAYPAL_DUMMY_MODE");
+            String paypalClientId = System.getenv("PAYPAL_CLIENT_ID");
+            String paypalMode = System.getenv("PAYPAL_MODE");
+            logger.info("PayPal env - DUMMY_MODE={}, clientIdSet={}, mode={}", paypalDummy,
+                (paypalClientId == null ? "false" : "true"), paypalMode);
+
             // Check for dummy mode
             String dummyMode = System.getenv("PAYPAL_DUMMY_MODE");
             if ("true".equalsIgnoreCase(dummyMode)) {
@@ -63,6 +70,7 @@ public class PayPalController {
                 mockResponse.setOrderId("DUMMY_ORDER_" + System.currentTimeMillis());
                 mockResponse.setStatus("CREATED");
                 mockResponse.setApprovalUrl("dummy://approve");
+                mockResponse.setDummy(true);
 
                 return ResponseEntity.ok(
                     ApiResponse.success("Mock PayPal order created successfully", mockResponse)
@@ -101,6 +109,7 @@ public class PayPalController {
             responseData.setOrderId(order.id());
             responseData.setStatus(order.status());
             responseData.setApprovalUrl(approvalUrl);
+            responseData.setDummy(false);
 
             logger.info("PayPal order created successfully: {}", order.id());
 
@@ -212,5 +221,35 @@ public class PayPalController {
                     ErrorCode.INTERNAL_ERROR.getCode())
             );
         }
+    }
+
+    /**
+     * Temporary webhook endpoint for PayPal sandbox testing.
+     * Logs incoming headers and raw JSON body so sandbox deliveries can be inspected.
+     */
+    @PostMapping("/webhook")
+    public ResponseEntity<ApiResponse<Void>> handleWebhook(
+        @RequestHeader(value = "Paypal-Transmission-Id", required = false) String transmissionId,
+        @RequestHeader(value = "Paypal-Transmission-Time", required = false) String transmissionTime,
+        @RequestHeader(value = "Paypal-Transmission-Sig", required = false) String transmissionSig,
+        @RequestHeader(value = "Paypal-Cert-Url", required = false) String certUrl,
+        @RequestHeader(value = "Paypal-Auth-Algo", required = false) String authAlgo,
+        @RequestBody(required = false) String body
+    ) {
+        logger.info("Received PayPal webhook (sandbox) - Transmission-Id={}, Transmission-Time={}, Sig={}, CertUrl={}, Algo={}",
+            transmissionId, transmissionTime, transmissionSig, certUrl, authAlgo);
+
+        logger.info("Webhook payload: {}", body == null ? "<empty>" : body);
+
+        // Persist minimal log to disk for easier inspection if needed
+        try {
+            java.nio.file.Path p = java.nio.file.Paths.get("/tmp/paypal_webhook_" + System.currentTimeMillis() + ".json");
+            java.nio.file.Files.writeString(p, (body == null ? "" : body));
+            logger.info("Saved webhook payload to {}", p.toString());
+        } catch (Exception e) {
+            logger.warn("Failed to persist webhook payload to /tmp", e);
+        }
+
+        return ResponseEntity.ok(ApiResponse.success("Webhook received", null));
     }
 }

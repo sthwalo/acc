@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
  * REST controller for managing pricing plans
  */
 @RestController
-@RequestMapping("/api")
+@RequestMapping({"/api", "/api/v1"})
 public class PlanController {
 
     private final PlanService planService;

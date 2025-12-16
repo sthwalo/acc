@@ -39,6 +39,8 @@ export const PayPalButton: React.FC<PayPalButtonProps> = ({
   const paypalRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [paypalLoaded, setPaypalLoaded] = useState(false);
+  // Local toast notification for dummy payment completion
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const loadPayPalScript = async () => {
@@ -68,9 +70,57 @@ export const PayPalButton: React.FC<PayPalButtonProps> = ({
         const paypal = await loadScript(loadOptions);
 
         if (paypal && typeof paypal.Buttons === 'function' && paypalRef.current) {
+          // Cache for the order response to avoid duplicate creates
+          const cachedOrderRef = { current: undefined as undefined | any };
+
           paypal.Buttons({
+            // Intercept click so we can decide whether to run a dummy flow (no popup)
+            onClick: async (_data, actions) => {
+              try {
+                const envDummy = import.meta.env.VITE_PAYPAL_DUMMY_MODE === 'true';
+
+                // If environment forces dummy mode, run dummy flow and prevent popup
+                if (envDummy) {
+                  await handleDummyPayment();
+                  await actions.reject();
+                  return;
+                }
+
+                // Otherwise, create an order on the server and inspect the response
+                const request: PayPalCreateOrderRequest = {
+                  amount,
+                  currency,
+                  description,
+                  planId
+                };
+
+                const apiService = serviceRegistry.get<ApiService>('apiService');
+                const orderResponse = await apiService.paypal.createOrder(request);
+
+                // Cache for createOrder to return later
+                cachedOrderRef.current = orderResponse;
+
+                if (orderResponse?.dummy) {
+                  // Server signalled dummy - run local dummy flow and block PayPal popup
+                  await handleDummyPayment(orderResponse);
+                  await actions.reject();
+                } else {
+                  await actions.resolve();
+                }
+              } catch (error) {
+                console.error('Error during PayPal onClick flow:', error);
+                onError(error instanceof Error ? error.message : 'Failed to initialize payment');
+                await actions.reject();
+              }
+            },
+
             createOrder: async () => {
               try {
+                // If we already created an order in onClick, return it
+                if (cachedOrderRef.current && !cachedOrderRef.current.dummy) {
+                  return cachedOrderRef.current.orderId;
+                }
+
                 const request: PayPalCreateOrderRequest = {
                   amount,
                   currency,
@@ -80,6 +130,8 @@ export const PayPalButton: React.FC<PayPalButtonProps> = ({
 
                 const apiService = serviceRegistry.get<ApiService>('apiService');
                 const response = await apiService.paypal.createOrder(request);
+                // Cache it for potential later use
+                cachedOrderRef.current = response;
                 return response.orderId;
               } catch (error) {
                 console.error('Error creating PayPal order:', error);
@@ -146,18 +198,12 @@ export const PayPalButton: React.FC<PayPalButtonProps> = ({
     loadPayPalScript();
   }, [amount, currency, description, planId, onSuccess, onError]);
 
-  const handleDummyPayment = async () => {
+  const handleDummyPayment = async (orderResponseParam?: { orderId: string }) => {
     try {
-      // Create dummy order
-      const request: PayPalCreateOrderRequest = {
-        amount,
-        currency,
-        description,
-        planId
-      };
-
       const apiService = serviceRegistry.get<ApiService>('apiService');
-      const orderResponse = await apiService.paypal.createOrder(request);
+
+      // If no order provided, create one
+      const orderResponse = orderResponseParam ?? await apiService.paypal.createOrder({ amount, currency, description, planId });
 
       // Simulate approval delay
       setTimeout(async () => {
@@ -171,6 +217,11 @@ export const PayPalButton: React.FC<PayPalButtonProps> = ({
           const captureResponse = await apiService.paypal.captureOrder(captureRequest);
 
           if (captureResponse.completed) {
+            // Show a small toast so testers notice a successful simulated payment
+            setToastMessage('Dummy payment completed');
+            // Clear toast after 3s
+            setTimeout(() => setToastMessage(null), 3000);
+
             onSuccess(orderResponse.orderId, captureResponse.captureId);
           } else {
             onError('Dummy payment was not completed successfully.');
@@ -255,6 +306,13 @@ export const PayPalButton: React.FC<PayPalButtonProps> = ({
       )}
 
       <div ref={paypalRef} className={isLoading || dummyMode ? 'hidden' : ''}></div>
+
+      {/* Toast notification for dummy completion */}
+      {toastMessage && (
+        <div className="fixed top-4 right-4 bg-green-600 text-white px-4 py-2 rounded shadow-lg z-50">
+          {toastMessage}
+        </div>
+      )}
     </div>
   );
 };
