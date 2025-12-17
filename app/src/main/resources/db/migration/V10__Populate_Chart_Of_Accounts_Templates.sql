@@ -1,3 +1,15 @@
+-- Reconstructed V10 migration: Populate Chart Of Accounts Templates
+-- Best-effort reconstruction: insert templates only if not present
+-- WARNING: Original migration had a checksum mismatch; please review carefully
+
+INSERT INTO public.account_templates (id, company_id, code, name, created_at)
+SELECT id, company_id, code, name, now()
+FROM public.account_templates
+WHERE FALSE; -- no-op placeholder, original population SQL needs review
+
+DO $$ BEGIN
+    RAISE NOTICE 'Reconstructed migration V10 placeholder created. Replace with original population SQL where available.';
+END$$;
 -- V10__Populate_Chart_Of_Accounts_Templates.sql
 -- Populate chart of accounts templates with IFRS-compliant structures
 -- Only populate industries that don't already have templates
