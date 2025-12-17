@@ -1,4 +1,4 @@
-# FI## 🎉 Recent Updates (October 6, 2025)
+### Recent Updates 
 
 ### ✅ SDL (Skills Development Levy) Implementation - COMPLETED
 - Automatic SDL calculation (1% of payroll for companies > R500k/year)

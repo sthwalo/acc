@@ -54,6 +54,15 @@ function App() {
     }
   }, [isAuthenticated, checkHealth]);
 
+  // Clear selected company/period when the authenticated user changes
+  useEffect(() => {
+    // Whenever the current user changes (login, logout, or user switch), clear
+    // the selected company and fiscal period to avoid showing stale data from
+    // a previous session.
+    setSelectedCompany(null);
+    setSelectedFiscalPeriod(null);
+  }, [user?.id]);
+
   const handleCompanySelect = useCallback((company: Company) => {
     setSelectedCompany(company);
     setCurrentView('fiscal-periods');

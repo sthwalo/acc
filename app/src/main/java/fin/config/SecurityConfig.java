@@ -46,11 +46,16 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/health", "/api/v1/health/**").permitAll()
                 .requestMatchers("/api/v1/auth/login", "/api/v1/auth/register").permitAll()
                 .requestMatchers("/api/docs/**", "/api/swagger-ui/**").permitAll()
-                .requestMatchers("/api/v1/classification/**").permitAll()  // TEMPORARY: Allow classification endpoints for testing
-                .requestMatchers("/api/v1/import/**").permitAll()  // TEMPORARY: Allow import endpoints for testing
+                //.requestMatchers("/api/v1/classification/**").permitAll()  // TEMPORARY: Allow classification endpoints for testing
+                //.requestMatchers("/api/v1/import/**").permitAll()  // TEMPORARY: Allow import endpoints for testing
                 .requestMatchers("/api/v1/industries/**").permitAll()  // Allow industries for company setup
-                .requestMatchers("/api/v1/companies/**").permitAll()  // TEMPORARY: Allow companies endpoints for testing
-                
+                .requestMatchers("/api/v1/plans/**").permitAll() // Allow plans to be fetched without authentication (for registration)
+                .requestMatchers("/api/plans/**").permitAll() // Allow plans (non-versioned) to be fetched without authentication
+                .requestMatchers("/api/v1/paypal/webhook").permitAll() // Allow PayPal sandbox webhooks
+                .requestMatchers("/api/paypal/webhook").permitAll() // Allow non-versioned webhook path
+                .requestMatchers("/api/v1/paypal/**").permitAll() // Allow PayPal create/capture endpoints for unauthenticated registration flow
+                .requestMatchers("/api/paypal/**").permitAll() // Allow non-versioned PayPal endpoints
+
                 // All other API endpoints require authentication
                 .requestMatchers("/api/**").authenticated()
                 

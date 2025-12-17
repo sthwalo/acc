@@ -75,6 +75,7 @@ public class PayPalDto {
         private String orderId;
         private String status;
         private String approvalUrl;
+        private boolean dummy;
 
         public OrderResponse() {}
 
@@ -92,6 +93,9 @@ public class PayPalDto {
 
         public String getApprovalUrl() { return approvalUrl; }
         public void setApprovalUrl(String approvalUrl) { this.approvalUrl = approvalUrl; }
+
+        public boolean isDummy() { return dummy; }
+        public void setDummy(boolean dummy) { this.dummy = dummy; }
     }
 
     /**

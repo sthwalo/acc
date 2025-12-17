@@ -63,7 +63,36 @@ public class PayPalService {
             return order;
 
         } catch (Exception e) {
-            logger.error("Failed to create PayPal order", e);
+            // Enhanced diagnostic logging for PayPal SDK errors (status, body, exception class)
+            logger.error("Failed to create PayPal order - exception type: {} message: {}",
+                e.getClass().getName(), e.getMessage(), e);
+
+            // Try to extract HTTP status / details if it's a PayPal HttpException
+            try {
+                Class<?> httpExc = Class.forName("com.paypal.http.exceptions.HttpException");
+                if (httpExc.isInstance(e)) {
+                    try {
+                        var statusMethod = httpExc.getMethod("statusCode");
+                        Object status = statusMethod.invoke(e);
+                        logger.error("PayPal HttpException statusCode={}", status);
+                    } catch (NoSuchMethodException ignored) {
+                        // ignore - different SDK version
+                    }
+
+                    try {
+                        var detailsMethod = httpExc.getMethod("getMessage");
+                        Object details = detailsMethod.invoke(e);
+                        logger.error("PayPal HttpException details={}", details);
+                    } catch (NoSuchMethodException ignored) {
+                        // ignore
+                    }
+                }
+            } catch (ClassNotFoundException ignored) {
+                // PayPal exceptions not on classpath? unlikely, ignore
+            } catch (Exception ex) {
+                logger.warn("Failed to introspect PayPal exception for extra details", ex);
+            }
+
             throw new IOException("Failed to create PayPal order: " + e.getMessage(), e);
         }
     }

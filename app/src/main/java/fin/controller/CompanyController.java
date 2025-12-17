@@ -80,14 +80,12 @@ public class CompanyController {
      * Get companies for authenticated user
      */
     @GetMapping("/user")
-    public ResponseEntity<Map<String, Object>> getCompaniesForUser() {
+    public ResponseEntity<Map<String, Object>> getCompaniesForUser(@RequestAttribute("user") User user) {
         try {
-            // TEMPORARY: Skip user authentication for testing
-            // @RequestAttribute("user") User user
-            // List<Company> companies = companyService.getCompaniesForUser(user.getId());
-            
-            // TEMPORARY: Get companies for user ID 1 for testing
-            List<Company> companies = companyService.getCompaniesForUser(1L);
+            // Use the authenticated user's ID to fetch companies. This ensures
+            // callers only receive companies they have access to (no hardcoded
+            // testing user ids should remain in production code).
+            List<Company> companies = companyService.getCompaniesForUser(user.getId());
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("data", companies);

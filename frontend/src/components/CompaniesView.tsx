@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, memo } from 'react';
+import { useAuth } from '../hooks/useAuth';
 import { Building2, Phone, Mail, Plus, Edit, Trash2, Eye, ArrowLeft, Save } from 'lucide-react';
 import { useApi } from '../hooks/useApi';
 import ApiMessageBanner from './shared/ApiMessageBanner';
@@ -271,6 +272,7 @@ export default function CompaniesView({ onCompanySelect }: CompaniesViewProps) {
   const [companyForSetup, setCompanyForSetup] = useState<Company | null>(null);
   const [industries, setIndustries] = useState<Industry[]>([]);
   const api = useApi();
+  const { user, isAuthenticated } = useAuth();
 
   const loadCompanies = useCallback(async () => {
     try {
@@ -318,9 +320,26 @@ export default function CompaniesView({ onCompanySelect }: CompaniesViewProps) {
   }, [api]);
 
   useEffect(() => {
-    loadCompanies();
+    // Load industries on mount, and load companies whenever the authenticated
+    // user changes (login/logout or user switch) so we never show stale data
+    // from a previous session.
     loadIndustries();
-  }, [loadCompanies, loadIndustries]);
+    if (isAuthenticated) {
+      loadCompanies();
+    } else {
+      // If not authenticated, ensure companies list and selection are cleared
+      setCompanies([]);
+      setSelectedCompany(null);
+    }
+  }, [loadCompanies, loadIndustries, isAuthenticated]);
+
+  // Reset internal view/selection when the user identity changes
+  useEffect(() => {
+    setMenuMode('list');
+    setSelectedCompany(null);
+    setFormData({});
+    setError(null);
+  }, [user?.id]);
 
   const handleCreateCompany = useCallback(async () => {
     try {
