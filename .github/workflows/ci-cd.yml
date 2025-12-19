@@ -267,7 +267,7 @@ jobs:
     - name: ⚡ Run Performance Tests
       run: |
         echo "⚡ Testing application startup..."
-        time java -jar app/build/libs/app.jar --version --quiet || echo "Performance test completed"
+        time java -jar app/build/libs/fin-spring.jar --version --quiet || echo "Performance test completed"
 
         echo "⚡ Testing build performance..."
         time ./gradlew assemble --no-daemon --quiet

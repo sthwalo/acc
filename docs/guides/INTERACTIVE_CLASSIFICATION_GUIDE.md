@@ -9,7 +9,7 @@ The Interactive Classification System is a unified interface for categorizing ba
 To start the classification system, run:
 
 ```
-java -cp app.jar fin.app.ClassificationApp
+java -jar app/build/libs/fin-spring.jar
 ```
 
 ## Key Features

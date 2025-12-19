@@ -20,9 +20,9 @@ java --version
 ./gradlew clean build
 
 # Run application modes
-java -jar app/build/libs/app.jar        # Console application
-java -jar app/build/libs/app.jar api    # REST API server
-java -jar app/build/libs/app.jar --batch [cmd]  # Batch processing
+java -jar app/build/libs/fin-spring.jar        # Console application
+java -jar app/build/libs/fin-spring.jar api    # REST API server
+java -jar app/build/libs/fin-spring.jar --batch [cmd]  # Batch processing
 ```
 
 ### 3. Essential Resources
@@ -92,8 +92,8 @@ git pull origin main
 ./gradlew test
 
 # 5. Start development server (choose mode)
-java -jar app/build/libs/app.jar        # Console mode for testing
-java -jar app/build/libs/app.jar api    # API mode for frontend dev
+java -jar app/build/libs/fin-spring.jar        # Console mode for testing
+java -jar app/build/libs/fin-spring.jar api    # API mode for frontend dev
 ```
 
 ### Code Quality Standards

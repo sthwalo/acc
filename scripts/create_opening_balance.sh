@@ -143,10 +143,10 @@ echo "╚═══════════════════════�
 echo ""
 echo "To create the opening balance entry, run:"
 echo ""
-echo "  java -jar app/build/libs/app.jar"
+echo "  java -jar app/build/libs/fin-spring.jar"
 echo ""
 echo "Then navigate to:"
-echo "  Data Management → Opening Balance Management → Create Opening Balance"
+echo "  Data Management → Opening Balance Management → Create Opening Balance"},{
 echo ""
 echo "Or execute the SQL above manually in psql."
 echo ""

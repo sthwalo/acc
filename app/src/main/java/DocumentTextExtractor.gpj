@@ -1,0 +1,21 @@
+!1689;s
+A
+SAU0JGRASP_MAIN_BOUNDS=%<CONTROL_SHELL_BOUNDS>\012PATH+=%<JGRASP_PATHS>%;\012PATH=+%;%<JGRASP_C_PATHS>\012CYGWIN=nodosfilewarning\012GCC_COLORS=\012-Run\012ADD_EXE_PATH==Y\012
+SCU0JGRASP_MAIN_BOUNDS=%<CONTROL_SHELL_BOUNDS>\012PATH+=%<JGRASP_PATHS>%;\012PATH=+%;%<JGRASP_C_PATHS>\012CYGWIN=nodosfilewarning\012GCC_COLORS=\012-Run\012ADD_EXE_PATH==Y\012
+S+U0JGRASP_MAIN_BOUNDS=%<CONTROL_SHELL_BOUNDS>\012PATH+=%<JGRASP_PATHS>%;\012PATH=+%;%<JGRASP_C_PATHS>\012CYGWIN=nodosfilewarning\012GCC_COLORS=\012-Run\012ADD_EXE_PATH==Y\012
+SJU0JGRASP_MAIN_BOUNDS=%<CONTROL_SHELL_BOUNDS>\012CLASSPATH=+%;%<EXTENSION_CLASSPATHS>\012CLASSPATH+=%<JGRASP_CLASSPATHS>%;\012CLASSPATH+=.%;\012CLASSPATH+=%<TARGET_CLASSPATHS>%;\012Compile +Document\012CLASSPATH+=%<SRC_CLASSPATHS>%;\012All\012PATH+=%<JAVA_BIN_DIR>%;\012PATH+=%<JGRASP_PATHS>%;\012Debug\012CLASSPATH=+%;%<INJECTION_CLASSPATHS>\012Compile\012NOT_FOUND_MESSAGE==Make sure you have the full Java SE, not just the JRE, installed.\\nJava is available from https://www.oracle.com/java/technologies .\012Document\012CLASSPATH=+%;%<TOOL_CLASSPATHS>\012
+SKU0CLASSPATH=+%;%<EXTENSION_CLASSPATHS>\012CLASSPATH+=%<JGRASP_CLASSPATHS>%;\012CLASSPATH+=.%;\012CLASSPATH+=%<TARGET_CLASSPATHS>%;\012Compile +Document\012CLASSPATH+=%<SRC_CLASSPATHS>%;\012All\012PATH+=%<JAVA_BIN_DIR>%;\012PATH+=%<JGRASP_PATHS>%;
+SXU0
+SOU0JGRASP_MAIN_BOUNDS=%<CONTROL_SHELL_BOUNDS>\012PATH+=%<JGRASP_PATHS>%;\012PATH=+%;%<JGRASP_C_PATHS>\012CYGWIN=nodosfilewarning\012GCC_COLORS=\012-Run\012ADD_EXE_PATH==Y\012
+SyU0JGRASP_MAIN_BOUNDS=%<CONTROL_SHELL_BOUNDS>\012PATH+=%<PYTHON_PATH>%;\012PATH+=%<JGRASP_PATHS>%;\012CYGWIN=nodosfilewarning\012GCC_COLORS=
+SPU0
+s#i0
+s#k0
+s#j0
+s#l0
+!866;d
+[\012  grasp [\012   legendy 131.05\012   legendx -29.05000000000001\012   version 1\012   winflags 3\012   eheight 793\012   ewidth 720\012   height 793\012   width 720\012   wbp 3\012   initlayout 0\012   yoffs 2.842170943040401E-14\012   xoffs 0.0\012   scale 1.0\012   args ""\012   otherflags 139\012   shallowjar 1\012   visflags 118423807\012  ]\012  directed 1\012  node [\012   ClassInfo [\012    condition 1\012    access2 0\012    access 0\012    classname "DocumentTextExtractor"\012    fromclassfiledate 0\012    fromclassfilename "%\011fin%sservice%supload%sDocumentTextExtractor.class"\012    fromfilename "%\011fin%sservice%supload%sDocumentTextExtractor.java"\012   ]\012   id 0\012   graphics [\012    center [\012     x -10.099999999999994\012     y 130.70000000000002\012     z 0.0\012    ]\012   ]\012   vgj [\012    flags 0\012   ]\012  ]\012 ]!1;k
+1!54;g
+%\011fin%sservice%supload%sDocumentTextExtractor.java
+!54;f
+%\011fin%sservice%supload%sDocumentTextExtractor.java

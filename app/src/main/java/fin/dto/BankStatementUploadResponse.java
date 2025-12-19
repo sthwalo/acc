@@ -54,6 +54,7 @@ public class BankStatementUploadResponse {
     private final List<BankTransaction> savedTransactions;
     private final List<RejectedTransaction> rejectedTransactions;
     private final List<String> errors;
+    private final List<String> extractedLines;
     
     /**
      * Constructor for upload response.
@@ -61,6 +62,13 @@ public class BankStatementUploadResponse {
      * @param result Processing result from BankStatementProcessingService
      */
     public BankStatementUploadResponse(BankStatementProcessingService.StatementProcessingResult result) {
+        this(result, false);
+    }
+
+    /**
+     * Constructor that optionally includes extracted raw lines for debugging.
+     */
+    public BankStatementUploadResponse(BankStatementProcessingService.StatementProcessingResult result, boolean includeExtractedLines) {
         this.success = result.getInvalidTransactions() == 0 
             || result.getValidTransactions() > 0;
         this.message = buildSummaryMessage(result);
@@ -74,6 +82,7 @@ public class BankStatementUploadResponse {
         this.savedTransactions = result.getTransactions();
         this.rejectedTransactions = result.getRejectedTransactions();
         this.errors = result.getErrors();
+        this.extractedLines = includeExtractedLines ? result.getExtractedLines() : List.of();
     }
     
     /**
@@ -88,6 +97,7 @@ public class BankStatementUploadResponse {
         this.savedTransactions = List.of();
         this.rejectedTransactions = List.of();
         this.errors = List.of(errorMessage);
+        this.extractedLines = List.of();
     }
     
     /**
@@ -147,6 +157,10 @@ public class BankStatementUploadResponse {
     
     public List<String> getErrors() {
         return errors;
+    }
+
+    public List<String> getExtractedLines() {
+        return extractedLines;
     }
     
     /**

@@ -44,7 +44,7 @@ This will:
 ./gradlew build
 
 # Start backend only
-java -jar app/build/libs/app.jar api
+java -jar app/build/libs/fin-spring.jar api
 
 # Or use the existing script
 ./start-backend.sh
@@ -141,7 +141,7 @@ lsof -ti:8080 | xargs kill -9
 lsof -ti:3000 | xargs kill -9
 
 # Or use the comprehensive cleanup
-pkill -f "app.jar api"
+pkill -f "fin-spring.jar api"
 pkill -f "vite"
 ```
 
@@ -149,7 +149,7 @@ pkill -f "vite"
 
 ```bash
 # Check if JAR is built
-ls -la app/build/libs/app.jar
+ls -la app/build/libs/fin-spring.jar
 
 # Rebuild if needed
 ./gradlew clean build
@@ -199,7 +199,7 @@ If frontend can't connect to backend:
 Backend requires restart after changes:
 ```bash
 # Stop current backend
-pkill -f "app.jar api"
+pkill -f "fin-spring.jar api"
 
 # Rebuild and restart
 ./gradlew build && ./start-fullstack.sh
@@ -218,7 +218,7 @@ Frontend automatically reloads on file changes when using `npm run dev`.
 ./gradlew build
 
 # Run with production profile
-java -jar app/build/libs/app.jar api
+java -jar app/build/libs/fin-spring.jar api
 ```
 
 ### Frontend Production

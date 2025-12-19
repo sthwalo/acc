@@ -62,6 +62,17 @@ public class PositionedTextExtractor {
         return results;
     }
     
+    private static boolean isCommandAvailable(String command) {
+        try {
+            ProcessBuilder pb = new ProcessBuilder("which", command);
+            Process p = pb.start();
+            boolean exited = p.waitFor(3, java.util.concurrent.TimeUnit.SECONDS);
+            return exited && p.exitValue() == 0;
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+    
     /**
      * Extract positioned text using Tesseract OCR.
      */
@@ -101,14 +112,70 @@ public class PositionedTextExtractor {
             }
             
             logger.info("Extracted {} positioned elements with OCR", results.size());
+            return results;
+        } catch (Throwable t) {
+            logger.error("PDFRenderer/Tesseract OCR failed ({}) - attempting external rasterizer fallback: {}", t.getClass().getSimpleName(), t.getMessage());
+
+            // External fallback using pdftoppm if available
+            if (!isCommandAvailable("pdftoppm")) {
+                throw new IOException("OCR fallback failed and pdftoppm is not available on PATH: " + t.getMessage());
+            }
+
+            java.nio.file.Path tempDir = java.nio.file.Files.createTempDirectory("pos_text_raster_");
+            String outPrefix = tempDir.resolve("page").toString();
+
+            ProcessBuilder pb = new ProcessBuilder("pdftoppm", "-jpeg", "-r", "300", pdfFile.getAbsolutePath(), outPrefix);
+            pb.redirectErrorStream(true);
+            Process process = pb.start();
+            try {
+                boolean finished = process.waitFor(60, java.util.concurrent.TimeUnit.SECONDS);
+                if (!finished) {
+                    process.destroyForcibly();
+                    throw new IOException("pdftoppm timed out");
+                }
+                if (process.exitValue() != 0) {
+                    String out = new String(process.getInputStream().readAllBytes());
+                    throw new IOException("pdftoppm failed: " + out);
+                }
+
+                java.nio.file.DirectoryStream<java.nio.file.Path> stream = java.nio.file.Files.newDirectoryStream(tempDir, "page*.jpg");
+                for (java.nio.file.Path imgPath : stream) {
+                    BufferedImage img = javax.imageio.ImageIO.read(imgPath.toFile());
+                    if (img == null) continue;
+                    ITesseract tesseract2 = new Tesseract();
+                    tesseract2.setDatapath("/opt/homebrew/share/tessdata");
+                    tesseract2.setLanguage("eng");
+                    tesseract2.setPageSegMode(1);
+                    tesseract2.setOcrEngineMode(1);
+
+                    List<Word> words = tesseract2.getWords(img, 0);
+                    for (Word word : words) {
+                        String text = word.getText().trim();
+                        if (!text.isEmpty()) {
+                            float x = word.getBoundingBox().x * 72.0f / 300.0f;
+                            float y = word.getBoundingBox().y * 72.0f / 300.0f;
+                            results.add(new PositionedText(text, x, y));
+                        }
+                    }
+                }
+
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+                throw new IOException("pdftoppm interrupted", ie);
+            } finally {
+                try {
+                    java.nio.file.Files.walk(tempDir)
+                        .map(java.nio.file.Path::toFile)
+                        .sorted((a,b) -> -a.getAbsolutePath().compareTo(b.getAbsolutePath()))
+                        .forEach(java.io.File::delete);
+                } catch (Throwable ignored) {}
+            }
+
+            logger.info("Extracted {} positioned elements via external rasterizer OCR", results.size());
+            return results;
         }
-        
-        return results;
     }
     
-    /**
-     * Custom PDFTextStripper that captures text positions.
-     */
     private static class PositionCapturingStripper extends PDFTextStripper {
         private final List<PositionedText> positionedTexts = new ArrayList<>();
         
@@ -116,65 +183,62 @@ public class PositionedTextExtractor {
             super();
             setSortByPosition(true);
         }
-        
+
         @Override
         protected void writeString(String text, List<TextPosition> textPositions) throws IOException {
-            if (textPositions.isEmpty() || text.trim().isEmpty()) {
-                return;
-            }
-            
-            // Group consecutive characters into words
-            StringBuilder currentWord = new StringBuilder();
-            TextPosition firstPos = null;
-            float lastX = 0;
-            
-            for (int i = 0; i < textPositions.size(); i++) {
-                TextPosition pos = textPositions.get(i);
-                String str = pos.getUnicode();
-                
-                if (str.trim().isEmpty()) {
-                    // Space - end current word
-                    if (currentWord.length() > 0 && firstPos != null) {
-                        positionedTexts.add(new PositionedText(
-                            currentWord.toString(),
-                            firstPos.getXDirAdj(),
-                            firstPos.getYDirAdj()
-                        ));
-                        currentWord = new StringBuilder();
-                        firstPos = null;
-                    }
-                } else {
-                    // Check if this is a new word (significant gap)
-                    if (currentWord.length() > 0 && (pos.getXDirAdj() - lastX) > 5.0f) {
-                        positionedTexts.add(new PositionedText(
-                            currentWord.toString(),
-                            firstPos.getXDirAdj(),
-                            firstPos.getYDirAdj()
-                        ));
-                        currentWord = new StringBuilder();
-                        firstPos = null;
-                    }
-                    
-                    if (firstPos == null) {
-                        firstPos = pos;
-                    }
-                    currentWord.append(str);
-                    lastX = pos.getXDirAdj() + pos.getWidthDirAdj();
+        if (textPositions.isEmpty() || text.trim().isEmpty()) {
+            return;
+        }
+        StringBuilder currentWord = new StringBuilder();
+        TextPosition firstPos = null;
+        float lastX = 0;
+        for (int i = 0; i < textPositions.size(); i++) {
+            TextPosition pos = textPositions.get(i);
+            String str = pos.getUnicode();
+            if (str.trim().isEmpty()) {
+                if (currentWord.length() > 0 && firstPos != null) {
+                    positionedTexts.add(new PositionedText(
+                        currentWord.toString(),
+                        firstPos.getXDirAdj(),
+                        firstPos.getYDirAdj()
+                    ));
+                    currentWord = new StringBuilder();
+                    firstPos = null;
                 }
-            }
-            
-            // Add final word
-            if (currentWord.length() > 0 && firstPos != null) {
-                positionedTexts.add(new PositionedText(
-                    currentWord.toString(),
-                    firstPos.getXDirAdj(),
-                    firstPos.getYDirAdj()
-                ));
+            } else {
+                // Check if this is a new word (significant gap)
+                if (currentWord.length() > 0 && (pos.getXDirAdj() - lastX) > 5.0f) {
+                    positionedTexts.add(new PositionedText(
+                        currentWord.toString(),
+                        firstPos.getXDirAdj(),
+                        firstPos.getYDirAdj()
+                    ));
+                    currentWord = new StringBuilder();
+                    firstPos = null;
+                }
+
+                if (firstPos == null) {
+                    firstPos = pos;
+                }
+                currentWord.append(str);
+                lastX = pos.getXDirAdj() + pos.getWidthDirAdj();
             }
         }
-        
-        List<PositionedText> getPositionedTexts() {
-            return positionedTexts;
+
+        // Add final word
+        if (currentWord.length() > 0 && firstPos != null) {
+            positionedTexts.add(new PositionedText(
+                currentWord.toString(),
+                firstPos.getXDirAdj(),
+                firstPos.getYDirAdj()
+            ));
         }
     }
+
+    List<PositionedText> getPositionedTexts() {
+        return positionedTexts;
+    }
+    }
+
 }
+

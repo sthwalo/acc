@@ -108,19 +108,19 @@ The development environment is fully configured for all operational modes:
 
 ### Console Application
 ```bash
-java -jar app/build/libs/app.jar
+java -jar app/build/libs/fin-spring.jar
 # → ConsoleApplication.main() → interactive menu system
 ```
 
 ### API Server
 ```bash
-java -jar app/build/libs/app.jar api
+java -jar app/build/libs/fin-spring.jar api
 # → ApiApplication.main() → REST API on port 8080
 ```
 
 ### Batch Processing
 ```bash
-java -jar app/build/libs/app.jar --batch [command]
+java -jar app/build/libs/fin-spring.jar --batch [command]
 # → automated processing mode
 ```
 

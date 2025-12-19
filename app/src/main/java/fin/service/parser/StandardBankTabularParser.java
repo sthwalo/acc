@@ -369,26 +369,32 @@ public class StandardBankTabularParser implements TransactionParser {
             
             // Check which candidate falls within the statement period
             if (!candidateStartYear.isBefore(statementStartDate) && !candidateStartYear.isAfter(statementEndDate)) {
+                LOGGER.info("Parsed transaction date " + String.format("%02d-%02d-%04d", day, month, candidateStartYear.getYear()) + " using statement period year " + candidateStartYear.getYear());
                 return candidateStartYear;
             } else if (!candidateEndYear.isBefore(statementStartDate) && !candidateEndYear.isAfter(statementEndDate)) {
+                LOGGER.info("Parsed transaction date " + String.format("%02d-%02d-%04d", day, month, candidateEndYear.getYear()) + " using statement period year " + candidateEndYear.getYear());
                 return candidateEndYear;
             }
             
             // If neither fits exactly, choose the one closer to the statement period
             if (Math.abs(candidateStartYear.toEpochDay() - statementStartDate.toEpochDay()) <= 
                 Math.abs(candidateEndYear.toEpochDay() - statementStartDate.toEpochDay())) {
+                LOGGER.info("Parsed transaction date " + String.format("%02d-%02d", day, month) + " by closest-year heuristic -> " + candidateStartYear);
                 return candidateStartYear;
             } else {
+                LOGGER.info("Parsed transaction date " + String.format("%02d-%02d", day, month) + " by closest-year heuristic -> " + candidateEndYear);
                 return candidateEndYear;
             }
         }
         
         // Fallback to context-based parsing
         if (context == null || context.getStatementDate() == null) {
+            LOGGER.info("Parsed transaction date " + String.format("%02d-%02d", day, month) + " using DEFAULT_YEAR=" + DEFAULT_YEAR);
             return LocalDate.of(DEFAULT_YEAR, month, day); // Default year
         }
         
         int year = context.getStatementDate().getYear();
+        LOGGER.info("Parsed transaction date " + String.format("%02d-%02d", day, month) + " using context year=" + year);
         return LocalDate.of(year, month, day);
     }
     

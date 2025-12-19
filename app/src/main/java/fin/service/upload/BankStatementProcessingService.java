@@ -24,6 +24,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -37,6 +38,21 @@ public class BankStatementProcessingService {
 
     private final List<TransactionParser> parsers;
     private final DocumentTextExtractor textExtractor;
+
+    // Expose a debug extraction helper for controllers/tests without exposing the extractor field publicly
+    public fin.dto.DocumentExtractionDebugResponse debugExtractFromFile(java.io.File pdfFile) throws java.io.IOException {
+        java.util.List<String> lines = textExtractor.parseDocument(pdfFile);
+        String raw = textExtractor.getStatementPeriod();
+        DocumentTextExtractor.StatementPeriod period = textExtractor.parseStatementPeriod(raw);
+        return new fin.dto.DocumentExtractionDebugResponse(
+            lines,
+            textExtractor.getAccountNumber(),
+            raw,
+            period != null ? period.getStart() : null,
+            period != null ? period.getEnd() : null,
+            java.util.List.of()
+        );
+    }
     private final BankTransactionRepository transactionRepository;
     private final FiscalPeriodRepository fiscalPeriodRepository;
     private final BankTransactionValidator validator;
@@ -487,7 +503,31 @@ public class BankStatementProcessingService {
 
                 logger.info("Processing completed: {} valid transactions saved, {} duplicates, {} out-of-period, {} validation errors", 
                     validTransactions.size(), duplicateCount, outOfPeriodCount, validationErrorCount);
-                
+
+                // Parse statement period and include metadata
+                String rawStatementPeriod = textExtractor.getStatementPeriod();
+                DocumentTextExtractor.StatementPeriod parsedPeriod = textExtractor.parseStatementPeriod(rawStatementPeriod);
+
+                // If fiscalPeriodId is provided, perform overlap checks
+                if (fiscalPeriodId != null) {
+                    if (parsedPeriod == null) {
+                        // Fail fast if we cannot parse the statement period when a fiscal period was specified
+                        throw new IllegalArgumentException("Unable to parse statement period from document. Please review the extracted text using the debug endpoint.");
+                    }
+                    // Verify there is at least some overlap between statement range and fiscal period
+                    Optional<FiscalPeriod> fiscalOpt = fiscalPeriodRepository.findById(fiscalPeriodId);
+                    if (fiscalOpt.isEmpty()) {
+                        throw new IllegalArgumentException("Specified fiscal period not found: " + fiscalPeriodId);
+                    }
+                    FiscalPeriod fiscal = fiscalOpt.get();
+                    if (parsedPeriod.getEnd().isBefore(fiscal.getStartDate()) || parsedPeriod.getStart().isAfter(fiscal.getEndDate())) {
+                        throw new IllegalArgumentException(String.format(
+                            "Statement period %s to %s does not overlap specified fiscal period %s to %s (ID: %d).",
+                            parsedPeriod.getStart(), parsedPeriod.getEnd(), fiscal.getStartDate(), fiscal.getEndDate(), fiscalPeriodId
+                        ));
+                    }
+                }
+
                 return new StatementProcessingResult(
                     validTransactions, 
                     lines.size(), 
@@ -496,7 +536,11 @@ public class BankStatementProcessingService {
                     outOfPeriodCount,
                     validationErrorCount,
                     rejectedTransactions,
-                    errors
+                    errors,
+                    lines,
+                    rawStatementPeriod,
+                    parsedPeriod != null ? parsedPeriod.getStart() : null,
+                    parsedPeriod != null ? parsedPeriod.getEnd() : null
                 );
             } finally {
                 // Clean up temporary file
@@ -555,6 +599,10 @@ public class BankStatementProcessingService {
         private final int invalidTransactions;
         private final List<RejectedTransaction> rejectedTransactions;
         private final List<String> errors;
+        private final List<String> extractedLines;
+        private final String statementPeriodRaw;
+        private final java.time.LocalDate statementPeriodStart;
+        private final java.time.LocalDate statementPeriodEnd;
 
         public StatementProcessingResult(List<BankTransaction> transactions, int processedLines,
                                        int validTransactions, int duplicateTransactions,
@@ -568,6 +616,30 @@ public class BankStatementProcessingService {
             this.invalidTransactions = invalidTransactions;
             this.rejectedTransactions = rejectedTransactions;
             this.errors = errors;
+            this.extractedLines = List.of();
+            this.statementPeriodRaw = null;
+            this.statementPeriodStart = null;
+            this.statementPeriodEnd = null;
+        }
+
+        public StatementProcessingResult(List<BankTransaction> transactions, int processedLines,
+                                       int validTransactions, int duplicateTransactions,
+                                       int outOfPeriodTransactions, int invalidTransactions,
+                                       List<RejectedTransaction> rejectedTransactions, List<String> errors,
+                                       List<String> extractedLines, String statementPeriodRaw,
+                                       java.time.LocalDate statementPeriodStart, java.time.LocalDate statementPeriodEnd) {
+            this.transactions = transactions;
+            this.processedLines = processedLines;
+            this.validTransactions = validTransactions;
+            this.duplicateTransactions = duplicateTransactions;
+            this.outOfPeriodTransactions = outOfPeriodTransactions;
+            this.invalidTransactions = invalidTransactions;
+            this.rejectedTransactions = rejectedTransactions;
+            this.errors = errors;
+            this.extractedLines = (extractedLines == null) ? List.of() : extractedLines;
+            this.statementPeriodRaw = statementPeriodRaw;
+            this.statementPeriodStart = statementPeriodStart;
+            this.statementPeriodEnd = statementPeriodEnd;
         }
 
         public List<BankTransaction> getTransactions() { return transactions; }
@@ -578,6 +650,10 @@ public class BankStatementProcessingService {
         public int getInvalidTransactions() { return invalidTransactions; }
         public List<RejectedTransaction> getRejectedTransactions() { return rejectedTransactions; }
         public List<String> getErrors() { return errors; }
+        public List<String> getExtractedLines() { return extractedLines; }
+        public String getStatementPeriodRaw() { return statementPeriodRaw; }
+        public java.time.LocalDate getStatementPeriodStart() { return statementPeriodStart; }
+        public java.time.LocalDate getStatementPeriodEnd() { return statementPeriodEnd; }
     }
 
     /**

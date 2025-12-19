@@ -440,7 +440,7 @@ public class PayrollReportService {
 ### Test PdfBrandingService:
 ```bash
 # 1. Generate an invoice (should use PdfBrandingService)
-java -jar app/build/libs/app.jar
+java -jar app/build/libs/fin-spring.jar
 # Select: 6. Generate Reports → 12. Generate Invoice
 
 # 2. Check generated PDF
@@ -483,7 +483,7 @@ echo $?  # Should be 0 if all licensed, 1 if issues
 ./gradlew test
 
 # 3. Generate various reports
-java -jar app/build/libs/app.jar
+java -jar app/build/libs/fin-spring.jar
 # Try: Invoices, Payslips, Budget Reports, Financial Statements
 
 # 4. Check all generated PDFs have consistent footers

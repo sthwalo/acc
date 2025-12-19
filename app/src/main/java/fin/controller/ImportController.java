@@ -59,19 +59,78 @@ public class ImportController {
     }
 
     /**
+     * Debug endpoint (POST) - extract text and metadata from an uploaded PDF file.
+     * Intended for development use only.
+     */
+    @PostMapping("/debug/extract")
+    public ResponseEntity<fin.dto.DocumentExtractionDebugResponse> debugExtractFromUpload(
+            @RequestParam("file") MultipartFile file) {
+        try {
+            java.io.File tempFile = java.io.File.createTempFile("debug_extract_", ".pdf");
+            file.transferTo(tempFile);
+            fin.dto.DocumentExtractionDebugResponse resp = bankStatementService.debugExtractFromFile(tempFile);
+            tempFile.delete();
+            return ResponseEntity.ok(resp);
+        } catch (Exception e) {
+            fin.dto.DocumentExtractionDebugResponse resp = new fin.dto.DocumentExtractionDebugResponse(java.util.List.of(), null, null, null, null, java.util.List.of(e.getMessage()));
+            return ResponseEntity.internalServerError().body(resp);
+        }
+    }
+
+    /**
+     * Debug endpoint (GET) - extract text and metadata from a file path under input/std.
+     * Only allows files inside the `input/std` directory for safety.
+     */
+    @GetMapping("/debug/extract")
+    public ResponseEntity<fin.dto.DocumentExtractionDebugResponse> debugExtractFromPath(@RequestParam("path") String path) {
+        try {
+            // Basic safety check - only allow paths under input/std
+            // Clean up relative path input to avoid duplicate 'input/std' prefixes when users pass full subpaths
+            java.nio.file.Path baseDir = java.nio.file.Paths.get(System.getProperty("user.dir")).resolve("input").resolve("std").normalize();
+            java.nio.file.Path requested;
+            java.nio.file.Path candidate = java.nio.file.Path.of(path);
+            if (candidate.isAbsolute()) {
+                requested = candidate.normalize();
+            } else {
+                // Remove leading 'input/std' or 'input' if present to avoid duplication when resolving against baseDir
+                String cleaned = path;
+                if (cleaned.startsWith("input/std/") || cleaned.startsWith("input\\std\\")) {
+                    cleaned = cleaned.substring("input/std/".length());
+                } else if (cleaned.startsWith("input/") || cleaned.startsWith("input\\")) {
+                    cleaned = cleaned.substring("input/".length());
+                }
+                requested = baseDir.resolve(cleaned).normalize();
+            }
+            if (!requested.startsWith(baseDir)) {
+                return ResponseEntity.badRequest().body(new fin.dto.DocumentExtractionDebugResponse(java.util.List.of(), null, null, null, null, java.util.List.of("Only paths under input/std are allowed")));
+            }
+            java.io.File f = requested.toFile();
+            if (!f.exists()) {
+                return ResponseEntity.badRequest().body(new fin.dto.DocumentExtractionDebugResponse(java.util.List.of(), null, null, null, null, java.util.List.of("File not found: " + requested.toString())));
+            }
+            fin.dto.DocumentExtractionDebugResponse resp = bankStatementService.debugExtractFromFile(f);
+            return ResponseEntity.ok(resp);
+        } catch (Exception e) {
+            fin.dto.DocumentExtractionDebugResponse resp = new fin.dto.DocumentExtractionDebugResponse(java.util.List.of(), null, null, null, null, java.util.List.of(e.getMessage()));
+            return ResponseEntity.internalServerError().body(resp);
+        }
+    }
+
+    /**
      * Upload and process a bank statement PDF
      */
     @PostMapping("/companies/{companyId}/fiscal-periods/{fiscalPeriodId}/imports/bank-statement")
     public ResponseEntity<BankStatementUploadResponse> processBankStatement(
             @PathVariable Long companyId,
             @PathVariable Long fiscalPeriodId,
-            @RequestParam("file") MultipartFile file) {
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "debug", required = false, defaultValue = "false") boolean debug) {
         try {
             BankStatementProcessingService.StatementProcessingResult result =
                 bankStatementService.processStatement(file, companyId, fiscalPeriodId);
             
             // Wrap result in enhanced response with detailed feedback
-            BankStatementUploadResponse response = new BankStatementUploadResponse(result);
+            BankStatementUploadResponse response = new BankStatementUploadResponse(result, debug);
             
             // Return appropriate HTTP status based on success
             if (response.isSuccess()) {
@@ -86,6 +145,12 @@ public class ImportController {
                 "Invalid request: " + e.getMessage()
             );
             return ResponseEntity.badRequest().body(errorResponse);
+        } catch (fin.exception.PdfProcessingException e) {
+            // PDF-specific processing failure - client should be informed and may retry with different file
+            BankStatementUploadResponse errorResponse = new BankStatementUploadResponse(
+                "PDF processing failed: " + e.getMessage()
+            );
+            return ResponseEntity.status(422).body(errorResponse);
         } catch (Exception e) {
             // Return structured error response for server errors
             BankStatementUploadResponse errorResponse = new BankStatementUploadResponse(

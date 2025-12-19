@@ -284,7 +284,7 @@ export const PayPalButton: React.FC<PayPalButtonProps> = ({
             This is a test environment. No real payment will be processed.
           </p>
           <button
-            onClick={handleDummyPayment}
+            onClick={() => handleDummyPayment()}
             disabled={isLoading}
             className="bg-yellow-600 hover:bg-yellow-700 disabled:bg-yellow-400 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center mx-auto"
           >

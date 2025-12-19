@@ -94,7 +94,26 @@ public class PdfBoxConfigurator {
             // Test font mapper initialization (the problematic area)
             Class.forName("org.apache.pdfbox.pdmodel.font.FontMapperImpl");
 
-            // Try to create a minimal PDF document to test full functionality
+            // Log JVM / vendor information to help diagnose environment-sensitive font issues
+            try {
+                logger.info("JVM info: java.version={} java.vendor={} java.vm.name={}",
+                        System.getProperty("java.version"), System.getProperty("java.vendor"), System.getProperty("java.vm.name"));
+            } catch (Throwable ignore) { }
+
+            // Enumerate available font family names as a lightweight diagnostic
+            try {
+                String[] fonts = java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames();
+                logger.info("Number of available font families: {}", (fonts == null ? 0 : fonts.length));
+                if (fonts != null && fonts.length > 0) {
+                    for (int i = 0; i < Math.min(10, fonts.length); i++) {
+                        logger.debug("Font[{}]: {}", i, fonts[i]);
+                    }
+                }
+            } catch (Throwable t) {
+                logger.warn("Unable to enumerate system fonts: {}", t.getMessage());
+            }
+
+            // Try to create a minimal PDF document to test full functionality, including rendering which can surface font-provider initialization errors
             try (org.apache.pdfbox.pdmodel.PDDocument testDoc = new org.apache.pdfbox.pdmodel.PDDocument()) {
                 // Add a blank page
                 org.apache.pdfbox.pdmodel.PDPage page = new org.apache.pdfbox.pdmodel.PDPage();
@@ -103,6 +122,20 @@ public class PdfBoxConfigurator {
                 // Try basic text extraction setup
                 org.apache.pdfbox.text.PDFTextStripper stripper = new org.apache.pdfbox.text.PDFTextStripper();
                 String emptyText = stripper.getText(testDoc);
+
+                // Attempt a lightweight render which often triggers font-provider initialization failures
+                try {
+                    org.apache.pdfbox.rendering.PDFRenderer renderer = new org.apache.pdfbox.rendering.PDFRenderer(testDoc);
+                    java.awt.image.BufferedImage img = renderer.renderImageWithDPI(0, 72);
+                    if (img != null) {
+                        logger.debug("PDFRenderer produced a test image ({}x{})", img.getWidth(), img.getHeight());
+                    }
+                } catch (Throwable renderEx) {
+                    logger.error("PDFRenderer test failed: {}", renderEx.getMessage(), renderEx);
+                    String root = getRootCauseMessage(renderEx);
+                    markPdfBoxUnavailable("RENDER_INIT_ERROR: " + root);
+                    return; // abort availability marking
+                }
 
                 if (emptyText != null) {
                     pdfBoxAvailable = true;
@@ -145,6 +178,17 @@ public class PdfBoxConfigurator {
     }
 
     /**
+     * Mark PDFBox as unavailable at runtime and record a reason. Use this when a specific
+     * PDF triggers an initialization or font parsing error so subsequent operations
+     * use OCR-only fallback without attempting PDFBox text extraction.
+     */
+    public void markPdfBoxUnavailable(String reason) {
+        this.pdfBoxAvailable = false;
+        this.pdfBoxStatus = "UNAVAILABLE: " + reason;
+        logger.warn("PDFBox marked unavailable: {}", reason);
+    }
+
+    /**
      * Get health information for monitoring systems.
      * @return health status map
      */
@@ -154,6 +198,27 @@ public class PdfBoxConfigurator {
         health.put("pdfbox.status", pdfBoxStatus);
         health.put("java.awt.headless", System.getProperty("java.awt.headless"));
         health.put("pdfbox.fontcache", System.getProperty("pdfbox.fontcache"));
+        health.put("java.version", System.getProperty("java.version"));
+        health.put("java.vendor", System.getProperty("java.vendor"));
         return health;
+    }
+
+    /**
+     * Walk the cause chain and return a compact root-cause message useful for status fields and logs.
+     */
+    private String getRootCauseMessage(Throwable t) {
+        if (t == null) return "<no exception>";
+        Throwable cur = t;
+        String lastMsg = cur.getClass().getSimpleName() + ": " + (cur.getMessage() == null ? "" : cur.getMessage());
+        while (cur.getCause() != null) {
+            cur = cur.getCause();
+            String m = cur.getClass().getSimpleName() + ": " + (cur.getMessage() == null ? "" : cur.getMessage());
+            lastMsg = m;
+        }
+        // Trim to a reasonable length for health/status fields
+        if (lastMsg.length() > 800) {
+            return lastMsg.substring(0, 780) + "...";
+        }
+        return lastMsg;
     }
 }
