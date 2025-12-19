@@ -50,7 +50,7 @@ fi
 # 2. Start server in background
 echo "2. Starting API server..."
 source .env
-echo "yes" | java -jar app/build/libs/app.jar api > server.log 2>&1 &
+echo "yes" | java -jar app/build/libs/fin-spring.jar api > server.log 2>&1 &
 SERVER_PID=$!
 
 # Wait for server to start

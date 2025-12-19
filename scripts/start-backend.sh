@@ -17,7 +17,7 @@ fi
 # Start the Java backend API server
 echo "📊 Starting Java Backend API Server on port 8080..."
 cd /Users/sthwalonyoni/FIN
-java -jar app/build/libs/app.jar api &
+java -jar app/build/libs/fin-spring.jar api &
 BACKEND_PID=$!
 
 # Wait a moment for backend to start
@@ -46,7 +46,7 @@ echo "4. Visit frontend at: http://localhost:3000"
 echo ""
 echo "💡 Backend PID: $BACKEND_PID"
 echo "🛑 To stop backend: kill $BACKEND_PID"
-echo "🔄 To stop all: pkill -f 'app.jar api'"
+echo "🔄 To stop all: pkill -f 'fin-spring.jar api'"
 echo ""
 echo "🎉 Ready for full-stack development!"
 

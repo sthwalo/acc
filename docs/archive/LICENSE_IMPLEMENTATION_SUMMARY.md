@@ -307,7 +307,7 @@ cd /Users/sthwalonyoni/FIN
 ### Test PdfBrandingService:
 ```bash
 # Generate an invoice
-java -jar app/build/libs/app.jar
+java -jar app/build/libs/fin-spring.jar
 # Select: 6. Generate Reports → 12. Generate Invoice
 
 # Check generated PDF

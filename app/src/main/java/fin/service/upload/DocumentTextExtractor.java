@@ -84,7 +84,7 @@ public class DocumentTextExtractor {
             logger.warn("PDFBox is not available ({}), falling back to OCR extraction only", pdfBoxConfigurator.getPdfBoxStatus());
             // Use OCR fallback directly
             try (PDDocument document = Loader.loadPDF(pdfFile)) {
-                return extractWithOCR(document, startTime, MAX_PROCESSING_TIME_MS);
+                return extractWithOCR(document, pdfFile, startTime, MAX_PROCESSING_TIME_MS);
             }
         }
 
@@ -166,7 +166,7 @@ public class DocumentTextExtractor {
                     }
 
                     logger.info("PDFBox extraction insufficient ({}), falling back to OCR", reason);
-                    lines = extractWithOCR(document, startTime, MAX_PROCESSING_TIME_MS);
+                    lines = extractWithOCR(document, pdfFile, startTime, MAX_PROCESSING_TIME_MS);
                     logger.info("OCR extraction completed with {} lines", lines.size());
                 } else if (lines.isEmpty()) {
                     // Good text extraction, use as-is
@@ -194,13 +194,22 @@ public class DocumentTextExtractor {
 
                 return lines;
 
-            } catch (NoClassDefFoundError | ExceptionInInitializerError e) {
-                logger.error("PDFBox failed during extraction ({}), falling back to OCR: {}", e.getClass().getSimpleName(), e.getMessage());
-                // Fallback to OCR
-                return extractWithOCR(document, startTime, MAX_PROCESSING_TIME_MS);
             } catch (IOException e) {
                 logger.error("Failed to extract text from PDF: {}", e.getMessage());
                 throw e;
+            } catch (Throwable t) {
+                // If this is a fatal VM error, rethrow
+                if (t instanceof VirtualMachineError || t instanceof ThreadDeath) {
+                    throw t;
+                }
+                logger.error("PDFBox failed during extraction ({}), falling back to OCR: {}", t.getClass().getSimpleName(), t.getMessage());
+                // Fallback to OCR (prefer external rasterizer if renderer is broken)
+                try {
+                    return extractWithOCR(document, pdfFile, startTime, MAX_PROCESSING_TIME_MS);
+                } catch (IOException ioe) {
+                    logger.error("OCR fallback also failed: {}", ioe.getMessage());
+                    throw ioe;
+                }
             }
         }
     }
@@ -211,67 +220,106 @@ public class DocumentTextExtractor {
      * OPTIMIZED: Reduced DPI from 300 to 200 for faster processing while maintaining accuracy.
      * Added timeout protection to prevent infinite processing.
      */
-    List<String> extractWithOCR(PDDocument document, long startTime, int maxProcessingTimeMs) throws IOException {
+    List<String> extractWithOCR(PDDocument document, File pdfFile, long startTime, int maxProcessingTimeMs) throws IOException {
         List<String> allLines = new ArrayList<>();
 
-        // Create PDF renderer with optimized DPI for better performance/accuracy balance
-        PDFRenderer renderer = new PDFRenderer(document);
-        int totalPages = document.getNumberOfPages();
+        try {
+            // Create PDF renderer with optimized DPI for better performance/accuracy balance
+            PDFRenderer renderer = new PDFRenderer(document);
+            int totalPages = document.getNumberOfPages();
 
-        logger.info("Starting OCR extraction for {} pages (optimized 200 DPI)", totalPages);
+            logger.info("Starting OCR extraction for {} pages (optimized 200 DPI)", totalPages);
 
-        for (int pageIndex = 0; pageIndex < totalPages; pageIndex++) {
-            // Check timeout before processing each page
-            long elapsedTime = System.currentTimeMillis() - startTime;
-            if (elapsedTime > maxProcessingTimeMs) {
-                throw new IOException("OCR processing timeout: exceeded " + maxProcessingTimeMs + "ms while processing page " + (pageIndex + 1) + " of " + totalPages);
-            }
-
-            try {
-                logger.info("OCR processing page {}/{} (elapsed: {}ms)", pageIndex + 1, totalPages, elapsedTime);
-
-                // OPTIMIZED: Use 200 DPI instead of 300 for faster processing
-                // 200 DPI provides good accuracy for financial documents while being ~2x faster
-                BufferedImage image = renderer.renderImageWithDPI(pageIndex, 200);
-
-                // Apply image preprocessing if needed
-                image = preprocessImageForOCR(image);
-
-                // Perform OCR using utility
-                String pageText = TesseractConfigUtil.performOCR(image);
-
-                if (pageText == null || pageText.trim().isEmpty()) {
-                    logger.warn("OCR returned empty text for page {}", pageIndex + 1);
-                    continue;
+            boolean sawFontProviderError = false;
+            for (int pageIndex = 0; pageIndex < totalPages; pageIndex++) {
+                // Check timeout before processing each page
+                long elapsedTime = System.currentTimeMillis() - startTime;
+                if (elapsedTime > maxProcessingTimeMs) {
+                    throw new IOException("OCR processing timeout: exceeded " + maxProcessingTimeMs + "ms while processing page " + (pageIndex + 1) + " of " + totalPages);
                 }
 
-                // Split into lines and filter/process
-                String[] lines = pageText.split("\\r?\\n");
-                int validLines = 0;
+                try {
+                    logger.info("OCR processing page {}/{} (elapsed: {}ms)", pageIndex + 1, totalPages, elapsedTime);
 
-                for (String line : lines) {
-                    line = line.trim();
-                    if (!line.isEmpty() && line.length() > 3) { // Filter out very short noise
-                        // Clean up common OCR errors in financial text
-                        line = cleanOCRErrors(line);
-                        allLines.add(line);
-                        extractMetadata(line);
-                        validLines++;
+                    // OPTIMIZED: Use 200 DPI instead of 300 for faster processing
+                    // 200 DPI provides good accuracy for financial documents while being ~2x faster
+                    BufferedImage image = renderer.renderImageWithDPI(pageIndex, 200);
+
+                    // Apply image preprocessing if needed
+                    image = preprocessImageForOCR(image);
+
+                    // Perform OCR using utility
+                    String pageText = TesseractConfigUtil.performOCR(image);
+
+                    if (pageText == null || pageText.trim().isEmpty()) {
+                        logger.warn("OCR returned empty text for page {}", pageIndex + 1);
+                        continue;
                     }
+
+                    // Split into lines and filter/process
+                    String[] lines = pageText.split("\\r?\\n");
+                    int validLines = 0;
+
+                    for (String line : lines) {
+                        line = line.trim();
+                        if (!line.isEmpty() && line.length() > 3) { // Filter out very short noise
+                            // Clean up common OCR errors in financial text
+                            line = cleanOCRErrors(line);
+                            allLines.add(line);
+                            extractMetadata(line);
+                            validLines++;
+                        }
+                    }
+
+                    logger.info("Page {}: {} valid lines extracted", pageIndex + 1, validLines);
+
+                } catch (Throwable t) {
+                    logger.error("Failed to OCR page {}: {} ({})", pageIndex + 1, t.getMessage(), t.getClass().getSimpleName());
+                    // If the page failed due to the PDFBox font provider (known issue), mark flag and attempt external rasterizer immediately
+                    if (isFontProviderError(t)) {
+                        sawFontProviderError = true;
+                        logger.warn("Detected PDFBox font-provider error - aborting per-page rendering and attempting external rasterizer fallback");
+                        try {
+                            List<String> external = ocrUsingExternalRasterizer(pdfFile, startTime, maxProcessingTimeMs);
+                            if (external != null && !external.isEmpty()) {
+                                return external;
+                            }
+                        } catch (IOException ioe) {
+                            logger.error("External rasterizer fallback failed: {}", ioe.getMessage());
+                        }
+                        break;
+                    }
+                    // Continue with other pages rather than failing completely for other errors
                 }
-
-                logger.info("Page {}: {} valid lines extracted", pageIndex + 1, validLines);
-
-            } catch (Exception e) {
-                logger.error("Failed to OCR page {}: {}", pageIndex + 1, e.getMessage());
-                // Continue with other pages rather than failing completely
             }
+
+            // If no lines were extracted and we saw the PDFBox font-provider error, attempt external rasterizer fallback
+            if (allLines.isEmpty() && sawFontProviderError) {
+                logger.info("No OCR lines extracted and detected PDFBox font-provider failures; trying external rasterizer (pdftoppm)");
+                List<String> external = ocrUsingExternalRasterizer(pdfFile, startTime, maxProcessingTimeMs);
+                if (external != null && !external.isEmpty()) {
+                    return external;
+                }
+            }
+
+            logger.info("OCR extraction completed: {} total lines extracted from {} pages",
+                       allLines.size(), totalPages);
+
+            return allLines;
+        } catch (Throwable t) {
+            // If renderer construction or other fatal errors occur, try external rasterizer-based OCR as a fallback
+            logger.error("OCR extraction failed during initialization: {} ({}). Attempting external rasterizer fallback", t.getMessage(), t.getClass().getSimpleName());
+            try {
+                List<String> external = ocrUsingExternalRasterizer(pdfFile, startTime, maxProcessingTimeMs);
+                if (external != null && !external.isEmpty()) {
+                    return external;
+                }
+            } catch (IOException ioe) {
+                logger.error("External rasterizer OCR fallback failed: {}", ioe.getMessage());
+            }
+            // If everything fails, return what we have (possibly empty)
+            return allLines; // empty
         }
-
-        logger.info("OCR extraction completed: {} total lines extracted from {} pages",
-                   allLines.size(), totalPages);
-
-        return allLines;
     }
 
     /**
@@ -285,6 +333,127 @@ public class DocumentTextExtractor {
         // - Binarization
         // - Deskewing
         return image;
+    }
+
+    /**
+     * Detect whether the throwable chain contains a PDFBox font-provider related error (NoClassDefFoundError or message containing FontMapperImpl/FileSystemFontProvider)
+     */
+    private boolean isFontProviderError(Throwable t) {
+        Throwable cur = t;
+        while (cur != null) {
+            if (cur instanceof java.lang.NoClassDefFoundError) return true;
+            String msg = cur.getMessage();
+            if (msg != null && (msg.contains("FontMapperImpl") || msg.contains("DefaultFontProvider") || msg.contains("FileSystemFontProvider"))) {
+                return true;
+            }
+            cur = cur.getCause();
+        }
+        return false;
+    }
+
+    /**
+     * Check if an external command is available on PATH.
+     */
+    private boolean isCommandAvailable(String command) {
+        try {
+            ProcessBuilder pb = new ProcessBuilder("which", command);
+            Process p = pb.start();
+            boolean exited = p.waitFor(3, java.util.concurrent.TimeUnit.SECONDS);
+            return exited && p.exitValue() == 0;
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    /**
+     * Attempt OCR by rasterizing the PDF using an external tool (pdftoppm) and running Tesseract on the images.
+     * Returns empty list on failure.
+     */
+    private List<String> ocrUsingExternalRasterizer(File pdfFile, long startTime, int maxProcessingTimeMs) throws IOException {
+        List<String> allLines = new ArrayList<>();
+
+        if (!isCommandAvailable("pdftoppm")) {
+            logger.warn("pdftoppm not available on PATH. External rasterizer fallback is not possible.");
+            return allLines;
+        }
+
+        java.nio.file.Path tempDir = java.nio.file.Files.createTempDirectory("pdf_raster_");
+        String outPrefix = tempDir.resolve("page").toString();
+
+        // Run pdftoppm -jpeg -r 200 input.pdf outPrefix
+        ProcessBuilder pb = new ProcessBuilder("pdftoppm", "-jpeg", "-r", "200", pdfFile.getAbsolutePath(), outPrefix);
+        pb.redirectErrorStream(true);
+        Process process = pb.start();
+        try {
+            boolean finished = process.waitFor(60, java.util.concurrent.TimeUnit.SECONDS);
+                String pdftoppmOut = new String(process.getInputStream().readAllBytes());
+                logger.debug("pdftoppm stdout/stderr: {}", pdftoppmOut);
+                if (!finished) {
+                    process.destroyForcibly();
+                    throw new IOException("pdftoppm timed out");
+                }
+                if (process.exitValue() != 0) {
+                    logger.error("pdftoppm failed (exit {}): {}", process.exitValue(), pdftoppmOut);
+                    throw new IOException("pdftoppm failed: exit " + process.exitValue());
+                }
+
+                // Collect generated images (match both jpg and png variants)
+                java.nio.file.Path dir = tempDir;
+                java.util.List<java.nio.file.Path> found = new java.util.ArrayList<>();
+                try (java.nio.file.DirectoryStream<java.nio.file.Path> s1 = java.nio.file.Files.newDirectoryStream(dir, "page*.jpg")) {
+                    for (java.nio.file.Path pth : s1) found.add(pth);
+                } catch (Throwable ignored) {}
+                try (java.nio.file.DirectoryStream<java.nio.file.Path> s2 = java.nio.file.Files.newDirectoryStream(dir, "page*.png")) {
+                    for (java.nio.file.Path pth : s2) found.add(pth);
+                } catch (Throwable ignored) {}
+
+                logger.info("External rasterizer produced {} image(s): {}", found.size(), found);
+
+                for (java.nio.file.Path imgPath : found) {
+                    long elapsedTime = System.currentTimeMillis() - startTime;
+                    if (elapsedTime > maxProcessingTimeMs) {
+                        throw new IOException("External OCR timeout exceeded");
+                    }
+                    try {
+                        BufferedImage img = javax.imageio.ImageIO.read(imgPath.toFile());
+                        if (img == null) {
+                            logger.warn("ImageIO could not read generated image {}", imgPath);
+                            continue;
+                        }
+                        String pageText = TesseractConfigUtil.performOCR(img);
+                        if (pageText == null || pageText.trim().isEmpty()) {
+                            logger.warn("External OCR returned empty text for image {}", imgPath);
+                            continue;
+                        }
+                        String[] lines = pageText.split("\\r?\\n");
+                        for (String line : lines) {
+                            line = line.trim();
+                            if (!line.isEmpty() && line.length() > 3) {
+                                line = cleanOCRErrors(line);
+                                allLines.add(line);
+                                extractMetadata(line);
+                            }
+                        }
+                } catch (Throwable t) {
+                    logger.error("External OCR failed for {}: {}", imgPath, t.getMessage());
+                }
+            }
+
+        } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+            throw new IOException("pdftoppm interrupted", ie);
+        } finally {
+            // Cleanup
+            try {
+                java.nio.file.Files.walk(tempDir)
+                    .map(java.nio.file.Path::toFile)
+                    .sorted((a,b) -> -a.getAbsolutePath().compareTo(b.getAbsolutePath()))
+                    .forEach(java.io.File::delete);
+            } catch (Throwable ignored) {}
+        }
+
+        logger.info("External rasterizer OCR completed: {} lines", allLines.size());
+        return allLines;
     }
 
     /**
@@ -445,12 +614,91 @@ public class DocumentTextExtractor {
 
         // Extract statement period - look for date ranges
         if (statementPeriod == null) {
-            Pattern periodPattern = Pattern.compile("(\\d{1,2}\\s+[A-Za-z]+\\s+\\d{4})\\s+to\\s+(\\d{1,2}\\s+[A-Za-z]+\\s+\\d{4})", Pattern.CASE_INSENSITIVE);
+            Pattern periodPattern = Pattern.compile("(\\d{1,2}\\s+[A-Za-z]{3,9}\\s+\\d{4})\\s+to\\s+(\\d{1,2}\\s+[A-Za-z]{3,9}\\s+\\d{4})", Pattern.CASE_INSENSITIVE);
             Matcher matcher = periodPattern.matcher(line);
             if (matcher.find()) {
                 statementPeriod = matcher.group(1) + " to " + matcher.group(2);
             }
         }
+    }
+
+    /**
+     * Parse a statement period string (e.g., "16 February 2024 to 18 March 2024")
+     * into start and end LocalDate values. Returns null if parsing fails.
+     */
+    public StatementPeriod parseStatementPeriod(String raw) {
+        if (raw == null || raw.isBlank()) return null;
+        // Normalize whitespace and common OCR noise
+        String cleaned = raw.replaceAll("[\u2018\u2019\u201C\u201D]", "").trim();
+        cleaned = cleaned.replaceAll("\u00A0", " "); // non-breaking spaces
+        cleaned = cleaned.replaceAll("\\s+to\\s+", " to ");
+
+        // Match two date parts
+        Pattern p = Pattern.compile("(\\d{1,2}\\s+[A-Za-z]{3,9}\\s+\\d{4})\\s+to\\s+(\\d{1,2}\\s+[A-Za-z]{3,9}\\s+\\d{4})", Pattern.CASE_INSENSITIVE);
+        Matcher m = p.matcher(cleaned);
+        if (!m.find()) {
+            // Try numeric formats like 01/02/2024 to 28/02/2024 or 2024-02-01 to 2024-02-28
+            Pattern alt = Pattern.compile("(\\d{1,2}[\\/\\-]\\d{1,2}[\\/\\-]\\d{4})\\s+to\\s+(\\d{1,2}[\\/\\-]\\d{1,2}[\\/\\-]\\d{4})");
+            Matcher m2 = alt.matcher(cleaned);
+            if (m2.find()) {
+                return parseTwoDates(m2.group(1), m2.group(2));
+            }
+            return null;
+        }
+
+        String d1 = m.group(1);
+        String d2 = m.group(2);
+        return parseTwoDates(d1, d2);
+    }
+
+    private StatementPeriod parseTwoDates(String d1, String d2) {
+        java.time.LocalDate start = tryParseDate(d1);
+        java.time.LocalDate end = tryParseDate(d2);
+        if (start == null || end == null) return null;
+        return new StatementPeriod(start, end);
+    }
+
+    private java.time.LocalDate tryParseDate(String rawDate) {
+        rawDate = rawDate.trim();
+        // Possible format patterns
+        java.time.format.DateTimeFormatter[] formatters = new java.time.format.DateTimeFormatter[]{
+            java.time.format.DateTimeFormatter.ofPattern("d MMMM uuuu"),
+            java.time.format.DateTimeFormatter.ofPattern("d MMM uuuu"),
+            java.time.format.DateTimeFormatter.ofPattern("d/MM/uuuu"),
+            java.time.format.DateTimeFormatter.ofPattern("d-M-uuuu"),
+            java.time.format.DateTimeFormatter.ofPattern("uuuu-M-d"),
+            java.time.format.DateTimeFormatter.ofPattern("uuuu/MM/d")
+        };
+
+        // Try lower/upper case normalization and common OCR fixes
+        String normalized = rawDate.replaceAll("[^A-Za-z0-9/\\-\\s]", " ").replaceAll("\s+", " ");
+        // Fix some common OCR month errors (e.g., 'Fruary' -> 'February') - minimal set
+        normalized = normalized.replaceAll("(?i)f?ruary", "February");
+        normalized = normalized.replaceAll("(?i)mar(en|ch)", "March");
+
+        for (java.time.format.DateTimeFormatter fmt : formatters) {
+            try {
+                return java.time.LocalDate.parse(normalized, fmt);
+            } catch (Exception ignored) { }
+        }
+        // Last resort try ISO parse
+        try {
+            return java.time.LocalDate.parse(normalized);
+        } catch (Exception ignored) { }
+        return null;
+    }
+
+    /**
+     * Simple holder for parsed statement period dates.
+     */
+    public static class StatementPeriod {
+        private final java.time.LocalDate start;
+        private final java.time.LocalDate end;
+        public StatementPeriod(java.time.LocalDate start, java.time.LocalDate end) {
+            this.start = start; this.end = end;
+        }
+        public java.time.LocalDate getStart() { return start; }
+        public java.time.LocalDate getEnd() { return end; }
     }
 
     /**

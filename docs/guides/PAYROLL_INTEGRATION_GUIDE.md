@@ -67,7 +67,7 @@ The payroll system is already integrated into the main application. Look for:
 
 1. **Start the Application**
    ```bash
-   java -jar app/build/libs/app.jar
+   java -jar app/build/libs/fin-spring.jar
    ```
 
 2. **Setup Prerequisites**

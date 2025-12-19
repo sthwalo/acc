@@ -34,6 +34,7 @@ import org.mockito.Mockito;
 import static org.mockito.Mockito.*;
 import fin.config.PdfBoxConfigurator;
 import org.apache.pdfbox.pdmodel.PDDocument;
+import java.io.File;
 
 import java.io.IOException;
 import java.util.List;
@@ -76,11 +77,11 @@ public class DocumentTextExtractorTest {
         // Spy to verify OCR path is called
         DocumentTextExtractor spyExtractor = Mockito.spy(new DocumentTextExtractor(pdfBoxConfigurator));
         doReturn(java.util.List.of("OCR LINE 1", "OCR LINE 2")).when(spyExtractor)
-                .extractWithOCR(any(PDDocument.class), anyLong(), anyInt());
+                .extractWithOCR(any(PDDocument.class), any(File.class), anyLong(), anyInt());
 
         java.util.List<String> result = spyExtractor.parseDocument(tempPdf);
         assertEquals(java.util.List.of("OCR LINE 1", "OCR LINE 2"), result);
-        verify(spyExtractor, times(1)).extractWithOCR(any(PDDocument.class), anyLong(), anyInt());
+        verify(spyExtractor, times(1)).extractWithOCR(any(PDDocument.class), any(File.class), anyLong(), anyInt());
     }
 
     @Test

@@ -126,8 +126,11 @@ Bank PDFs → Text Extraction → Transaction Parsing → Classification → Jou
 ```bash
 cd /path/to/fin-project
 source .env
-java -jar app/build/libs/app.jar api
+java -jar app/build/libs/fin-spring.jar api
 ```
+
+> Note: when building Docker images we copy `fin-spring.jar` to `/app/app.jar` inside the container; examples inside container images may therefore reference `/app/app.jar`.
+
 **API Endpoints:**
 - Health: `http://localhost:8080/api/v1/health`
 - Companies: `http://localhost:8080/api/v1/companies`
@@ -138,7 +141,7 @@ java -jar app/build/libs/app.jar api
 ```bash
 cd /path/to/fin-project
 source .env
-java -jar app/build/libs/app.jar
+java -jar app/build/libs/fin-spring.jar
 ```
 **Features:**
 - Interactive menu system
@@ -152,9 +155,8 @@ java -jar app/build/libs/app.jar
 ```bash
 cd /path/to/fin-project
 source .env
-java -jar app/build/libs/app.jar --batch [command]
-```
-**Batch Commands:**
+java -jar app/build/libs/fin-spring.jar --batch [command]
+```**Batch Commands:**
 - Automated transaction processing
 - Bulk data imports
 - Report generation
@@ -324,10 +326,10 @@ Detailed documentation is available in the `docs` directory:
 ./gradlew test
 
 # Run API server
-java -jar app/build/libs/app.jar api
+java -jar app/build/libs/fin-spring.jar api
 
 # Run console application
-java -jar app/build/libs/app.jar
+java -jar app/build/libs/fin-spring.jar
 ```
 
 ## Requirements

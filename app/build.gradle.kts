@@ -218,4 +218,29 @@ tasks.register<JavaExec>("testFnbParser") {
     }
 }
 
+// Task to run the PDFBox dataset extractor CLI
+tasks.register<JavaExec>("runPdfBoxDataset") {
+    group = "tools"
+    description = "Run PDFBox dataset extractor (args: [inputDir] [outputDir])"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("fin.tools.PdfBoxDatasetExtractorMain")
+    doFirst {
+        val inDir = project.findProperty("inputDir") as String? ?: "${project.projectDir.parent}/input/std"
+        val outDir = project.findProperty("outputDir") as String? ?: "${project.projectDir.parent}/build/pdfbox-extract"
+        args = listOf(inDir, outDir)
+    }
+}
+
+// Inspect TTC font using FontBox
+tasks.register<JavaExec>("inspectTtc") {
+    group = "tools"
+    description = "Inspect a TTC font using FontBox (args: path-to-ttc via -PttcPath)"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("fin.tools.InspectTtcFontMain")
+    doFirst {
+        val p = project.findProperty("ttcPath") as String? ?: throw GradleException("Please specify -PttcPath=<path-to-ttc>")
+        args = listOf(p)
+    }
+}
+
 

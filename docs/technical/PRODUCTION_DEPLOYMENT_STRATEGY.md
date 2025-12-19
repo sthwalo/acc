@@ -382,7 +382,7 @@ export default Dashboard;
 ./gradlew build
 
 # Run as API server
-java -jar app/build/libs/app.jar api
+java -jar app/build/libs/fin-spring.jar api
 
 # Serve frontend (drimacc) via nginx or similar
 ```
@@ -393,11 +393,12 @@ java -jar app/build/libs/app.jar api
 FROM openjdk:17-jdk-slim
 
 WORKDIR /app
-COPY app/build/libs/app.jar app.jar
+COPY app/build/libs/fin-spring.jar app.jar
 COPY app/src/main/resources/ resources/
 
 EXPOSE 8080
 CMD ["java", "-jar", "app.jar", "api"]
+# Note: When building the Docker image we copy `fin-spring.jar` to `/app/app.jar` inside the container, so `app.jar` refers to that bundled JAR.
 ```
 
 ```yaml
@@ -443,7 +444,7 @@ volumes:
 ### Option C: Cloud Deployment (Heroku/Railway/DigitalOcean)
 ```bash
 # For Heroku deployment
-echo "web: java -jar app/build/libs/app.jar api" > Procfile
+echo "web: java -jar app/build/libs/fin-spring.jar api" > Procfile
 
 # Add PostgreSQL addon
 heroku addons:create heroku-postgresql:mini

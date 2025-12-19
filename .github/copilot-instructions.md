@@ -10,13 +10,13 @@ FIN is a production-ready financial management system for South African small bu
 **MANDATORY WORKFLOW**: We work together as a team. Do NOT jump into actions without explicit agreement.
 
 #### 1. Phased Task Execution and Agreement
-- **One Task at a Time**: Proceed through the project one task at a time, based on the established project plan
+- **One Task at a Time**: Proceed through the project one task at a time, based on the established project task plan [md](../app/docs/development/tasks)
 - **Mutual Agreement Required**: Mutual agreement on a task's scope and expected outcome is required before implementation begins
 - **Pause and Explain**: If either of us needs clarification or a pause during execution, we commit to stopping and explaining the context thoroughly
 - **Shared Ownership**: Both parties must understand and agree on what will be done before proceeding
 
 #### 2. Code Implementation and Verification
-- **Adherence to Architecture**: All code changes and configuration updates must adhere to the suggestions and architectural decisions we mutually agree upon
+- **Adherence to Architecture**: All code changes and configuration updates must adhere to the suggestions and architectural decisions defined in this document
 - **Rigorous Testing**: Use rigorous testing practices and verify fixes/implementations together before marking a task as complete
 - **Shared Quality**: Verify together before proceeding to the next stage - this ensures shared ownership of the solution's integrity
 - **No Premature Commits**: Do not commit or push code until user explicitly confirms the fix works
@@ -163,14 +163,14 @@ cd frontend && npm run start:containers
 
 ### Backend-Only Development
 ```bash
-# Build JAR
+# Build JAR (bootJar produces `fin-spring.jar` in `app/build/libs`)
 ./gradlew build
 
 # Run API server
-java -jar app/build/libs/app.jar api
+java -jar app/build/libs/fin-spring.jar api
 
 # Run console application
-java -jar app/build/libs/app.jar
+java -jar app/build/libs/fin-spring.jar
 ```
 
 ### Frontend-Only Development
@@ -183,16 +183,16 @@ npm run dev  # Runs on port 3000
 ## Key Architectural Patterns
 
 ### Service Layer Organization
-- **Spring Services**: All prefixed with "Spring" (e.g., `SpringCompanyService`, `SpringTransactionClassificationService`)
-- **Business Logic Services**: Organized in subdirectories (`classification/`, `journal/`, `parser/`, `reporting/`, `transaction/`, `upload/`)
-- **Repository Pattern**: Spring Data JPA repositories in `repository/` package
-- **Transactional**: All service methods use `@Transactional`
+- **Services**: Located in `app/src/main/java/fin/service/` (e.g., `PlanService`, `ReportExportService`), organized into subpackages like `upload`, `export`, `classification`.
+- **Business Logic Services**: Organized in subdirectories (`classification/`, `journal/`, `parser/`, `reporting/`, `transaction/`, `upload/`).
+- **Repository Pattern**: Spring Data JPA repositories in `app/src/main/java/fin/repository/` package
+- **Transactional**: Many service methods use `@Transactional`
 
 ### API Patterns
 - **Base Path**: `/api/v1/`
-- **Response Wrapper**: All controllers return `ApiResponse<T>`
+- **Response Wrapper**: Controllers use server-side `fin.dto.ApiResponse<T>` and the frontend matches that shape
 - **CORS**: Enabled for `http://localhost:3000`
-- **Controllers**: Located in `controller/spring/` package, all prefixed with "Spring"
+- **Controllers**: Located in `app/src/main/java/fin/controller/` (e.g., `AccountController`, `ReportController`) and expose REST endpoints under `/api/v1/`
 
 ### Database Patterns
 - **PostgreSQL**: Production database with Flyway migrations

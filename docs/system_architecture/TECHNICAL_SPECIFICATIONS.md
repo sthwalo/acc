@@ -453,43 +453,6 @@ CREATE TABLE transactions (
 );
 ```
 
-### Document Store Schema (MongoDB)
-
-#### Extracted Data Collection
-```javascript
-{
-  _id: ObjectId,
-  document_id: Number,  // Reference to SQL documents table
-  organization_id: Number,
-  extraction_date: ISODate,
-  confidence_score: Number,
-  extracted_fields: {
-    dates: [
-      { value: String, confidence: Number, position: { x: Number, y: Number, page: Number } }
-    ],
-    amounts: [
-      { value: Number, confidence: Number, position: { x: Number, y: Number, page: Number } }
-    ],
-    descriptions: [
-      { value: String, confidence: Number, position: { x: Number, y: Number, page: Number } }
-    ],
-    // Other extracted field types
-  },
-  structured_data: {
-    // Structured representation of the document
-    header: Object,
-    line_items: Array,
-    summary: Object,
-    // Document-type specific fields
-  },
-  corrections: [
-    { field: String, original: String, corrected: String, corrected_by: Number, corrected_at: ISODate }
-  ],
-  processing_history: [
-    { stage: String, status: String, timestamp: ISODate, details: String }
-  ]
-}
-```
 
 ## Security Specifications
 
