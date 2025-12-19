@@ -1206,8 +1206,21 @@ public class FinancialReportingService {
      */
     @Transactional(readOnly = true)
     public byte[] exportAuditTrailToPDF(Long companyId, Long fiscalPeriodId) throws SQLException {
-        String reportContent = generateAuditTrail(companyId, fiscalPeriodId);
-        return exportTextReportToPDF("AUDIT TRAIL", reportContent, companyId, fiscalPeriodId);
+        try {
+            Company company = companyService.getCompanyById(companyId);
+            FiscalPeriod period = getFiscalPeriod(fiscalPeriodId);
+
+            List<AuditTrailDTO> dtos = generateAuditTrailDTOs(companyId, fiscalPeriodId);
+            // Use structured PDF renderer for a styled table-based PDF
+            try {
+                return PdfReportRenderer.renderAuditTrail(dtos, company, period);
+            } catch (IOException e) {
+                throw new SQLException("Failed to render audit trail PDF: " + e.getMessage(), e);
+            }
+        } catch (Exception e) {
+            LOGGER.log(java.util.logging.Level.SEVERE, "Error exporting audit trail to PDF", e);
+            throw new SQLException("Failed to export audit trail to PDF: " + e.getMessage(), e);
+        }
     }
 
     /**
