@@ -63,17 +63,17 @@ check_dependencies() {
 # Build backend
 build_backend() {
     print_status "Building Spring Boot backend..."
-    cd app
-
-    if [ ! -f "build/libs/fin-spring.jar" ] || [ "build.gradle.kts" -nt "build/libs/fin-spring.jar" ]; then
+    # Use the repository root Gradle wrapper to build the :app project so we
+    # don't depend on an app-local gradle/wrapper/gradle-wrapper.properties
+    # file being present. Run the task from the repo root so the root
+    # settings and version catalog are available to the build.
+    if [ ! -f "app/build/libs/fin-spring.jar" ] || [ "app/build.gradle.kts" -nt "app/build/libs/fin-spring.jar" ]; then
         print_status "Building JAR file..."
-        ./gradlew clean build --no-daemon -x test
+        ./gradlew :app:clean :app:build --no-daemon -x test
         print_success "Backend built successfully"
     else
         print_warning "JAR file is up to date, skipping build"
     fi
-
-    cd ..
 }
 
 # Build frontend
@@ -83,7 +83,7 @@ build_frontend() {
 
     if [ ! -d "dist" ] || find src -newer dist -type f | read; then
         print_status "Building frontend dist..."
-        npm install
+        npm ci
         # Set API URL for containerized frontend to reach backend via host port
         VITE_API_URL=http://localhost:8080/api npm run build
         print_success "Frontend built successfully"

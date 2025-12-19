@@ -56,10 +56,20 @@ cleanup() {
 # Set up trap to cleanup on script exit
 trap cleanup EXIT INT TERM
 
+<<<<<<< Updated upstream
 # Start backend server in background (run from repo root so settings and version catalogs are available)
 echo "📊 Starting Spring Boot backend server..."
 mkdir -p logs
 ./gradlew :app:bootRun --no-daemon > logs/backend.log 2>&1 &
+=======
+# Start backend server in background using the root Gradle wrapper so we don't
+# depend on per-module wrapper files being present under `app/gradle/wrapper/`.
+echo "📊 Starting Spring Boot backend server..."
+# Run the app subproject's bootRun task from the repository root. This uses the
+# repository-level Gradle wrapper which is present and avoids the missing
+# wrapper properties error inside the `app/` directory.
+(./gradlew :app:bootRun --no-daemon &) 
+>>>>>>> Stashed changes
 BACKEND_PID=$!
 
 # Wait for backend health endpoint with timeout
@@ -83,10 +93,22 @@ if [ $timeout -le 0 ]; then
     echo "⚠️ Backend did not become healthy within 30s; check logs: logs/backend.log"
 fi
 
-# Start frontend development server in background
+# Start frontend development server in background. If node_modules are missing
+# or Vite is not installed, install dependencies first so the `dev` script can
+# find the local `vite` binary.
 echo "🌐 Starting React frontend development server..."
+<<<<<<< Updated upstream
 cd frontend
 npm run dev &
+=======
+if [ ! -d frontend/node_modules ]; then
+    echo "📦 Frontend dependencies not found - installing (npm ci)..."
+    (cd frontend && npm ci)
+fi
+
+# Now start the frontend dev server (npm scripts will use the local vite binary)
+(cd frontend && npm run dev &) 
+>>>>>>> Stashed changes
 FRONTEND_PID=$!
 
 echo ""
