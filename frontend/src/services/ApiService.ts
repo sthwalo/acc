@@ -457,6 +457,45 @@ class ReportApiService extends BaseApiService {
     format: string = 'text'
   ): Promise<{ reportType: string, companyId: number, fiscalPeriodId: number, format: string, content: string, filename?: string }> {
     try {
+      // Special handling for audit-trail since it returns JSON data that needs to be formatted as text
+      if (reportType === 'audit-trail') {
+        const auditTrailData = await this.getAuditTrail(companyId, fiscalPeriodId);
+        
+        // Format the audit trail data as text
+        let content = `AUDIT TRAIL REPORT\n`;
+        content += `Company ID: ${companyId}\n`;
+        content += `Fiscal Period ID: ${fiscalPeriodId}\n`;
+        content += `Generated: ${new Date().toLocaleString()}\n\n`;
+        
+        auditTrailData.forEach((entry, index) => {
+          content += `${index + 1}. Reference: ${entry.reference}\n`;
+          content += `   Date: ${entry.entryDate}\n`;
+          content += `   Description: ${entry.description}\n`;
+          content += `   Created By: ${entry.createdBy}\n`;
+          content += `   Created At: ${entry.createdAt}\n`;
+          content += `   Lines:\n`;
+          
+          entry.lines.forEach((line, lineIndex) => {
+            content += `     ${lineIndex + 1}. ${line.accountCode} - ${line.accountName}\n`;
+            content += `        Description: ${line.description}\n`;
+            content += `        Debit: ${line.debit || 0}, Credit: ${line.credit || 0}\n`;
+          });
+          
+          content += `\n`;
+        });
+        
+        const filename = `audit_trail_company_${companyId}_period_${fiscalPeriodId}.txt`;
+        
+        return {
+          reportType,
+          companyId,
+          fiscalPeriodId,
+          format,
+          content,
+          filename
+        };
+      }
+
       // Map frontend report types to backend endpoint paths
       const endpointMap: { [key: string]: string } = {
         'trial-balance': 'trial-balance',
@@ -464,8 +503,7 @@ class ReportApiService extends BaseApiService {
         'balance-sheet': 'balance-sheet',
         'cash-flow': 'financial', // Cash flow is under financial endpoint
         'general-ledger': 'general-ledger',
-        'cashbook': 'cashbook',
-        'audit-trail': 'audit-trail'
+        'cashbook': 'cashbook'
       };
 
       const endpoint = endpointMap[reportType];
